@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DegradedBanner } from "./degraded-banner";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { commandersCopy } from "../../lib/copy/commanders";
 
 // Every assertion counts two matches: the banner ships a mobile and a desktop
 // branch, both always in the DOM, with visibility left to Tailwind.
@@ -12,7 +13,7 @@ describe("DegradedBanner", () => {
   // width-specific wording each width draws.
   it("pins the synergy variant's literal, width-specific copy", () => {
     render(<DegradedBanner />);
-    expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
+    expect(screen.getAllByText(commandersCopy.degradedSynergy.heading)).toHaveLength(2);
     // Both bodies pinned, not just the heading: sourcing them from the block
     // would make the two widths read the same.
     expect(
@@ -26,7 +27,7 @@ describe("DegradedBanner", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
-    expect(screen.getAllByRole("button", { name: "Retry now" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: commandersCopy.degradedSynergy.retryNow })).toHaveLength(1);
   });
 
   // The banner is raised when ANY row is degraded, so when only some are the
@@ -87,7 +88,7 @@ describe("DegradedBanner", () => {
     expect(
       screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy),
     ).toHaveLength(2);
-    expect(screen.queryByText("Synergy data unavailable")).toBeNull();
+    expect(screen.queryByText(commandersCopy.degradedSynergy.heading)).toBeNull();
   });
 
   // The heading is the availability one in both new variants, because that is

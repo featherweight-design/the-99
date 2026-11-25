@@ -25,8 +25,8 @@ describe("picksOf and the foot", () => {
   });
 
   it("reads `Pick a deck · n can use it` for several, the deck's own line for one", () => {
-    expect(toolWhere(several)).toBe("Pick a deck · 2 can use it");
-    expect(toolWhere(tool({ kind: "deck", href: "/decks/d1", deck: "Gishath", more: 0 }))).not.toContain("Pick a deck");
+    expect(toolWhere(several)).toBe(askCopy.pick.foot(2));
+    expect(toolWhere(tool({ kind: "deck", href: "/decks/d1", deck: "Gishath", more: 0 }))).not.toContain(askCopy.pick.foot(2).split(" · ")[0]);
   });
 });
 

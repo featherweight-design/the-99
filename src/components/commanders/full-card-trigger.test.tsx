@@ -5,6 +5,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { FullCardTrigger } from "./full-card-trigger";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const ATRAXA: BrowseCard = {
   oracleId: "o-atraxa",
@@ -47,15 +49,15 @@ describe("FullCardTrigger", () => {
   // is asserted here rather than assumed.
   it("draws the icon alone and carries the name in aria-label", () => {
     renderTrigger();
-    const chip = screen.getByRole("button", { name: "View card details" });
+    const chip = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(chip).toHaveTextContent("⛶");
-    expect(chip).not.toHaveTextContent("Card details");
+    expect(chip).not.toHaveTextContent(deckHeaderCopy.cardDetails);
     expect(screen.queryByText("Full card")).toBeNull();
   });
 
   it("opens the shared card modal for its oracle id", async () => {
     const fetchCard = renderTrigger();
-    await click(screen.getByRole("button", { name: "View card details" }));
+    await click(screen.getByRole("button", { name: changeCommanderCopy.detailsAria }));
 
     expect(fetchCard).toHaveBeenCalledWith("o-atraxa", undefined);
     await waitFor(() => {
@@ -69,7 +71,7 @@ describe("FullCardTrigger", () => {
   it("marks the chip busy while the fetch is in flight", async () => {
     let release: (card: BrowseCard) => void = () => {};
     renderTrigger(vi.fn(() => new Promise<BrowseCard>((resolve) => { release = resolve; })));
-    const chip = screen.getByRole("button", { name: "View card details" });
+    const chip = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(chip).toHaveAttribute("aria-busy", "false");
 
     await click(chip);
@@ -119,7 +121,7 @@ describe("FullCardTrigger placement", () => {
   // that block reserves this corner with its own right padding.
   it("sits in the hero's bottom-right corner with a band tap target", () => {
     const { container } = mount(<FullCardTrigger oracleId="o-atraxa" />);
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(pill.style.top).toBe("");
     expect(pill.style.right).toBe("7px");
     expect(pill.style.bottom).toBe("6px");
@@ -145,7 +147,7 @@ describe("FullCardTrigger placement", () => {
           bandTapTarget={false}
         />,
       );
-      const pill = screen.getByRole("button", { name: "View card details" });
+      const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
       for (const [side, px] of Object.entries(at)) {
         // The target's own inset, plus half the 44−26 difference, is where the
         // plate's edge falls — on the axes the target actually has spare room on.
@@ -164,7 +166,7 @@ describe("FullCardTrigger placement", () => {
     const { container } = mount(
       <FullCardTrigger oracleId="o-atraxa" placement="deck-desktop" bandTapTarget={false} />,
     );
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     // `left` is the raw 16: this is the one labelled placement, its button is
     // shrink-to-fit, and pulling a shrink-to-fit target inward moves the plate
     // rather than centring it. The vertical axis still insets, because 44 of
@@ -179,7 +181,7 @@ describe("FullCardTrigger placement", () => {
     const { container } = mount(
       <FullCardTrigger oracleId="o-atraxa" placement="commander-desktop" />,
     );
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(pill.style.left).toBe("3px");
     expect(pill.style.bottom).toBe("3px");
     // Unlike the deck header, this frame carries no title and no rename pencil,
@@ -192,7 +194,7 @@ describe("FullCardTrigger placement", () => {
   // which leaves every band in the app with an empty top edge.
   it("sits bottom-right on the mobile deck header, like every other placement", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-mobile" bandTapTarget={false} />);
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(pill.style.top).toBe("");
     expect(pill.style.bottom).toBe("5px");
     expect(pill.style.right).toBe("7px");
@@ -206,7 +208,7 @@ describe("FullCardTrigger placement", () => {
   // chip's corner and the pill was on screen and dead.
   it("stacks above the content that follows it", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-desktop" bandTapTarget={false} />);
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(pill.className).toContain("z-[2]");
   });
 
@@ -217,7 +219,7 @@ describe("FullCardTrigger placement", () => {
   // plate would be a panel, and a 26px button would miss the touch floor.
   it("plates itself opaquely, 26px drawn inside a 44px target", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" />);
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(pill.style.width).toBe("44px");
     expect(pill.style.height).toBe("44px");
     expect(pill.className).not.toContain("color-mix");
@@ -241,7 +243,7 @@ describe("FullCardTrigger placement", () => {
         <FullCardTrigger oracleId="o-atraxa" />
       </CardDetailProvider>,
     );
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     const plate = pill.firstElementChild as HTMLElement;
     await act(async () => {
       fireEvent.click(pill);
@@ -259,7 +261,7 @@ describe("FullCardTrigger placement", () => {
   // backdrop nothing can see.
   it("draws no backdrop filter", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" />);
-    const pill = screen.getByRole("button", { name: "View card details" });
+    const pill = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(pill.style.backdropFilter).toBe("");
     expect((pill.firstElementChild as HTMLElement).style.backdropFilter).toBe("");
   });

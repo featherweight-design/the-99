@@ -7,6 +7,7 @@ import { planeCopy } from "../../lib/copy/commanders-plane";
 import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
 import { revealAnnouncement } from "./reveal-control";
 import { DiscoveryView } from "./discovery-view";
+import { hideCommanderCopy } from "../../lib/copy/commander-explained";
 
 // One thing on this lane navigates, and only one: a change of RANKING, which is
 // two of order's five values. Everything else on the rack — search, the pips, the
@@ -942,20 +943,20 @@ describe("DiscoveryView", () => {
   // and its page still opens.
   it("names a match the player hid, and opens its page", async () => {
     findExcluded.mockResolvedValue([
-      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      { oracleId: "g", name: "Fixture Commander", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
     ]);
     const { container } = render(
       <DiscoveryView basis="classifier" encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "ghal" } });
     await waitFor(() =>
-      expect(container.textContent).toContain("Ghalta, Primal Hunger is here. You hid it"),
+      expect(container.textContent).toContain("Fixture Commander is here. You hid it"),
     );
     expect(container.textContent).toContain(
-      "It matches, but you hid it, so it stays out of your lists.",
+      planeCopy.excluded.heldHidden,
     );
     expect(container.textContent).toContain("1 match, 0 shown");
-    expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: planeCopy.excluded.hiddenCta })).toHaveAttribute(
       "href",
       "/commanders/ghalta-primal-hunger",
     );
@@ -963,14 +964,14 @@ describe("DiscoveryView", () => {
 
   it("offers no page for a hidden match no list holds a slug for", async () => {
     findExcluded.mockResolvedValue([
-      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: null },
+      { oracleId: "g", name: "Fixture Commander", cause: "hidden", pct: null, slug: null },
     ]);
     const { container } = render(
       <DiscoveryView basis="classifier" encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "ghal" } });
     await waitFor(() =>
-      expect(container.textContent).toContain(excluded.heldHiddenHeading("Ghalta, Primal Hunger")),
+      expect(container.textContent).toContain(excluded.heldHiddenHeading("Fixture Commander")),
     );
     expect(screen.queryByRole("link", { name: excluded.hiddenCta })).toBeNull();
     expect(screen.queryByRole("button", { name: excluded.hiddenCta })).toBeNull();
@@ -1402,7 +1403,7 @@ describe("DiscoveryView · hiding a row", () => {
     });
     expect(screen.getByText("Charlie hidden")).toBeInTheDocument();
     expect(undo("Charlie")).toBeNull();
-    expect(screen.getByText("Couldn’t bring that back. Unhide it from Hidden.")).toHaveAttribute("role", "alert");
+    expect(screen.getByText(hideCommanderCopy.undoRow.refused)).toHaveAttribute("role", "alert");
   });
 
   it("drops a ranking read after the hide once the hide is undone, so the flip reads it fresh", async () => {

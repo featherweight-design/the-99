@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HiddenRow } from "../../lib/commanders/hidden-row";
+import { hiddenListCopy } from "../../lib/copy/commanders-hidden";
 
 // The actions are the boundary: the real ones reach the database through `lib/commanders/hidden`.
 const hideCommanderAction = vi.fn<(oracleId: string, restore?: string) => Promise<boolean>>();
@@ -26,7 +27,7 @@ const row = (over: Partial<HiddenRow> & Pick<HiddenRow, "oracleId" | "name">): H
   ...over,
 });
 
-const GHALTA = row({ oracleId: "g", name: "Ghalta, Primal Hunger", href: "/commanders/ghalta-primal-hunger" });
+const GHALTA = row({ oracleId: "g", name: "Fixture Commander", href: "/commanders/ghalta-primal-hunger" });
 const ASHLING = row({ oracleId: "a", name: "Ashling the Pilgrim", hiddenAt: "2026-10-29T12:00:00.000Z", lane: "discover" });
 const ZADA = row({ oracleId: "z", name: "Zada, Hedron Grinder", hiddenAt: "2026-10-29T09:00:00.000Z", lane: null, built: true, href: "/decks/deck-1" });
 
@@ -70,7 +71,7 @@ describe("the Hidden list", () => {
 
   it("opens the commander's page from the row, and a built commander's deck instead", () => {
     render(<HiddenList rows={[GHALTA, ZADA]} />);
-    expect(screen.getByRole("link", { name: "Ghalta, Primal Hunger" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Fixture Commander" })).toHaveAttribute(
       "href",
       "/commanders/ghalta-primal-hunger",
     );
@@ -86,7 +87,7 @@ describe("the Hidden list", () => {
 
   it("draws the shared zero state, with the glyph's words, when nothing is hidden", () => {
     render(<HiddenList rows={[]} />);
-    expect(screen.getByRole("heading", { name: "Nothing hidden" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: hiddenListCopy.empty.heading })).toBeInTheDocument();
     expect(document.body.textContent).toContain(
       "Press Hide on a commander in For you or Discover, or on its page, and it waits here until you bring it back.",
     );
@@ -107,11 +108,11 @@ describe("the Hidden list", () => {
     it("turns the row into the Undo row, saying where it went, and refreshes the counts", async () => {
       render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
       expect(unhideCommanderAction).toHaveBeenCalledWith("g");
-      expect(undoLabel("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
-      expect(undoButton("Ghalta, Primal Hunger")).toHaveFocus();
+      expect(undoLabel("Fixture Commander back in For you")).toBeInTheDocument();
+      expect(undoButton("Fixture Commander")).toHaveFocus();
       expect(screen.getByTestId("hidden-count")).toHaveTextContent("2 hidden · newest first");
       expect(stale).toBe(1);
     });
@@ -147,12 +148,12 @@ describe("the Hidden list", () => {
       unhideCommanderAction.mockResolvedValue(false);
       render(<HiddenList rows={[GHALTA]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
-      expect(undoButton("Ghalta, Primal Hunger")).toBeNull();
-      expect(unhideButton("Ghalta, Primal Hunger")).toHaveFocus();
+      expect(undoButton("Fixture Commander")).toBeNull();
+      expect(unhideButton("Fixture Commander")).toHaveFocus();
       const toast = screen.getByRole("alert");
-      expect(toast).toHaveTextContent("We couldn’t unhide Ghalta, Primal Hunger.");
+      expect(toast).toHaveTextContent("We couldn’t unhide Fixture Commander.");
       expect(stale).toBe(0);
 
       unhideCommanderAction.mockResolvedValue(true);
@@ -160,7 +161,7 @@ describe("the Hidden list", () => {
         fireEvent.click(within(toast).getByRole("button", { name: "Try again" }));
       });
       expect(unhideCommanderAction).toHaveBeenCalledTimes(2);
-      expect(undoLabel("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
+      expect(undoLabel("Fixture Commander back in For you")).toBeInTheDocument();
     });
 
     // The toast belongs to the row it names: pressing Unhide on another row leaves it, and its Try again, standing.
@@ -168,13 +169,13 @@ describe("the Hidden list", () => {
       unhideCommanderAction.mockResolvedValueOnce(false);
       render(<HiddenList rows={[GHALTA, ASHLING]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
-      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Ghalta, Primal Hunger.");
+      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Fixture Commander.");
       await act(async () => {
         fireEvent.click(unhideButton("Ashling the Pilgrim"));
       });
-      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Ghalta, Primal Hunger.");
+      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Fixture Commander.");
     });
 
     // The counts moved when the write landed, whichever press is now the newest.
@@ -184,10 +185,10 @@ describe("the Hidden list", () => {
       hideCommanderAction.mockImplementationOnce(() => new Promise<boolean>(() => {}));
       render(<HiddenList rows={[GHALTA]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
       await act(async () => {
-        fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
+        fireEvent.click(undoButton("Fixture Commander")!);
       });
       await act(async () => {
         land(true);
@@ -199,9 +200,9 @@ describe("the Hidden list", () => {
       unhideCommanderAction.mockRejectedValue(new Error("down"));
       render(<HiddenList rows={[GHALTA]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
-      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Ghalta, Primal Hunger.");
+      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Fixture Commander.");
     });
   });
 
@@ -211,13 +212,13 @@ describe("the Hidden list", () => {
       vi.setSystemTime(new Date("2026-10-31T15:00:00Z"));
       render(<HiddenList rows={[GHALTA]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
       await act(async () => {
-        fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
+        fireEvent.click(undoButton("Fixture Commander")!);
       });
       expect(hideCommanderAction).toHaveBeenCalledWith("g", "at-g");
-      expect(unhideButton("Ghalta, Primal Hunger")).toHaveFocus();
+      expect(unhideButton("Fixture Commander")).toHaveFocus();
       expect(screen.getByText("Hidden Oct 31")).toBeInTheDocument();
       expect(stale).toBe(2);
     });
@@ -306,13 +307,13 @@ describe("the Hidden list", () => {
       hideCommanderAction.mockResolvedValue(false);
       render(<HiddenList rows={[GHALTA]} />);
       await act(async () => {
-        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+        fireEvent.click(unhideButton("Fixture Commander"));
       });
       await act(async () => {
-        fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
+        fireEvent.click(undoButton("Fixture Commander")!);
       });
-      expect(undoLabel("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
-      expect(undoButton("Ghalta, Primal Hunger")).toBeNull();
+      expect(undoLabel("Fixture Commander back in For you")).toBeInTheDocument();
+      expect(undoButton("Fixture Commander")).toBeNull();
       expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t hide that again. Hide it from For you.");
       expect(stale).toBe(1);
     });
@@ -323,10 +324,10 @@ describe("the Hidden list", () => {
   it("keeps its Undo rows when the route hands it a new list", async () => {
     const { rerender } = render(<HiddenList rows={[GHALTA, ASHLING]} />);
     await act(async () => {
-      fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+      fireEvent.click(unhideButton("Fixture Commander"));
     });
     rerender(<HiddenList rows={[ASHLING]} />);
-    expect(undoButton("Ghalta, Primal Hunger")).toBeInTheDocument();
+    expect(undoButton("Fixture Commander")).toBeInTheDocument();
     expect(order()).toEqual(["g", "a"]);
   });
 

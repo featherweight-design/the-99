@@ -6,6 +6,10 @@ import { toFreeDelta } from "../../lib/recs/free-delta";
 import { CommandersView, type AvailMode } from "./commanders-view";
 import { REVEAL_STEP } from "./reveal-control";
 import type { LanePrintedIn } from "../../lib/sets/printed-in";
+import { hideCommanderCopy } from "../../lib/copy/commander-explained";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { planeCopy } from "../../lib/copy/commanders-plane";
+import { commandersCopy } from "../../lib/copy/lanes";
 
 // The reveal control is unreachable on real data by design — the beta reference
 // collection yields 24 generals and REVEAL_STEP is 25. These tests are therefore
@@ -374,7 +378,7 @@ describe("CommandersView zero states", () => {
   // The rack's own search field also offers `Clear search`, so the state's
   // primary is reached through the state rather than by label alone.
   const zeroState = () =>
-    within(screen.getByText("No commander by that name").parentElement!);
+    within(screen.getByText(commandersCopy.emptySearch.heading).parentElement!);
 
   // Nothing on this list is hidden, so there is no hidden match to wait on: the state draws at once,
   // with no lookup and no loading mark (a reader with hides waits on one; see the hidden block below).
@@ -382,9 +386,9 @@ describe("CommandersView zero states", () => {
     view(results(40));
     searchFor("jodah");
     noRows();
-    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    expect(screen.getByText(commandersCopy.emptySearch.heading)).toBeInTheDocument();
     expect(screen.getByText(/the 40 you own/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Search Discover" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: commandersCopy.emptySearch.otherLane })).toHaveAttribute(
       "href",
       "/discover?q=jodah",
     );
@@ -393,8 +397,8 @@ describe("CommandersView zero states", () => {
   it("clears the search from the state’s own primary", async () => {
     view(results(40));
     searchFor("jodah");
-    await screen.findByText("No commander by that name");
-    fireEvent.click(zeroState().getByRole("button", { name: "Clear search" }));
+    await screen.findByText(commandersCopy.emptySearch.heading);
+    fireEvent.click(zeroState().getByRole("button", { name: commandersCopy.emptySearch.clearSearch }));
     expect(cards()).toHaveLength(REVEAL_STEP);
   });
 
@@ -402,8 +406,8 @@ describe("CommandersView zero states", () => {
     view(results(40, ["R"]));
     fireEvent.click(screen.getByRole("switch", { name: "Blue" }));
     noRows();
-    expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
-    expect(screen.queryByText("No commander by that name")).toBeNull();
+    expect(screen.getByText(commandersCopy.empty.heading)).toBeInTheDocument();
+    expect(screen.queryByText(commandersCopy.emptySearch.heading)).toBeNull();
   });
 
   // The sentence offers to bring a named row BACK, so it has to name it the way the row
@@ -424,9 +428,9 @@ describe("CommandersView zero states", () => {
 
   it("shows no zero state when nothing narrowed the lane", () => {
     view(results(0));
-    expect(screen.queryByText("Nothing in the pile matches")).toBeNull();
-    expect(screen.queryByText("No commander by that name")).toBeNull();
-    expect(screen.queryByText("Everything here is hidden")).toBeNull();
+    expect(screen.queryByText(commandersCopy.empty.heading)).toBeNull();
+    expect(screen.queryByText(commandersCopy.emptySearch.heading)).toBeNull();
+    expect(screen.queryByText(planeCopy.allHidden.heading)).toBeNull();
   });
 });
 
@@ -443,56 +447,56 @@ describe("CommandersView · hidden commanders", () => {
 
   it("names a hidden commander the search found, and opens its page", async () => {
     findOwnedExcludedMatches.mockResolvedValue([
-      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      { oracleId: "g", name: "Fixture Commander", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
     ]);
     view(results(3), { hiddenCount: 1 });
     searchFor("ghal");
-    expect(await screen.findByText("Ghalta, Primal Hunger is here. You hid it")).toBeInTheDocument();
+    expect(await screen.findByText("Fixture Commander is here. You hid it")).toBeInTheDocument();
     expect(
-      screen.getByText("It matches, but you hid it, so it stays out of your lists."),
+      screen.getByText(planeCopy.excluded.heldHidden),
     ).toBeInTheDocument();
     expect(screen.getByText("1 match, 0 shown")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: planeCopy.excluded.hiddenCta })).toHaveAttribute(
       "href",
       "/commanders/ghalta-primal-hunger",
     );
     // One request for the settled query, never one per keystroke.
     expect(findOwnedExcludedMatches).toHaveBeenCalledTimes(1);
     expect(findOwnedExcludedMatches).toHaveBeenCalledWith("ghal");
-    expect(screen.queryByText("No commander by that name")).toBeNull();
+    expect(screen.queryByText(commandersCopy.emptySearch.heading)).toBeNull();
   });
 
   // Small items 10, 3c: a search matching a visible and a hidden commander asks too, and the aside
   // stands above the rows.
   it("asks about a name the list already holds, and draws the aside above its rows", async () => {
     findOwnedExcludedMatches.mockResolvedValue([
-      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      { oracleId: "g", name: "Fixture Commander", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
     ]);
     view(results(3), { hiddenCount: 1 });
     searchFor("general 1");
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     const aside = (await screen.findByText(/also matches, but you hid it/)).closest('[role="status"]') as HTMLElement;
     expect(aside.textContent).toContain(
-      "Ghalta, Primal Hunger also matches, but you hid it, so it stays out of your lists.",
+      "Fixture Commander also matches, but you hid it, so it stays out of your lists.",
     );
     // Above the rows: the aside precedes the list in document order.
     expect(
       aside.compareDocumentPosition(screen.getAllByRole("listitem")[0]) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(findOwnedExcludedMatches).toHaveBeenCalledWith("general 1");
-    expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: planeCopy.excluded.hiddenCta })).toHaveAttribute(
       "href",
       "/commanders/ghalta-primal-hunger",
     );
     // The rows stay, and the held state's heading is not drawn over them.
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    expect(screen.queryByText("Ghalta, Primal Hunger is here. You hid it")).toBeNull();
+    expect(screen.queryByText("Fixture Commander is here. You hid it")).toBeNull();
   });
 
   it("falls back to the list's own search state when nothing hidden is named that", async () => {
     view(results(3), { hiddenCount: 1 });
     searchFor("jodah");
-    expect(await screen.findByText("No commander by that name")).toBeInTheDocument();
+    expect(await screen.findByText(commandersCopy.emptySearch.heading)).toBeInTheDocument();
     expect(findOwnedExcludedMatches).toHaveBeenCalledWith("jodah");
   });
 
@@ -501,7 +505,7 @@ describe("CommandersView · hidden commanders", () => {
   it("asks nothing, and draws the miss at once, when nothing on the list is hidden", async () => {
     view(results(3));
     searchFor("jodah");
-    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    expect(screen.getByText(commandersCopy.emptySearch.heading)).toBeInTheDocument();
     await new Promise((r) => setTimeout(r, 400));
     expect(findOwnedExcludedMatches).not.toHaveBeenCalled();
   });
@@ -523,31 +527,31 @@ describe("CommandersView · hidden commanders", () => {
     findOwnedExcludedMatches.mockRejectedValue(new Error("down"));
     view(results(3), { hiddenCount: 1 });
     searchFor("jodah");
-    expect(await screen.findByText("No commander by that name")).toBeInTheDocument();
+    expect(await screen.findByText(commandersCopy.emptySearch.heading)).toBeInTheDocument();
   });
 
   it("says everything here is hidden when every row is", () => {
     view([], { hiddenCount: 3 });
-    expect(screen.getByText("Everything here is hidden")).toBeInTheDocument();
+    expect(screen.getByText(planeCopy.allHidden.heading)).toBeInTheDocument();
     expect(
       screen.getByText(
         "You hid all 3 commanders you own and haven’t built. Bring one back from Hidden, or find one to build in Discover.",
       ),
     ).toBeInTheDocument();
     // **See hidden** opens the Hidden list.
-    expect(screen.getByRole("link", { name: "See hidden" })).toHaveAttribute("href", "/commanders/hidden");
+    expect(screen.getByRole("link", { name: planeCopy.allHidden.cta })).toHaveAttribute("href", "/commanders/hidden");
   });
 
   it("names the hidden one over the all-hidden state when the search finds it", async () => {
     findOwnedExcludedMatches.mockResolvedValue([
-      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      { oracleId: "g", name: "Fixture Commander", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
     ]);
     view([], { hiddenCount: 3 });
     searchFor("ghal");
     await waitFor(() =>
-      expect(screen.getByText("Ghalta, Primal Hunger is here. You hid it")).toBeInTheDocument(),
+      expect(screen.getByText("Fixture Commander is here. You hid it")).toBeInTheDocument(),
     );
-    expect(screen.queryByText("Everything here is hidden")).toBeNull();
+    expect(screen.queryByText(planeCopy.allHidden.heading)).toBeNull();
   });
 });
 
@@ -607,8 +611,8 @@ describe("CommandersView ranking toggle", () => {
   // One treatment is mounted, so these are single elements — the bar's paired
   // desktop/mobile subtrees are gone.
   const segments = (name: string) => screen.getAllByRole("radio", { name });
-  const ALL = "All my cards";
-  const FREE = "Free cards only";
+  const ALL = commandersCopy.availability.all;
+  const FREE = commandersCopy.availability.free;
 
   describe("the saved mode (Hugh, 2026-09-27)", () => {
     beforeEach(() => rememberCommandersAvail.mockClear());
@@ -1042,21 +1046,21 @@ describe("the first-run banner's door", () => {
   const props = { results: results(3), degraded: false, uniqueCardsRead: 1418, candidateCount: 3, freeRanking: null, availOk: true };
   it("carries the door on first run with the switch on", () => {
     render(<CommandersView {...props} firstRun helpMeChoose />);
-    expect(screen.getAllByRole("link", { name: "Help me choose →" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: helpMeChooseCopy.door.cta })).toHaveLength(2);
   });
   it("draws no door with the switch off, or past first run", () => {
     const { rerender } = render(<CommandersView {...props} firstRun />);
     expect(screen.getByText("Meet your commanders")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+    expect(screen.queryByRole("link", { name: helpMeChooseCopy.door.cta })).toBeNull();
     rerender(<CommandersView {...props} firstRun={false} helpMeChoose />);
-    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+    expect(screen.queryByRole("link", { name: helpMeChooseCopy.door.cta })).toBeNull();
   });
 });
 
 // Hide a commander (design_handoff_the99_hide_commander README §1-2, the Rows and Undo boards).
 describe("CommandersView · hiding a row", () => {
-  const ALL = "All my cards";
-  const FREE = "Free cards only";
+  const ALL = commandersCopy.availability.all;
+  const FREE = commandersCopy.availability.free;
   const segment = (name: string) => screen.getAllByRole("radio", { name })[0];
   const glyph = (name: string) => screen.getByRole("button", { name: `Hide ${name}` });
   const undo = (name: string) => screen.queryByRole("button", { name: `Undo hiding ${name}` });
@@ -1163,7 +1167,7 @@ describe("CommandersView · hiding a row", () => {
 
     expect(undoRow("General 0")).toBeInTheDocument();
     expect(undo("General 0")).toBeNull();
-    expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t bring that back. Unhide it from Hidden.");
+    expect(screen.getByRole("alert")).toHaveTextContent(hideCommanderCopy.undoRow.refused);
   });
 
   // The free ranking is a delta indexed into the canonical list, and both arrive in one payload: a hide in one mode

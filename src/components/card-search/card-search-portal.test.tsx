@@ -1,6 +1,7 @@
 import * as React from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { cardSearchCopy } from "../../lib/copy/card-search";
 
 // The real results' chunk is mounted here: its rows are a portal owned by the layer, so a key or a drag on a row
 // reaches the sheet only through the DOM, and that is what these tests hold.
@@ -25,7 +26,7 @@ async function openWithResults() {
       <CardSearchIcon />
     </CardSearchRoot>,
   );
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Search all cards" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: cardSearchCopy.label })));
   await act(async () => fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } }));
   return waitFor(() => screen.getByRole("option"), { timeout: 3000 });
 }
@@ -43,14 +44,14 @@ describe("the sheet hears its portalled results", () => {
     screen.getByRole("combobox").focus();
     await act(async () => fireEvent.touchMove(option));
     // Off the field and onto the sheet itself, never the page, so Escape and Tab still reach the sheet.
-    expect(document.activeElement).toBe(screen.getByRole("dialog", { name: "Search all cards" }));
+    expect(document.activeElement).toBe(screen.getByRole("dialog", { name: cardSearchCopy.label }));
   });
 
   it("Tab from a focused row stays inside the sheet", async () => {
     const option = await openWithResults();
     option.focus();
     await act(async () => fireEvent.keyDown(option, { key: "Tab" }));
-    expect(screen.getByRole("dialog", { name: "Search all cards" }).contains(document.activeElement)).toBe(true);
+    expect(screen.getByRole("dialog", { name: cardSearchCopy.label }).contains(document.activeElement)).toBe(true);
   });
 });
 
@@ -59,7 +60,7 @@ describe("a row focus came back to keeps the list's keys", () => {
     const option = await openWithResults();
     option.focus();
     await act(async () => fireEvent.keyDown(option, { key: "Enter" }));
-    expect(screen.queryByRole("dialog", { name: "Search all cards" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: cardSearchCopy.label })).toBeNull();
   });
 
   it("keeps the frame drawn, inert and no dialog, while the picked card is on its way up", async () => {

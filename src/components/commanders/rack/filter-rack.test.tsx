@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultParams, type Lane, type LaneParams } from "@/lib/commanders/lane-params";
 import { FilterRack } from "./filter-rack";
-import { filterCopy } from "@/lib/copy/lanes";
+import { filterCopy, discoverCopy, commandersCopy } from "@/lib/copy/lanes";
 
 function stubWidth(wide: boolean) {
   vi.stubGlobal(
@@ -150,10 +150,10 @@ describe("FilterRack", () => {
   it("gives the owned rack availability, and the discover rack none", () => {
     stubWidth(true);
     const { unmount } = renderRack("owned");
-    expect(screen.getByRole("radiogroup", { name: "Build from" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: commandersCopy.availability.legend })).toBeInTheDocument();
     unmount();
     renderRack("discover", defaultParams("discover"), 3301, 3301);
-    expect(screen.queryByRole("radiogroup", { name: "Build from" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: commandersCopy.availability.legend })).not.toBeInTheDocument();
   });
 
   it("reads the order options off the lane", () => {
@@ -181,10 +181,10 @@ describe("FilterRack", () => {
     fireEvent.click(screen.getByRole("button", { name: "Order · Best fit" }));
     // The two rankings lead, and are glossed like the rest: they are the only
     // options that change which commanders the list holds.
-    expect(screen.getByText("most of the cards popular with it already owned")).toBeInTheDocument();
-    expect(screen.getByText("farthest from the themes you have built")).toBeInTheDocument();
-    expect(screen.getByText("most decks tracked first")).toBeInTheDocument();
-    expect(screen.getByText("newest printing first")).toBeInTheDocument();
+    expect(screen.getByText(discoverCopy.order.bestFitGloss)).toBeInTheDocument();
+    expect(screen.getByText(discoverCopy.order.somethingNewGloss)).toBeInTheDocument();
+    expect(screen.getByText(discoverCopy.order.popularityGloss)).toBeInTheDocument();
+    expect(screen.getByText(discoverCopy.order.recentGloss)).toBeInTheDocument();
     unmount();
 
     renderRack("owned");
@@ -257,7 +257,7 @@ describe("FilterRack while a ranking flip is in flight", () => {
     ).toBeInTheDocument();
     // The pips narrow a list already in memory whatever is in flight, so they
     // stay live and unmarked.
-    expect(screen.getByRole("group", { name: "Color identity" })).not.toHaveAttribute(
+    expect(screen.getByRole("group", { name: filterCopy.colour.legend })).not.toHaveAttribute(
       "aria-busy",
     );
   });

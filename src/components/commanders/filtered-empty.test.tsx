@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { FilteredEmpty, OwnedSearchEmpty } from "./filtered-empty";
+import { filterCopy } from "../../lib/copy/lanes";
+import { commandersCopy } from "../../lib/copy/lanes";
 
 // The owned lane's zero state (canvas D4). The whole promise of the state is
 // that it names ONE control and what dropping it returns, so the sentence and
@@ -40,10 +42,10 @@ describe("FilteredEmpty", () => {
   it("drops the promise when no single control fixes it", () => {
     render(<FilteredEmpty nearest={null} onDrop={() => {}} onClearAll={() => {}} />);
     expect(
-      screen.getByText("No single filter is doing this. Several are overlapping."),
+      screen.getByText(commandersCopy.empty.bodyNoSingleFix),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Drop / })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: filterCopy.chips.clearAll })).toBeInTheDocument();
   });
 
   it("always offers Clear all filters", () => {
@@ -54,12 +56,12 @@ describe("FilteredEmpty", () => {
         onClearAll={() => {}}
       />,
     );
-    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: filterCopy.chips.clearAll })).toBeInTheDocument();
   });
 
   it("heads the state without a CTA of its own", () => {
     render(<FilteredEmpty nearest={null} onDrop={() => {}} onClearAll={() => {}} />);
-    expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
+    expect(screen.getByText(commandersCopy.empty.heading)).toBeInTheDocument();
   });
 });
 
@@ -69,7 +71,7 @@ describe("FilteredEmpty", () => {
 describe("OwnedSearchEmpty", () => {
   it("names the lane boundary rather than a spelling hint alone", () => {
     render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={() => {}} />);
-    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    expect(screen.getByText(commandersCopy.emptySearch.heading)).toBeInTheDocument();
     expect(screen.getByText(/it’s on Discover instead/)).toBeInTheDocument();
   });
 
@@ -80,7 +82,7 @@ describe("OwnedSearchEmpty", () => {
 
   it("offers the other lane, carrying the same query", () => {
     render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={() => {}} />);
-    expect(screen.getByRole("link", { name: "Search Discover" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: commandersCopy.emptySearch.otherLane })).toHaveAttribute(
       "href",
       "/discover?q=jodah",
     );
@@ -89,7 +91,7 @@ describe("OwnedSearchEmpty", () => {
   it("clears the search from its primary", () => {
     const onClearSearch = vi.fn();
     render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={onClearSearch} />);
-    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    fireEvent.click(screen.getByRole("button", { name: commandersCopy.emptySearch.clearSearch }));
     expect(onClearSearch).toHaveBeenCalledOnce();
   });
 });

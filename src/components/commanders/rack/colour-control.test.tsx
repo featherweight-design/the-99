@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 // verbatim.
 import { describe, expect, it } from "vitest";
 import { ColourControl } from "./colour-control";
+import { filterCopy } from "../../../lib/copy/lanes";
 
 const noop = () => {};
 
@@ -18,7 +19,7 @@ describe("ColourControl", () => {
         wide
       />,
     );
-    const group = screen.getByRole("radiogroup", { name: "Color match" });
+    const group = screen.getByRole("radiogroup", { name: filterCopy.match.legend });
     expect(group).toHaveAttribute("aria-disabled", "true");
   });
 
@@ -26,14 +27,14 @@ describe("ColourControl", () => {
     render(
       <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(screen.getByRole("radio", { name: "Exactly these" })).not.toHaveAttribute("disabled");
+    expect(screen.getByRole("radio", { name: filterCopy.match.exactly })).not.toHaveAttribute("disabled");
   });
 
   it("presses each 22px wide segment as 24px, past its border top and bottom only (WCAG 2.5.8)", () => {
     render(
       <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    for (const name of ["Any of these", "Exactly these"]) {
+    for (const name of [filterCopy.match.any, filterCopy.match.exactly]) {
       const c = screen.getByRole("radio", { name }).className;
       expect(c).toContain("after:-inset-y-[2px]");
       expect(c).toContain("relative");
@@ -44,7 +45,7 @@ describe("ColourControl", () => {
     render(
       <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(screen.getByRole("radio", { name: "Exactly these" })).toHaveAttribute(
+    expect(screen.getByRole("radio", { name: filterCopy.match.exactly })).toHaveAttribute(
       "aria-checked",
       "true",
     );
@@ -54,7 +55,7 @@ describe("ColourControl", () => {
     render(
       <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(screen.getByRole("radiogroup", { name: "Color match" })).not.toHaveAttribute(
+    expect(screen.getByRole("radiogroup", { name: filterCopy.match.legend })).not.toHaveAttribute(
       "aria-disabled",
     );
   });
@@ -77,7 +78,7 @@ describe("ColourControl", () => {
     render(
       <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(screen.getAllByRole("radiogroup", { name: "Color match" })).toHaveLength(1);
+    expect(screen.getAllByRole("radiogroup", { name: filterCopy.match.legend })).toHaveLength(1);
   });
 
   it("leaves the modifier visible at every width unless a caller opts in", () => {
@@ -99,14 +100,14 @@ describe("ColourControl", () => {
       <ColourControl colors={["w"]} match="contains" onColorsChange={noop} onMatchChange={noop}
         wide={false} hideColourCaption />,
     );
-    expect(screen.queryByText("Color identity")).toBeNull();
-    expect(screen.getByText("Color match")).toBeInTheDocument();
+    expect(screen.queryByText(filterCopy.colour.legend)).toBeNull();
+    expect(screen.getByText(filterCopy.match.legend)).toBeInTheDocument();
   });
 
   it("draws its own colour caption by default in the compact form", () => {
     render(
       <ColourControl colors={["w"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide={false} />,
     );
-    expect(screen.getByText("Color identity")).toBeInTheDocument();
+    expect(screen.getByText(filterCopy.colour.legend)).toBeInTheDocument();
   });
 });

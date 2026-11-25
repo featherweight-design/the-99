@@ -10,7 +10,7 @@ const { SearchLayer } = await import("./search-layer");
 type Props = React.ComponentProps<typeof SearchLayer>;
 
 const rows: CardSearchRow[] = [
-  { oracleId: "o-gh", name: "Ghalta, Primal Hunger", imageUri: null, flavorName: null, owned: 0, decks: [], wishlist: false },
+  { oracleId: "o-gh", name: "Fixture Commander", imageUri: null, flavorName: null, owned: 0, decks: [], wishlist: false },
   { oracleId: "o-sol", name: "Sol Ring", imageUri: null, flavorName: null, owned: 1, decks: [], wishlist: false },
 ];
 

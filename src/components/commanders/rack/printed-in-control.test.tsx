@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultParams } from "@/lib/commanders/lane-params";
 import type { PrintedInOption } from "@/lib/commanders/printed-in-lane";
-import { commandersCopy, filterCopy } from "@/lib/copy/lanes";
+import { commandersCopy, filterCopy, printedInPanelCopy } from "@/lib/copy/lanes";
 import { chipsFor, printedInLabel } from "./chip-line";
 import { FilterSheet } from "./filter-sheet";
 import { PrintedInControl } from "./printed-in-control";
@@ -18,7 +18,7 @@ describe("PrintedInControl, sheet form", () => {
     const row = screen.getByTestId("printed-in-row");
     expect(row).toHaveTextContent(filterCopy.printedIn.rowAny);
     fireEvent.click(row);
-    const layer = screen.getByRole("dialog", { name: "Filter by printed-in set" });
+    const layer = screen.getByRole("dialog", { name: printedInPanelCopy.panelAriaLabel });
     // Portalled: outside the row's own subtree, so an inert filter sheet cannot take it along.
     expect(row.parentElement?.contains(layer)).toBe(false);
     expect(within(layer).getByText(filterCopy.printedIn.hint)).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe("PrintedInControl, sheet form", () => {
     const onChange = vi.fn();
     render(<PrintedInControl form="sheet" options={options} selected={[]} onChange={onChange} shown={40} total={40} />);
     fireEvent.click(screen.getByTestId("printed-in-row"));
-    const layer = screen.getByRole("dialog", { name: "Filter by printed-in set" });
+    const layer = screen.getByRole("dialog", { name: printedInPanelCopy.panelAriaLabel });
     fireEvent.click(within(layer).getByRole("switch", { name: /The Hobbit/ }));
     expect(onChange).toHaveBeenLastCalledWith(["hob"]);
     fireEvent.click(within(layer).getByRole("switch", { name: /Commander Masters/ }));
@@ -54,7 +54,7 @@ describe("PrintedInControl, sheet form", () => {
       </div>,
     );
     fireEvent.click(screen.getByTestId("printed-in-row"));
-    fireEvent.keyDown(screen.getByRole("dialog", { name: "Filter by printed-in set" }), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("dialog", { name: printedInPanelCopy.panelAriaLabel }), { key: "Escape" });
     expect(sheetKeys).not.toHaveBeenCalled();
   });
 });
@@ -74,7 +74,7 @@ describe("PrintedInControl in the filter sheet", () => {
       />,
     );
     const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
-    expect(legends).toEqual(["Color identity", filterCopy.printedIn.legend]);
+    expect(legends).toEqual([filterCopy.colour.legend, filterCopy.printedIn.legend]);
     const sheet = screen.getByRole("dialog", { name: filterCopy.sheet.title });
     expect(sheet).not.toHaveAttribute("inert");
     fireEvent.click(screen.getByTestId("printed-in-row"));
@@ -97,7 +97,7 @@ describe("PrintedInControl in the filter sheet", () => {
       />,
     );
     const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
-    expect(legends).toEqual(["Color identity", filterCopy.printedIn.legend, commandersCopy.availability.legend]);
+    expect(legends).toEqual([filterCopy.colour.legend, filterCopy.printedIn.legend, commandersCopy.availability.legend]);
   });
 
   it("is not drawn where the lane shipped no index", () => {
