@@ -211,7 +211,7 @@ describe("ownOneQuery", () => {
 
 describe("the assembled-pair rule: the clause drops them, the view keeps them", () => {
   const clause = dialect.sqlToQuery(ownBothQuery("u-1", null)).sql.replace(/\s+/g, " ");
-  const view = dialect.sqlToQuery(ownBothPairsQuery("u-1")).sql.replace(/\s+/g, " ");
+  const view = dialect.sqlToQuery(ownBothPairsQuery("u-1", { deck: true })).sql.replace(/\s+/g, " ");
 
   // Guards the card-detail clause: it must keep excluding a pair a single deck holds both of.
   it("ownBothQuery still excludes a pair one deck holds both of", () => {
@@ -225,5 +225,17 @@ describe("the assembled-pair rule: the clause drops them, the view keeps them", 
     expect(view).toContain("order by d.name, d.id limit 1");
     expect(view).toContain("d.commander_oracle_id = a.oracle_id");
     expect(view).toContain("d.partner_oracle_id = b.oracle_id");
+  });
+
+  // Guards the list's cheaper form: same pair set, no lateral and no deck name, a boolean instead.
+  it("the list's count form has no lateral and the same pair-set text", () => {
+    const count = dialect.sqlToQuery(ownBothPairsQuery("u-1", { deck: false })).sql.replace(/\s+/g, " ");
+    expect(count).not.toContain("lateral");
+    expect(count).not.toContain("d.name");
+    expect(count).toContain("exists (select 1 from decks d where");
+    const pairSet = (q: string) => q.slice(q.indexOf("with owned"), q.indexOf("select p.variant_id"));
+    expect(pairSet(count)).toBe(pairSet(view));
+    const tail = (q: string) => q.slice(q.indexOf("join cards ca"), q.indexOf("left join lateral") > 0 ? q.indexOf("left join lateral") : q.indexOf("where a.oracle_id"));
+    expect(tail(count)).toBe(tail(view));
   });
 });

@@ -28,6 +28,7 @@ vi.mock("../cards/price-lookup", async () => ({
 }));
 
 const { loadCollectionCombos, MAX_COMBO_PAIRS } = await import("./collection-combos");
+const { loadOwnBothPartners } = await import("./near-miss");
 
 const A = "a";
 const B = "b";
@@ -111,5 +112,19 @@ describe("wantedByDecks scoping", () => {
     const text = new PgDialect().sqlToQuery(and(eq(decks.userId, "u"), inArray(deckCards.oracleId, ["x"]))!).sql;
     expect(text).toContain('"decks"."user_id" = $1');
     expect(text).toContain('"deck_cards"."oracle_id" in ($2)');
+  });
+
+  // The list's count form (no lateral) must agree with the view's pair set: same pairs, marks only on unheld ones.
+  it("the list read counts the same pairs as the view and marks only the unassembled ones", async () => {
+    const held = { held_deck_id: "d1", held_deck_name: "Brew" };
+    const viewRows: Array<ReturnType<typeof row> & { held_deck_id?: string; held_deck_name?: string }> = [{ ...row("v1", A, B), ...held }, { ...row("v1", B, A), ...held }, row("v2", "c", "d", 5), row("v2", "d", "c", 5)];
+    const listRows = viewRows.map(({ held_deck_id, held_deck_name: _n, ...r }) => ({ ...r, held: Boolean(held_deck_id) }));
+    h.execute.mockResolvedValueOnce({ rows: listRows });
+    const list = await loadOwnBothPartners({ userId: "u" });
+    h.execute.mockResolvedValueOnce({ rows: viewRows });
+    h.selectRows.push([]);
+    const view = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both" });
+    expect(list.pairs).toHaveLength(view.total);
+    expect([...list.partners.keys()].sort()).toEqual(["c", "d"]);
   });
 });

@@ -58,6 +58,8 @@ export type PairRow = {
   /** `ownBothPairsQuery` only: the reader's deck that holds BOTH pieces (`held_deck_rule`), null when none does. */
   held_deck_id?: string | null;
   held_deck_name?: string | null;
+  /** `ownBothPairsQuery` without the deck lookup: whether SOME deck of the reader's holds both pieces. */
+  held?: boolean;
 };
 
 /** One combo as a PAIR of cards, whichever piece a row happened to call present. */
@@ -453,11 +455,36 @@ export function ownBothQuery(userIdValue: string, oracleIds: readonly string[] |
  * commander or its partner, for both pieces). WHEN SEVERAL DECKS HOLD THE PAIR, the rule is alphabetical by deck
  * name, then id: stable between loads, and it names no deck the reader did not build with.
  *
- * A row with a null `held_deck_id` is exactly a row `ownBothQuery` returns, so one read answers both the view
- * (all rows) and the marks (the null ones): `loadOwnBothPartners` filters on it.
+ * `{ deck: false }` is the LIST's form: the same pair set with a semi-join `held` boolean instead of the lateral deck
+ * lookup, because the list needs only the marks (the not-held rows, exactly what `ownBothQuery` returns) and the
+ * chip's count (every pair). Only the view's route pays for the deck's name.
  */
-export function ownBothPairsQuery(userIdValue: string) {
+export function ownBothPairsQuery(userIdValue: string, opts: { deck: boolean }) {
   const userId = sql.param(userIdValue);
+  // The one holding test, shared by both forms so they cannot disagree on which pairs are assembled.
+  const holds = sql`
+        d.user_id = ${userId}
+        and (exists (select 1 from deck_cards dc
+                     where dc.deck_id = d.id and dc.oracle_id = a.oracle_id)
+             or d.commander_oracle_id = a.oracle_id
+             or d.partner_oracle_id = a.oracle_id)
+        and (exists (select 1 from deck_cards dc
+                     where dc.deck_id = d.id and dc.oracle_id = b.oracle_id)
+             or d.commander_oracle_id = b.oracle_id
+             or d.partner_oracle_id = b.oracle_id)`;
+  // `deck: false` is the LIST's form (the marks and the chip's count need only WHETHER a deck holds the pair): a
+  // semi-join boolean, no lateral and no deck name. `deck: true` is the view's, which draws the deck.
+  const heldCols = opts.deck
+    ? sql`hd.id as held_deck_id, hd.name as held_deck_name`
+    : sql`exists (select 1 from decks d where ${holds}) as held`;
+  const heldJoin = opts.deck
+    ? sql`left join lateral (
+      select d.id, d.name from decks d
+      where ${holds}
+      order by d.name, d.id
+      limit 1
+    ) hd on true`
+    : sql``;
   return sql`
     with owned as (
       select distinct oracle_id from collection_items where user_id = ${userId}
@@ -479,28 +506,14 @@ export function ownBothPairsQuery(userIdValue: string) {
            b.oracle_id as missing_id,
            c.name as missing_name,
            false as missing_must_be_commander,
-           hd.id as held_deck_id,
-           hd.name as held_deck_name
+           ${heldCols}
     from pair p
     join ${spellbookVariantCards} a on a.variant_id = p.variant_id
     join ${spellbookVariantCards} b
       on b.variant_id = p.variant_id and b.oracle_id <> a.oracle_id
     join cards ca on ca.oracle_id = a.oracle_id
     join cards c on c.oracle_id = b.oracle_id
-    left join lateral (
-      select d.id, d.name from decks d
-      where d.user_id = ${userId}
-        and (exists (select 1 from deck_cards dc
-                     where dc.deck_id = d.id and dc.oracle_id = a.oracle_id)
-             or d.commander_oracle_id = a.oracle_id
-             or d.partner_oracle_id = a.oracle_id)
-        and (exists (select 1 from deck_cards dc
-                     where dc.deck_id = d.id and dc.oracle_id = b.oracle_id)
-             or d.commander_oracle_id = b.oracle_id
-             or d.partner_oracle_id = b.oracle_id)
-      order by d.name, d.id
-      limit 1
-    ) hd on true
+    ${heldJoin}
     where a.oracle_id in (select oracle_id from owned)
       and b.oracle_id in (select oracle_id from owned)
   `;
@@ -587,8 +600,8 @@ export async function loadOwnBothPartners(args: {
   // every row, because the view draws assembled ones too. A window is the fields route's, which has no use
   // for the pairs, so it keeps the clause's own query untouched.
   if (args.oracleIds == null) {
-    const all = (await db.execute(ownBothPairsQuery(args.userId))).rows as PairRow[];
-    return { partners: bestPartnerPerCard(all.filter((r) => !r.held_deck_id)), pairs: distinctPairs(all) };
+    const all = (await db.execute(ownBothPairsQuery(args.userId, { deck: false }))).rows as PairRow[];
+    return { partners: bestPartnerPerCard(all.filter((r) => !r.held)), pairs: distinctPairs(all) };
   }
   const rows = (await db.execute(ownBothQuery(args.userId, args.oracleIds))).rows as PairRow[];
   return { partners: bestPartnerPerCard(rows), pairs: distinctPairs(rows) };

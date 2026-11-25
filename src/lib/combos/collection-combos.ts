@@ -63,7 +63,7 @@ async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<s
 
 export async function loadCollectionCombos(args: { userId: string; store: Store; side: ComboSide }): Promise<CollectionCombos> {
   const { userId, store, side } = args;
-  const query = side === "both" ? ownBothPairsQuery(userId) : ownOneQuery(userId);
+  const query = side === "both" ? ownBothPairsQuery(userId, { deck: true }) : ownOneQuery(userId);
   const rows = (await db.execute(query)).rows as PairRow[];
   const all: DistinctPair[] = distinctPairs(rows, { oneSided: side === "one" });
   const picked = all.slice(0, MAX_COMBO_PAIRS);
