@@ -43,7 +43,7 @@ describe("FanContentNotice", () => {
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
     expect(link.querySelector("svg[data-link-out]")!.getAttribute("aria-hidden")).toBe("true");
     // The visible words stay the locked ones (the icon is decoration).
-    expect(link.textContent).toBe("Fan Content Policy");
+    expect(link.textContent).toBe(fanContentNotice.policyLink);
   });
 
   it("centers on the signed-out pages' axis and starts at the left otherwise", () => {

@@ -18,6 +18,8 @@ import { TableClosed } from "./table-closed";
 import { driversSentence } from "./table-seat";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { socialCopy } from "../../lib/copy/social";
 
 const NOW = new Date("2026-10-16T21:40:00Z");
 const draw = (view: TableView) =>
@@ -45,7 +47,7 @@ describe("TableBody", () => {
     expect(screen.getAllByTestId("table-seat").map((s) => s.dataset.state)).toEqual(["fresh", "fresh", "fresh", "fresh"]);
     expect(screen.getByTestId("read-band")).toHaveTextContent("TABLE");
     expect(screen.getAllByTestId("rail-face")).toHaveLength(4);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Rule 0 check");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(copy.entry.row);
     // After hydration the close time is the reader's own zone's, so the expectation is too (`closesWhen`).
     const closes = closesWhen(TABLES.T1.closesAt, NOW);
     // The pod's name is bold and `open until` breaks to its own line on the phone: the meta line reads as one run.
@@ -56,7 +58,7 @@ describe("TableBody", () => {
     draw(TABLES.T2);
     const colin = seatOf("Colin");
     expect(colin.dataset.flag).toBe("high");
-    expect(within(colin).getByTestId("flag-tag")).toHaveTextContent("Above the table");
+    expect(within(colin).getByTestId("flag-tag")).toHaveTextContent(copy.seat.above);
     expect(within(colin).getByTestId("seat-why")).toHaveTextContent(
       "What puts it here: it can find a two-card combo, Thassa’s Oracle + Demonic Consultation, with 5 tutors to reach it.",
     );
@@ -75,7 +77,7 @@ describe("TableBody", () => {
   it("T3: the low seat carries ▼ Below the table and says counts can miss cards", () => {
     draw(TABLES.T3);
     const peter = seatOf("Peter");
-    expect(within(peter).getByTestId("flag-tag")).toHaveTextContent("Below the table");
+    expect(within(peter).getByTestId("flag-tag")).toHaveTextContent(copy.seat.below);
     expect(within(peter).getByTestId("seat-why")).toHaveTextContent("Counts can miss cards");
     expect(headline()).toHaveTextContent("Peter’s Giada Angels reads below the table.");
   });
@@ -83,7 +85,7 @@ describe("TableBody", () => {
   it("T4: two outliers, each in its own words", () => {
     draw(TABLES.T4);
     expect(headline()).toHaveTextContent(copy.read.two);
-    expect(screen.getAllByTestId("flag-tag").map((t) => t.textContent)).toEqual(["Above the table", "Below the table"]);
+    expect(screen.getAllByTestId("flag-tag").map((t) => t.textContent)).toEqual([copy.seat.above, copy.seat.below]);
   });
 
   it("T5: Split on both seats in words, no band on the rail", () => {
@@ -111,7 +113,7 @@ describe("TableBody", () => {
 
   it("T8: short of 100, over 100 and stale", () => {
     draw(TABLES.T8);
-    expect(within(seatOf("Colin")).getByTestId("seat-stale")).toHaveTextContent("from before its last change");
+    expect(within(seatOf("Colin")).getByTestId("seat-stale")).toHaveTextContent(copy.seat.stale);
     const peter = seatOf("Peter");
     expect(peter.dataset.state).toBe("illegal");
     expect(within(peter).getByTestId("seat-wait")).toHaveTextContent("87 of 100 cards.");
@@ -127,13 +129,13 @@ describe("TableBody", () => {
     draw(TABLES.T9);
     const peter = seatOf("Peter");
     expect(peter.dataset.state).toBe("unread");
-    expect(within(peter).getByTestId("seat-wait")).toHaveTextContent("Reading this deck.");
+    expect(within(peter).getByTestId("seat-wait")).toHaveTextContent(copy.seat.readingNow);
     expect(headline()).toHaveTextContent("Reading Peter’s deck…");
   });
 
   it("T10: nothing to compare, no rail, and a waiting seat in initials", () => {
     draw(TABLES.T10);
-    expect(headline()).toHaveTextContent("Nothing to compare yet.");
+    expect(headline()).toHaveTextContent(copy.read.nothing);
     expect(screen.queryByTestId("read-rail")).toBeNull();
     const max = seatOf("Max");
     expect(max.dataset.state).toBe("waiting");
@@ -145,15 +147,15 @@ describe("TableBody", () => {
     draw(TABLES.T1);
     expect(within(seatOf("You")).getByText("YOU")).toBeInTheDocument();
     expect(within(seatOf("Colin")).getByText("owner")).toBeInTheDocument();
-    expect(within(seatOf("Max")).getByText("not a friend")).toBeInTheDocument();
-    expect(within(seatOf("Peter")).queryByText("not a friend")).toBeNull();
+    expect(within(seatOf("Max")).getByText(socialCopy.pods.notFriendTag)).toBeInTheDocument();
+    expect(within(seatOf("Peter")).queryByText(socialCopy.pods.notFriendTag)).toBeNull();
   });
 
   it("draws the honesty line and the shipped provenance opener on every read", () => {
     for (const view of Object.values(TABLES)) {
       const { unmount } = draw(view);
       expect(screen.getByText(copy.read.honest)).toBeInTheDocument();
-      expect(screen.getByTestId("provenance-opener")).toHaveTextContent("How we make these decisions");
+      expect(screen.getByTestId("provenance-opener")).toHaveTextContent(deckAnalysisCopy.provenance.toggle);
       const key = screen.getByRole("group", { name: copy.read.keyLabel });
       // The shared key in two columns that stay two from md: the read sits in a 392px column on desktop too.
       expect(key.className).toMatch(/grid grid-cols-2/);
@@ -188,7 +190,7 @@ describe("TableBody", () => {
 
   it("links Log this game to the viewer's seated deck's Games tab", () => {
     draw(TABLES.T1);
-    expect(screen.getByRole("link", { name: "Log this game" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: copy.page.log })).toHaveAttribute(
       "href",
       `/decks/${VIEWER_DECK_ID}?tab=games&table=table-1`,
     );
@@ -227,7 +229,7 @@ describe("another reader's names are marked", () => {
 describe("TableClosed", () => {
   it("says the table closed, why, and that logged games stay, with Back to Friends", () => {
     render(<TableClosed closed={{ tableId: "table-1", viewerDeckId: VIEWER_DECK_ID, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: NOW }, faces: [{ name: "Hugh", artCropUri: null }, { name: named("Colin"), artCropUri: "https://cards.example/a.jpg" }], loggedAt: null, games: [], viewerDeckName: "Deck", pastKept: false, endedAt: new Date("2026-11-20T11:00:00Z") }} />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(copy.expired.title);
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin"))))).toBeInTheDocument();
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin")))).className).toContain("ph-no-capture");
     expect(screen.getByRole("link", { name: "Back to Friends" })).toHaveAttribute("href", "/friends");
@@ -257,7 +259,7 @@ describe("TableClosed", () => {
     draw({ ...TABLES.T1, seats: TABLES.T1.seats.map((x) => (plain(x.displayName) === "Max" ? { ...x, displayName: named(long) } : x)) });
     const seat = seatOf(long);
     expect(within(seat).getByTestId("seat-name")).toHaveClass("min-w-0", "truncate");
-    expect(within(seat).getByText("not a friend")).toHaveClass("flex-none");
+    expect(within(seat).getByText(socialCopy.pods.notFriendTag)).toHaveClass("flex-none");
   });
 
   it("rides each range span on its own face's row when two ranges' faces share a column", () => {

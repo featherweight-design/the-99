@@ -29,7 +29,7 @@ const SPARES: FriendSpareList = {
   friend: { ...COLIN, displayName: named("Colin"), pods: [named("Thursday pod")] },
   wishlist: true,
   lines: [
-    { oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 1, onWishlist: true },
+    { oracleId: GHALTA, name: "Fixture Card", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 1, onWishlist: true },
     { oracleId: SAI, name: "Sai, Master Thopterist", imageUri: null, typeLine: "Creature", colorIdentity: ["U"], spare: 2, onWishlist: false },
   ],
 };
@@ -186,9 +186,9 @@ describe("the ?spare= landing", () => {
 
   it("draws the toast and no modal for a spare gone since, and strips the parameter", async () => {
     window.history.replaceState(null, "", `/friends/x?spare=${GONE}`);
-    await mount(ON({ spare: GONE, goneName: "Ghalta, Primal Hunger" }));
+    await mount(ON({ spare: GONE, goneName: "Fixture Card" }));
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByText(plain(p.gone("Colin", "Ghalta, Primal Hunger")))).toBeTruthy();
+    expect(screen.getByText(plain(p.gone("Colin", "Fixture Card")))).toBeTruthy();
     expect(m.mirrorUrl).toHaveBeenCalledTimes(1);
     expect(new URL(String(m.mirrorUrl.mock.calls[0][0])).searchParams.has("spare")).toBe(false);
   });
@@ -199,8 +199,8 @@ describe("a remount after the landing", () => {
     await mount(ON({ spare: SAI }));
     expect(screen.queryByRole("dialog")).toBeNull();
     cleanup();
-    await mount(ON({ spare: GONE, goneName: "Ghalta, Primal Hunger" }));
-    expect(screen.queryByText(plain(p.gone("Colin", "Ghalta, Primal Hunger")))).toBeNull();
+    await mount(ON({ spare: GONE, goneName: "Fixture Card" }));
+    expect(screen.queryByText(plain(p.gone("Colin", "Fixture Card")))).toBeNull();
     expect(m.mirrorUrl).not.toHaveBeenCalled();
   });
 });
@@ -219,7 +219,7 @@ describe("the tab, spare requests off", () => {
 });
 
 describe("SparesSheet's kicker and first", () => {
-  const CARD = { oracleId: GHALTA, name: "Ghalta, Primal Hunger", printedName: null, layout: null, imageUri: null, price: null };
+  const CARD = { oracleId: GHALTA, name: "Fixture Card", printedName: null, layout: null, imageUri: null, price: null };
   async function sheet(props: { kicker?: string | null; first?: string }) {
     await act(async () => {
       render(

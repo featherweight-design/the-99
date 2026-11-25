@@ -44,16 +44,16 @@ describe("FriendCard art", () => {
 // Check-in R2 clarification 2: the thank-you card reads as The 99's card, not by its type line. Without `aria`, the
 // shipped label stands.
 describe("FriendCard face aria", () => {
-  const face = { name: "Thank you", commander: null, type: "Instant · Thanks", rules: "r", crown: { credit: "c", mark: "m" } };
+  const face = { name: "Fixture thanks", commander: null, type: "Fixture type", rules: "r", crown: { credit: "c", mark: "m" } };
 
   it("names the face by `aria` when one is given", () => {
-    render(<FriendCard face={{ ...face, aria: "Thank you, a card from The 99" }} up compact />);
-    expect(screen.getByRole("img", { name: "Thank you, a card from The 99" })).toBeTruthy();
+    render(<FriendCard face={{ ...face, aria: "Fixture aria" }} up compact />);
+    expect(screen.getByRole("img", { name: "Fixture aria" })).toBeTruthy();
   });
 
   it("keeps the shipped label without one", () => {
     render(<FriendCard face={face} up compact />);
-    expect(screen.queryByRole("img", { name: "Thank you, a card from The 99" })).toBeNull();
-    expect(screen.getByRole("img").getAttribute("aria-label")).toContain("Thank you");
+    expect(screen.queryByRole("img", { name: "Fixture aria" })).toBeNull();
+    expect(screen.getByRole("img").getAttribute("aria-label")).toContain("Fixture thanks");
   });
 });

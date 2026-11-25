@@ -27,7 +27,7 @@ const w = socialCopy.waiting;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const ROW: WaitingRow = {
   key: "item:1", kind: "trade-match", createdAt: new Date(NOW.getTime() - 5 * 3_600_000), unseen: true,
-  card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: null },
+  card: { oracleId: "ghalta", name: "Fixture Card", imageUri: null },
   friend: { publicId: "pub-colin", displayName: named("Colin"), commander: null },
   pods: [named("Thursday pod")],
   askable: false,
@@ -67,7 +67,7 @@ describe("WaitingOnYou", () => {
   it("draws a trade match: title, detail with the pods, time, and a link to the friend's Spares tab", () => {
     render(<WaitingOnYou rows={[ROW]} now={NOW} />);
     const row = screen.getByTestId("waiting-row");
-    expect(within(row).getByText(plain(w.tradeTitle("Colin", "Ghalta, Primal Hunger")))).toBeTruthy();
+    expect(within(row).getByText(plain(w.tradeTitle("Colin", "Fixture Card")))).toBeTruthy();
     expect(within(row).getByText(plain(w.tradeDetail("Colin", [named("Thursday pod")])))).toBeTruthy();
     // The age once, after the kind on the kicker line at both widths (small items R1b: `Trade match · 5h ago`).
     const age = within(row).getByText("5h ago");

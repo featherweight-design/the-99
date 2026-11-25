@@ -44,7 +44,7 @@ describe("one game", () => {
   it("draws the kicker, the result, the fill-in sentence and Log this game", () => {
     render(<HomeLogCard games={[game(1)]} now={NOW} />);
     expect(screen.getByText(copy.kicker)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Log this game" }).getAttribute("href")).toContain("game=");
+    expect(screen.getByRole("link", { name: ruleZeroCopy.page.log }).getAttribute("href")).toContain("game=");
     expect(screen.getByText("Sai Thopters").tagName).toBe("B");
     expect(plain(document.body.textContent ?? "")).toContain("Colin won");
   });

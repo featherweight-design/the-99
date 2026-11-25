@@ -63,7 +63,7 @@ describe("ErrorNotice", () => {
   });
 
   it("says the shipped quieter body", () => {
-    expect(copy.body).toBe("Something broke on our end. Try again.");
+    expect(copy.body).toBe(shellCopy.errorBoundary.body);
   });
 
   it("draws no Tell us what happened link outside a reader with Report a problem on", () => {

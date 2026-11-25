@@ -4,6 +4,7 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { InviteCountLine, inviteCountText } from "./invite-count-line";
 import type { InviteCount } from "../../lib/invites/rules";
+import { inviteCopy } from "../../lib/copy/invites";
 
 const count = (over: Partial<InviteCount> = {}): InviteCount => ({ left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false, ...over });
 afterEach(cleanup);
@@ -16,7 +17,7 @@ describe("the count line", () => {
     [{ left: 1, waiting: 2 }, false, "1 invite left · 2 waiting"],
     [{ left: 2, liveQr: true }, false, "2 invites left · 1 held by an open QR"],
     [{ left: 2, liveQr: true }, true, "2 invites left · 1 held by this QR"],
-    [{ left: 0, out: true }, false, "Out of invites"],
+    [{ left: 0, out: true }, false, inviteCopy.count.out],
     [{ left: 0, out: true, waiting: 1, liveQr: true }, true, "Out of invites · 1 waiting · 1 held by this QR"],
   ])("reads %j (this QR: %s) as %s", (over, thisQr, text) => {
     expect(inviteCountText(count(over), thisQr)).toBe(text);

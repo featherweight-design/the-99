@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
+import { preconsLoadingCopy } from "../../lib/copy/shell";
 
 let pathname = "/";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useSearchParams: () => new URLSearchParams() }));
@@ -11,7 +13,7 @@ describe("ShellLoading", () => {
     pathname = "/decks/precons";
     const { container } = render(<ShellLoading />);
     expect(container.querySelectorAll("[data-testid=tile-skeleton]").length).toBeGreaterThan(0);
-    expect(screen.getByRole("status").textContent).toBe("Loading precons");
+    expect(screen.getByRole("status").textContent).toBe(preconsLoadingCopy.status);
   });
 
   it("keeps the crown screen for an open precon, which sits outside the list's route group", () => {
@@ -24,7 +26,7 @@ describe("ShellLoading", () => {
   it("draws the deck page's own shape on a direct load of a deck, not the crown", () => {
     pathname = "/decks/0b9f6c3e-1d2a-4c5b-8e7f-123456789abc";
     render(<ShellLoading />);
-    expect(screen.getByRole("status").textContent).toBe("Opening your deck");
+    expect(screen.getByRole("status").textContent).toBe(deckOpenLoadingCopy.status);
     // The strip draws once per layout (phone and desktop), as on the real page.
     for (const link of screen.getAllByRole("link", { name: /all decks/i })) expect(link.getAttribute("href")).toBe("/decks");
   });
@@ -32,6 +34,6 @@ describe("ShellLoading", () => {
   it("keeps the crown screen for a deck's own sub-route", () => {
     pathname = "/decks/0b9f6c3e-1d2a-4c5b-8e7f-123456789abc/changes";
     render(<ShellLoading />);
-    expect(screen.queryByText("Opening your deck")).toBeNull();
+    expect(screen.queryByText(deckOpenLoadingCopy.status)).toBeNull();
   });
 });

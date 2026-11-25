@@ -26,6 +26,7 @@ vi.mock("../decks/decklist-group", () => ({
 }));
 
 import { FriendDeckView } from "./friend-deck-view";
+import { socialCopy } from "../../lib/copy/social";
 
 const card = (oracleId: string, name: string, typeLine: string, owned: boolean, extra: Partial<FriendDeckCard> = {}): FriendDeckCard => ({
   oracleId, name, typeLine, cardTypeGroup: typeLine.includes("Land") ? "Lands" : typeLine.includes("Artifact") ? "Artifacts" : "Creatures",
@@ -77,9 +78,9 @@ describe("FriendDeckView", () => {
 
   it("keys the dots as the viewer's collection", () => {
     draw();
-    const key = screen.getByRole("group", { name: "What the dots mean" });
+    const key = screen.getByRole("group", { name: socialCopy.friendDeck.keyAria });
     expect(key.textContent).toBe("you own ityou don’t");
-    expect(screen.getByText("Your collection")).toBeTruthy();
+    expect(screen.getByText(socialCopy.friendDeck.keyLead)).toBeTruthy();
   });
 
   it("draws every group read-only, the basics at the foot of Lands and out of what you own", () => {
@@ -118,7 +119,7 @@ describe("FriendDeckView", () => {
     );
     expect(screen.getByText(/^0 cards/)).toBeTruthy();
     expect(screen.queryByTestId("friend-deck-own")).toBeNull();
-    expect(screen.queryByRole("group", { name: "What the dots mean" })).toBeNull();
+    expect(screen.queryByRole("group", { name: socialCopy.friendDeck.keyAria })).toBeNull();
     expect(screen.getAllByTestId("group").map((g) => g.querySelector("h2")!.textContent)).toEqual(["Commander"]);
   });
 

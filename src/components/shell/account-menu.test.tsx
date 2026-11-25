@@ -3,6 +3,9 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
 import { Report } from "./pending-report";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import { shellCopy } from "../../lib/copy/shell";
+import { tourAgainCopy } from "../../lib/copy/discovery";
+import { aboutMenuCopy } from "../../lib/copy/about";
 
 // Clerk's signOut is thenable — the component releases `busy` on rejection.
 const signOut = vi.fn(() => Promise.resolve());
@@ -176,10 +179,10 @@ describe("AccountMenu popover", () => {
     expect(screen.getByText("ana.ruiz@example.com")).toBeTruthy();
     const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
     expect(items.map((i) => i.textContent)).toEqual([
-      "About The 99",
-      "Take the tour",
+      aboutMenuCopy.label,
+      tourAgainCopy.menu,
       "Settings",
-      "Sign out",
+      shellCopy.accountMenu.signOut,
     ]);
   });
 
@@ -365,7 +368,7 @@ describe("AccountMenu items", () => {
     // backdrop and focus trap with it.
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: aboutMenuCopy.label }));
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
@@ -380,7 +383,7 @@ describe("AccountMenu items", () => {
       </Report.Provider>,
     );
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: aboutMenuCopy.label }));
     expect(providerPush).toHaveBeenCalledWith("/about");
     expect(push).not.toHaveBeenCalled();
   });
@@ -391,7 +394,7 @@ describe("AccountMenu items", () => {
     try {
       render(<AccountMenu panel="popover" theme="amonkhet" />);
       fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: aboutMenuCopy.label }));
       expect(screen.queryByRole("menu")).toBeNull();
       expect(push).not.toHaveBeenCalled();
     } finally {
@@ -402,9 +405,9 @@ describe("AccountMenu items", () => {
   it("says the About row is unavailable while sign-out is in flight, and means it", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut }));
 
-    const about = screen.getByRole("menuitem", { name: "About The 99" });
+    const about = screen.getByRole("menuitem", { name: aboutMenuCopy.label });
     expect(about).toHaveAttribute("aria-disabled", "true");
 
     // Announcing it is not enforcing it: an anchor has no `disabled`, so
@@ -418,14 +421,14 @@ describe("AccountMenu items", () => {
   it("disables Sign out once sign-out is in flight", async () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut }));
     await waitFor(() => expect(signOut).toHaveBeenCalledOnce());
     // About is a link and carries no disabled state — leaving the menu for a
     // reference page cannot double-fire a sign-out, and a link that pretended
     // to be disabled would still navigate.
-    expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut })).toBeDisabled();
     // A second press cannot double-fire.
-    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut }));
     expect(signOut).toHaveBeenCalledOnce();
   });
 
@@ -436,7 +439,7 @@ describe("AccountMenu items", () => {
     forgetThisDevice.mockImplementationOnce(() => new Promise<void>((done) => { finish = done; }));
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut }));
     await waitFor(() => expect(forgetThisDevice).toHaveBeenCalledOnce());
     // Cleanup is still pending: the session must not have ended.
     await new Promise((r) => setTimeout(r, 20));
@@ -451,16 +454,16 @@ describe("AccountMenu items", () => {
     signOut.mockRejectedValueOnce(new Error("network"));
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut }));
     await waitFor(() =>
-      expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeEnabled(),
+      expect(screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut })).toBeEnabled(),
     );
   });
 
   it("signals Sign out with words plus a danger marker, never colour alone", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    const item = screen.getByRole("menuitem", { name: "Sign out" });
+    const item = screen.getByRole("menuitem", { name: shellCopy.accountMenu.signOut });
     // The label keeps --fg; only the aria-hidden diamond carries --danger.
     expect(item.className).toContain("var(--fg)");
     const marker = item.querySelector("[aria-hidden]") as HTMLElement;
@@ -480,7 +483,7 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", shellCopy.accountMenu.signOut]);
     // The environment rides at the row's end, hidden from its name: the page head says it.
     const admin = screen.getByRole("menuitem", { name: "Admin" });
     const env = within(admin).getByText("production");
@@ -528,7 +531,7 @@ describe("AccountMenu Settings row (menu and Home)", () => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", shellCopy.accountMenu.signOut]);
     expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/settings");
     expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
   });
@@ -622,9 +625,9 @@ describe("AccountMenu credit chip (M1b)", () => {
   });
 
   it("the out state offers Get more credits with a hollow diamond", () => {
-    render(<AccountMenu panel="sheet" theme="amonkhet" credits={chip({ kind: "out", label: "Get more credits", hollow: true })} />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" credits={chip({ kind: "out", label: "Fixture out", hollow: true })} />);
     press(trigger());
-    expect(screen.getByTestId("credit-chip")).toHaveTextContent("Get more credits");
+    expect(screen.getByTestId("credit-chip")).toHaveTextContent("Fixture out");
   });
 });
 
@@ -633,7 +636,7 @@ describe("AccountMenu Take the tour row (discovery R3·2)", () => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", shellCopy.accountMenu.signOut]);
     const [about, tour] = items;
     expect(tour.tagName).toBe(about.tagName);
     expect(tour.getAttribute("class")?.replace(/border-t.*?\]/, "")).toBe(about.getAttribute("class")?.replace(/border-t.*?\]/, ""));
@@ -648,7 +651,7 @@ describe("AccountMenu Take the tour row (discovery R3·2)", () => {
       </Report.Provider>,
     );
     fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Take the tour" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: tourAgainCopy.menu }));
     expect(providerPush).toHaveBeenCalledWith("/?tour=1");
     expect(screen.queryByRole("menu")).toBeNull();
   });

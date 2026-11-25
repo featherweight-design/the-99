@@ -4,6 +4,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ThemePicker } from "./theme-picker";
+import { themeCopy } from "../../lib/copy/theme";
 
 // The layout writes the attribute and the prop from the same cookie, so a first
 // mount always finds the two agreeing. Painting the document alongside the
@@ -21,7 +22,7 @@ describe("ThemePicker", () => {
 
   it("is a labelled radiogroup with six options", () => {
     render(<ThemePicker current="amonkhet" />);
-    expect(screen.getByRole("radiogroup", { name: "Color theme" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: themeCopy.groupLabel })).toBeInTheDocument();
     expect(screen.getAllByRole("radio")).toHaveLength(6);
   });
 
