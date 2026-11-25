@@ -18,7 +18,7 @@ export const cardSearchCopy = {
 
   empty: {
     title: "Look up any card",
-    body: "Type part of a card’s name to see what it does, whether you own it, and which of your decks hold it.",
+    body: "Search for any card by name. View card details, whether you own it, and if any of your decks hold it.",
   },
   recent: {
     heading: "Recent cards",
