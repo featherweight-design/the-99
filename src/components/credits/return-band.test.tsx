@@ -25,7 +25,7 @@ function band(read: ReturnType<typeof vi.fn>, extra: Partial<React.ComponentProp
 }
 const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 
-beforeEach(() => { vi.useFakeTimers(); captureEngagement.mockClear(); window.sessionStorage.clear(); });
+beforeEach(() => { vi.useFakeTimers(); captureEngagement.mockClear(); window.localStorage.clear(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe("credits_bought", () => {

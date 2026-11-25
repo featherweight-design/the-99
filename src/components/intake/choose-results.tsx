@@ -43,11 +43,13 @@ export function ChooseResults({
   const [hasMore, setHasMore] = useState(page.hasMore);
   const [failed, setFailed] = useState(false);
   const read = useReadPhase();
-  // A run the reader started has its result on screen: sent once, never for a past run opened from History.
-  const ranSent = useRef(false);
+  // A model read that ran in front of the reader just finished ok: sent when the phase turns "reading" to "done" in
+  // this mount, so a reload, a back navigation or a past run opened from History (a phase that starts "done") sends nothing.
+  const sawReading = useRef(false);
   useEffect(() => {
-    if (read !== "done" || view.pastRun || rows.length === 0 || ranSent.current) return;
-    ranSent.current = true;
+    if (read === "reading") sawReading.current = true;
+    if (read !== "done" || !sawReading.current || view.pastRun || rows.length === 0) return;
+    sawReading.current = false;
     captureEngagement("recommendation_run", { surface: "choose" });
   }, [read, view.pastRun, rows.length]);
   // The read's step 1 names how many commanders the answers allow: this list is that pool.
