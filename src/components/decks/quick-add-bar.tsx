@@ -44,6 +44,7 @@ import { useAddCards, useAddCardsUp } from "../collection/add-cards-host";
 import { useCollectionEditScope } from "../cards/collection-edit-scope";
 import { noteJustOwned } from "../../lib/decks/just-owned";
 import { OWNED_RING_EDGE } from "./use-owned-ring";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 interface QuickAddBarProps {
   deckId: string;
@@ -697,6 +698,7 @@ function QuickAddRow({
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
         if (!outcome || outcome.ok) {
+          captureEngagement("deck_card_added", { via: "search" });
           added();
           // A card the bridge just saved, and the deck accepted: its row on this deck rings too (K7, READINESS O9).
           // Not on a refusal, which leaves no row to ring.

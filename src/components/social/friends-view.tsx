@@ -40,6 +40,7 @@ import { linkGivenUp, usePressWait } from "./press-wait";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { InviteCountLine } from "./invite-count-line";
 import type { InviteCount } from "../../lib/invites/rules";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
@@ -387,6 +388,8 @@ export function FriendsView({
       linkGivenUp(call, { began, now: addingNow.current, refresh, say, sheetSay, retry: () => void makeLink() });
       return;
     }
+    // The invite exists whether or not the reader is still on the chooser, so it counts before the early return.
+    if (out?.ok) captureEngagement("friend_invite_created", {});
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
       showOpener.current = null;

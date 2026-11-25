@@ -27,6 +27,7 @@ import { leadOf } from "./result-view";
 import { UpgradeFlow } from "./upgrade-flow";
 import { runningLabel, useLinePulse, useUpgradeRun, type Picks } from "./use-upgrade-run";
 import { useClock } from "./wait-view";
+import { captureEngagement } from "../../../../lib/analytics/posthog";
 
 const copy = preconUpgradeDeckCopy;
 
@@ -84,6 +85,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
         const run = panel.runs.find((x) => x.id === runId);
         const lead = run ? leadOf(panel, run) : null;
         const leads = lead && !lead.isFace ? lead.cards.map((c) => c.name).join(" + ") : null;
+        captureEngagement("upgrade_applied", { kind: "precon" });
         setApplied(true);
         onApplied({ runId, text: copy.applied(r.swaps, leads) });
         close();

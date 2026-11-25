@@ -30,6 +30,8 @@ import type { ShortDeck } from "../../lib/collection/write";
 import { usePendingPush } from "../shell/pending-push";
 import { LoadingScreen } from "../shell/loading-screen";
 import { TOUCH_HIT } from "../ui/touch-hit";
+import { importSizeBucket } from "../../lib/analytics/engagement-events";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 /** A sync dry run: the whole preview, with its Sync extras. */
 type SyncRead = UploadChangePreview & { sync: UploadSyncPreview };
@@ -471,6 +473,7 @@ export function ReplaceFlow({
       // The receipt, not the collection. A collection replace is the most destructive action
       // in the app and was the only one with no receipt; the summary route is keyed on the
       // upload id, so it survives a reload and stays linkable.
+      captureEngagement("collection_imported", { via: choosing && picked === "sync" ? "sync" : "csv", size: importSizeBucket(preview.rowCount) });
       nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
       // A throw is not proof that nothing was written: the write commits before its cache

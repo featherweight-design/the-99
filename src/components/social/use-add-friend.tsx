@@ -26,6 +26,7 @@ import { SocialToast, type SocialToastState } from "./social-toast";
 import { useInviteWatch } from "./use-invite-watch";
 import { linkGivenUp, usePressWait } from "./press-wait";
 import { useHydrated } from "../ui/hydrated-art";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 /** As /friends: while a link is open the clock runs on once a minute, so its time left and warning stay true. */
 const CLOCK_TICK_MS = 60_000;
@@ -203,6 +204,8 @@ export function useAddFriend({ friends, links, now, invites, friendLinks = false
       linkGivenUp(call, { began, now: addingNow.current, refresh, say, sheetSay, retry: () => void makeLink() });
       return;
     }
+    // The invite exists whether or not the reader is still on the chooser, so it counts before the early return.
+    if (out?.ok) captureEngagement("friend_invite_created", {});
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
       showOpener.current = null;

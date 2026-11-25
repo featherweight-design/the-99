@@ -33,6 +33,7 @@ import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 import { FadingImg } from "../ui/hydrated-art";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 // The bar is decoration for a figure that is always present as text, so a card
 // with no EDHREC percentage gets a sentence instead — never a 0%-wide bar,
@@ -205,7 +206,11 @@ export function SuggestionTile({
 
   function handleAdd() {
     run(
-      () => addCardToDeck(deckId, suggestion.oracleId),
+      async () => {
+        const outcome = await addCardToDeck(deckId, suggestion.oracleId);
+        if (!outcome || outcome.ok) captureEngagement("deck_card_added", { via: "suggestion" });
+        return outcome;
+      },
       () => addOptimisticCard({
         oracleId: suggestion.oracleId,
         name: suggestion.name,
