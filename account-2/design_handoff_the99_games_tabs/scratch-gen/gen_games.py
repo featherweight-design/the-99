@@ -193,7 +193,7 @@ h1,h2,h3,p{margin:0}
 .kt .bar{height:4px;border-radius:2px;background:var(--success)}
 .kt .bar.mx{background:linear-gradient(90deg,var(--success) 0 33%%,var(--warning) 33%%)}
 .kt .k2{font:500 10px "IBM Plex Mono",monospace;color:var(--fg-faint)}
-.P .kts{grid-template-columns:repeat(2,minmax(0,1fr))}.P .kt .k1{font-size:9px;letter-spacing:.08em}.P .mu .n{font-size:13px}
+.P .kts{grid-template-columns:repeat(2,minmax(0,1fr))}.P .kt .k1{font-size:9px;letter-spacing:.08em;flex-direction:column;align-items:flex-start;gap:4px}.P .mu .n{font-size:13px}
 .mu{display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid var(--border)}
 .mu:first-of-type{border-top:0}
 .mu img{width:52px;height:38px;border-radius:6px;object-fit:cover;flex:none}
@@ -255,6 +255,7 @@ GAMES = [
  dict(id=7, m='oct', deck='sokka', v='v1', r='W', pod=5, date='Oct 4', seats=[],
       up=['Comebacks','The deck’s plan','Closing the game'], down=[], note='Slow ramp, but the cards came together towards the end for a win.'),
 ]
+V2 = False
 MONTHS = [('nov', 'November 2026'), ('oct', 'October 2026')]
 ORDER = ['Speed','Cards in hand','Mana','Answers','Board presence','Comebacks','The deck’s plan','Closing the game']
 
@@ -290,7 +291,7 @@ def band(title, count, aside=''):
     return f'<div class="band"><h2 class="hh"><span class="dia"></span><span>{title}</span><span class="ct">· {count}</span></h2>{aside}</div>'
 def month_box(gs, title, rowfn, head='', extra_cls=''):
     n = len(gs)
-    aside = f'<span class="rec">record <b>{rec(gs)}</b></span>'
+    aside = rec2(gs) if V2 else f'<span class="rec">record <b>{rec(gs)}</b></span>'
     return f'<section class="box {extra_cls}">{band(title, f"{n} game" + ("" if n == 1 else "s"), aside)}{head}' + ''.join(rowfn(g) for g in gs) + '</section>'
 
 # ---------- concept A: seats ----------
@@ -436,6 +437,7 @@ def deck_top(phone=False):
            + ('<div style="padding:10px 12px 0"><span class="seg" style="display:flex"><span class="on" style="flex:1;justify-content:center">Commander</span><span style="flex:1;justify-content:center">Colors</span><span style="flex:1;justify-content:center">Friend</span></span></div>' if phone else '')
            + mu('ishai', 'Ishai, Ojutai Dragonspeaker', 'L', '1') + mu('giada', 'Giada, Font of Hope', 'L') + mu('bruse', 'Bruse Tarl, Boorish Herder', 'W') + mu('ghalta', 'Ghalta, Primal Hunger', 'L', '1')
            + '<div class="key">Squares are games: W won, L lost, D drawn. ' + trophy(11) + ' how many of your losses they won.</div></section>')
+    if V2: mus = matchups2(phone)
     return tabs + hl + log + keep + sug + mus
 def deck_desktop(rows, head='', extra=''):
     body = ''
@@ -609,3 +611,132 @@ board('Main.dc.html', 'Games tabs R1', main, 1400)
 td_css = '\ntd{padding:12px 16px;border-top:1px solid var(--border);vertical-align:top}'
 p = os.path.join(OUT, 'Main.dc.html'); s = open(p).read().replace('</style>', td_css + '\n</style>', 1); open(p, 'w').write(s)
 print('main ok')
+
+# =====================  R2 (Hugh 2026-11-25): Headline rows + seats in the details  =====================
+V2 = True
+CSS2 = '''
+/* record in the month band: the result squares themselves, counted */
+.rec2{margin-left:auto;display:flex;align-items:center;gap:10px}
+.rec2 .rq{display:flex;align-items:center;gap:6px;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.rec2 .rq .rs{width:22px;height:22px;font-size:10.5px;border-radius:6px}
+.rec2 .rq.z{color:var(--fg-locked)}.rec2 .rq.z .rs{border-color:var(--border);color:var(--fg-locked)}
+.rec2 .rbar{display:flex;width:64px;height:6px;border-radius:3px;overflow:hidden;background:var(--border-strong)}
+.rec2 .rbar i{display:block;height:100%%;background:var(--success)}
+.P .rec2 .rbar{display:none}
+/* the row: headline left, the winner's commander art washing in on the right */
+.d-row{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;min-height:76px;padding:12px 12px 12px 16px}
+.d-wash{position:absolute;right:0;top:0;bottom:0;width:380px;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0%%,rgba(0,0,0,.55) 45%%,#000 100%%);mask-image:linear-gradient(90deg,transparent 0%%,rgba(0,0,0,.55) 45%%,#000 100%%)}
+.d-wash img{width:100%%;height:100%%;object-fit:cover;object-position:50%% 25%%;opacity:.62}
+.d-wash:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 40%%,rgba(20,17,14,.35))}
+.d-row>*:not(.d-wash){position:relative;z-index:1}
+.d-row .c-t h3 .wf{display:inline-block;vertical-align:-5px;width:22px;height:22px;border-radius:5px;overflow:hidden;margin:0 7px 0 8px;box-shadow:0 0 0 1.5px var(--accent)}
+.d-row .c-t h3 .wf img{width:100%%;height:100%%;object-fit:cover}
+.d-row .c-t h3 .wf.ini{background:var(--elevated);font:500 9px "IBM Plex Mono",monospace;color:var(--fg-muted);text-align:center;line-height:22px}
+.d-end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;text-shadow:0 1px 6px rgba(0,0,0,.9)}
+.d-end .d{font:500 11.5px "IBM Plex Mono",monospace;color:var(--fg)}
+.d-end .w{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-body)}
+.d-row.sel{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%%,transparent);background:color-mix(in srgb,var(--accent) 6%%,transparent)}
+.P .d-row{gap:12px;padding:12px 8px 12px 14px;min-height:78px}
+.P .d-wash{width:210px}
+/* the details: seats, less faded than R1 */
+.st2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.st2 .seat{height:84px}
+.st2 .seat img{opacity:.85}
+.st2 .seat:after{background:linear-gradient(180deg,rgba(20,17,14,0) 30%%,rgba(20,17,14,.85) 100%%)}
+.st2 .seat.me img,.st2 .seat.win img{opacity:.95}
+.st2 .seat .t{right:10px;bottom:9px}
+.st2 .seat .t b{font-size:13.5px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.st2 .seat .t span{color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.st2 .seat .who{color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.st2 .seat .won{position:absolute;right:8px;top:8px;z-index:1;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px 0 6px;border-radius:11px;background:var(--accent);color:#14110E;font:600 11px "IBM Plex Sans",sans-serif}
+.st2 .seat.ini .big{top:38%%}
+/* Matchups v2: squares in a fixed column, a neutral square for a game somebody else won */
+.mu2{display:grid;grid-template-columns:52px minmax(0,1fr) 172px 60px;align-items:center;column-gap:14px;padding:10px 16px;border-top:1px solid var(--border)}
+.mu2:first-of-type{border-top:0}
+.mu2 img{width:52px;height:38px;border-radius:6px;object-fit:cover}
+.mu2 .n{font-size:14px;min-width:0}
+.mu2 .sq{display:flex;gap:4px}
+.mu2 .g{text-align:right;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.rs.o{border-style:dashed;border-color:var(--border-dashed);color:var(--fg-locked)}
+.P .mu2{grid-template-columns:52px minmax(0,1fr) 50px;row-gap:6px;padding:10px 14px;align-items:start}
+.P .mu2 img{grid-row:span 2}
+.P .mu2 .n{font-size:13.5px;line-height:1.3}
+.P .mu2 .sq{grid-column:2;grid-row:2}
+.P .mu2 .g{grid-column:3;grid-row:1 / span 2;align-self:center}
+.key2{display:flex;flex-wrap:wrap;gap:8px 18px;padding:10px 16px 12px;border-top:1px solid var(--border);font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.key2 span{display:inline-flex;align-items:center;gap:7px}
+.key2 .rs{width:18px;height:18px;font-size:9.5px;border-radius:5px}
+'''
+CSS = CSS + (CSS2.replace('%%', '%'))
+
+def rec2(gs):
+    w = sum(1 for g in gs if g['r'] == 'W'); l = sum(1 for g in gs if g['r'] == 'L')
+    pct = round(100 * w / max(1, w + l))
+    return (f'<span class="rec2"><span class="rbar"><i style="width:{pct}%"></i></span>'
+            f'<span class="rq{" z" if not w else ""}"><span class="rs w">W</span>{w}</span><span class="rq{" z" if not l else ""}"><span class="rs">L</span>{l}</span></span>')
+
+def d_title(g):
+    w = winner(g)
+    if w == 'me': return '<em>Won</em>' + (f' against {", ".join(s["name"] for s in g["seats"])}' if g['seats'] else '')
+    if w is None: return 'Lost'
+    wf = f'<span class="wf"><img src="art/{w["art"]}.webp" alt=""></span>' if w['art'] else f'<span class="wf ini">{ini(w["name"])}</span>'
+    return f'Lost to{wf}{w["name"]}'
+def d_row(g, deck_tab=False, sel=False, phone=False):
+    w = winner(g)
+    wash_art = g['deck'] if w == 'me' else (w['art'] if w else None)
+    wash = f'<span class="d-wash"><img src="art/{wash_art}.webp" alt=""></span>' if wash_art else ''
+    art = f'<span class="c-art"><img src="art/{g["deck"]}.webp" alt=""><span class="rs{" w" if g["r"]=="W" else ""}">{g["r"]}</span></span>'
+    if deck_tab:
+        sub = f'<span class="stamp">{g["v"]}</span><span>{pods(g["pod"])}</span>'
+    else:
+        sub = f'<span class="n">{DECKS[g["deck"]]}</span><span class="stamp">{g["v"]}</span>' + ('' if phone else f'<span>{pods(g["pod"])}</span>')
+    end = f'<span class="d-end"><span class="d">{g["date"]}</span>' + (f'<span class="w">{pods(g["pod"])}</span>' if phone and not deck_tab else '') + '</span>'
+    return (f'<article class="row d-row{" sel" if sel else ""}">{wash}{art}<span class="c-t"><h3>{d_title(g)}</h3><span class="sub">{sub}</span></span>'
+            f'{end}{chev(16)}</article>')
+
+def d_seat(s=None, g=None):
+    if g is not None:
+        w = g['r'] == 'W'
+        return (f'<div class="seat me{" win" if w else ""}"><img src="art/{g["deck"]}.webp" alt=""><span class="who">You</span>'
+                f'<span class="t"><b>{DECKS[g["deck"]]}<span class="stamp" style="background:rgba(20,17,14,.6)">{g["v"]}</span></b></span>'
+                + (f'<span class="won">{trophy(12)}Won</span>' if w else '') + '</div>')
+    wn = ' win' if s['won'] else ''
+    badge = f'<span class="won">{trophy(12)}Won</span>' if s['won'] else ''
+    if not s['art']:
+        return f'<div class="seat ini{wn}"><span class="big">{ini(s["name"])}</span><span class="t"><b>{s["name"]}</b><span>No commander logged</span></span>{badge}</div>'
+    return f'<div class="seat{wn}"><img src="art/{s["art"]}.webp" alt=""><span class="t"><b>{s["name"]}</b><span>{s["cmd"]}</span></span>{badge}</div>'
+def d_sheet_body(g, deck_tab=False):
+    w = winner(g)
+    head_t = 'Won' if w == 'me' else ('Lost' if w is None else f'Lost to {w["name"]}')
+    seats = d_seat(g=g) + ''.join(d_seat(s) for s in g['seats'])
+    foot = ('<span class="btn" style="flex:1;color:var(--danger)">Delete game</span>' if deck_tab else
+            f'<span class="btn" style="flex:1">Open on {DECKS[g["deck"]]} ›</span>')
+    return (f'<div class="gs-h"><div><h3>{head_t}</h3><div class="m">{pods(g["pod"])} · {g["date"]}, 2026</div></div><span class="gs-x">{xic(18)}</span></div>'
+            f'<div class="gs-s"><div class="st2">{seats}</div></div>'
+            f'<div class="gs-s">{markgroups(g)}{note(g)}</div>'
+            f'<div class="gs-foot">{foot}</div>')
+
+def matchups2(phone=False):
+    def mu(art, name, r):
+        sq = ''.join(f'<span class="rs{" w" if x=="W" else (" o" if x=="–" else "")}" style="width:24px;height:24px;font-size:11px">{x}</span>' for x in r)
+        return f'<div class="mu2"><img src="art/{art}.webp" alt=""><span class="n">{name}</span><span class="sq">{sq}</span><span class="g">{len(r)} game{"s" if len(r)>1 else ""}</span></div>'
+    seg = '<span class="seg" style="margin-left:auto"><span class="on">Commander</span><span>Colors</span><span>Friend</span></span>'
+    key = ('<div class="key2"><span><span class="rs w">W</span>you won</span><span><span class="rs">L</span>they won</span>'
+           '<span><span class="rs o">–</span>someone else won</span></div>')
+    return (f'<section class="box">{band("Matchups", "recorded in 3 of 3 games", seg if not phone else "")}'
+            + ('<div style="padding:10px 12px 0"><span class="seg" style="display:flex"><span class="on" style="flex:1;justify-content:center">Commander</span><span style="flex:1;justify-content:center">Colors</span><span style="flex:1;justify-content:center">Friend</span></span></div>' if phone else '')
+            + mu('ishai', 'Ishai, Ojutai Dragonspeaker', 'L') + mu('giada', 'Giada, Font of Hope', '–') + mu('bruse', 'Bruse Tarl, Boorish Herder', 'W') + mu('ghalta', 'Ghalta, Primal Hunger', 'L')
+            + key + '</section>')
+
+g2 = GAMES[1]; g3 = GAMES[2]
+drawer2 = f'<div class="gs" style="position:absolute;right:0;top:0;bottom:0;width:460px;z-index:30;border-radius:0;border-width:0 0 0 1px">{d_sheet_body(g2)}</div><div class="scrim" style="right:460px"></div>'
+board('D-Desktop.dc.html', 'R2 Headline rows + seats, desktop', pair(
+    labelled('DECKS › GAMES', decks_desktop(lambda g: d_row(g))),
+    labelled('DECKS › GAMES · a game selected (drawer)', decks_desktop(lambda g: d_row(g, sel=(g['id'] == 2)), extra=drawer2)),
+    labelled('DECK DETAILS › GAMES · HD - Sai', deck_desktop(lambda g: d_row(g, True)))), 4060)
+sheet2 = f'<div class="scrim"></div><div class="sheet gs P" style="border-radius:16px 16px 0 0;max-height:790px"><div class="grab"></div>{d_sheet_body(g3, deck_tab=True)}</div>'
+board('D-Phone.dc.html', 'R2 Headline rows + seats, phone', pair(
+    labelled('DECKS › GAMES', phone_decks(lambda g: d_row(g, phone=True))),
+    labelled('DECK DETAILS › GAMES', phone_deck(lambda g: d_row(g, True, phone=True))),
+    labelled('A GAME SELECTED (sheet)', '<div style="position:relative;width:390px;height:844px;overflow:hidden">' + phone_deck(lambda g: d_row(g, True, phone=True)) + sheet2 + '</div>')), 1330)
+print('r2 ok')

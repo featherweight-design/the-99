@@ -63,8 +63,22 @@
    "x": 4140,
    "y": 7813,
    "w": 1330,
-   "h": 1699,
+   "h": 1735,
    "title": "C Headline rows \u00b7 phone"
+  },
+  "D-Desktop.dc.html": {
+   "x": 0,
+   "y": -2103,
+   "w": 4060,
+   "h": 1207,
+   "title": "R2 Headline rows + seats \u00b7 desktop"
+  },
+  "D-Phone.dc.html": {
+   "x": 4140,
+   "y": -2103,
+   "w": 1330,
+   "h": 1743,
+   "title": "R2 Headline rows + seats \u00b7 phone"
   }
  },
  "order": [
@@ -75,7 +89,9 @@
   "B-Desktop.dc.html",
   "B-Phone.dc.html",
   "C-Desktop.dc.html",
-  "C-Phone.dc.html"
+  "C-Phone.dc.html",
+  "D-Desktop.dc.html",
+  "D-Phone.dc.html"
  ],
  "notes": {
   "ta": {
@@ -96,6 +112,13 @@
    "x": 0,
    "y": 7553,
    "text": "C \u00b7 Headline rows",
+   "kind": "title1",
+   "maxW": 5470
+  },
+  "td": {
+   "x": 0,
+   "y": -2363,
+   "text": "R2 \u00b7 Headline rows, seats in the details",
    "kind": "title1",
    "maxW": 5470
   }
