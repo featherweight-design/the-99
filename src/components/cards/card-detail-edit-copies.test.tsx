@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { availabilityCopy } from "../../lib/copy/availability";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -62,7 +63,7 @@ describe("the receipt's Edit copies link", () => {
     mount(sol({ availability: free }), { collectionEdit: true });
     await openCard();
     expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.edit);
-    expect(screen.getByText("In your collection")).toBeTruthy();
+    expect(screen.getByText(availabilityCopy.collection.detailHeading)).toBeTruthy();
   });
 
   it("says Add to collection for a card the reader does not own", async () => {
@@ -75,7 +76,7 @@ describe("the receipt's Edit copies link", () => {
     mount(sol({ availability: free }));
     await openCard();
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
-    expect(screen.queryByText("In your collection")).toBeNull();
+    expect(screen.queryByText(availabilityCopy.collection.detailHeading)).toBeNull();
   });
 
   it("is absent from a deck page's provider outside the shell", async () => {
@@ -96,7 +97,7 @@ describe("the link inside the shell", () => {
     expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.addToCollection);
     // The receipt draws with nothing to report, so the link has its label line, and reads `none` under it (D2).
     const receipt = screen.getByTestId("owned-receipt");
-    expect(receipt.textContent).toContain("In your collection");
+    expect(receipt.textContent).toContain(availabilityCopy.collection.detailHeading);
     expect(receipt.textContent).toContain(copy.none);
   });
 

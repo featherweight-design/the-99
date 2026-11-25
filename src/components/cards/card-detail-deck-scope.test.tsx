@@ -9,6 +9,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { DeckTokensProvider } from "../decks/deck-tokens-context";
 import { reveal } from "../../lib/ui/reveal";
 import type { DeckToken, DeckTokensRead } from "../../lib/tokens/read";
+import { tokensCopy } from "../../lib/copy/tokens";
 
 // The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
@@ -118,7 +119,7 @@ describe("the tokens line in the deck box", () => {
     mountWithTokens(readOf([food({ joined: true })]));
     await openCard("open held");
     expect(lineIs("Makes a Food token · In Shopping")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Show this deck’s tokens" }).textContent).toBe("Tokens ›");
+    expect(screen.getByRole("button", { name: tokensCopy.details.linkAria }).textContent).toBe(tokensCopy.details.link);
   });
 
   it("says nothing of Shopping when the token is not joined, and names a held one as in the collection", async () => {
@@ -172,7 +173,7 @@ describe("the tokens line in the deck box", () => {
     mountWithTokens(readOf([food()]));
     await openCard("open held");
     vi.useFakeTimers({ toFake: ["requestAnimationFrame"] });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Show this deck’s tokens" })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: tokensCopy.details.linkAria })); });
     await act(async () => { vi.advanceTimersByTime(100); });
     vi.useRealTimers();
     window.removeEventListener("the99:show-deck-tokens", asked);
@@ -185,7 +186,7 @@ describe("the tokens line in the deck box", () => {
   it("closes the sheet when the link is pressed", async () => {
     mountWithTokens(readOf([food()]));
     await openCard("open held");
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Show this deck’s tokens" })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: tokensCopy.details.linkAria })); });
     expect(screen.queryByRole("switch")).toBeNull();
   });
 });

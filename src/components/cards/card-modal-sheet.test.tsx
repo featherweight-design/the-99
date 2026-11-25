@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardModalSheet, type CardModalSheetProps } from "./card-modal-sheet";
+import { cardModalCopy } from "../../lib/copy/card-carousel";
 
 const card = {
   oracleId: "o1", name: "Smothering Tithe", typeLine: "Enchantment", manaCost: "{3}{W}", cmc: 4,
@@ -44,7 +45,7 @@ describe("CardModalSheet", () => {
     const onClose = vi.fn();
     const setSnap = vi.fn();
     render(<CardModalSheet {...props({ onClose, setSnap })} />);
-    fireEvent.click(screen.getByLabelText("Close card details"));
+    fireEvent.click(screen.getByLabelText(cardModalCopy.closeAria));
     expect(onClose).toHaveBeenCalledTimes(1);
     fireEvent.click(document.querySelector("[data-sheet-grip]")!);
     expect(setSnap).toHaveBeenCalledWith("teaser");

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardModalArtSide, type CardModalArtSideProps } from "./card-modal-art-side";
+import { cardModalCopy } from "../../lib/copy/card-carousel";
 
 const preview = { name: "Sol Ring", printedName: null } as unknown as BrowseCard;
 
@@ -46,7 +47,7 @@ describe("CardModalArtSide", () => {
     const seen: number[] = [];
     const openZoom = vi.fn();
     render(<CardModalArtSide {...props({ openZoom, registerCloseRef: (s, el) => { if (el) seen.push(s); } })} />);
-    expect(screen.getByLabelText("Close card details")).toBeTruthy();
+    expect(screen.getByLabelText(cardModalCopy.closeAria)).toBeTruthy();
     expect(seen).toContain(0);
     fireEvent.click(screen.getByLabelText(/up close/i));
     expect(openZoom).toHaveBeenCalledTimes(1);

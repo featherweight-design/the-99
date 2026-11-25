@@ -62,10 +62,10 @@ describe("card-mark copy", () => {
     // The Game Changer list keeps its own name in the tooltip's sentence, where it is
     // named AS a list; the label a player reads in the key and the modal is lowercase
     // like the other two.
-    expect(cardMarkCopy.gameChanger).toBe("game changer");
-    expect(cardMarkCopy.massLandDenial).toBe("mass land denial");
-    expect(cardMarkCopy.extraTurns).toBe("extra turns");
-    expect(cardMarkCopy.tutor).toBe("tutor");
+    expect(cardMarkCopy.gameChanger).toBe(cardMarkCopy.gameChanger.toLowerCase());
+    expect(cardMarkCopy.massLandDenial).toBe(cardMarkCopy.massLandDenial.toLowerCase());
+    expect(cardMarkCopy.extraTurns).toBe(cardMarkCopy.extraTurns.toLowerCase());
+    expect(cardMarkCopy.tutor).toBe(cardMarkCopy.tutor.toLowerCase());
     expect(cardMarkCopy.tooltip.gameChanger).toContain("Game Changer list");
   });
 

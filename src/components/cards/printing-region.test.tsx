@@ -464,7 +464,7 @@ describe("PrintingRegion role=choose source=catalog", () => {
   });
   const choices = [
     choice(),
-    choice({ scryfallId: "id-2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", owned: { foil: 2, nonfoil: 1 } }),
+    choice({ scryfallId: "id-2", setCode: "sld", setName: "Fixture Set Name", collectorNumber: "1512", owned: { foil: 2, nonfoil: 1 } }),
     choice({ scryfallId: "id-3", setCode: "cmm", setName: "Commander Masters", collectorNumber: "410" }),
   ];
   function renderChoose(over: Partial<Extract<React.ComponentProps<typeof PrintingRegion>, { role: "choose" }>> = {}) {
@@ -502,7 +502,7 @@ describe("PrintingRegion role=choose source=catalog", () => {
       const after = screen.getAllByRole("radio");
       expect(after).toHaveLength(3);
       expect(after.slice(0, 2)).toEqual(before);
-      expect(after[2].getAttribute("aria-label")).toContain("Secret Lair");
+      expect(after[2].getAttribute("aria-label")).toContain("Fixture Set Name");
       expect(document.activeElement).toBe(after[2]);
       expect(screen.queryByRole("button", { name: showAll })).toBeNull();
     });
@@ -514,7 +514,7 @@ describe("PrintingRegion role=choose source=catalog", () => {
       fireEvent.click(screen.getByRole("button", { name: showAll }));
       const after = screen.getAllByRole("radio");
       expect(after.slice(0, 2)).toEqual(before);
-      expect(after[2].getAttribute("aria-label")).toContain("Secret Lair");
+      expect(after[2].getAttribute("aria-label")).toContain("Fixture Set Name");
       expect(document.activeElement).toBe(after[2]);
     });
 
@@ -562,7 +562,7 @@ describe("PrintingRegion role=choose source=catalog", () => {
       choice({ scryfallId: `m${i}`, setCode: `s${i}`, setName: `Set ${i}`, collectorNumber: String(i) }),
     );
     renderChoose({ printings: many, layout: "row" });
-    expect(screen.getByPlaceholderText("Set, code or number")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(collectionEditCopy.add.choose.searchPlaceholder)).toBeInTheDocument();
     expect(screen.queryByText(/^Foil \d+/)).toBeNull();
     expect(screen.queryByText(/Set 1 \u00b7 s1/)).toBeNull();
   });
@@ -572,7 +572,7 @@ describe("PrintingRegion role=choose source=catalog", () => {
       choice({ scryfallId: `m${i}`, setCode: `s${i}`, collectorNumber: String(i) }),
     );
     renderChoose({ printings: many, autoFocus: true });
-    expect(screen.getByPlaceholderText("Set, code or number")).toHaveFocus();
+    expect(screen.getByPlaceholderText(collectionEditCopy.add.choose.searchPlaceholder)).toHaveFocus();
   });
 
   describe("controlled by `selected` (I got it's confirm)", () => {
@@ -608,7 +608,7 @@ describe("PrintingRegion role=choose source=catalog", () => {
         choice({ scryfallId: `m${i}`, setCode: `s${i}`, setName: `Set ${i}`, collectorNumber: String(i) }),
       );
       renderChoose({ printings: many, layout: "row", selected: "m4" });
-      fireEvent.change(screen.getByPlaceholderText("Set, code or number"), { target: { value: "set 12" } });
+      fireEvent.change(screen.getByPlaceholderText(collectionEditCopy.add.choose.searchPlaceholder), { target: { value: "set 12" } });
       const radios = screen.getAllByRole("radio");
       expect(radios).toHaveLength(2);
       expect(radios[0]).toHaveAttribute("aria-checked", "true");
@@ -631,8 +631,8 @@ describe("PrintingRegion role=choose source=catalog", () => {
 
     it("keys catalog tiles by id, so two variants sharing a set and number are two choices", () => {
       const twins = [
-        choice({ scryfallId: "v-1", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" }),
-        choice({ scryfallId: "v-2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", finishes: ["foil"] }),
+        choice({ scryfallId: "v-1", setCode: "sld", setName: "Fixture Set Name", collectorNumber: "1512" }),
+        choice({ scryfallId: "v-2", setCode: "sld", setName: "Fixture Set Name", collectorNumber: "1512", finishes: ["foil"] }),
       ];
       const { onPick } = renderChoose({ printings: twins, layout: "row", selected: "v-2" });
       const radios = screen.getAllByRole("radio");

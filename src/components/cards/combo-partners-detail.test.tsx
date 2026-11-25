@@ -113,8 +113,8 @@ describe("the card modal's combo block", () => {
     const text = screen.getByRole("button", { name: /Two-card combos/ }).textContent ?? "";
     expect(text).toContain(comboAwarenessCopy.modal.summary.inDeck(1));
     expect(text).toContain(comboAwarenessCopy.modal.summary.notOwned(2));
-    expect(text, "a zero state was printed").not.toContain("you own");
-    expect(text.indexOf("in this deck")).toBeLessThan(text.indexOf("you don"));
+    expect(text, "a zero state was printed").not.toContain(comboAwarenessCopy.modal.summary.owned(0));
+    expect(text.indexOf(comboAwarenessCopy.modal.summary.inDeck(1))).toBeLessThan(text.indexOf(comboAwarenessCopy.modal.summary.notOwned(2)));
   });
 
   // THE WHOLE ROW IS THE TARGET, and the six/four cap is withdrawn: a closed block already
