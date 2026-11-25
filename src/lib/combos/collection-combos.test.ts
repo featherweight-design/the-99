@@ -22,6 +22,8 @@ vi.mock("../../db", () => {
   };
   return { db: { execute: h.execute, select: chain } };
 });
+// The owned-printing art read is its own seam: no owned copies here, so the catalog art stands.
+vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map<string, string | null>() }));
 vi.mock("../cards/prices", () => ({ loadOwnedPrintingPrices: h.prices }));
 vi.mock("../cards/price-lookup", async () => ({
   cheapestLiveCents: (p: { cents: number | null } | undefined) => (p ? p.cents : realCheapest(undefined)),

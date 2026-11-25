@@ -6,19 +6,24 @@
 import { CardFactMark } from "../cards/card-fact-mark";
 import { noteAppScroll } from "../../lib/ui/reveal";
 import { FitsGlyph } from "../cards/fits-glyph";
+import { ComboGlyph } from "../cards/combo-glyph";
 import { FoilMark } from "../cards/foil-mark";
 import { quickFilterCopy } from "../../lib/copy/quick-filters";
 import type { QuickCounts } from "../../lib/collection/quick-counts";
 import type { QuickKey } from "../../lib/collection/quick-filters";
 import type { CardFact } from "../../lib/copy/card-mark";
 
-/** The pressed key: In no deck is `avail=free`, the rest ride `quick`. */
-export type QuickPressed = "free" | QuickKey;
+/** The pressed key: In no deck is `avail=free`, Two-card combos is the combos view, the rest ride `quick`. */
+export type QuickPressed = "free" | "combos" | QuickKey;
 
-const ORDER: readonly QuickPressed[] = ["free", "gc", "tutor", "turns", "mld", "foil"];
-// Design's order: In no deck, (Two-card combos, PR 4), Game changers, Tutors, Extra turns, Mass land denial, Foil.
+/** The strip's figures: the list's chip counts plus the combos chip's own-both pair count. */
+export type StripCounts = QuickCounts & { combos: number };
+
+// Design's order: In no deck, Two-card combos, Game changers, Tutors, Extra turns, Mass land denial, Foil.
+const ORDER: readonly QuickPressed[] = ["free", "combos", "gc", "tutor", "turns", "mld", "foil"];
 const LABEL: Record<QuickPressed, string> = {
   free: quickFilterCopy.chips.free,
+  combos: quickFilterCopy.chips.combos,
   gc: quickFilterCopy.chips.gameChanger,
   tutor: quickFilterCopy.chips.tutor,
   turns: quickFilterCopy.chips.extraTurns,
@@ -35,7 +40,7 @@ const FACT: Partial<Record<QuickPressed, CardFact>> = {
 export const quickChipLabel = (key: QuickPressed): string => LABEL[key];
 
 /** The chips the strip draws now: a count above zero, or the pressed one at any count. */
-export function drawnQuickChips(counts: QuickCounts, pressed: QuickPressed | undefined): QuickPressed[] {
+export function drawnQuickChips(counts: StripCounts, pressed: QuickPressed | undefined): QuickPressed[] {
   return ORDER.filter((key) => counts[key] > 0 || key === pressed);
 }
 
@@ -44,7 +49,7 @@ function Glyph({ id }: { id: QuickPressed }) {
   const fact = FACT[id];
   return (
     <span aria-hidden className="flex h-[12px] min-w-[12px] flex-none items-center justify-center [&>svg]:size-[12px]">
-      {id === "free" ? <FitsGlyph /> : id === "foil" ? <FoilMark finish="foil" silent /> : fact ? <CardFactMark fact={fact} silent /> : null}
+      {id === "free" ? <FitsGlyph /> : id === "combos" ? <ComboGlyph size={12} /> : id === "foil" ? <FoilMark finish="foil" silent /> : fact ? <CardFactMark fact={fact} silent /> : null}
     </span>
   );
 }
@@ -55,7 +60,7 @@ export function QuickFilterStrip({
   onPress,
   layout,
 }: {
-  counts: QuickCounts;
+  counts: StripCounts;
   pressed: QuickPressed | undefined;
   onPress: (key: QuickPressed) => void;
   layout: "wide" | "phone";
