@@ -9,6 +9,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { redirect } from "next/navigation";
+import { renameCopy } from "../../lib/copy/decks-builder";
 
 const createDeck = vi.fn();
 vi.mock("../../app/decks/actions", () => ({ createDeck: (...args: unknown[]) => createDeck(...args) }));
@@ -38,7 +39,7 @@ const commanders = [
 
 // The picker draws a name field per breakpoint, so both carry the label.
 function typeName(value: string) {
-  for (const field of screen.getAllByLabelText("Deck name")) {
+  for (const field of screen.getAllByLabelText(renameCopy.fieldAria)) {
     fireEvent.change(field, { target: { value } });
   }
 }

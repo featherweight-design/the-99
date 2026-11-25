@@ -115,6 +115,8 @@ export const refreshCopy = {
     importShort: 'Import',
     importLong: 'Import a deck',
     sort: (by: string) => `Sort · ${by}`,
+    // The default order's name in the sort menu and on the trigger. Its own leaf, apart from the filter sheet's `lastPlayedHeading`, so rewording one never moves the other.
+    sortLastPlayed: 'Last played',
 
     // Tile detail row — the one figure that explains the status.
     //

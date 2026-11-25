@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HandOffReach } from "../../lib/intake/hand-off-reach";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { createPreFilledCopy } from "../../lib/copy/decks-builder";
 
 const createDeck = vi.hoisted(() => vi.fn(async () => {}));
 const readReach = vi.hoisted(() => vi.fn());
@@ -41,8 +42,8 @@ const SHORT: HandOffReach = {
 };
 const rowText = (key: string) => screen.getAllByTestId("hand-off-row").find((r) => r.textContent?.startsWith(key))!.textContent;
 const createButton = () => screen.getByRole("button", { name: /Create deck/ });
-const nameIt = () => fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Sai’s Workshop" } });
-const submit = () => act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+const nameIt = () => fireEvent.change(screen.getByLabelText(createPreFilledCopy.deckName), { target: { value: "Sai’s Workshop" } });
+const submit = () => act(async () => fireEvent.submit(screen.getByLabelText(createPreFilledCopy.deckName).closest("form")!));
 const settle = async (reach: HandOffReach | null, ho: Parameters<typeof CreatePreFilled>[0]["handOff"] = handOff()) => {
   readReach.mockResolvedValueOnce(reach);
   await act(async () => { render(<CreatePreFilled {...base} handOff={ho} />); });
@@ -242,7 +243,7 @@ describe("the hand-off's Bracket row, read", () => {
 
   it("a name-length error wins over the waiting line", async () => {
     await settle(SHORT);
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "   " } });
+    fireEvent.change(screen.getByLabelText(createPreFilledCopy.deckName), { target: { value: "   " } });
     // The button is disabled for an empty name; the form's own submit still reports the error.
     await submit();
     expect(screen.queryByTestId("bracket-choice-waiting")).toBeNull();

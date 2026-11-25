@@ -222,7 +222,7 @@ describe("SpokenForTwiceRow", () => {
     render(<SpokenForTwiceRow count={1} card={{ name: "Sol Ring", deckCount: 3, ownedQty: 2 }} onShowShopping={shop} />);
     expect(screen.getByText(s.headingOne("Sol Ring"))).toBeInTheDocument();
     expect(screen.getByText("It’s on 3 committed decks and you own 2.")).toBeInTheDocument();
-    const press = screen.getByRole("button", { name: "See it in Shopping" });
+    const press = screen.getByRole("button", { name: availabilityCopy.deckSummary.pressAria(1) });
     expect(press).toHaveTextContent(s.press);
     fireEvent.click(press);
     expect(shop).toHaveBeenCalledTimes(1);
@@ -232,7 +232,7 @@ describe("SpokenForTwiceRow", () => {
     render(<SpokenForTwiceRow count={3} card={null} onShowShopping={vi.fn()} />);
     expect(screen.getByText(s.heading(3))).toBeInTheDocument();
     expect(screen.getByText(s.bodyManyShort)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "See them in Shopping" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: availabilityCopy.deckSummary.pressAria(3) })).toBeInTheDocument();
   });
 
   it("is never the next step, and offers nothing while Shopping is showing", () => {

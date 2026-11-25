@@ -2,6 +2,8 @@
 // played`) and names no others; these three are the engineering call, and the
 // gap report records them as one.
 
+import { refreshCopy } from "../copy/refresh";
+
 export type DeckSort = "lastPlayed" | "name" | "newest" | "custom";
 
 export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed";
@@ -15,7 +17,7 @@ export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed";
  * takes the same string, so it now reads `Sort · Last played`.
  */
 export const DECK_SORT_LABELS: Record<DeckSort, string> = {
-  lastPlayed: "Last played",
+  lastPlayed: refreshCopy.decks.sortLastPlayed,
   name: "Name",
   newest: "Newest",
   custom: "Custom",

@@ -1,6 +1,6 @@
 import { act, cleanup, render, screen } from "../../test-utils/render-with-row-wiring";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardTileCopy, manaCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
 import { cardMarkCopy } from "../../lib/copy/card-mark";
@@ -351,7 +351,7 @@ describe("DeckCardTile — the proxied state", () => {
     // `owned` is a fact about the box; `proxied` is a fact about this deck's
     // slot. `grouping.ts:26-30` rules that the two are allowed to disagree out
     // loud, and a filled dot beside a `P` is the reading that lies.
-    expect(screen.getByLabelText("Not owned")).toBeInTheDocument();
+    expect(screen.getByLabelText(ownedStateCopy.notOwned)).toBeInTheDocument();
     expect(screen.queryByLabelText("Owned")).toBeNull();
   });
 

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { refreshCopy } from "../copy/refresh";
 import {
   DECK_SORT_LABELS,
   DECK_SORT_ORDER,
@@ -46,7 +47,7 @@ describe("deck sort", () => {
     // capitalised. The trigger takes the same string, so it reads
     // `Sort · Last played`.
     expect(DECK_SORT_LABELS).toEqual({
-      lastPlayed: "Last played",
+      lastPlayed: refreshCopy.decks.sortLastPlayed,
       name: "Name",
       newest: "Newest",
       custom: "Custom",

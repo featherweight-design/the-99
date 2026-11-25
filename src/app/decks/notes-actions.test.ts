@@ -109,7 +109,7 @@ describe("addNote", () => {
 
   it("answers the cap with its own message and revalidates nothing", async () => {
     stub.insert = "cap";
-    const r = await addNote(DECK, "one more");
+    const r = await addNote(DECK, "Fixture note text");
     expect(r).toMatchObject({ ok: false });
     expect((r as { message: string }).message).toMatch(/100 notes/);
     expect(stub.paths).toEqual([]);

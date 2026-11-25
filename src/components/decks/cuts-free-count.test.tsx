@@ -52,7 +52,7 @@ const panel: CutsPanel = {
   edhrecDecks: 3309,
   thin: false,
   rows: [
-    { key: "role:draw", source: "role", label: "Card draw", figure: 8, note: "rec 7 · 1 over" },
+    { key: "role:draw", source: "role", label: "Fixture row label", figure: 8, note: "rec 7 · 1 over" },
     { key: "role:removal", source: "role", label: "Removal", figure: 9, note: "rec 7 · 2 over" },
     { key: "curve:2", source: "curve", label: "Cost 2", figure: 25, note: "the fullest slot" },
     { key: "edhrec", source: "edhrec", label: "In under 10% of Zul Ashur, Lich Lord decks", figure: 3, note: "your median card 46%" },

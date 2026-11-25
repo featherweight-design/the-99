@@ -406,7 +406,7 @@ describe("the declared range", () => {
   });
 });
 
-describe("see all brackets", () => {
+describe("the reference sheet link", () => {
   it("opens the reference sheet from the climb's foot, and closes back to the link", () => {
     const profile = SHAPES["3"]();
     render(

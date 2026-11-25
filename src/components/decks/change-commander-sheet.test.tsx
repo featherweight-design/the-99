@@ -146,10 +146,10 @@ describe("ChangeCommanderSheet", () => {
     expect(await screen.findByText("No other commander leads a Jund deck yet.")).toBeTruthy();
   });
 
-  it("offers Try again when the read fails", async () => {
+  it("offers a retry when the read fails", async () => {
     readChangeCandidates.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce(data());
     mount();
-    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    fireEvent.click(await screen.findByRole("button", { name: changeCommanderCopy.sheet.failed.cta }));
     expect(await screen.findByText("Yours · 1")).toBeTruthy();
   });
 
@@ -182,7 +182,7 @@ describe("ChangeCommanderSheet", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Choose Prosper" }));
     fireEvent.click(screen.getByRole("button", { name: "Make Prosper commander" }));
     expect(await screen.findByText("We couldn’t change the commander. Korvold still leads this deck.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: changeCommanderCopy.confirm.failedRetry })).toBeTruthy();
   });
 
   it("tells a brew that only another change undoes it", async () => {
