@@ -249,6 +249,118 @@ async function runOpen(browser) {
   }
 }
 
+
+// Read-only target + inset ring. Walks routes that render read-only copy (About pages: card names in the rule diagrams;
+// the Landing's example rows) and long clamped/truncated copy, scrolling for an on-screen hit. When no real route yields
+// one the probe injects a labelled FIXTURE node on a real page and says so.
+const STATE_ROUTES = ["/about", ...["home", "collection", "commanders", "decks", "shopping", "friends"].map((a) => `/about/${a}`), "/decks", "/commanders/choose", "/preview/landing"];
+
+async function findOnScroll(page, probeFn) {
+  for (let step = 0; step < 14; step++) {
+    const hit = await page.evaluate(probeFn);
+    if (hit) return hit;
+    const more = await page.evaluate(() => {
+      const before = scrollY;
+      scrollBy(0, Math.round(innerHeight * 0.7));
+      return scrollY !== before;
+    });
+    await page.waitForTimeout(350);
+    if (!more) break;
+  }
+  return null;
+}
+
+const readOnlyOnScreen = () => {
+  for (const el of document.querySelectorAll('[data-copy-editor] [data-copy-outline="read-only"]')) {
+    const r = el.getBoundingClientRect();
+    if (r.width >= 8 && r.height >= 8 && r.top > 70 && r.bottom < innerHeight - 90 && r.left >= 0 && r.right <= innerWidth) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  return null;
+};
+const insetOnScreen = () => {
+  for (const el of document.querySelectorAll("[data-copy-editor] [data-copy-outline]")) {
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    if (cs.boxShadow.includes("inset") && r.width >= 8 && r.top > 70 && r.bottom < innerHeight - 90) return { x: r.left + r.width / 2, y: r.top + r.height / 2, outline: cs.outlineStyle, shadow: cs.boxShadow.slice(0, 60) };
+  }
+  return null;
+};
+
+async function runStates(browser) {
+  for (const vp of VIEWPORTS) {
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch });
+    const page = await ctx.newPage();
+    await signIn(page);
+    let roDone = false;
+    let insetDone = false;
+    const barOf = () => page.locator('[data-copy-editor] [role="region"][aria-label="Copy editor"]');
+    const turnOn = async () => {
+      await doorOf(page, vp).first().click();
+      await barOf().waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+      await page.waitForSelector("[data-copy-editor] [data-copy-outline]", { timeout: 10000 }).catch(() => {});
+    };
+    const assertReadOnly = async (src, hit) => {
+      await target(page, vp, hit);
+      const tagText = (await page.locator("[data-copy-tag]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const tgt = await page.locator('[data-copy-editor] [data-copy-target][data-copy-outline="read-only"]').count();
+      check(`7 ${vp.label} read-only [${src}]: ${vp.touch ? "first tap" : "hover"} targets a read-only outline`, tgt === 1, `targets=${tgt}`);
+      check(`7 ${vp.label} read-only [${src}]: tag shows the reason, not an edit prompt`, /edit in code|data, not copy/i.test(tagText) && !/to edit/i.test(tagText), tagText);
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/${vp.label}-readonly-targeted.png` });
+    };
+    const assertInset = async (src, hit) => {
+      check(`8 ${vp.label} inset ring [${src}]: inset box-shadow and no outline`, hit.outline === "none" || hit.outline === "", JSON.stringify(hit));
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/${vp.label}-inset-ring.png` });
+    };
+    for (const path of STATE_ROUTES) {
+      if (roDone && insetDone) break;
+      const res = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
+      if (!res || res.status() >= 400) { console.log(`INFO  ${vp.label} ${path}: status ${res?.status()}`); continue; }
+      await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      if (!(await doorOf(page, vp).count())) { console.log(`INFO  ${vp.label} ${path}: no door (redirected to ${page.url()})`); continue; }
+      await turnOn();
+      if (!roDone) {
+        const hit = await findOnScroll(page, readOnlyOnScreen);
+        if (hit) { roDone = true; console.log(`INFO  ${vp.label}: real read-only line on ${path}`); await assertReadOnly(`route ${path}`, hit); }
+      }
+      if (!insetDone) {
+        await page.evaluate(() => scrollTo(0, 0));
+        await page.waitForTimeout(300);
+        const hit = await findOnScroll(page, insetOnScreen);
+        if (hit) { insetDone = true; console.log(`INFO  ${vp.label}: real clipped line on ${path}`); await assertInset(`route ${path}`, hit); }
+      }
+      await barOf().getByRole("button", { name: "Done" }).click().catch(() => {});
+    }
+    if (!roDone || !insetDone) {
+      // FIXTURE: a real page with injected nodes whose text is a known row.
+      await openPage(page, "/decks");
+      await turnOn();
+      await page.evaluate(() => {
+        const mk = (id, text, top, css) => {
+          const el = document.createElement("span");
+          el.id = id;
+          el.textContent = text;
+          el.style.cssText = `position:fixed;left:20px;top:${top}px;z-index:30;${css}`;
+          document.body.appendChild(el);
+        };
+        mk("probe-fixture-ro", "Craterhoof Behemoth", 130, "color:#fff");
+        mk("probe-fixture-clip", "Say as much or as little as you like. Every answer is optional, and the more you give, the closer the fit.", 180, "width:120px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;color:#fff");
+      });
+      await page.waitForTimeout(900);
+      if (!roDone) {
+        const hit = await page.evaluate(readOnlyOnScreen);
+        check(`7 ${vp.label} read-only [FIXTURE span "Craterhoof Behemoth" injected on /decks]: outline exists`, !!hit);
+        if (hit) await assertReadOnly("FIXTURE", hit);
+      }
+      if (!insetDone) {
+        const hit = await page.evaluate(insetOnScreen);
+        check(`8 ${vp.label} inset ring [FIXTURE 120px overflow:hidden span injected on /decks]: inset outline exists`, !!hit);
+        if (hit) await assertInset("FIXTURE", hit);
+      }
+    }
+    await ctx.close();
+  }
+}
+
 async function shots(browser) {
   const { default: sharp } = await import("sharp");
   const path = "/commanders/choose";
@@ -306,6 +418,7 @@ try {
   if (CLOSED) await runGateClosed(browser);
   else {
     await runOpen(browser);
+    await runStates(browser);
     if (SHOTS) await shots(browser);
   }
 } finally {
