@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { DeltaStrip } from "./delta-strip";
+import { setPageCopy } from "../../lib/copy/set-collections";
 
 const refresh = vi.fn();
 const ownedFingerprintForSet = vi.fn();
@@ -62,7 +63,7 @@ describe("DeltaStrip", () => {
     ownedFingerprintForSet.mockResolvedValue("a,b,c|");
     render(<DeltaStrip code="dsk" fingerprint="a,b|" indexed />);
     focus();
-    const button = await screen.findByRole("button", { name: "Refresh the grid" });
+    const button = await screen.findByRole("button", { name: setPageCopy.staleAfterUpload.action });
     fireEvent.click(button);
     expect(refresh).toHaveBeenCalled();
   });

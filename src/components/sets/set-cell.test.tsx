@@ -4,6 +4,7 @@ import { SetCell } from "./set-cell";
 import { StoreProvider } from "../stores/store-provider";
 import type { Cell } from "../../lib/sets/completion";
 import type { PriceFact } from "../../lib/decks/price";
+import { setPageCopy } from "../../lib/copy/set-collections";
 
 const NEWEST = new Date("2026-09-08T09:00:00Z");
 
@@ -64,17 +65,17 @@ describe("SetCell — the dim", () => {
 describe("SetCell — marks", () => {
   it("marks a foil-only holding", () => {
     render(<SetCell cell={cell({ owned: true, foilOnly: true })}  newestAsOf={null}/>);
-    expect(screen.getByText("◆ FOIL")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cell.foil)).toBeInTheDocument();
   });
 
   it("marks a fill that was matched by name", () => {
     render(<SetCell cell={cell({ owned: true, byName: true })}  newestAsOf={null}/>);
-    expect(screen.getByText("BY NAME")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.unpinned.mark)).toBeInTheDocument();
   });
 
   it("never marks a missing cell by name — only a filled cell was matched to anything", () => {
     render(<SetCell cell={cell({ owned: false, byName: true })}  newestAsOf={null}/>);
-    expect(screen.queryByText("BY NAME")).toBeNull();
+    expect(screen.queryByText(setPageCopy.unpinned.mark)).toBeNull();
   });
 });
 
@@ -94,7 +95,7 @@ describe("SetCell — caption and price", () => {
 
   it("renders `no stock` holding the tag's height when the feed has never carried it", () => {
     render(<SetCell cell={cell({})} price={null} newestAsOf={NEWEST} />);
-    expect(screen.getByText("no stock")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cell.noStock)).toBeInTheDocument();
   });
 
   it("prefixes the foil mark when only a foil price exists", () => {
@@ -116,7 +117,7 @@ describe("SetCell — caption and price", () => {
         newestAsOf={NEWEST}
       />,
     );
-    expect(screen.getByText("no stock")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cell.noStock)).toBeInTheDocument();
     expect(screen.queryByText(/\$/)).toBeNull();
   });
 
@@ -136,7 +137,7 @@ describe("SetCell — caption and price", () => {
 
   it("says no stock on an owned cell whose printing the store never carried", () => {
     render(<SetCell cell={cell({ owned: true, finishes: ["nonfoil"] })} price={null} newestAsOf={NEWEST} />);
-    expect(screen.getByText("no stock")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cell.noStock)).toBeInTheDocument();
   });
 });
 

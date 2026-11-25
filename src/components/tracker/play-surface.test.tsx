@@ -8,6 +8,7 @@ import type { Game } from "../../lib/tracker/engine";
 import type { PlaySeat } from "../../lib/tracker/seat";
 import { gameLoggedAction, saveTableResultAction, undoTableResultAction } from "../../app/friends/table/result-actions";
 import { PlaySurface } from "./play-surface";
+import { trackerCopy } from "../../lib/copy/tracker";
 
 vi.mock("../../app/friends/table/result-actions", () => ({
   saveTableResultAction: vi.fn(async () => ({ ok: true })),
@@ -55,7 +56,7 @@ describe("PlaySurface result", () => {
       vi.advanceTimersByTime(2000);
     });
     const result = screen.getByTestId("tracker-result");
-    expect(result.textContent).toContain("A draw");
+    expect(result.textContent).toContain(trackerCopy.sheet.endDraw);
     expect(result.textContent).toContain("Logs as a draw for Colin and you.");
   });
 });
@@ -101,7 +102,7 @@ describe("PlaySurface snapshot", () => {
     await act(async () => {});
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
     const colin = screen.getAllByTestId("tracker-panel").find((p) => p.dataset.seat === "1")!;
-    expect(within(colin).getByTestId("panel-no-deck").textContent).toBe("no deck");
+    expect(within(colin).getByTestId("panel-no-deck").textContent).toBe(trackerCopy.panel.noDeck);
   });
 });
 
@@ -114,7 +115,7 @@ describe("PlaySurface on a closed table (S4)", () => {
     const result = screen.getByTestId("tracker-result");
     expect(within(result).getByTestId("result-closed-note").textContent).toMatch(/^You closed the table at .+\. This game still logs from it until .+\.$/);
     expect(within(result).getByTestId("result-log")).toBeTruthy();
-    expect(within(result).getByRole("link", { name: "Back to Friends" }).getAttribute("href")).toBe("/friends");
+    expect(within(result).getByRole("link", { name: trackerCopy.over.backFriends }).getAttribute("href")).toBe("/friends");
   });
 
   it("replaces Log this game with where to log once the table's night is over", async () => {
@@ -130,7 +131,7 @@ describe("PlaySurface on a closed table (S4)", () => {
     expect(within(result).queryByTestId("result-log")).toBeNull();
     expect(within(result).queryByTestId("result-undo")).toBeNull();
     expect(within(result).queryByTestId("result-rematch")).toBeNull();
-    expect(within(result).getByTestId("result-back").textContent).toBe("Back to Friends");
+    expect(within(result).getByTestId("result-back").textContent).toBe(trackerCopy.over.backFriends);
   });
 
   it("goes back when this device holds no game for it", async () => {
@@ -178,9 +179,9 @@ describe("PlaySurface Undo the last change", () => {
     expect(undoTableResultAction).toHaveBeenCalledWith("t1", "r");
     expect(screen.queryByTestId("tracker-result")).toBeNull();
     // The board's own "Your turn" line is a status region too, so the toast is the status that says Game back on.
-    const toast = screen.getAllByRole("status").find((el) => el.textContent?.includes("Game back on"));
+    const toast = screen.getAllByRole("status").find((el) => el.textContent?.includes(trackerCopy.undo.backOn));
     expect(toast).toBeTruthy();
-    expect(toast!.textContent).toContain("Game back on");
+    expect(toast!.textContent).toContain(trackerCopy.undo.backOn);
     expect(toast!.textContent).toContain("Undid Colin −40 life, to 0 · round 1");
     expect(document.activeElement).toBe(screen.getAllByTestId("panel-sheet")[1]);
   });
@@ -219,7 +220,7 @@ describe("PlaySurface Undo the last change", () => {
     await settle();
     const result = screen.getByTestId("tracker-result");
     expect(within(result).getByTestId("result-logged-note").textContent).toMatch(/^You logged this game at .+, so this ending stays\.$/);
-    expect(screen.queryAllByRole("status").some((el) => el.textContent?.includes("Game back on"))).toBe(false);
+    expect(screen.queryAllByRole("status").some((el) => el.textContent?.includes(trackerCopy.undo.backOn))).toBe(false);
   });
 
   it("leaves the game over and offers Try again when the Undo fails (clarification 4)", async () => {
@@ -230,8 +231,8 @@ describe("PlaySurface Undo the last change", () => {
     await settle();
     expect(screen.getByTestId("tracker-result")).toBeTruthy();
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("Undo didn’t go through. The game is still over.");
-    fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
+    expect(alert.textContent).toContain(trackerCopy.undo.failed);
+    fireEvent.click(within(alert).getByRole("button", { name: trackerCopy.undo.retry }));
     await settle();
     expect(undoTableResultAction).toHaveBeenCalledTimes(2);
     expect(screen.queryByTestId("tracker-result")).toBeNull();
@@ -245,8 +246,8 @@ describe("PlaySurface Undo the last change", () => {
     await settle();
     expect(screen.getByTestId("tracker-result")).toBeTruthy();
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("Undo didn’t go through. The game is still over.");
-    expect(within(alert).queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(alert.textContent).toContain(trackerCopy.undo.failed);
+    expect(within(alert).queryByRole("button", { name: trackerCopy.undo.retry })).toBeNull();
   });
 
   it("undoes on arrival from the Last game card's Undo (U5), once", async () => {

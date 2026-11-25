@@ -49,11 +49,11 @@ describe("CheckInForm", () => {
     fireEvent.click(screen.getByTestId("check-in-rating-4"));
     fireEvent.click(screen.getByRole("button", { name: "Shopping" }));
     fireEvent.click(screen.getByRole("button", { name: "Decks" }));
-    fireEvent.click(screen.getByRole("button", { name: "Already have" }));
-    fireEvent.change(screen.getByTestId("check-in-note"), { target: { value: "Love it" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.podOptions[2] }));
+    fireEvent.change(screen.getByTestId("check-in-note"), { target: { value: copy.ratingWords[4] } });
     fireEvent.click(sendButton());
     await waitFor(() => expect(screen.getByTestId("check-in-sent")).toBeTruthy());
-    expect(send).toHaveBeenCalledWith({ rating: 4, uses: ["Shopping", "Decks"], pod: "Already have", note: "Love it" });
+    expect(send).toHaveBeenCalledWith({ rating: 4, uses: ["Shopping", "Decks"], pod: copy.podOptions[2], note: copy.ratingWords[4] });
     expect(screen.getByText(copy.sentTitle)).toBeTruthy();
     expect(screen.getByText(copy.sentBody)).toBeTruthy();
     fireEvent.click(screen.getAllByRole("button", { name: reportCopy.close }).find((b) => b.textContent === reportCopy.close)!);

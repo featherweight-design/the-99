@@ -1,9 +1,9 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
-import { showcaseCopy, writtenForYouCopy } from "../../lib/copy/discovery";
+import { showcaseCopy, writtenForYouCopy, welcomeFreeCopy } from "../../lib/copy/discovery";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { sheetDay } from "../../lib/copy/welcome-credits";
+import { sheetDay, welcomeCreditsCopy } from "../../lib/copy/welcome-credits";
 import type { ShowcaseGroup } from "../../lib/discovery/showcase";
 import { welcomeSheet, type WelcomeFacts } from "../../lib/payments/welcome-sheet";
 import { WhereCreditsWork } from "./where-credits-work";
@@ -25,7 +25,7 @@ const sheet = (cards: number, decks: number) => welcomeSheet({ written: writtenF
 
 function open(cards: number, decks: number, f = facts(), teaser = f.teaser) {
   render(<main><WhereCreditsWork facts={f} sheet={sheet(cards, decks)} teaser={teaser} onClose={() => {}} /></main>);
-  return screen.getByRole("dialog", { name: "Where credits work" });
+  return screen.getByRole("dialog", { name: welcomeCreditsCopy.sheet.title });
 }
 const tries = (d: HTMLElement) => within(d).queryAllByRole("link", { name: /Try it/ });
 
@@ -47,7 +47,7 @@ describe("WhereCreditsWork", () => {
     for (const [cards, decks] of [[0, 0], [12, 0], [12, 2]]) {
       const d = open(cards, decks);
       expect(d.querySelectorAll("[data-welcome-free]")).toHaveLength(1);
-      expect(within(d).getByText("No credit needed")).toBeTruthy();
+      expect(within(d).getByText(welcomeFreeCopy.line)).toBeTruthy();
       for (const id of ["consider", "find-a-deck"]) {
         expect(d.querySelector(`[data-welcome-row="${id}"]`)!.textContent).toContain("free");
       }
@@ -87,9 +87,9 @@ describe("WhereCreditsWork", () => {
     const row = d.querySelector('[data-welcome-row="upgrade"]')!;
     const kids = [...row.children];
     expect(kids).toHaveLength(4);
-    expect(kids[0].textContent).toBe("Upgrade this precon");
-    expect(kids[1].textContent).toContain("2 credits per run");
-    expect(kids[2].textContent).toBe("A precon’s page");
+    expect(kids[0].textContent).toBe(writtenForYouCopy.rows[5].name);
+    expect(kids[1].textContent).toContain(writtenForYouCopy.rows[5].cost);
+    expect(kids[2].textContent).toBe(writtenForYouCopy.rows[5].where);
     expect(kids[3].getAttribute("data-welcome-try")).toBe("upgrade");
   });
 

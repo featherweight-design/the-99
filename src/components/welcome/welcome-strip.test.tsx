@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { writtenForYouCopy } from "../../lib/copy/discovery";
-import { stripDay } from "../../lib/copy/welcome-credits";
+import { stripDay, welcomeCreditsCopy } from "../../lib/copy/welcome-credits";
 import { welcomeSheet, type WelcomeFacts, type WelcomeSheet } from "../../lib/payments/welcome-sheet";
 
 const dismiss = vi.hoisted(() => vi.fn(async () => ({ dismissed: true })));
@@ -18,7 +18,7 @@ const facts = (over: Partial<WelcomeFacts> = {}): WelcomeFacts => ({
 });
 const SHEET: WelcomeSheet = welcomeSheet({ written: writtenForYouCopy.rows, cards: 0, decks: 0, groups: [] })!;
 
-const strip = () => screen.queryByRole("region", { name: "Welcome credits" });
+const strip = () => screen.queryByRole("region", { name: welcomeCreditsCopy.region });
 
 beforeEach(() => {
   resetWelcomeStripClosed();
@@ -30,7 +30,7 @@ describe("WelcomeStrip, by state", () => {
     render(<main><WelcomeStrip facts={facts()} sheet={SHEET} place="first-run" /></main>);
     const s = strip()!;
     expect(s.textContent).toContain(`15 welcome credits to try the tools, until ${DAY}.`);
-    expect(within(s).getByRole("button", { name: "Where they work" })).toBeTruthy();
+    expect(within(s).getByRole("button", { name: welcomeCreditsCopy.strip.where })).toBeTruthy();
     expect(within(s).getByRole("button", { name: "Dismiss" })).toBeTruthy();
     expect(s.getAttribute("data-welcome-strip")).toBe("held");
     expect(s.className).toContain("var(--accent-dim)");
@@ -54,8 +54,8 @@ describe("WelcomeStrip, by state", () => {
     render(<WelcomeStrip facts={facts({ lot: "usedUp", left: 0 })} sheet={SHEET} place="dashboard" />);
     const s = strip()!;
     expect(s.textContent).toContain("You’ve used all 15 welcome credits.");
-    expect(within(s).getByRole("link", { name: "See packs and the monthly plan" }).getAttribute("href")).toBe("/credits");
-    expect(within(s).queryByRole("button", { name: "Where they work" })).toBeNull();
+    expect(within(s).getByRole("link", { name: welcomeCreditsCopy.strip.more }).getAttribute("href")).toBe("/credits");
+    expect(within(s).queryByRole("button", { name: welcomeCreditsCopy.strip.where })).toBeNull();
   });
 
   it("used up, teaser off: the free credit line and no link", () => {
@@ -77,7 +77,7 @@ describe("WelcomeStrip, by state", () => {
 
   it("with every row off draws no Where they work", () => {
     render(<WelcomeStrip facts={facts()} sheet={null} place="first-run" />);
-    expect(within(strip()!).queryByRole("button", { name: "Where they work" })).toBeNull();
+    expect(within(strip()!).queryByRole("button", { name: welcomeCreditsCopy.strip.where })).toBeNull();
   });
 });
 
@@ -103,15 +103,15 @@ describe("WelcomeStrip, presses", () => {
 
   it("Where they work opens the sheet, with the teaser while teaser holds", () => {
     render(<main><WelcomeStrip facts={facts()} sheet={SHEET} place="first-run" /></main>);
-    fireEvent.click(screen.getByRole("button", { name: "Where they work" }));
-    const dialog = screen.getByRole("dialog", { name: "Where credits work" });
+    fireEvent.click(screen.getByRole("button", { name: welcomeCreditsCopy.strip.where }));
+    const dialog = screen.getByRole("dialog", { name: welcomeCreditsCopy.sheet.title });
     expect(within(dialog).getByRole("link", { name: /See packs and the monthly plan/ }).getAttribute("href")).toBe("/credits");
   });
 
   it("the sheet from the strip has no teaser once something was bought", () => {
     render(<main><WelcomeStrip facts={facts({ teaser: false })} sheet={SHEET} place="first-run" /></main>);
-    fireEvent.click(screen.getByRole("button", { name: "Where they work" }));
-    const dialog = screen.getByRole("dialog", { name: "Where credits work" });
+    fireEvent.click(screen.getByRole("button", { name: welcomeCreditsCopy.strip.where }));
+    const dialog = screen.getByRole("dialog", { name: welcomeCreditsCopy.sheet.title });
     expect(within(dialog).queryByRole("link", { name: /See packs/ })).toBeNull();
   });
 
@@ -120,7 +120,7 @@ describe("WelcomeStrip, presses", () => {
     const s = strip()!;
     expect(s.className).not.toContain("border");
     expect(s.className).not.toContain("bg-[color:var(--surface)]");
-    fireEvent.click(within(s).getByRole("button", { name: "Where they work" }));
+    fireEvent.click(within(s).getByRole("button", { name: welcomeCreditsCopy.strip.where }));
     expect(captureToolEvent).toHaveBeenCalledWith("welcome_where_opened", { from: "panel_foot" });
   });
 });

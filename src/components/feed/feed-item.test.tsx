@@ -10,6 +10,9 @@ vi.mock("../../app/friends/spare-actions", () => actions);
 import { FeedItemRow } from "./feed-item";
 import type { FeedView } from "../../lib/feed/home";
 import { named } from "../../lib/person-name/mint";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { spareCopy } from "../../lib/copy/social";
+import { feedCopy } from "../../lib/copy/feed";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (o: Partial<FeedView>): FeedView => ({
@@ -21,10 +24,10 @@ const list = (node: React.ReactNode) => render(<ul>{node}</ul>);
 describe("FeedItemRow", () => {
   it("draws the kicker, the age, the title and the line, with the accent diamond while unseen", () => {
     const { container } = list(<FeedItemRow item={view({ name: "Secrets of Strixhaven", setSize: 288, href: "/collection/sets/sos" })} now={NOW} />);
-    expect(screen.getByText("New set")).toBeInTheDocument();
+    expect(screen.getByText(feedCopy.home.kicker["new-set"])).toBeInTheDocument();
     // The age once, after the kind on the kicker line at both widths (small items R1b: `New set · 5h ago`).
     const age = screen.getByText("5h ago");
-    expect(age.previousElementSibling?.textContent).toBe("New set");
+    expect(age.previousElementSibling?.textContent).toBe(feedCopy.home.kicker["new-set"]);
     expect(age.className).toContain("before:content-['·']");
     expect(age.className).not.toMatch(/(^|\s)(md:)?hidden(\s|$)/);
     expect(screen.getByText("Secrets of Strixhaven is out")).toBeInTheDocument();
@@ -58,7 +61,7 @@ describe("FeedItemRow", () => {
   it("drops the diamond and steps the kicker down once seen", () => {
     const { container } = list(<FeedItemRow item={view({ unseen: false, href: "/x" })} now={NOW} />);
     expect(container.querySelector("[data-feed-unseen]")).toBeNull();
-    expect(screen.getByText("New set").className).toContain("--fg-locked");
+    expect(screen.getByText(feedCopy.home.kicker["new-set"]).className).toContain("--fg-locked");
   });
 
   it("draws a combo with the shipped two-card-combo mark, not a card, and opens the first piece's detail", () => {
@@ -76,12 +79,12 @@ describe("FeedItemRow", () => {
   it("puts the friend's face on a trade match's card and links to their spares", () => {
     const { container } = list(
       <FeedItemRow
-        item={view({ kind: "trade-match", card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: null, colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1" })}
+        item={view({ kind: "trade-match", card: { oracleId: "g", name: "Fixture Card", image: "g.jpg", art: null, colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1" })}
         now={NOW}
         face={{ artCropUri: "colin.jpg" }}
       />,
     );
-    expect(screen.getByText("Colin has a spare Ghalta, Primal Hunger")).toHaveClass("ph-no-capture");
+    expect(screen.getByText("Colin has a spare Fixture Card")).toHaveClass("ph-no-capture");
     expect(container.querySelector("[data-feed-face] [data-face=art]")).not.toBeNull();
     const press = screen.getByRole("link", { name: "See Colin’s spares ›" });
     expect(press).toHaveAttribute("href", "/friends/p1");
@@ -106,7 +109,7 @@ describe("FeedItemRow", () => {
     actions.answerSpareAction.mockResolvedValue({ ok: true });
     const item = view({ kind: "spare-request", friend: { publicId: "p2", displayName: named("Peter") }, ask: { id: "req-9", spare: 1, copies: 1, deckName: null, daysLeft: 6 } });
     const { container } = list(<FeedItemRow item={item} now={NOW} onDismiss={() => {}} />);
-    expect(screen.queryByText("Answer in Friends.")).toBeNull();
+    expect(screen.queryByText(feedCopy.home.line.spareRequest)).toBeNull();
     expect(screen.getByTestId("spare-days").textContent).toContain("6");
     expect(container.querySelector("[data-row-x]")?.className).toContain("top-[4px]");
     // The ✕ draws over the corner, so the text column reserves its width on a phone.
@@ -132,7 +135,7 @@ describe("FeedItemRow", () => {
     list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { others: [], standalone: false } })} now={NOW} />);
     expect(screen.getByText("Your request").className).not.toContain("--accent-text");
     expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toHaveClass("ph-no-capture");
-    expect(screen.getByText("The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.")).toBeTruthy();
+    expect(screen.getByText(spareCopy.request.mine.acceptedDetail)).toBeTruthy();
     // Outside What's new (no answer sheet to open) the press still goes to /friends, as it shipped.
     expect(screen.getByRole("link", { name: "Your request ›" }).getAttribute("href")).toBe("/friends");
   });
@@ -140,7 +143,7 @@ describe("FeedItemRow", () => {
   it("a Yes to a standalone ask says nothing of Shopping's buy press", () => {
     const colin = { publicId: "p3", displayName: named("Colin") };
     list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { others: [], standalone: true } })} now={NOW} />);
-    expect(screen.getByText("The handover is between you. Once it’s yours, add it to your collection.")).toBeTruthy();
+    expect(screen.getByText(spareCopy.request.mine.acceptedDetailNoBuy)).toBeTruthy();
     expect(screen.queryByText(/press buy on it in Shopping/)).toBeNull();
   });
 
@@ -151,7 +154,7 @@ describe("FeedItemRow", () => {
     expect(screen.getByText("Max and 1 more have a spare too.")).toBeTruthy();
     unmount();
     list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { others: [], standalone: false } })} now={NOW} />);
-    expect(screen.getByText("Nobody else you know has a spare of it.")).toBeTruthy();
+    expect(screen.getByText(spareCopy.request.mine.nobodyElse)).toBeTruthy();
   });
 
   it("lifts the picture above the stretched press so it can be hovered", () => {
@@ -224,7 +227,7 @@ describe("FeedItemRow", () => {
 
   it("reads 'just now' for an item under an hour old", () => {
     list(<FeedItemRow item={view({ at: "2026-10-22T11:30:00Z", href: "/x" })} now={NOW} />);
-    expect(screen.getAllByText("just now")).toHaveLength(1);
+    expect(screen.getAllByText(refreshCopy.home.elapsed.justNow)).toHaveLength(1);
     expect(screen.queryByText(/0h ago/)).toBeNull();
   });
 
@@ -250,7 +253,7 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
 
   it("draws the kicker, the title, the summary clamped at two lines, and Read on Wizards out in a new tab", () => {
     const { container } = list(<FeedItemRow item={post()} now={NOW} />);
-    expect(screen.getByText("Secret Lair")).toBeInTheDocument();
+    expect(screen.getByText(feedCopy.home.kicker["secret-lair"])).toBeInTheDocument();
     const title = screen.getByText("Secret Lair x JAWS is live");
     // The title never clamps.
     expect(title.className).not.toContain("line-clamp");
@@ -311,7 +314,7 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
 
   it("names Wizards news by its kicker and draws no lists line on it", () => {
     const { container } = list(<FeedItemRow item={post({ kind: "wizards-news" })} now={NOW} />);
-    expect(screen.getByText("Wizards news")).toBeInTheDocument();
+    expect(screen.getByText(feedCopy.home.kicker["wizards-news"])).toBeInTheDocument();
     expect(container.querySelector("[data-feed-lists]")).toBeNull();
   });
 
@@ -374,7 +377,7 @@ describe("a decklists post's two presses (Announcements UI 6b, board Home-Rows `
     expect(presses[0].className).toContain("after:inset-0");
     expect(presses[0].className).toContain("text-[color:var(--accent-text)]");
     expect(container.querySelector("[data-feed-picture]")).toHaveAttribute("href", "/decks/precons#announced-fdc");
-    expect(container.textContent).not.toContain("Read the post");
+    expect(container.textContent).not.toContain(feedCopy.home.press.readPost);
   });
 
   it("keeps the one Read the post on a decklists post with no list in, and on every other post", () => {
@@ -436,14 +439,14 @@ describe("FeedItemRow in the archive's form (small items 11, item 3)", () => {
     it("reads in the store's zone, labelled, with no known zone", () => {
       list(<FeedItemRow item={drop()} now={DROP_NOW} />);
       expect(screen.getByText("On sale Mon Nov 16, 9 a.m. PT")).toBeInTheDocument();
-      expect(screen.getByText("US store")).toBeInTheDocument();
+      expect(screen.getByText(feedCopy.home.drop.store)).toBeInTheDocument();
     });
     it("inks the kicker's age for the pre-queue and the sale", () => {
       const queue = list(<FeedItemRow item={drop()} now="2026-11-16T16:30:00.000Z" zone="America/New_York" />);
-      expect(screen.getByText("pre-queue open").className).toContain("--accent-text");
+      expect(screen.getByText(feedCopy.home.drop.age.queueOpen).className).toContain("--accent-text");
       queue.unmount();
       list(<FeedItemRow item={drop()} now="2026-11-16T17:30:00.000Z" zone="America/New_York" />);
-      expect(screen.getByText("on sale now").className).toContain("--success");
+      expect(screen.getByText(feedCopy.home.drop.age.live).className).toContain("--success");
     });
     it("keeps the archive's date in the kicker and still says the sale", () => {
       list(<FeedItemRow item={drop()} now={DROP_NOW} zone="America/New_York" when="Nov 9" />);
