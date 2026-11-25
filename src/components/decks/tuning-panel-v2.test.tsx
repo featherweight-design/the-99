@@ -1,7 +1,7 @@
 import { act, fireEvent, render as rtlRender, screen, type RenderOptions } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clockTime, localDay } from "../../lib/copy/credits";
+import { clockTime, localDay, creditsCopy } from "../../lib/copy/credits";
 import { strategyName } from "../../lib/copy/strategy-focus";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -128,7 +128,7 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwoFree(12));
     // The drawn state: nothing counts yet, so there is no reset to name.
     expect(standing()!.textContent).toBe("1 of 1 free");
-    expect(screen.getByRole("link", { name: "Get more credits" }).getAttribute("href")).toBe("/credits");
+    expect(screen.getByRole("link", { name: creditsCopy.chip.out }).getAttribute("href")).toBe("/credits");
     // The off press is described by C's sentence, and the reason was announced on the way in.
     const describedBy = send().getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
@@ -159,7 +159,7 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     typeCount(12);
     expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwo);
     expect(standing()!.textContent).toBe("0 of 1 free · 1\u00a0paid");
-    expect(screen.queryByRole("link", { name: "Get more credits" })).toBeNull();
+    expect(screen.queryByRole("link", { name: creditsCopy.chip.out })).toBeNull();
   });
 
   it("B: welcome credits fund a run of 12, and the line says so", async () => {

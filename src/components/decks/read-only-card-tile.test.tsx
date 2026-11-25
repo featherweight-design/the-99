@@ -5,6 +5,9 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { ReadOnlyCardTile } from "./read-only-card-tile";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
+import { preconsCopy } from "../../lib/copy/precons";
+import { ownedStateCopy } from "../../lib/copy/decks-builder";
 
 const card = (over: Partial<DeckDetailCard> = {}) => ({
   oracleId: "wastes", name: "Wastes", owned: true, quantity: 15, typeLine: "Basic Land",
@@ -21,8 +24,8 @@ const tile = (c: DeckDetailCard, basic?: { arts: number }) =>
 describe("ReadOnlyCardTile", () => {
   it("says an unowned card is not owned in words beside the dot, and names the precon's printing", () => {
     tile(card({ oracleId: "sol", name: "Sol Ring", owned: false, quantity: 1, printedCollectorNumber: "312" }));
-    expect(screen.getByLabelText("Not owned")).toBeInTheDocument();
-    expect(screen.getByText("not owned")).toBeInTheDocument();
+    expect(screen.getByLabelText(ownedStateCopy.notOwned)).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.open.tileNotOwned)).toBeInTheDocument();
     expect(screen.getByText("CMM 312")).toBeInTheDocument();
   });
 
@@ -35,7 +38,7 @@ describe("ReadOnlyCardTile", () => {
   it("draws a basic with its copies, no dot, and its arts", () => {
     tile(card(), { arts: 3 });
     expect(screen.getByText("×15")).toBeInTheDocument();
-    expect(screen.getByText("basic · not counted")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.group.basicTag)).toBeInTheDocument();
     expect(screen.getByText("CMM · first of 3 arts")).toBeInTheDocument();
     expect(screen.queryByLabelText("Owned")).toBeNull();
     expect(screen.getByTestId("read-only-basic-tile")).toBeInTheDocument();
@@ -82,7 +85,7 @@ describe("ReadOnlyCardTile foil glint", () => {
   it("draws the glint after the dot for a foil box copy, and says it in the trigger's name", () => {
     tile(card({ printedFoil: true, quantity: 1 }));
     expect(document.querySelectorAll("[data-testid='foil-mark']")).toHaveLength(1);
-    expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").endsWith(", foil"))).toBe(true);
+    expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").endsWith(foilMarkCopy.spoken.foil))).toBe(true);
   });
   it("draws nothing for a plain box copy, or without art", () => {
     const { unmount } = tile(card({ printedFoil: false }));

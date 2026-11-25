@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import type { PreconRow } from "../../../lib/precons/list";
 import { PreconTile } from "./precon-tile";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 const commander = (name: string, imageUri: string | null = `https://img/${name}.jpg`) =>
   ({ oracleId: `${name}-id`, name, imageUri, colorIdentity: ["C"] });
@@ -17,7 +18,7 @@ const tile = (r: PreconRow) => render(<ul><PreconTile row={r} href="/decks/preco
 describe("PreconTile", () => {
   it("captions the figure, the name and the set, and speaks the commander in its link", () => {
     tile(row());
-    expect(screen.getByText("you own")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.row.ownLead)).toBeInTheDocument();
     expect(screen.getByText("74 of 85")).toBeInTheDocument();
     expect(screen.getByText("CMM · Aug 2023")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Eldrazi Unbound, with Ulalek, Fused Atrocity. You own 74 of 85 of its cards." }))
@@ -45,7 +46,7 @@ describe("PreconTile", () => {
     expect([...foot.children].map((c) => c.textContent)).toEqual([
       "HD - Eldrazibuilt from this · 73 shared",
       "HD - Other84 shared",
-      "also sold as a Collector’s Edition",
+      preconsCopy.tile.footTwin,
       "1 card not in our catalog yet",
     ]);
   });
@@ -60,6 +61,6 @@ describe("PreconTile", () => {
   it("names a precon with no commander the catalog can place, and draws the plate", () => {
     tile(row({ commanders: [] }));
     expect(screen.getByRole("link", { name: "Eldrazi Unbound. You own 74 of 85 of its cards." })).toBeInTheDocument();
-    expect(screen.getByTestId("tile-no-art")).toHaveTextContent("no art on file");
+    expect(screen.getByTestId("tile-no-art")).toHaveTextContent(preconsCopy.tile.noArt);
   });
 });
