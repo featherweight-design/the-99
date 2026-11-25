@@ -27,7 +27,7 @@ export const copyEditorCopy = {
   editor: {
     now: "Now",
     new: "New",
-    cancel: "Cancel",
+    cancel: "Never mind",
     add: "Add to edits",
     update: "Update edit",
     remove: "Remove edit",
