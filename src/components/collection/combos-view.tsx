@@ -9,13 +9,17 @@ import { useEffect, useState } from "react";
 import { addToWishlistAction } from "../../app/collection/wishlist/actions";
 import { comboOpenOpts, useCardDetail } from "../cards/card-detail-context";
 import { ComboGlyph } from "../cards/combo-glyph";
+import { GhostButton } from "../ui/button";
 import { PreviewButton } from "../ui/preview-button";
 import { RowSkeleton } from "../ui/tile-skeleton";
 import { useStoreInfo } from "../stores/store-provider";
 import { formatCents } from "../../lib/cards/price-fact";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
+import { PAGE_SIZE } from "../../lib/collection/window";
 import { quickFilterCopy } from "../../lib/copy/quick-filters";
 import { isInfiniteOrGameEnding } from "../../lib/spellbook/combo-features";
 import type { CollectionComboPair, CollectionComboSides, ComboPiece, ComboSide } from "../../lib/combos/collection-combos";
+import { expandSides, type CollectionCombosWire } from "../../lib/combos/combo-wire";
 
 const copy = quickFilterCopy.combos;
 
@@ -41,8 +45,8 @@ export function useCollectionCombos(open: boolean, version: unknown): { load: Co
     let live = true;
     const land = (load: CombosLoad) => live && setHeld({ version, load });
     fetch("/api/collection-combos", { credentials: "same-origin" })
-      .then((r) => (r.ok ? (r.json() as Promise<CollectionComboSides | null>) : null))
-      .then((sides) => land(sides ? { kind: "ready", sides } : { kind: "failed" }))
+      .then((r) => (r.ok ? (r.json() as Promise<CollectionCombosWire | null>) : null))
+      .then((wire) => land(wire ? { kind: "ready", sides: expandSides(wire) } : { kind: "failed" }))
       .catch(() => land({ kind: "failed" }));
     return () => {
       live = false;
@@ -226,19 +230,23 @@ export function CombosView({
   /** The pairs on screen: the side's pairs the Collection's filters leave. */
   pairs: CollectionComboPair[];
   /** Both toggle counts after the filters, null until the pairs have loaded. */
-  counts: Record<ComboSide, number> | null;
+  counts: Record<ComboSide, { count: number; floor: boolean }> | null;
   /** A filter is narrowing the view: an empty list says so rather than that the reader has no combos. */
   filtered: boolean;
   newVariantId: string | null;
   wide: boolean;
 }) {
   const detail = useCardDetail();
+  // The list's own windowing: PAGE_SIZE pairs, then `Show more` in steps. A side can hold ~1,000 pairs, so they never all
+  // mount at once. A filter or side change hands this a new `pairs` array, which starts the window over.
+  const [windowed, setWindowed] = useState({ pairs, n: PAGE_SIZE });
+  const n = windowed.pairs === pairs ? windowed.n : PAGE_SIZE;
   const open = (pair: CollectionComboPair, opener: HTMLElement, view?: "fits") => {
     // Find a deck looks for a home for the card the reader holds; on Own one that is never the missing piece.
     const target = view && pair.missingId === pair.a.oracleId ? pair.b : pair.a;
     detail.open(target.oracleId, undefined, undefined, { art: target.imageUri, opener, ...(view ? { view } : comboOpenOpts(pair.variantId)) });
   };
-  const count = (s: ComboSide) => counts?.[s] ?? null;
+  const count = (s: ComboSide) => (counts ? copy.count(counts[s].count, counts[s].floor) : null);
   return (
     <section data-combos-view className="px-[16px] pb-[24px] pt-[12px] md:px-[34px]" aria-busy={load.kind === "loading" || undefined}>
       <div className="flex flex-wrap items-center gap-[12px]">
@@ -275,11 +283,18 @@ export function CombosView({
         </ul>
       ) : (
         <ul className="m-0 mt-[14px] grid list-none gap-[12px] p-0" style={wide ? { gridTemplateColumns: "repeat(auto-fill, minmax(520px, 1fr))" } : undefined}>
-          {pairs.map((p) => (
+          {pairs.slice(0, n).map((p) => (
             <PairCard key={p.variantId} pair={p} side={side} isNew={newVariantId === p.variantId} wide={wide} onOpen={(pr, el) => open(pr, el)} onOpenPiece={(pc, el) => detail.open(pc.oracleId, undefined, undefined, { art: pc.imageUri, opener: el })} onFind={(pr, el) => open(pr, el, "fits")} />
           ))}
         </ul>
       )}
+      {load.kind === "ready" && pairs.length > n ? (
+        <div className="mt-[14px] flex justify-center">
+          <GhostButton type="button" data-combos-more onClick={() => setWindowed({ pairs, n: n + PAGE_SIZE })} className="text-[13px] px-[16px] py-[9px]">
+            {collectionPlaceCopy.showMore(pairs.length - n)}
+          </GhostButton>
+        </div>
+      ) : null}
     </section>
   );
 }

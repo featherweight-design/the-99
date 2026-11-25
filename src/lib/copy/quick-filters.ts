@@ -32,7 +32,9 @@ export const quickFilterCopy = {
     addToWishlist: "Add to wishlist",
     wishlisted: "On your wishlist",
     howItWorks: "How it works",
-    result: (n: number) => `${n} ${n === 1 ? "combo" : "combos"}`,
+    // A side past the server's ceiling reads as a floor ("5,000+"), never an exact number.
+    count: (n: number, floor = false) => `${n.toLocaleString()}${floor ? "+" : ""}`,
+    result: (n: number, floor = false) => `${n.toLocaleString()}${floor ? "+" : ""} ${n === 1 && !floor ? "combo" : "combos"}`,
     emptyBoth: "No two-card combos with both cards in your collection yet.",
     emptyOne: "No combos one card away.",
     noMatch: "No combos match these filters.",

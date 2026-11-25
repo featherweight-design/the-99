@@ -6,13 +6,15 @@
 // cards brings new pairs), so a second look costs nothing. A server cache would need a tag every collection and deck
 // write already drops; the client cache needs none because it lives for one page.
 //   - the reader comes from the Clerk session, never from the request (401 without one);
-//   - one request answers BOTH sides (`{ both, one }`), so the view opens with both toggle counts and the
+//   - one request answers BOTH sides in full (`{ pieces, both, one }`: each card once, pairs name them by id, a side is
+//     bounded only by `COMBO_SIDE_CEILING`), so the view opens with both toggle counts and the
 //     filters narrow the pairs on the client, never by another request;
 //   - every read is rooted in THIS reader's `collection_items` and `decks`;
 //   - rate limited in the `draw-fields` bucket, the app's own background-read rule.
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { loadCollectionComboSides, loadCollectionCombos } from "../../../lib/combos/collection-combos";
+import { LEGACY_SIDE_PAIRS, loadCollectionComboSides, loadCollectionCombos } from "../../../lib/combos/collection-combos";
+import { compactSides } from "../../../lib/combos/combo-wire";
 import { requestFlags } from "../../../lib/flags/request";
 import { enforceHit } from "../../../lib/rate/observe";
 import { tooManyRequests } from "../../../lib/rate/refuse";
@@ -35,10 +37,10 @@ export async function GET(request: Request) {
   try {
     const legacy = new URL(request.url).searchParams.get("side");
     if (legacy === "both" || legacy === "one") {
-      return NextResponse.json(await loadCollectionCombos({ userId, store, side: legacy }), { headers: HEADERS });
+      return NextResponse.json(await loadCollectionCombos({ userId, store, side: legacy, limit: LEGACY_SIDE_PAIRS }), { headers: HEADERS });
     }
     const combos = await loadCollectionComboSides({ userId, store });
-    return NextResponse.json(combos, { headers: HEADERS });
+    return NextResponse.json(compactSides(combos), { headers: HEADERS });
   } catch {
     return NextResponse.json(null, { status: 500, headers: HEADERS });
   }

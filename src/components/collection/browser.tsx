@@ -544,10 +544,11 @@ export function CollectionBrowser({
     if (comboLoad.kind !== "ready") return null;
     const kept = new Set(filtered.map((c) => c.oracleId));
     const side = (s: ComboSide) => {
-      const { pairs, total } = comboLoad.sides[s];
+      const { pairs, truncated } = comboLoad.sides[s];
+      // Every pair of the side is here (a side is bounded only by the server's ceiling), so the count is of the full set;
+      // past the ceiling it is a floor.
       const narrowed = narrowCombos(pairs, kept, filters);
-      // The payload caps at MAX_COMBO_PAIRS: a filter that drops nothing keeps the true total.
-      return { pairs: narrowed, count: narrowed.length === pairs.length ? total : narrowed.length };
+      return { pairs: narrowed, count: narrowed.length, floor: truncated };
     };
     return { both: side("both"), one: side("one") };
   }, [comboLoad, filtered, filters]);
@@ -555,6 +556,7 @@ export function CollectionBrowser({
   // Own one side (or a failed load) would be another side's number.
   const comboShown: number | null =
     combosSide && comboPairs ? comboPairs[combosSide].count : combosSide === "both" ? comboPairCount : null;
+  const comboFloor = combosSide && comboPairs ? comboPairs[combosSide].floor : false;
 
   const anyFilterActive =
     filters.search.trim() !== "" ||
@@ -801,7 +803,7 @@ export function CollectionBrowser({
           combosSide
             ? comboShown === null
               ? ""
-              : quickFilterCopy.combos.result(comboShown)
+              : quickFilterCopy.combos.result(comboShown, comboFloor)
             : chassisWide
             ? collectionChassisCopy.result(
                 sorted.length,
@@ -843,7 +845,7 @@ export function CollectionBrowser({
           load={comboLoad}
           retry={retryCombos}
           pairs={comboPairs?.[combosSide].pairs ?? []}
-          counts={comboPairs ? { both: comboPairs.both.count, one: comboPairs.one.count } : null}
+          counts={comboPairs ? { both: comboPairs.both, one: comboPairs.one } : null}
           filtered={anyFilterActive}
           newVariantId={newVariantId}
           wide={chassisWide}

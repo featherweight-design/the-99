@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ userId: "user_1" as string | null, load: vi.fn(), loadOne: vi.fn() }));
+const stub = vi.hoisted(() => ({ userId: "user_1" as string | null, load: vi.fn(), loadOne: vi.fn(), legacy: 300 }));
 const observe = vi.hoisted(() => vi.fn());
 vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => ({}) }));
 vi.mock("../../../lib/stores/preference", () => ({ readerStoreForPage: async () => "manapool" }));
-vi.mock("../../../lib/combos/collection-combos", () => ({ loadCollectionComboSides: stub.load, loadCollectionCombos: stub.loadOne }));
+vi.mock("../../../lib/combos/collection-combos", () => ({ loadCollectionComboSides: stub.load, loadCollectionCombos: stub.loadOne, LEGACY_SIDE_PAIRS: stub.legacy }));
 
 import { GET } from "./route";
 
@@ -15,8 +15,8 @@ const get = (query = "") => GET(new Request(`http://localhost/api/collection-com
 beforeEach(() => {
   observe.mockReset().mockResolvedValue(null);
   stub.userId = "user_1";
-  stub.loadOne.mockReset().mockResolvedValue({ side: "one", total: 0, pairs: [] });
-  stub.load.mockReset().mockResolvedValue({ both: { side: "both", total: 0, pairs: [] }, one: { side: "one", total: 0, pairs: [] } });
+  stub.loadOne.mockReset().mockResolvedValue({ side: "one", total: 0, truncated: false, pairs: [] });
+  stub.load.mockReset().mockResolvedValue({ both: { side: "both", total: 0, truncated: false, pairs: [] }, one: { side: "one", total: 0, truncated: false, pairs: [] } });
 });
 
 describe("GET /api/collection-combos", () => {
@@ -27,10 +27,23 @@ describe("GET /api/collection-combos", () => {
     expect(stub.load).toHaveBeenCalledWith({ userId: "user_1", store: "manapool" });
   });
 
+  it("sends each card once and names it by id in the pairs", async () => {
+    const piece = { oracleId: "a", name: "A", imageUri: null, colorIdentity: [], typeLine: "" };
+    const other = { ...piece, oracleId: "b", name: "B" };
+    const pair = (v: string) => ({ variantId: v, produces: [], popularity: 1, a: piece, b: other });
+    stub.load.mockResolvedValue({
+      both: { side: "both", total: 2, truncated: false, pairs: [pair("v1"), pair("v2")] },
+      one: { side: "one", total: 0, truncated: false, pairs: [] },
+    });
+    const body = await (await get()).json();
+    expect(Object.keys(body.pieces).sort()).toEqual(["a", "b"]);
+    expect(body.both.pairs.map((p: { a: string; b: string }) => [p.a, p.b])).toEqual([["a", "b"], ["a", "b"]]);
+  });
+
   it("answers a previous deployment's one-side request in that shape, so an open tab keeps working", async () => {
     const res = await get("?side=one");
-    expect(await res.json()).toEqual({ side: "one", total: 0, pairs: [] });
-    expect(stub.loadOne).toHaveBeenCalledWith({ userId: "user_1", store: "manapool", side: "one" });
+    expect(await res.json()).toEqual({ side: "one", total: 0, truncated: false, pairs: [] });
+    expect(stub.loadOne).toHaveBeenCalledWith({ userId: "user_1", store: "manapool", side: "one", limit: stub.legacy });
     expect(stub.load).not.toHaveBeenCalled();
   });
 

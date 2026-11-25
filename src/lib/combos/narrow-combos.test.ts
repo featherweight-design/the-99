@@ -4,7 +4,7 @@ import type { CollectionComboPair, ComboPiece } from "./collection-combos";
 import { narrowCombos } from "./narrow-combos";
 
 const piece = (oracleId: string, name: string, colorIdentity: string[], typeLine: string): ComboPiece => ({
-  oracleId, name, imageUri: null, artCropUri: null, colorIdentity, typeLine,
+  oracleId, name, imageUri: null, colorIdentity, typeLine,
 });
 const none: BrowseFilters = { search: "", colors: [], types: [], setCodes: [], availability: [] };
 const pair = (variantId: string, a: ComboPiece, b: ComboPiece, missingId?: string): CollectionComboPair => ({

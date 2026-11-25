@@ -22,15 +22,20 @@ import { distinctPairs, ownBothPairsQuery, ownOneQuery, type DistinctPair, type 
 
 export type ComboSide = "both" | "one";
 
-/** The most pairs one response carries, most popular first. `total` says how many there were. */
-export const MAX_COMBO_PAIRS = 300;
+/**
+ * The most pairs one side carries: a runaway and abuse guard far above real use (the busiest staging account has 911
+ * Own one pairs), not a page size. Past it the side says `truncated` and its count reads as a floor.
+ */
+export const COMBO_SIDE_CEILING = 5000;
+
+/** What a previous deployment's tab (`?side=`) was served per side. */
+export const LEGACY_SIDE_PAIRS = 300;
 
 /** `colorIdentity` and `typeLine` let the Collection's filters narrow a pair by a card the reader does not own. */
 export type ComboPiece = {
   oracleId: string;
   name: string;
   imageUri: string | null;
-  artCropUri: string | null;
   colorIdentity: string[];
   typeLine: string;
 };
@@ -51,7 +56,13 @@ export type CollectionComboPair = {
   wantedBy?: { id: string; name: string }[];
 };
 
-export type CollectionCombos = { side: ComboSide; total: number; pairs: CollectionComboPair[] };
+export type CollectionCombos = {
+  side: ComboSide;
+  total: number;
+  /** The side held more pairs than `pairs` carries: the count is a floor, never an exact number. */
+  truncated: boolean;
+  pairs: CollectionComboPair[];
+};
 
 /** Both sides in one response: the view opens with both toggle counts known and flipping the toggle costs nothing. */
 export type CollectionComboSides = { both: CollectionCombos; one: CollectionCombos };
@@ -94,20 +105,20 @@ async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<s
 
 const noDecks = new Map<string, { id: string; name: string }[]>();
 
-export async function loadCollectionCombos(args: { userId: string; store: Store; side: ComboSide }): Promise<CollectionCombos> {
-  const { userId, store, side } = args;
+export async function loadCollectionCombos(args: { userId: string; store: Store; side: ComboSide; limit?: number }): Promise<CollectionCombos> {
+  const { userId, store, side, limit = COMBO_SIDE_CEILING } = args;
   const query = side === "both" ? ownBothPairsQuery(userId, { deck: true }) : ownOneQuery(userId);
   const rows = (await db.execute(query)).rows as PairRow[];
   const all: DistinctPair[] = distinctPairs(rows, { oneSided: side === "one" });
-  const picked = all.slice(0, MAX_COMBO_PAIRS);
-  if (picked.length === 0) return { side, total: all.length, pairs: [] };
+  const picked = all.slice(0, limit);
+  const truncated = all.length > picked.length;
+  if (picked.length === 0) return { side, total: all.length, truncated, pairs: [] };
 
   const pieceIds = [...new Set(picked.flatMap((p) => [p.a.oracleId, p.b.oracleId]))];
   const art = await db
     .select({
       oracleId: cards.oracleId,
       imageUri: cards.imageUri,
-      artCropUri: cards.artCropUri,
       colorIdentity: cards.colorIdentity,
       typeLine: cards.typeLine,
     })
@@ -121,7 +132,6 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
     oracleId: p.oracleId,
     name: p.name,
     imageUri: ownedArt.get(p.oracleId) ?? artById.get(p.oracleId)?.imageUri ?? null,
-    artCropUri: artById.get(p.oracleId)?.artCropUri ?? null,
     colorIdentity: artById.get(p.oracleId)?.colorIdentity ?? [],
     typeLine: artById.get(p.oracleId)?.typeLine ?? "",
   });
@@ -144,7 +154,7 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
       wantedBy: wanted.get(p.missingId) ?? [],
     };
   });
-  return { side, total: all.length, pairs };
+  return { side, total: all.length, truncated, pairs };
 }
 
 export async function loadCollectionComboSides(args: { userId: string; store: Store }): Promise<CollectionComboSides> {
