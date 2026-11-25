@@ -80,7 +80,7 @@ describe("GroupEditor", () => {
       expect(screen.queryAllByRole("checkbox")).toEqual([]);
     }
     fireEvent.change(search, { target: { value: "nobody" } });
-    expect(screen.getByText(adminCopy.payments.form.noMatch)).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.groups.noMatch)).toBeInTheDocument();
   });
 
   it("sends the whole desired state on Save, and leaves the refresh to the action's own revalidation", async () => {
@@ -154,7 +154,7 @@ describe("GroupEditor", () => {
     render(<GroupEditor saved={SAVED} rows={ROWS} />);
     fireEvent.click(member("Jun"));
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
-    expect(within(pending()!).getByRole("alert")).toHaveTextContent(adminCopy.setting.saveFailed);
+    expect(within(pending()!).getByRole("alert")).toHaveTextContent(adminCopy.flag.saveFailed);
   });
 
   it("calls a lost reply unknown, never nothing changed, and refreshes to reconcile", async () => {

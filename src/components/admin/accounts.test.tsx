@@ -492,7 +492,7 @@ describe("AccountPageView (A4 to A7)", () => {
     await act(async () => fireEvent.click(within(box).getByRole("radio", { name: "On" })));
     expect(setOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara", value: "on" });
     rerender(<AccountPageView page={{ ...PAGE, allFeatures: true }} />);
-    await act(async () => fireEvent.click(within(screen.getByTestId("account-all-features")).getByRole("radio", { name: adminCopy.flags.app.notSet })));
+    await act(async () => fireEvent.click(within(screen.getByTestId("account-all-features")).getByRole("radio", { name: adminCopy.flag.appOpts.notSet })));
     expect(clearOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara" });
   });
 
@@ -554,7 +554,7 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(dialog).toHaveTextContent("Saving changes who is in testers");
     await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: /Turn on for 1/ })));
     expect(move).toHaveBeenLastCalledWith("user_9mara", T, 1);
-    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.setting.saveFailed);
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.flag.saveFailed);
     expect(refresh).not.toHaveBeenCalled();
   });
 

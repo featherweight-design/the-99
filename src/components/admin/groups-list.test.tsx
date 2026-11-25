@@ -30,13 +30,13 @@ describe("GroupsList", () => {
     expect(card).toHaveTextContent("Hugh, Mara");
     expect(card).toHaveTextContent("Fixture v2 flag: on");
     expect(within(card).getByRole("link", { name: "Edit testers" })).toHaveAttribute("href", `/admin/groups/${T}`);
-    expect(screen.getByRole("link", { name: adminCopy.groups.newTitle })).toHaveAttribute("href", "/admin/groups/new");
+    expect(screen.getByRole("link", { name: adminCopy.groups.newGroup })).toHaveAttribute("href", "/admin/groups/new");
   });
 
   it("says No groups yet. beside New group, and that Clerk is down", () => {
     render(<GroupsList cards={[]} count="0 groups" meta="7 accounts · 7 in no group" clerk="down" />);
     expect(screen.getByText(adminCopy.groups.none)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: adminCopy.groups.newTitle })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: adminCopy.groups.newGroup })).toBeInTheDocument();
     expect(screen.getByText(adminCopy.accounts.clerkDown)).toBeInTheDocument();
   });
 });

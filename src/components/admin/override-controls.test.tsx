@@ -37,7 +37,7 @@ describe("AppWideControl", () => {
     fireEvent.click(radio("On"));
     expect(radio("On")).toHaveAttribute("aria-checked", "true");
     expect(radio("Off")).toBeDisabled();
-    expect(radio(adminCopy.flags.app.notSet)).toBeDisabled();
+    expect(radio(adminCopy.flag.appOpts.notSet)).toBeDisabled();
     // The value the page drew rides along, so a write over a kill it never saw is refused.
     expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "app", expected: null, value: "on" });
     await act(async () => d.resolve({ ok: true }));
@@ -70,17 +70,17 @@ describe("AppWideControl", () => {
     await act(async () => fireEvent.click(radio("On")));
     expect(refresh).toHaveBeenCalledOnce();
     expect(radio("On")).toHaveAttribute("aria-checked", "true");
-    expect(radio(adminCopy.flags.app.notSet)).toHaveAttribute("aria-checked", "false");
+    expect(radio(adminCopy.flag.appOpts.notSet)).toHaveAttribute("aria-checked", "false");
     await act(async () => land());
     // Drawn with the page's own value once the refresh has landed (this fixture's never moves).
-    expect(radio(adminCopy.flags.app.notSet)).toHaveAttribute("aria-checked", "true");
+    expect(radio(adminCopy.flag.appOpts.notSet)).toHaveAttribute("aria-checked", "true");
   });
 
   it("says nothing changed, and Try again repeats the write (F11)", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: true });
     render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="off" stopped={false} who={WHO} />);
-    await act(async () => fireEvent.click(radio(adminCopy.flags.app.notSet)));
-    expect(screen.getByRole("alert").textContent).toContain(adminCopy.setting.saveFailed);
+    await act(async () => fireEvent.click(radio(adminCopy.flag.appOpts.notSet)));
+    expect(screen.getByRole("alert").textContent).toContain(adminCopy.flag.saveFailed);
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
     expect(clear).toHaveBeenCalledTimes(2);
@@ -90,11 +90,11 @@ describe("AppWideControl", () => {
   it("opens the confirm on a rise and sends the confirmed count and note back (F3)", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW }).mockResolvedValueOnce({ ok: true });
     render(<AppWideControl name="SUGGESTED_CHANGES_V2_ENABLED" label={"Fixture v2 flag"} value="off" stopped={false} who={WHO} />);
-    await act(async () => fireEvent.click(radio(adminCopy.flags.app.notSet)));
+    await act(async () => fireEvent.click(radio(adminCopy.flag.appOpts.notSet)));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading").textContent).toBe("Turn Fixture v2 flag on for 2 more accounts?");
     // The option the confirm asks about is ringed in dashed accent; the saved one stays selected.
-    expect(radio(adminCopy.flags.app.notSet).className).toContain("border-dashed");
+    expect(radio(adminCopy.flag.appOpts.notSet).className).toContain("border-dashed");
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
     fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "evals settled" } });
     await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "Turn on for 2" })));
@@ -115,7 +115,7 @@ describe("AppWideControl", () => {
   // Small items 9, item 4 (`Flags-Kill` K4 to K7).
   it("draws Killed last, in the kill ink, and fills it in --danger once chosen", () => {
     const { rerender } = render(<AppWideControl name="PUSH_ENABLED" label={"Fixture push flag"} value="on" stopped={false} who={WHO} />);
-    expect(within(screen.getByRole("radiogroup")).getAllByRole("radio").map((r) => r.textContent)).toEqual([adminCopy.flags.app.notSet, "On", "Off", "Killed"]);
+    expect(within(screen.getByRole("radiogroup")).getAllByRole("radio").map((r) => r.textContent)).toEqual([adminCopy.flag.appOpts.notSet, "On", "Off", "Killed"]);
     expect(radio("Killed").className).toContain("text-[color:var(--danger)]");
     expect(radio("Killed")).toHaveAttribute("aria-checked", "false");
     rerender(<AppWideControl name="PUSH_ENABLED" label={"Fixture push flag"} value="killed" stopped={false} who={WHO} />);
@@ -123,7 +123,7 @@ describe("AppWideControl", () => {
     expect(radio("Killed").className).toContain("bg-[color:var(--danger)]");
     expect(radio("Killed").className).toContain("text-[#fff]");
     // Lifting is live: On, Off and Not set are not held under a killed row.
-    for (const n of [adminCopy.flags.app.notSet, "On", "Off"]) expect(radio(n)).toBeEnabled();
+    for (const n of [adminCopy.flag.appOpts.notSet, "On", "Off"]) expect(radio(n)).toBeEnabled();
   });
 
   it("asks before a kill, every time, with its strings and the danger action; Cancel writes nothing", async () => {
@@ -139,7 +139,7 @@ describe("AppWideControl", () => {
       adminCopy.killConfirm.overrides,
       "Each server picks it up after 30 seconds and one more request.",
     ]);
-    expect(within(dialog).getByText(adminCopy.setting.note)).toBeInTheDocument();
+    expect(within(dialog).getByText(adminCopy.killConfirm.note)).toBeInTheDocument();
     const action = within(dialog).getByRole("button", { name: adminCopy.killConfirm.confirm });
     expect(action.className).toContain("bg-[color:var(--danger)]");
     // The option it asks about is ringed, in the kill ink; the saved one stays selected.
@@ -169,7 +169,7 @@ describe("AppWideControl", () => {
     fireEvent.click(radio("Killed"));
     await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: adminCopy.killConfirm.confirm })));
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByRole("alert").textContent).toContain(adminCopy.setting.saveFailed);
+    expect(within(dialog).getByRole("alert").textContent).toContain(adminCopy.flag.saveFailed);
     expect(within(dialog).getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
@@ -239,9 +239,9 @@ describe("AppWideControl", () => {
 
   it("is disabled under the env stop, except Not set when a row is there to clear (F5)", () => {
     const { rerender } = render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} stopped who={WHO} />);
-    for (const n of [adminCopy.flags.app.notSet, "On", "Off", "Killed"]) expect(radio(n)).toBeDisabled();
+    for (const n of [adminCopy.flag.appOpts.notSet, "On", "Off", "Killed"]) expect(radio(n)).toBeDisabled();
     rerender(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="on" stopped who={WHO} />);
-    expect(radio(adminCopy.flags.app.notSet)).toBeEnabled();
+    expect(radio(adminCopy.flag.appOpts.notSet)).toBeEnabled();
     expect(radio("Off")).toBeDisabled();
   });
 });
@@ -303,7 +303,7 @@ describe("RowControls", () => {
 });
 
 describe("Seg keys", () => {
-  const OPTIONS = [{ key: "on", text: "On" }, { key: "off", text: "Off" }, { key: "unset", text: adminCopy.flags.app.notSet }] as const;
+  const OPTIONS = [{ key: "on", text: "On" }, { key: "off", text: "Off" }, { key: "unset", text: adminCopy.flag.appOpts.notSet }] as const;
 
   // A pick saves an override at once, so the keys move focus and never pick: Enter or Space does.
   it("is one tab stop on the chosen option; the arrows, Home and End move focus past a locked one and pick nothing", () => {
@@ -311,15 +311,15 @@ describe("Seg keys", () => {
     render(<Seg label="Notes" options={OPTIONS} selected="off" pressed={null} disabled={false} locked={["on"]} onPick={pick} />);
     expect(screen.getAllByRole("radio").map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
     fireEvent.keyDown(radio("Off"), { key: "ArrowLeft" });
-    expect(document.activeElement).toBe(radio(adminCopy.flags.app.notSet));
+    expect(document.activeElement).toBe(radio(adminCopy.flag.appOpts.notSet));
     // The tab stop follows focus, so Tab leaves the group from where the reader is.
     expect(screen.getAllByRole("radio").map((r) => r.tabIndex)).toEqual([-1, -1, 0]);
-    fireEvent.keyDown(radio(adminCopy.flags.app.notSet), { key: "Home" });
+    fireEvent.keyDown(radio(adminCopy.flag.appOpts.notSet), { key: "Home" });
     expect(document.activeElement).toBe(radio("Off"));
     fireEvent.keyDown(radio("Off"), { key: "End" });
-    expect(document.activeElement).toBe(radio(adminCopy.flags.app.notSet));
+    expect(document.activeElement).toBe(radio(adminCopy.flag.appOpts.notSet));
     expect(pick).not.toHaveBeenCalled();
-    fireEvent.click(radio(adminCopy.flags.app.notSet));
+    fireEvent.click(radio(adminCopy.flag.appOpts.notSet));
     expect(pick).toHaveBeenCalledWith("unset");
   });
 

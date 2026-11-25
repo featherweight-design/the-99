@@ -23,7 +23,7 @@ describe("OverridePicker", () => {
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "p3@" } });
     expect(screen.getAllByRole("listitem").map((l) => l.textContent)).toEqual(["Player 3p3@x"]);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzz" } });
-    expect(screen.getByText(adminCopy.payments.form.noMatch)).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.flag.accountNoMatch)).toBeInTheDocument();
   });
 
   it("adds a pending row that writes nothing until On or Off, then saves with its note", async () => {
@@ -32,7 +32,7 @@ describe("OverridePicker", () => {
     fireEvent.click(screen.getByRole("button", { name: /Player 2/ }));
     expect(screen.getByTestId("pending-override")).toBeInTheDocument();
     expect(set).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByRole("textbox", { name: adminCopy.setting.note }), { target: { value: "early look" } });
+    fireEvent.change(screen.getByRole("textbox", { name: adminCopy.flag.noteField }), { target: { value: "early look" } });
     await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
     expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "user_2", value: "on", note: "early look" });
   });
@@ -103,7 +103,7 @@ describe("OverridePicker", () => {
   it("says there are no groups yet, and is disabled under a kill", () => {
     draw("group", []);
     fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addGroup }));
-    expect(screen.getByText(adminCopy.groups.none)).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.flag.groupsNone)).toBeInTheDocument();
     draw("user", PEOPLE, new Set(), true);
     expect(screen.getAllByRole("button", { name: adminCopy.flag.addAccount }).at(-1)).toBeDisabled();
   });

@@ -19,7 +19,7 @@ describe("KillConfirm", () => {
       adminCopy.killConfirm.overrides,
       "Each server picks it up after 30 seconds and one more request.",
     ]);
-    expect(within(dialog).getByRole("textbox", { name: adminCopy.setting.note })).toBeInTheDocument();
+    expect(within(dialog).getByRole("textbox", { name: adminCopy.killConfirm.note })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Cancel" })).toBe(document.activeElement);
     const action = within(dialog).getByRole("button", { name: adminCopy.killConfirm.confirm });
     expect(action.className).toContain("bg-[color:var(--danger)]");
@@ -38,10 +38,10 @@ describe("KillConfirm", () => {
   });
 
   it("holds both buttons while the write is in flight, and draws a failure inside the dialog", () => {
-    render(<KillConfirm label={"Fixture push flag"} who={WHO} pending failure={<p role="alert">Didn’t save. Nothing changed.</p>} onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    render(<KillConfirm label={"Fixture push flag"} who={WHO} pending failure={<p role="alert">Fixture failure</p>} onConfirm={vi.fn()} onCancel={vi.fn()} />);
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("button", { name: adminCopy.killConfirm.confirm })).toBeDisabled();
     expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
-    expect(within(dialog).getByRole("alert").textContent).toBe(adminCopy.setting.saveFailed);
+    expect(within(dialog).getByRole("alert").textContent).toBe("Fixture failure");
   });
 });

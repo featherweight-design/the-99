@@ -36,7 +36,7 @@ const view = flyersView(
 describe("FlyerCodes", () => {
   it("draws the header meta, a row per code and the launch-list card", () => {
     render(<FlyerCodes view={view} />);
-    expect(screen.getByRole("heading", { name: adminCopy.groups.delete.facts.codes })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: flyerAdminCopy.section })).toBeTruthy();
     expect(screen.getByText("2 live · from your invites, 40 left · 23 on the launch list")).toBeTruthy();
     expect(document.querySelectorAll("[data-flyer]")).toHaveLength(3);
     expect(within(screen.getByTestId("launch-list-card")).getByText("Launch list · 23")).toBeTruthy();
@@ -155,7 +155,7 @@ describe("Revoke", () => {
     fireEvent.click(within(document.querySelector("[data-flyer=MOX4QK]") as HTMLElement).getByTestId("flyer-revoke"));
     const dialog = screen.getByRole("dialog", { name: "Revoke Mox Boston’s code?" });
     expect(dialog.textContent).toContain("People can no longer join with MOX4QK. The 12 who joined keep their accounts, their group and their invites. Printed flyers will say it no longer works.");
-    fireEvent.click(within(dialog).getByRole("button", { name: adminCopy.groups.delete.keep }));
+    fireEvent.click(within(dialog).getByRole("button", { name: flyerAdminCopy.keep }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(revokeCode).not.toHaveBeenCalled();
   });
