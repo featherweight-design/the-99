@@ -632,9 +632,9 @@ CSS2 = '''
 .d-row .c-t h3 .wf{display:inline-block;vertical-align:-5px;width:22px;height:22px;border-radius:5px;overflow:hidden;margin:0 7px 0 8px;box-shadow:0 0 0 1.5px var(--accent)}
 .d-row .c-t h3 .wf img{width:100%%;height:100%%;object-fit:cover}
 .d-row .c-t h3 .wf.ini{background:var(--elevated);font:500 9px "IBM Plex Mono",monospace;color:var(--fg-muted);text-align:center;line-height:22px}
-.d-end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;text-shadow:0 1px 6px rgba(0,0,0,.9)}
-.d-end .d{font:500 11.5px "IBM Plex Mono",monospace;color:var(--fg)}
-.d-end .w{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-body)}
+.d-end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.d-end .d{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.d-end .w{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-locked)}
 .d-row.sel{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%%,transparent);background:color-mix(in srgb,var(--accent) 6%%,transparent)}
 .P .d-row{gap:12px;padding:12px 8px 12px 14px;min-height:78px}
 .P .d-wash{width:210px}
@@ -684,7 +684,7 @@ def d_title(g):
 def d_row(g, deck_tab=False, sel=False, phone=False):
     w = winner(g)
     wash_art = g['deck'] if w == 'me' else (w['art'] if w else None)
-    wash = f'<span class="d-wash"><img src="art/{wash_art}.webp" alt=""></span>' if wash_art else ''
+    wash = ''  # R2b (Hugh 2026-11-25): no art wash on the row
     art = f'<span class="c-art"><img src="art/{g["deck"]}.webp" alt=""><span class="rs{" w" if g["r"]=="W" else ""}">{g["r"]}</span></span>'
     if deck_tab:
         sub = f'<span class="stamp">{g["v"]}</span><span>{pods(g["pod"])}</span>'

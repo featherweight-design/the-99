@@ -28,7 +28,7 @@ scratch-gen/gen_games.py writes the boards; shoot.js renders and measures them.
 
 ## R2 (2026-11-25): Headline rows + seats in the details (boards D-Desktop, D-Phone)
 Hugh's R1 read: B is out; C's light rows + details are strong; A's seats are the most interesting (less faded).
-- Row: deck art + result square, headline "Lost to [winner face] Peter" (face inline beside the name, so the winner is never a highlight in a stack), subline deck + version + pod, the winner's commander art washes in from the right (your own deck's art when you won). No marks tally on the row.
+- Row: deck art + result square, headline "Lost to [winner face] Peter" (face inline beside the name), subline deck + version + pod, date + chevron. No art wash (R2b, Hugh: heavy-handed). No marks tally on the row.
 - Month band record: win share bar + counted W and L squares (zero side dimmed).
 - Details (drawer desktop 460, sheet phone): A's seat tiles at 84px, art barely dimmed, winner ringed with a "🏆 Won" tag; Helped / Hurt groups and the note with no Marks/Note headings.
 - Matchups: a commander only gets L when they won; a game somebody else won is a dashed "–" square (no placings are tracked). Squares sit in one fixed column (desktop) / under the name (phone). Trophy count column dropped (L now means they won). Key is three drawn squares, not a sentence.
