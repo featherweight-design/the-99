@@ -6,10 +6,12 @@
 //   3 hover (desktop) / first tap (phone) targets a text: [data-copy-target] + [data-copy-tag]
 //   4 a real click on a link does not navigate (URL unchanged)
 //   5 Esc clears the target, Esc again ends the mode; Done ends it and returns focus to the door
-//   6 (PROBE_GATE=closed) no door, no request to /api/copy-edit/rows. Restart the dev server WITHOUT ADMIN_USER_IDS
-//     (or with ADMIN_ENV_LABEL unset) and run `PROBE_GATE=closed node scripts/probe-copy-editor.mjs`.
+//   6 (PROBE_GATE=closed) no door, no request to /api/copy-edit/rows. Restart the dev server with ONE leg missing at a
+//     time (no ADMIN_USER_IDS; ADMIN_ENV_LABEL unset; VERCEL_PROJECT_PRODUCTION_URL unset) and run
+//     `PROBE_GATE=closed node scripts/probe-copy-editor.mjs` for each, so each leg is proven shut on its own.
 //
-// Run (dev server started with ADMIN_USER_IDS=<audit user id> ADMIN_ENV_LABEL=staging):
+// Run (dev server started with ADMIN_USER_IDS=<audit user id> ADMIN_ENV_LABEL=staging
+// VERCEL_PROJECT_PRODUCTION_URL=staging.the-99.dev; the last is the gate's project leg, which Vercel sets on staging):
 //   PROBE_BASE=http://localhost:3107 E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app node scripts/probe-copy-editor.mjs
 //   7+ the editor (PR 4): press a line open, the dialog (popover 420px / bottom sheet), word count, em dash refusal,
 //     chips that cannot be deleted, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
