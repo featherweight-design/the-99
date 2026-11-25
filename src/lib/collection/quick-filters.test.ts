@@ -110,7 +110,7 @@ describe("quickCounts equals the list the chip's press shows", () => {
   const free = { owned: 1, hard: 0, soft: 0, free: 1, claims: [] };
   const list = [
     listCard("a", { q: quickMask(["gameChanger"], []), availability: free }),
-    listCard("b", { q: quickMask(["gameChanger", "tutor"], []) }),
+    listCard("b", { q: quickMask(["gameChanger", "tutor"], []), colorIdentity: ["R"] }),
     listCard("c", { q: quickMask(["extraTurns"], []), availability: free }),
     listCard("d", { q: quickMask(undefined, [{ finishes: { foil: 1 } }]) }),
   ];
