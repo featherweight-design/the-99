@@ -49,7 +49,8 @@ function useComboSide(side: ComboSide): { load: Load; retry: () => void } {
   return { load: loaded[side] ?? { kind: "loading" }, retry };
 }
 
-function Piece({ piece, width, missing }: { piece: ComboPiece; width: number; missing: boolean }) {
+/** A card of the pair. With `onOpen` (the desktop card) it is a row card: hover preview plus the press that opens its details. */
+function Piece({ piece, width, missing, onOpen }: { piece: ComboPiece; width: number; missing: boolean; onOpen?: (piece: ComboPiece, opener: HTMLElement) => void }) {
   const h = Math.round(width * 1.395);
   if (missing) {
     return (
@@ -70,11 +71,24 @@ function Piece({ piece, width, missing }: { piece: ComboPiece; width: number; mi
       </span>
     );
   }
-  return piece.imageUri ? (
+  const art = piece.imageUri ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={piece.imageUri} alt="" loading="lazy" style={{ width, height: h }} className="flex-none rounded-[8px] object-cover" />
   ) : (
     <span aria-hidden style={{ width, height: h }} className="flex-none rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface)]" />
+  );
+  if (!onOpen) return art;
+  return (
+    <PreviewButton
+      imageUri={piece.imageUri}
+      type="button"
+      data-combo-card
+      aria-label={piece.name}
+      onClick={(e) => onOpen(piece, e.currentTarget)}
+      className="flex-none cursor-pointer border-0 bg-transparent p-0"
+    >
+      {art}
+    </PreviewButton>
   );
 }
 
@@ -98,6 +112,7 @@ function PairCard({
   isNew,
   wide,
   onOpen,
+  onOpenPiece,
   onFind,
 }: {
   pair: CollectionComboPair;
@@ -105,6 +120,7 @@ function PairCard({
   isNew: boolean;
   wide: boolean;
   onOpen: (pair: CollectionComboPair, opener: HTMLElement) => void;
+  onOpenPiece: (piece: ComboPiece, opener: HTMLElement) => void;
   onFind: (pair: CollectionComboPair, opener: HTMLElement) => void;
 }) {
   const fact = useFact(pair, side);
@@ -122,9 +138,9 @@ function PairCard({
   );
   const pieces = (
     <span className="flex flex-none items-center gap-[10px]">
-      <Piece piece={pair.a} width={width} missing={side === "one" && pair.missingId === pair.a.oracleId} />
+      <Piece piece={pair.a} width={width} missing={side === "one" && pair.missingId === pair.a.oracleId} onOpen={wide ? onOpenPiece : undefined} />
       <ComboGlyph />
-      <Piece piece={pair.b} width={width} missing={side === "one" && pair.missingId === pair.b.oracleId} />
+      <Piece piece={pair.b} width={width} missing={side === "one" && pair.missingId === pair.b.oracleId} onOpen={wide ? onOpenPiece : undefined} />
     </span>
   );
   const text = (
@@ -239,7 +255,7 @@ export function CombosView({
       ) : (
         <ul className="m-0 mt-[14px] grid list-none gap-[12px] p-0" style={wide ? { gridTemplateColumns: "repeat(auto-fill, minmax(520px, 1fr))" } : undefined}>
           {pairs.map((p) => (
-            <PairCard key={p.variantId} pair={p} side={side} isNew={newVariantId === p.variantId} wide={wide} onOpen={(pr, el) => open(pr, el)} onFind={(pr, el) => open(pr, el, "fits")} />
+            <PairCard key={p.variantId} pair={p} side={side} isNew={newVariantId === p.variantId} wide={wide} onOpen={(pr, el) => open(pr, el)} onOpenPiece={(pc, el) => detail.open(pc.oracleId, undefined, undefined, { art: pc.imageUri, opener: el })} onFind={(pr, el) => open(pr, el, "fits")} />
           ))}
         </ul>
       )}

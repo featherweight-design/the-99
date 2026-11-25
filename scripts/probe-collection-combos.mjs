@@ -88,6 +88,12 @@ try {
       `${vp.label}: a pair carries its fact line`,
     );
     if (vp.form === "wide") {
+      const card = page.locator("[data-combo-card]").first();
+      check((await card.count()) > 0, `${vp.label}: a pair's card image is a button`);
+      await card.click();
+      await page.waitForTimeout(800);
+      check((await page.getByRole("dialog").count()) > 0, `${vp.label}: pressing a card image opens that card's details`);
+      await closeSheet(page);
       const how = page.getByRole("button", { name: "How it works" }).first();
       check((await how.count()) > 0, `${vp.label}: a pair has How it works`);
       await how.click();
@@ -96,6 +102,7 @@ try {
       await closeSheet(page);
       check((await page.getByRole("dialog").count()) === 0, `${vp.label}: the sheet closes back onto the view`);
     } else {
+      check((await page.locator("[data-combo-card]").count()) === 0, `${vp.label}: a phone row draws no nested card buttons`);
       await page.locator("[data-combo-pair]").first().click();
       await page.waitForTimeout(800);
       check((await page.getByRole("dialog").count()) > 0, `${vp.label}: a phone row opens the pair's detail`);
