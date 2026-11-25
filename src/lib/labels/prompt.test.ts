@@ -235,6 +235,22 @@ describe("labelInputHash", () => {
     expect(needsLabel(card, row, { redo: false, model: "m" })).toBe(false);
   });
 
+  // THE v10 BUMP STALES NOTHING EITHER. v8 and v9 rows keep their own entries (v9's is a literal, so a bump
+  // that rewrote it instead of adding one is caught), and a v9 row owes no label to a non-list build.
+  it("keeps version 9's entry and a v9 row fresh after the v10 bump", () => {
+    expect(PROMPT_SYSTEM_SHA256["9"]).toBe("f18f7748adcae7fd6b2751af618fac4096f0367ba139af2ee5278a76f3d3e47f");
+    const row = { model: "m", promptVersion: "9", inputHash: labelInputHash(card, "m", "9") };
+    expect(labelIsFresh(row, card)).toBe(true);
+    expect(needsLabel(card, row, { redo: false, model: "m" })).toBe(false);
+    expect(needsLabel(card, row, { redo: true, model: "m" })).toBe(true);
+  });
+
+  // The Sonnet 5.5 role misses (2026-11-25): a Clue maker carries draw, a Treasure maker carries ramp.
+  it("tells the model a Clue maker is role draw and a Treasure maker is role ramp", () => {
+    expect(SYSTEM).toContain("Creating a Clue token IS draw");
+    expect(SYSTEM).toContain("creates a Treasure token is ramp, rampKind makesTreasure");
+  });
+
   // The version has to be READ, not merely exported. A hash computed over a payload with
   // the version removed is a different digest, so recomputing the documented payload by
   // hand and requiring the function to agree is what pins it — the first version of this

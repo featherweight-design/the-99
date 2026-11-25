@@ -66,11 +66,15 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  ramp burstMana with that trigger. NOT ramp: mana that lasts
                  only until end of combat, an untap in the end step or on an
                  opponent's turn (it pays for nothing you cast this turn),
-                 and playing lands from the top of your library.
+                 and playing lands from the top of your library. A card that
+                 creates a Treasure token is ramp, rampKind makesTreasure,
+                 even when making it is a side effect of another job.
   draw         — puts cards into your hand from your library. Becoming the
                  monarch is repeatable draw. A tutor is NOT draw. Cycling is
                  NOT draw: the card replaces itself, so it gains no cards;
-                 label nothing for cycling.
+                 label nothing for cycling. Creating a Clue token IS draw (the
+                 Clue pays to draw a card), so a card that makes a Clue carries
+                 role draw, whatever else it does.
   removal      — takes an opponent's permanent away from them: destroys,
                  exiles, bounces or shrinks it, deals damage to it, or gains
                  control of it. TARGETED damage that can hit an opponent's
@@ -514,10 +518,13 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // hashed. `prompt.test.ts` pins SYSTEM's hash to this version's registry entry.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
+// "10": the Sonnet 5.5 role misses (2026-11-25): a Clue maker carries role draw, and a Treasure maker carries
+// role ramp (rampKind makesTreasure) even when the Treasure is a side effect. No relabel: v8 and v9 rows stay
+// fresh under their own entries.
 // "9": the reply carries each card's request key (`cardKey`, 2026-11-08), and the build matches a reply
 // to its card by that key, so cards sharing a name label like any other. Only the output contract
 // moved; the job vocabulary and every rule are v8's, and v8 rows stay fresh under their own entry.
-export const LABEL_PROMPT_VERSION = "9";
+export const LABEL_PROMPT_VERSION = "10";
 
 /**
  * The sha256 of the SYSTEM prompt each prompt version was written under, by version.
@@ -535,6 +542,7 @@ export const LABEL_PROMPT_VERSION = "9";
 export const PROMPT_SYSTEM_SHA256: Readonly<Record<string, string>> = Object.freeze({
   "8": "826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d",
   "9": "f18f7748adcae7fd6b2751af618fac4096f0367ba139af2ee5278a76f3d3e47f",
+  "10": "cacb158c219448cfdff0aeac6f0c2e530cbb61b7914c412a1fa5736cb754bf03",
 });
 
 /**
