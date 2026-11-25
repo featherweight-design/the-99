@@ -37,7 +37,7 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
   scryfallId: "s1", setCode: "c21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
   imageUri: null, flavorName: null, finishes: ["nonfoil", "foil"], owned: { nonfoil: 3 }, ...over,
 });
-const THREE = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", owned: {} }), printing({ scryfallId: "s3", setCode: "cmm", setName: "Commander Masters", collectorNumber: "410", owned: {} })];
+const THREE = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Fixture Set Name", collectorNumber: "1512", owned: {} }), printing({ scryfallId: "s3", setCode: "cmm", setName: "Commander Masters", collectorNumber: "410", owned: {} })];
 
 function mount(over: Partial<Extract<AddCardsSheetProps, { mode: "add" }>> = {}) {
   const onClose = vi.fn();

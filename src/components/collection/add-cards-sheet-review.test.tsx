@@ -44,7 +44,7 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
   scryfallId: "s1", setCode: "c21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
   imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {}, ...over,
 });
-const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" })];
+const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Fixture Set Name", collectorNumber: "1512" })];
 
 beforeEach(() => {
   choices.mockReset().mockResolvedValue(TWO);
@@ -145,15 +145,15 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "normal add" }));
     await waitFor(() => expect(choices).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
-    // The Normal line asks for its printing: Secret Lair. The Auto line holds Commander 2021.
+    // The Normal line asks for its printing: Fixture Set Name. The Auto line holds Commander 2021.
     fireEvent.click((await screen.findAllByRole("radio"))[1]);
     await waitFor(() => expect(screen.getAllByRole("button", { name: copy.removeLineAria("Sol Ring") })).toHaveLength(2));
-    // Open the Auto line's fix, then move that line to Secret Lair: it folds into the other.
+    // Open the Auto line's fix, then move that line to Fixture Set Name: it folds into the other.
     const names = screen.getAllByRole("button", { name: "Sol Ring", expanded: false });
     fireEvent.click(names[names.length - 1]);
     const chip = screen.getByRole("button", { name: copy.printingChipAria("Sol Ring", "C21 · #263") });
     fireEvent.click(chip);
-    fireEvent.click(screen.getAllByRole("radio").find((r) => /Secret Lair/.test(r.textContent ?? ""))!);
+    fireEvent.click(screen.getAllByRole("radio").find((r) => /Fixture Set Name/.test(r.textContent ?? ""))!);
     // One line of two, drawn whole: no fix is left holding the list folded.
     await waitFor(() => expect(screen.getAllByRole("button", { name: copy.removeLineAria("Sol Ring") })).toHaveLength(1));
     expect(screen.queryByRole("group", { name: scan.fix.regionLabel })).toBeNull();

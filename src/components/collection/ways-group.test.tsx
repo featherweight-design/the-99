@@ -111,12 +111,12 @@ describe("WaysGroup", () => {
 describe("Step 1 with the ways group (S1)", () => {
   it("moves Add cards by hand out of the button row into the group, under the upload's two buttons", () => {
     render(<FirstRunChecklist />);
-    const paste = screen.getByRole("button", { name: "Paste a list" });
+    const paste = screen.getByRole("button", { name: refreshCopy.firstRun.pasteList });
     // The row is the upload's alone: Upload a CSV (the one fill), then Paste a list.
     expect(paste.nextElementSibling).toBeNull();
     expect(Array.from(paste.parentElement!.querySelectorAll("button")).map((b) => b.textContent)).toEqual([
       refreshCopy.firstRun.uploadCsv,
-      "Paste a list",
+      refreshCopy.firstRun.pasteList,
     ]);
     const add = within(group()).getByRole("button", { name: /Add cards by hand/ });
     // The group follows the upload in the document, so the tab order is the upload, then the group.
@@ -141,7 +141,7 @@ describe("Step 1 with the ways group (S1)", () => {
 
   it("leaves the group out while the paste panel is open", () => {
     render(<FirstRunChecklist />);
-    fireEvent.click(screen.getByRole("button", { name: "Paste a list" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.firstRun.pasteList }));
     expect(screen.queryByRole("group", { name: collectionEditCopy.ways.kicker })).toBeNull();
   });
 

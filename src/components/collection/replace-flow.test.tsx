@@ -152,7 +152,7 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     await screen.findByRole("dialog");
     fireEvent.click(screen.getByRole("button", { name: replaceCopy.confirm.keep }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getAllByRole("heading", { name: "Replace collection" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: replaceCopy.pageTitle(2933) }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Add your collection" })).toBeNull();
     expect(screen.getByText("2,933 cards")).toBeInTheDocument();
   });
@@ -202,7 +202,7 @@ describe("ReplaceFlow — §E, decks the replace would leave short", () => {
     confirmUpload.mockReturnValueOnce(new Promise(() => {}));
     const replace = await reachConfirm();
     await act(async () => fireEvent.click(replace));
-    expect(screen.getByRole("button", { name: "Checking decks…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: collectionEditCopy.shortWarning.checking })).toBeDisabled();
   });
 
   it("swaps the confirm for the warning, and Cancel writes nothing", async () => {
@@ -317,7 +317,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     await reachChoice();
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(mode === "add" ? collectionEditCopy.upload.addTitle : collectionEditCopy.upload.replaceTitle) }));
     fireEvent.click(screen.getByRole("button", { name: mode === "add" ? collectionEditCopy.upload.continueAdd : collectionEditCopy.upload.continueReplace }));
-    return screen.findByRole("button", { name: mode === "add" ? /^Add \d/ : "Replace collection" });
+    return screen.findByRole("button", { name: mode === "add" ? /^Add \d/ : collectionEditCopy.upload.confirmReplace });
   }
 
   beforeEach(() => {
@@ -373,8 +373,8 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toMatch(/We couldn’t import that/);
     expect(alert.textContent).toMatch(/Your collection is unchanged/);
-    expect(screen.getByRole("button", { name: "Replace collection" })).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    expect(screen.getByRole("button", { name: collectionEditCopy.upload.confirmReplace })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.retry })));
     expect(confirmUpload).toHaveBeenCalledTimes(2);
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
   });
@@ -448,7 +448,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(/couldn’t read how this file compares/);
     expect(screen.queryByRole("dialog")).toBeNull();
     serve(data());
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.retry })));
     expect(await screen.findByRole("radiogroup")).toBeTruthy();
   });
 
@@ -529,7 +529,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(screen.getByText(collectionEditCopy.upload.allOwned)).toBeTruthy();
     expect(confirm).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.switchToReplace }));
-    expect(await screen.findByRole("button", { name: "Replace collection" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: collectionEditCopy.upload.confirmReplace })).toBeTruthy();
     expect(screen.queryByText(collectionEditCopy.upload.allOwned)).toBeNull();
   });
 

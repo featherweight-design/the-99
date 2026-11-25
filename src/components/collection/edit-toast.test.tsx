@@ -139,9 +139,9 @@ describe("where the Edit copies toast stands", () => {
   it("draws in the deck toast stack as its receipt on a deck page, with Undo, though nobody announced a deck", () => {
     window.history.replaceState(null, "", DECK_PATH);
     render(<CollectionEditToast />);
-    act(() => announceEditToast({ entryId: "e1", removed: false, text: c.saved("Ghalta, Primal Hunger", 1) }));
+    act(() => announceEditToast({ entryId: "e1", removed: false, text: c.saved("Fixture Card", 1) }));
     const toast = screen.getByRole("status");
-    expect(toast.textContent).toContain(c.saved("Ghalta, Primal Hunger", 1));
+    expect(toast.textContent).toContain(c.saved("Fixture Card", 1));
     expect(toast.getAttribute("data-toast")).toBe("deck");
     expect(toast.getAttribute("data-toast-kind")).toBe("receipt");
     expect(toast.closest("[data-deck-toast-stack]")).not.toBeNull();

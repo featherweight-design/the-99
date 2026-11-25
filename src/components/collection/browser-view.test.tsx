@@ -15,6 +15,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { filterCopy } from "../../lib/copy/lanes";
 
 /**
  * Which list `/collection` opens as, and the order the three answers are asked
@@ -144,8 +145,8 @@ describe("CollectionBrowser — which view it opens as", () => {
   // reports the compact form, where the pips and the match control live in the sheet behind
   // "Filter cards" (the real phone path, not a test artifact — see browser-clear.test.tsx).
   const openFilters = () => fireEvent.click(screen.getByRole("button", { name: /Filter cards/i }));
-  const anyRadio = () => screen.getByRole("radio", { name: "Any of these" });
-  const exactlyRadio = () => screen.getByRole("radio", { name: "Exactly these" });
+  const anyRadio = () => screen.getByRole("radio", { name: filterCopy.match.any });
+  const exactlyRadio = () => screen.getByRole("radio", { name: filterCopy.match.exactly });
   const redPip = () => screen.getByRole("switch", { name: "Red" });
 
   it("?m=exact with no colour opens on Any", () => {

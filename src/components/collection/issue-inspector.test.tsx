@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { IssueInspector } from "./issue-inspector";
+import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 
 const preview = (unmatched: number, errors: number): UploadPreview => ({
   uploadId: "u1",
@@ -50,7 +51,7 @@ describe("IssueInspector — phone", () => {
     stubViewport(390);
     const onClose = vi.fn();
     render(<IssueInspector preview={preview(5, 2)} initialTab="unmatched" onClose={onClose} />);
-    drag(screen.getByRole("heading", { name: "Import issues" }), 80);
+    drag(screen.getByRole("heading", { name: issueInspectorCopy.header.title }), 80);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

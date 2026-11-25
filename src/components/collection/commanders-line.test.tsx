@@ -2,6 +2,7 @@
 // secondary 44px press to the Commanders place, and nothing for a failed read or a zero.
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 
 const ranked = vi.hoisted(() => vi.fn(async (): Promise<unknown> => ({ items: [{}, {}, {}] })));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => ({}) }));
@@ -15,7 +16,7 @@ describe("CommandersLine", () => {
   it("states the count read from the ranked list, and links to the commanders at 44px", async () => {
     render(await CommandersLine({ userId: "u1" }));
     expect(screen.getByText("3 commanders you can build from your cards")).toBeTruthy();
-    const link = screen.getByRole("link", { name: "See your commanders" });
+    const link = screen.getByRole("link", { name: cardAssignmentsCopy.summary.seeCommanders });
     expect(link).toHaveAttribute("href", "/commanders");
     expect(link.className).toContain("min-h-[44px]");
   });
