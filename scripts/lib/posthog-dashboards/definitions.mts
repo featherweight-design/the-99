@@ -1,6 +1,6 @@
 // The PostHog dashboards, as data (engagement tracking PR 3). `scripts/posthog-dashboards.mts` makes the dashboards and
-// insights below in a PostHog project, matching by NAME: a name that exists is updated in place, a new one is created,
-// and nothing is ever deleted (a dashboard or insight Hugh adds by hand is left alone).
+// insights below in a PostHog project, matching by NAME: an insight that exists is updated in place, a new insight or
+// dashboard is created, an existing dashboard is left as it is (its text is set when it is made), and nothing is ever deleted (a dashboard or insight Hugh adds by hand is left alone).
 //
 // Every query is a PostHog query object (`TrendsQuery`, `FunnelsQuery`, `RetentionQuery`) written out here rather than
 // built from a template, so the file reads as what the project will hold. The event names are the registry's
@@ -18,8 +18,8 @@ const DAYS_30 = { date_from: "-30d" };
 const DAYS_90 = { date_from: "-90d" };
 
 const event = (id: string, extra: Query = {}): Query => ({ kind: "EventsNode", event: id, name: id, ...extra });
-/** Readers who did it: unique persons, the figure retention and funnels read. */
-const readers = (id: string, label: string): Query => event(id, { math: "dau", custom_name: label });
+/** Readers who did it: unique persons active in the interval (`weekly_active`; `dau` counts per day, which is not a weekly figure). */
+const readers = (id: string, label: string): Query => event(id, { math: "weekly_active", custom_name: label });
 
 const viz = (source: Query): Query => ({ kind: "InsightVizNode", source });
 
@@ -79,7 +79,11 @@ const newcomerCounts = (): Query =>
     DAYS_30,
   );
 
-export const DASHBOARDS: DashboardDef[] = [
+/** Insight names are prefixed so a name matches only an insight this file made: a hand-made "Games logged" is never overwritten. */
+const PREFIX = "The 99: ";
+const named = (defs: DashboardDef[]): DashboardDef[] => defs.map((d) => ({ ...d, insights: d.insights.map((i) => ({ ...i, name: `${PREFIX}${i.name}` })) }));
+
+export const DASHBOARDS: DashboardDef[] = named([
   {
     name: "The 99: core actions",
     description: "Readers who did each core action, per week (one send per reader session). Counts are a lower bound: ad blockers drop some browser events.",
@@ -98,7 +102,7 @@ export const DASHBOARDS: DashboardDef[] = [
       { name: "Decks created, by source", description: "Readers who created a deck, by where it started: scratch, free build, guided, precon or import.", query: eventReaders("deck_created", "Deck created", "source") },
       { name: "Cards added to a deck, by way", description: "Readers who added a card, by search, suggestion or combo. Each reader session sends at most three.", query: eventReaders("deck_card_added", "Card added", "via") },
       { name: "Games logged", description: "Readers who logged a game.", query: eventReaders("deck_game_logged", "Game logged") },
-      { name: "Collections imported, by way and size", description: "Readers who imported or synced a collection, by CSV or Sync.", query: eventReaders("collection_imported", "Collection imported", "via") },
+      { name: "Collections imported, by way", description: "Readers who imported or synced a collection, by CSV or Sync.", query: eventReaders("collection_imported", "Collection imported", "via") },
       { name: "Wishlist adds", description: "Readers who put a card on the wishlist.", query: eventReaders("wishlist_added", "Wishlist added") },
       { name: "Precon upgrades applied", description: "Readers who applied a precon upgrade to a deck.", query: eventReaders("upgrade_applied", "Upgrade applied", "kind") },
       { name: "Friend invites created", description: "Readers who made a friend invite.", query: eventReaders("friend_invite_created", "Friend invite") },
@@ -110,7 +114,7 @@ export const DASHBOARDS: DashboardDef[] = [
     name: "The 99: funnels",
     description: "Where readers get to, signed in. The browser funnel follows one reader; the newcomer funnel is personless, so it counts events.",
     insights: [
-      { name: "Engaged funnel: import, deck, game", description: "Readers who imported a collection, then created a deck, then logged a game, within 14 days.", query: funnel([
+      { name: "Engaged funnel: import, deck, card, game", description: "Readers who imported a collection, then created a deck, then added a card, then logged a game, within 14 days.", query: funnel([
         event("collection_imported", { custom_name: "Imported a collection" }),
         event("deck_created", { custom_name: "Created a deck" }),
         event("deck_card_added", { custom_name: "Added a card" }),
@@ -138,7 +142,7 @@ export const DASHBOARDS: DashboardDef[] = [
       { name: "Retention: card added, weekly", description: "Readers who added a card to a deck, and who added another in later weeks.", query: retention("deck_card_added", null) },
     ],
   },
-];
+]);
 
 /** Every event name a query in `DASHBOARDS` counts, for the guard test. */
 export function eventNamesIn(value: unknown, out = new Set<string>()): Set<string> {

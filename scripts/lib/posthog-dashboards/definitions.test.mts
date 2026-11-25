@@ -47,6 +47,11 @@ describe("planRun", () => {
   const first = DASHBOARDS[0]!;
   const one = first.insights[0]!;
 
+  it("attaches an existing insight to a dashboard that does not exist yet", () => {
+    const have = [{ id: 7, name: one.name, description: one.description, query: one.query, dashboards: [] }];
+    expect(planRun([first], [], have).find((s) => s.name === one.name)?.action).toBe("update");
+  });
+
   it("creates everything in an empty project", () => {
     const steps = planRun(DASHBOARDS, [], []);
     expect(steps.filter((s) => s.action === "create").length).toBe(DASHBOARDS.length + all.length);
@@ -86,6 +91,7 @@ describe("the client", () => {
     expect(apiHostFor({})).toBe("https://us.posthog.com");
     expect(apiHostFor({ NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com/" })).toBe("https://eu.posthog.com");
     expect(apiHostFor({ POSTHOG_API_HOST: "https://ph.example.com/" })).toBe("https://ph.example.com");
+    expect(() => apiHostFor({ NEXT_PUBLIC_POSTHOG_HOST: "https://the-99.dev/ingest" })).toThrow(/POSTHOG_API_HOST/);
   });
 
   it("sends the key as a bearer to its own host and never follows a next link elsewhere", async () => {
@@ -94,6 +100,10 @@ describe("the client", () => {
     await expect(c.dashboards()).rejects.toThrow(/refusing to send the key to https:\/\/evil.example/);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect((fetchImpl.mock.calls[0]![1]!.headers as Record<string, string>).authorization).toBe("Bearer phx_secret");
+  });
+
+  it("refuses a host that is not https, so the key is never sent in the clear", () => {
+    expect(() => makeClient("http://us.posthog.com", "12", "phx_secret")).toThrow(/https/);
   });
 
   it("reports a failure by status and path, not by body or key", async () => {

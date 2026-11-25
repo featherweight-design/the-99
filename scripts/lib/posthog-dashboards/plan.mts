@@ -23,7 +23,8 @@ export function contains(have: unknown, want: unknown): boolean {
 function insightChanged(have: ExistingInsight, want: InsightDef, dashboardId: number | undefined): boolean {
   if ((have.description ?? "") !== want.description) return true;
   if (!contains(have.query, want.query)) return true;
-  return dashboardId !== undefined && !(have.dashboards ?? []).includes(dashboardId);
+  // A dashboard about to be created holds nothing yet, so an existing insight is attached to it.
+  return dashboardId === undefined || !(have.dashboards ?? []).includes(dashboardId);
 }
 
 export function planRun(defs: readonly DashboardDef[], dashboards: readonly Existing[], insights: readonly ExistingInsight[]): PlanStep[] {

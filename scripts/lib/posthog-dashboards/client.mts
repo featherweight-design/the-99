@@ -9,13 +9,17 @@ const DEFAULT_INGEST_HOST = "https://us.i.posthog.com";
 export function apiHostFor(env: { POSTHOG_API_HOST?: string; NEXT_PUBLIC_POSTHOG_HOST?: string }): string {
   const explicit = env.POSTHOG_API_HOST?.trim();
   if (explicit) return explicit.replace(/\/+$/, "");
-  const ingest = env.NEXT_PUBLIC_POSTHOG_HOST?.trim() || DEFAULT_INGEST_HOST;
-  return ingest.replace(/\/+$/, "").replace(".i.posthog.com", ".posthog.com");
+  const ingest = (env.NEXT_PUBLIC_POSTHOG_HOST?.trim() || DEFAULT_INGEST_HOST).replace(/\/+$/, "");
+  // Only PostHog's own ingest hosts map to an app host. A proxy or self-hosted address would send the key somewhere else.
+  if (!/^https:\/\/[a-z]+\.i\.posthog\.com$/.test(ingest)) throw new Error("NEXT_PUBLIC_POSTHOG_HOST is not a PostHog ingest host: set POSTHOG_API_HOST to the app host");
+  return ingest.replace(".i.posthog.com", ".posthog.com");
 }
 
 type Page<T> = { results: T[]; next: string | null };
 
 export function makeClient(host: string, projectId: string, key: string, fetchImpl: typeof fetch = fetch) {
+  // The key is a bearer token: it travels over https only, whatever the host setting says.
+  if (new URL(host).protocol !== "https:") throw new Error("the PostHog API host must be https");
   const base = `${host}/api/projects/${encodeURIComponent(projectId)}`;
   async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
     // A `next` link is followed only on the host the key was made for: a key goes nowhere else.
