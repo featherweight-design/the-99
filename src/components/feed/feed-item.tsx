@@ -25,6 +25,7 @@ import type { FeedView } from "../../lib/feed/home";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { comboSheetOpenOpts } from "../cards/card-detail-context";
+import { comboViewHref } from "../../lib/feed/combo-view-href";
 import { useCardDetailIfAny } from "../cards/card-detail-provider";
 import { usePreviewRow } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -395,6 +396,8 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
   const base = feedText(item);
   const lists = listsText(item);
   const two = seesLists(item);
+  // A new-combo item: See the combo (the row's stretched press) beside See your combos, the Collection's combos view.
+  const comboView = item.kind === "combo" && item.combo ? comboViewHref(item.combo.variantId) : null;
   const waiting = item.kind === "spare-request" && !item.answer;
   // Q18 A: a waiting ask or offer answers in its own row, and the receipt lands in place of its lines.
   const ask = waiting ? item.ask ?? null : null;
@@ -476,6 +479,26 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
                 stretch=""
                 className={`relative z-[1] flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
               />
+            </span>
+          ) : comboView && text.press ? (
+            <span data-feed-two className={`flex min-w-0 flex-wrap items-center gap-x-[16px] gap-y-0 ${rowMd(compact, "md:flex-col md:flex-nowrap md:items-end", "md:max-[1179px]:flex-col md:max-[1179px]:flex-nowrap md:max-[1179px]:items-end")}`}>
+              <FeedPress
+                item={item}
+                label={withChevron(text.press)}
+                describedBy={titleId}
+                stretch="after:absolute after:inset-0 after:content-['']"
+                className={`flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
+              />
+              {/* A sibling of the stretched press, above it (`z-[1]`), never inside it: a link nested in a button is invalid. */}
+              <Link
+                href={comboView}
+                data-feed-combos-view
+                aria-describedby={titleId}
+                className={`relative z-[1] flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
+              >
+                {`${c.press.combosView} ›`}
+                <PendingReporter href={comboView} />
+              </Link>
             </span>
           ) : text.press && (
             <FeedPress

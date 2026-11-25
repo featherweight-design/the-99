@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 const open = vi.hoisted(() => vi.fn());
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => ({ open }) }));
@@ -74,6 +74,26 @@ describe("FeedItemRow", () => {
     fireEvent.click(screen.getByRole("button", { name: "See the combo ›" }));
     expect(open).toHaveBeenCalledWith("a", undefined, undefined, expect.objectContaining({ art: null, combo: true, comboVariantId: "1-2" }));
     // The shown card is not the one opened (the write added the second piece): no art hint for a card never opened.
+  });
+
+  it("gives a combo a second press to the combos view, a sibling of the stretched press and tagging its pair", () => {
+    const { container } = list(
+      <FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation", variantId: "1-2" } })} now={NOW} />,
+    );
+    const link = screen.getByRole("link", { name: `${feedCopy.home.press.combosView} ›` });
+    expect(link.getAttribute("href")).toBe("/collection?combos=both&new=1-2");
+    expect(link.closest("button")).toBeNull();
+    expect(container.querySelectorAll("[data-feed-combos-view]")).toHaveLength(1);
+  });
+
+  it("links a combo with no variant to the combos view untagged, and no other kind draws the link", () => {
+    list(
+      <FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation", variantId: null } })} now={NOW} />,
+    );
+    expect(screen.getByRole("link", { name: `${feedCopy.home.press.combosView} ›` }).getAttribute("href")).toBe("/collection?combos=both");
+    cleanup();
+    const other = list(<FeedItemRow item={view({ href: "/x" })} now={NOW} />);
+    expect(other.container.querySelector("[data-feed-combos-view]")).toBeNull();
   });
 
   it("puts the friend's face on a trade match's card and links to their spares", () => {
