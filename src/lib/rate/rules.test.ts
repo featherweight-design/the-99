@@ -89,3 +89,9 @@ describe("the upgrade caps", () => {
     expect(RATE_RULES["upgrade-set-bracket"]).toEqual({ limit: 120, windowMs: 60_000 });
   });
 });
+
+describe("the copy editor cap", () => {
+  it("lets an admin start one workflow a minute", () => {
+    expect(RATE_RULES["copy-edit-submit"]).toEqual({ limit: 1, windowMs: 60_000 });
+  });
+});

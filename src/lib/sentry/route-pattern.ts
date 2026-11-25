@@ -35,6 +35,8 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/api/clerk-webhook",
   "/api/collection-fields",
   "/api/copy-edit/rows",
+  "/api/copy-edit/status",
+  "/api/copy-edit/submit",
   "/api/cron/account-sweep",
   "/api/cron/announcements",
   "/api/cron/invite-sweep",

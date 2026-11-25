@@ -1,0 +1,80 @@
+# The on-page copy editor's submit target (admin, staging only). The editor's submit route starts this workflow with a
+# branch name and the edits as JSON; it holds a token that can start workflows and nothing else. This workflow does the
+# rest: it builds the copy sheet from the edits (scripts/copy-edit-csv.mts, which checks them again), then runs
+# `pnpm copy:import`, the one existing commit path, which re-validates every row, makes the branch from origin/main, runs
+# typecheck and lint, pushes, and opens the pull request with the old -> new list.
+#
+# THE TOKEN. `COPY_EDIT_PR_TOKEN` is an Actions secret (a fine-grained token for this repository, Contents and Pull
+# requests write), and it reaches ONE step: the one that runs the import. A pull request opened with the workflow's own
+# GITHUB_TOKEN would not start CI; this one does. Everything before that step, including the install, runs without it.
+# In that step the import process itself (pnpm, tsx, this repository's own scripts) can read it; every command the
+# import starts runs with every token variable removed except `git fetch`, `git push` and `gh pr create`, so no
+# dependency's install script, the typecheck, lint or a commit hook can.
+#
+# INPUTS. `inputs.*` reaches the shell only through `env:`, never through `${{ }}` inside a `run:` line, so text an admin
+# typed cannot become a command. The branch must match copy-edit-YYYYMMDD-HHMMSS-xxxx and the edits are parsed as data.
+name: Copy edit
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'copy-edit-YYYYMMDD-HHMMSS-xxxx, named by the submit route'
+        required: true
+        type: string
+      edits:
+        description: 'JSON list of {key, from, to}, checked again here'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One group per branch: every run has its own branch, so none queues behind another (a queue keeps one pending run and
+# cancels the rest, which would silently lose a submission the route already answered 202 for).
+concurrency:
+  group: copy-edit-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  open-pr:
+    # Only the copy of this workflow on main may run (a dispatch names a ref).
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the sheet from the edits
+        env:
+          COPY_EDIT_BRANCH: ${{ inputs.branch }}
+          COPY_EDIT_EDITS: ${{ inputs.edits }}
+        run: pnpm exec tsx scripts/copy-edit-csv.mts "$RUNNER_TEMP/copy-edit.csv"
+
+      - name: Open the pull request
+        env:
+          COPY_EDIT_BRANCH: ${{ inputs.branch }}
+          COPY_EDIT_PR_TOKEN: ${{ secrets.COPY_EDIT_PR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$COPY_EDIT_PR_TOKEN" ]; then echo "COPY_EDIT_PR_TOKEN is not set"; exit 1; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          auth="$(printf 'x-access-token:%s' "$COPY_EDIT_PR_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::$auth"
+          export GH_TOKEN="$COPY_EDIT_PR_TOKEN"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          pnpm copy:import "$RUNNER_TEMP/copy-edit.csv" --branch "$COPY_EDIT_BRANCH"
