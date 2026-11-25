@@ -1191,7 +1191,6 @@ describe("QuickAddBar — a failed search", () => {
   it("says the seat picker's words, split, and leaves the bar as it was", async () => {
     // The two halves are the seat picker's one line, not new words.
     expect(`${addPanelCopy.quickAdd.searchFailed} ${addPanelCopy.quickAdd.searchRetry}.`).toBe(gameSeatsCopy.picker.failed);
-    expect(addPanelCopy.quickAdd.searchFailed).toBe("Couldn’t search just now.");
 
     quietErrors();
     searchCards.mockRejectedValue(new Error("boom"));

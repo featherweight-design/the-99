@@ -126,7 +126,7 @@ describe("analyzedWhen", () => {
   const at = new Date("2026-09-18T12:00:00Z");
   const after = (ms: number) => new Date(at.getTime() + ms);
   it("is a moment, then minutes, then the short date at the hour", () => {
-    expect(analyzedWhen(at, after(30_000))).toBe("a moment ago");
+    expect(analyzedWhen(at, after(30_000))).toBe(deckAnalysisCopy.panel.justNow);
     expect(analyzedWhen(at, after(60_000))).toBe("1 minute ago");
     expect(analyzedWhen(at, after(59 * 60_000))).toBe("59 minutes ago");
     expect(analyzedWhen(at, after(60 * 60_000))).toBe("Sep 18");

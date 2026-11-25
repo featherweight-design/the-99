@@ -4,7 +4,7 @@ import { StatusPillBadge } from "./status-pill";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { StatusPill } from "../../lib/decks/status";
 
-const ALL: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"];
+const ALL: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", refreshCopy.status.toBuy, "Complete"];
 
 describe("StatusPillBadge", () => {
   it("labels every status from the shipped copy file", () => {

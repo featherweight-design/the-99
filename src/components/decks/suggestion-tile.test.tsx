@@ -217,7 +217,7 @@ describe("SuggestionTile availability caption", () => {
   it("speaks the chip's sentence, count-only as the chip is drawn", () => {
     mount({ owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] });
 
-    expect(screen.getByText("no free copies")).toBeInTheDocument();
+    expect(screen.getByText(availabilityCopy.marker.hardAriaCountOnly)).toBeInTheDocument();
     expect(screen.getByText(availabilityCopy.marker.hard)).toHaveAttribute(
       "aria-hidden",
       "true",

@@ -155,9 +155,9 @@ describe("ResultView's bar: the flow's press in the Apply place (call 11)", () =
   });
 
   it("holds an off press with its line said in the bar, and never applies on its own", () => {
-    const p = press({ off: true, note: "The precon’s list changed after this upgrade, so it can’t start a deck." });
+    const p = press({ off: true, note: "Fixture list changed note" });
     render(<ResultView panel={panel} run={run()} press={p} lineActions={quiet()} />);
-    expect(within(bar()).getByRole("note")).toHaveTextContent("The precon’s list changed");
+    expect(within(bar()).getByRole("note")).toHaveTextContent("Fixture list changed note");
     expect(apply()).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(apply());
     expect(p.onPress).not.toHaveBeenCalled();

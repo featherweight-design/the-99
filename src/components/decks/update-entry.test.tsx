@@ -82,7 +82,7 @@ describe("the list step", () => {
   // against. The whole premise is that neither changes, so neither is offered.
   it("asks for no deck name and no commander", () => {
     renderEntry();
-    expect(screen.queryByLabelText("Deck name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(deckImportCopy.commander.nameLabel)).not.toBeInTheDocument();
     // The paste is the only field on the surface. A commander picker would be a
     // second one, and the copy below says out loud that there isn't one.
     expect(screen.getAllByRole("textbox")).toHaveLength(1);

@@ -11,19 +11,19 @@ const NOTE = "Fixture check note.";
 describe("AnalysisBanner's check note", () => {
   it("describes the press by the note's text alone, and See which opens Notices", () => {
     const onSee = vi.fn();
-    render(<AnalysisBanner mode="stale" busy={false} blocked={null} onRequest={() => {}} note={NOTE} see={{ label: "See which", onPress: onSee }} />);
+    render(<AnalysisBanner mode="stale" busy={false} blocked={null} onRequest={() => {}} note={NOTE} see={{ label: "Fixture see link", onPress: onSee }} />);
     const press = screen.getByRole("button", { name: "Re-analyze" });
     const id = press.getAttribute("aria-describedby");
     expect(id).toBeTruthy();
     expect(document.getElementById(id!)?.textContent).toBe(NOTE);
-    fireEvent.click(screen.getByRole("button", { name: /See which/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Fixture see link/ }));
     expect(onSee).toHaveBeenCalledOnce();
   });
 
   it("draws no note and no See which over a blocked press (F13)", () => {
-    render(<AnalysisBanner mode="stale" busy={false} onRequest={() => {}} blocked="Add 3 cards to analyze this deck." note={NOTE} see={{ label: "See which", onPress: () => {} }} />);
+    render(<AnalysisBanner mode="stale" busy={false} onRequest={() => {}} blocked="Add 3 cards to analyze this deck." note={NOTE} see={{ label: "Fixture see link", onPress: () => {} }} />);
     expect(screen.queryByTestId("press-note")).toBeNull();
-    expect(screen.queryByRole("button", { name: /See which/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Fixture see link/ })).toBeNull();
   });
 });
 

@@ -8,6 +8,7 @@ await (await import("../cards/card-detail-provider")).warmCardModal();
 import { Decklist } from "./decklist";
 import { UnresolvedGroup } from "./unresolved-group";
 import { recommendedMix } from "../../lib/decks/mix";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -147,7 +148,7 @@ describe("the unresolved group inside the decklist", () => {
   // directly above the lines it is denying.
   it("does not claim the deck is empty when only unresolved rows remain", () => {
     renderDecklist({ cards: [], built: 0 });
-    expect(screen.queryByText("No cards in this deck.")).not.toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.emptyList)).not.toBeInTheDocument();
     expect(screen.getByText(copy.groupLabel)).toBeInTheDocument();
   });
 });

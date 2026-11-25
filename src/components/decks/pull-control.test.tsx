@@ -624,7 +624,7 @@ describe("PullControl — 2+ choosable sources", () => {
     const INSET = ["px-[16px]", "pb-[28px]"];
     const insetOf = () => {
       // The order line sits in the shared column's scrolling body; that column's parent is this shell's.
-      const line = screen.getByText("In the order they committed it");
+      const line = screen.getByText(deckVersioningCopy.review.source.order);
       return (line.closest("[data-picker-body]")!.parentElement!.parentElement!.className ?? "").split(/\s+/);
     };
     setViewport(false);

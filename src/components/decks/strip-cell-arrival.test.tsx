@@ -10,7 +10,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, roleStripCopy } from "../../lib/copy/decks-builder";
 import { recommendedMix } from "../../lib/decks/mix";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
@@ -127,7 +127,7 @@ describe("coverage cell arrival", () => {
     );
 
     expect(document.getElementById("panel-analysis")).not.toBeNull();
-    expect(screen.getAllByLabelText("Recommended mix")).toHaveLength(1);
+    expect(screen.getAllByLabelText(roleStripCopy.mixLabel)).toHaveLength(1);
     fireEvent.click(
       screen.getByRole("button", {
         name: addPanelCopy.strip.cellLinkAria(

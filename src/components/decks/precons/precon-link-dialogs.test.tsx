@@ -13,7 +13,7 @@ const items = [
 function mount(onDismiss = vi.fn()) {
   render(
     <LinkPicker
-      title="Link a precon"
+      title="Fixture picker title"
       lead="Pick the precon this deck started from."
       searchLabel="Search precons"
       label="Precons"

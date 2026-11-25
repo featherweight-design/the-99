@@ -63,7 +63,7 @@ describe("the opener", () => {
     fireEvent.click(trigger());
     expect(within(sheet()).getByRole("heading", { name: upgradePathCopy.heading(3, 2) })).toBeTruthy();
     expect(within(sheet()).getByTestId("upgrade-path")).toBeTruthy();
-    fireEvent.click(within(sheet()).getByRole("button", { name: "Close what would have to go" }));
+    fireEvent.click(within(sheet()).getByRole("button", { name: deckAnalysisCopy.sheets.closeUpgradePath }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
