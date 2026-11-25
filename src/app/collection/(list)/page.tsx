@@ -66,7 +66,7 @@ export default async function CollectionPage({
   };
   // The reader's store (store preference): Mana Pool, with no read, while the switch is off for them.
   const storeRead = readerStoreForPage(userId, env);
-  const [stats, { cards, pricesFailed }, ownedSets, availability, savedToken, store, findADeck] = await Promise.all([
+  const [stats, { cards, pricesFailed, comboPairCount }, ownedSets, availability, savedToken, store, findADeck] = await Promise.all([
     perf.timed("stats", () => getCollectionStats(userId)),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -187,6 +187,7 @@ export default async function CollectionPage({
           viewHint={viewHint}
           savedToken={savedToken}
           findADeck={findADeck}
+          comboPairCount={comboPairCount}
         />
       </StoreProvider>
     </section>

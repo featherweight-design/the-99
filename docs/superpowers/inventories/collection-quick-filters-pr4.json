@@ -1,0 +1,25 @@
+{
+  "feature": "Collection quick filters, PR 4: the combos view",
+  "note": "One route, two sides, four widths. `?combos=both` is Two-card combos pressed on the Own both side; `?combos=one` is the Own one side. At 1180 and 1300 a pair is a card with its actions (Find a deck or Add to wishlist, and How it works); at 390 and 820 (below the chassis breakpoint, so the phone row by the same rule as the chip strip) a pair is one whole-row press that opens the pair's sheet. The other pages that use the filter chassis are unchanged: the view is a body branch of the Collection browser and the chassis takes only a result count and line.",
+  "out": "contact-sheets/collection-quick-filters-pr4",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 },
+    { "label": "ipad-landscape", "width": 1180, "height": 820 },
+    { "label": "ipad-portrait", "width": 820, "height": 1180 }
+  ],
+  "rows": [
+    {
+      "id": "both",
+      "label": "/collection?combos=both: Two-card combos pressed, Own both",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [{ "goto": "/collection?combos=both", "wait": "[data-combo-pair]", "settle": 3000 }]
+    },
+    {
+      "id": "one",
+      "label": "/collection?combos=one: Own one",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [{ "goto": "/collection?combos=one", "wait": "[data-combo-pair]", "settle": 3000 }]
+    }
+  ]
+}

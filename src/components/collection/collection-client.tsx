@@ -31,6 +31,7 @@ export function CollectionClient({
   viewHint,
   savedToken = null,
   findADeck = null,
+  comboPairCount = 0,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
@@ -43,6 +44,8 @@ export function CollectionClient({
   savedToken?: string | null;
   /** The Find a deck call-out's and buttons' read (`loadFindADeckState`); null (absent or failed) draws neither. */
   findADeck?: FindADeckState | null;
+  /** Own-both combo pairs: the Two-card combos chip's figure (`comboPairCount` of the list payload). */
+  comboPairCount?: number;
 }) {
   // Decoded once per payload: the same wire identity is the same list, so everything below
   // that compares `cards` by identity keeps working.
@@ -101,6 +104,7 @@ export function CollectionClient({
         viewHint={viewHint}
         savedToken={savedToken}
         findADeck={findADeck}
+        comboPairCount={comboPairCount}
       />
     </CardDetailProvider>
   );

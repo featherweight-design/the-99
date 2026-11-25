@@ -66,6 +66,8 @@ import { FindADeckCallout } from "./find-a-deck-callout";
 import { FIND_A_DECK_FROM_PLACE, type FindADeckButtons } from "./find-a-deck-button";
 import type { FindADeckState } from "../../lib/collection/find-a-deck";
 import { captureToolEvent } from "../../lib/analytics/posthog";
+import { CombosView } from "./combos-view";
+import type { ComboSide } from "../../lib/combos/collection-combos";
 
 
 /**
@@ -74,7 +76,7 @@ import { captureToolEvent } from "../../lib/analytics/posthog";
  * carried through untouched, so the browse state is written by clearing exactly
  * these and rewriting them rather than by rebuilding the whole query string.
  */
-const OWNED_PARAMS = ["q", "c", "m", "t", "s", "avail", "quick", "sort", "dir", "view", "card"] as const;
+const OWNED_PARAMS = ["q", "c", "m", "t", "s", "avail", "quick", "combos", "new", "sort", "dir", "view", "card"] as const;
 
 function serializeParams(
   filters: BrowseFilters,
@@ -84,6 +86,7 @@ function serializeParams(
   card: string | null,
   existing: string,
   remembered: StoredSort | null,
+  combos: { side: ComboSide; newVariantId: string | null } | null = null,
 ): string {
   const p = new URLSearchParams(existing);
   for (const key of OWNED_PARAMS) p.delete(key);
@@ -103,6 +106,11 @@ function serializeParams(
   }
   // One word, and never beside `avail=free`, which is In no deck (`parseBrowseParams` keeps the availability).
   if (filters.quick && !isFreeAlone(filters)) p.set("quick", filters.quick);
+  // The combos view is its own state, not a filter: `?combos=both|one` alone opens it, `new` tags the pair a feed item announced.
+  if (combos) {
+    p.set("combos", combos.side);
+    if (combos.newVariantId) p.set("new", combos.newVariantId);
+  }
   // An absence reads as the remembered sort (`withStoredSort`), so it is only faithful when that IS this order. A list
   // sorted another way than the one remembered says so, Name included: `?sort=name` over a remembered Quantity would
   // otherwise lose its override at the next reload.
@@ -255,6 +263,7 @@ export function CollectionBrowser({
   viewHint = NO_VIEW_HINT,
   savedToken = null,
   findADeck = null,
+  comboPairCount = 0,
 }: {
   /**
    * The list, whole cards and WITHHELD ones (list payload plan, PR 4): the page ships the draw
@@ -291,6 +300,8 @@ export function CollectionBrowser({
   savedToken?: string | null;
   /** The Find a deck call-out and buttons' facts (tool discovery call 1); null when the read failed, and nothing draws. */
   findADeck?: FindADeckState | null;
+  /** Own-both pairs the reader holds: the Two-card combos chip's figure. The pairs load when the view opens. */
+  comboPairCount?: number;
 }) {
   const search = useSearchParams();
   // A withheld row lacks only draw fields, which none of the filters, sorts, counts or options
@@ -312,6 +323,15 @@ export function CollectionBrowser({
   // each falls back to its default there.
   const [initial] = useState(() => parseBrowseParams(withStoredSort((key) => search.get(key), viewHint.sort), availabilityOk));
   const [filters, setFilters] = useState<BrowseFilters>(initial.filters);
+  // The combos view (Two-card combos pressed): view state beside the filters, never part of them. `?combos=` or
+  // `?quick=combos` opens it; any other filter change takes it back to the card list.
+  const [combosSide, setCombosSide] = useState<ComboSide | null>(() => {
+    const c = search.get("combos");
+    if (c === "both" || c === "one") return c;
+    return search.get("quick") === "combos" ? "both" : null;
+  });
+  const [newVariantId] = useState<string | null>(() => search.get("new"));
+  const [comboPress, setComboPress] = useState(0);
   // The sort the cookie holds now: what a URL with no `sort` reads as. Starts as the page's hint and follows every press.
   const remembered = useRef<StoredSort | null>(viewHint.sort ?? null);
   const [sort, setSort] = useState<SortKey>(initial.sort);
@@ -493,6 +513,7 @@ export function CollectionBrowser({
           filters, f, cards, availabilityOptions, totalQuantity, intent,
         );
       if (message) publishAnnouncement(message);
+      setCombosSide(null);
       setFilters(f);
       setShown(PAGE_SIZE);
       setRevealFrom(null);
@@ -528,8 +549,9 @@ export function CollectionBrowser({
   // pressed whichever control set it; the strip then owns it, and it is never also an active-filter chip.
   const availSelection = filters.availability ?? [];
   const freeAlone = availSelection.length === 1 && availSelection[0] === "free";
-  const quickPressed: QuickPressed | undefined = filters.quick ?? (freeAlone ? "free" : undefined);
-  const quickCountsNow = useMemo(() => quickCounts(cards, filters), [cards, filters]);
+  const quickPressed: QuickPressed | undefined = combosSide ? "combos" : filters.quick ?? (freeAlone ? "free" : undefined);
+  const listCounts = useMemo(() => quickCounts(cards, filters), [cards, filters]);
+  const quickCountsNow = useMemo(() => ({ ...listCounts, combos: comboPairCount }), [listCounts, comboPairCount]);
 
   // `collectionChips` needs a label per code; the bar already built these.
   const chassisChips: FilterChip[] = collectionChips(filters, {
@@ -580,6 +602,12 @@ export function CollectionBrowser({
   // The write still goes through, so a search of nothing but whitespace — which
   // `anyFilterActive` trims to inactive — is still emptied.
   const pressQuick = (key: QuickPressed) => {
+    if (key === "combos") {
+      // Pressing it again turns it off; pressing it on opens own both. Filters are held, not cleared.
+      setComboPress((n) => n + 1);
+      setCombosSide((side) => (side === null ? "both" : null));
+      return;
+    }
     if (key === quickPressed) {
       updateFilters(
         key === "free" ? { ...filters, availability: [] } : { ...filters, quick: undefined },
@@ -727,15 +755,16 @@ export function CollectionBrowser({
       // own can arrive after mount and must survive the next filter change.
       window.location.search,
       remembered.current,
+      combosSide ? { side: combosSide, newVariantId } : null,
     );
     mirrorUrl(`/collection${qs}`);
-  }, [filters, sort, sortDirection, view, openOracleId, openInList]);
+  }, [filters, sort, sortDirection, view, openOracleId, openInList, combosSide, newVariantId]);
 
   return (
     <>
       <FilterBar
         colorOptions={colorOptions}
-        shown={sorted.length}
+        shown={combosSide ? comboPairCount : sorted.length}
         total={cards.length}
         chips={chassisChips}
         quickWide={quickDrawn ? quickStrip("wide") : null}
@@ -748,9 +777,11 @@ export function CollectionBrowser({
         // What the queue measures staleness against. The count alone cannot:
         // two filters can leave the same number of rows.
         revision={JSON.stringify(filters)}
-        warnResult={sorted.length === 0}
+        warnResult={!combosSide && sorted.length === 0}
         resultLine={
-          chassisWide
+          combosSide
+            ? quickFilterCopy.combos.result(comboPairCount)
+            : chassisWide
             ? collectionChassisCopy.result(
                 sorted.length,
                 cards.length,
@@ -788,7 +819,9 @@ export function CollectionBrowser({
       {/* Wrapping only the cards: the provider is a `div`, and the page's section is a flex column whose
           `flex-1` child is the list, so the wrapper takes over that sizing and the chassis above stays a direct child. */}
       <HoverPreviewProvider className="flex flex-1 flex-col">
-      {sorted.length === 0 ? (
+      {combosSide ? (
+        <CombosView side={combosSide} onSide={setCombosSide} bothCount={comboPairCount} newVariantId={newVariantId} wide={chassisWide} retry={comboPress} />
+      ) : sorted.length === 0 ? (
         <NoResults
           query={filters.search}
           colors={filters.colors}
