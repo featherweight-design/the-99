@@ -3,9 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AboutLaunch, AboutLine } from "../../lib/about/notice";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
-import { aboutSheetCopy } from "../../lib/copy/about";
 import { arrivalsCopy } from "../../lib/copy/arrivals";
-import { ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 
 const dismiss = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
@@ -49,7 +47,7 @@ const DASH = {
   now: "2026-10-14T12:00:00.000Z",
 };
 
-const region = () => screen.queryByRole("region", { name: ABOUT_PAGE_STRINGS.bannerMulti });
+const region = () => screen.queryByRole("region", { name: arrivalsCopy.regionLabel });
 
 let reduce = false;
 beforeEach(() => {
@@ -264,7 +262,7 @@ describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”
     const r = region()!;
     expect(r.tagName).toBe("SECTION");
     expect(r).toHaveTextContent("New on Decks: Matchups splits a deck’s games by who you played against.");
-    expect(within(r).getByRole("link", { name: aboutSheetCopy.show })).toHaveAttribute("href", MATCHUPS.href);
+    expect(within(r).getByRole("link", { name: arrivalsCopy.aboutShow })).toHaveAttribute("href", MATCHUPS.href);
     expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
     expect(within(r).queryByRole("heading")).toBeNull();
     // The glyph of the page Show me opens, on a 36px accent plate in the mark's place.
@@ -284,7 +282,7 @@ describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”
   it("introduces a first-run reader in one line, Show me opening the /about index (A3)", () => {
     render(<ArrivalsBanner data={null} about={FIRST} />);
     expect(region()).toHaveTextContent(/What The\s99 does: every tool, mark and figure in the app, and where to find it\./);
-    expect(screen.getByRole("link", { name: aboutSheetCopy.show })).toHaveAttribute("href", "/about");
+    expect(screen.getByRole("link", { name: arrivalsCopy.aboutShow })).toHaveAttribute("href", "/about");
     expect(region()!.querySelectorAll("[data-about-glyph]")).toHaveLength(0);
   });
 });
@@ -293,13 +291,13 @@ describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two
   it("takes the `New in the app` band, a 28px glyph plate and a Show me per line, and one ✕", () => {
     render(<ArrivalsBanner data={null} about={behind(MATCHUPS, SPARES)} />);
     const r = region()!;
-    expect(within(r).getByRole("heading", { level: 2, name: ABOUT_PAGE_STRINGS.bannerMulti })).toBeInTheDocument();
+    expect(within(r).getByRole("heading", { level: 2, name: arrivalsCopy.regionLabel })).toBeInTheDocument();
     const items = within(r).getAllByRole("listitem");
     expect(items.map((li) => li.textContent)).toEqual([
       "New on Decks: Matchups splits a deck’s games by who you played against. Show me",
       "New on Shopping: Ask a friend for a spare. Show me",
     ]);
-    expect(within(items[1]!).getByRole("link", { name: aboutSheetCopy.show })).toHaveAttribute("href", SPARES.href);
+    expect(within(items[1]!).getByRole("link", { name: arrivalsCopy.aboutShow })).toHaveAttribute("href", SPARES.href);
     for (const li of items) {
       const glyphs = li.querySelectorAll<HTMLElement>("[data-about-glyph]");
       expect(glyphs).toHaveLength(1);
@@ -317,13 +315,13 @@ describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(4);
     expect(items[3]).toHaveTextContent("and 2 more Show me");
-    expect(within(items[3]!).getByRole("link", { name: aboutSheetCopy.show })).toHaveAttribute("href", "/about");
+    expect(within(items[3]!).getByRole("link", { name: arrivalsCopy.aboutShow })).toHaveAttribute("href", "/about");
   });
 
   it("leads with About beside an arrival, each line with its own link (A2)", () => {
     render(<ArrivalsBanner data={one(TRC, ["trc", "a2"])} about={behind(MATCHUPS)} />);
     const r = region()!;
-    expect(within(r).getByRole("heading", { level: 2, name: ABOUT_PAGE_STRINGS.bannerMulti })).toBeInTheDocument();
+    expect(within(r).getByRole("heading", { level: 2, name: arrivalsCopy.regionLabel })).toBeInTheDocument();
     const items = within(r).getAllByRole("listitem");
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("New on Decks: Matchups splits");
@@ -334,7 +332,7 @@ describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two
   it("a first-run line beside an arrival opens the index", () => {
     render(<ArrivalsBanner data={one(TRC, ["trc", "a2-first"])} about={FIRST} />);
     const items = within(region()!).getAllByRole("listitem");
-    expect(within(items[0]!).getByRole("link", { name: aboutSheetCopy.show })).toHaveAttribute("href", "/about");
+    expect(within(items[0]!).getByRole("link", { name: arrivalsCopy.aboutShow })).toHaveAttribute("href", "/about");
   });
 
   it("caps several arrivals beside About and closes them with one Precons link", () => {
@@ -436,7 +434,7 @@ describe("ArrivalsBanner, About's ✕ and acknowledgements", () => {
   it("is a Show me press, not an acknowledgement: a re-mount draws it again", () => {
     const about = behind(launch("decks/games/press"));
     const first = render(<ArrivalsBanner data={null} about={about} />);
-    fireEvent.click(screen.getByRole("link", { name: aboutSheetCopy.show }));
+    fireEvent.click(screen.getByRole("link", { name: arrivalsCopy.aboutShow }));
     expect(dismiss).not.toHaveBeenCalled();
     first.unmount();
     render(<ArrivalsBanner data={null} about={about} />);
@@ -446,7 +444,7 @@ describe("ArrivalsBanner, About's ✕ and acknowledgements", () => {
   it("a Show me that leaves About answers its launch on the press, with the launch's own ack keys", async () => {
     const STORE = { ...launch("shopping/deck-shopping/total@STORE_PREFERENCE_ENABLED", "Shopping", "Pick another store in Settings and the prices follow."), href: "/settings#settings-store", leavesAbout: true };
     render(<ArrivalsBanner data={null} about={behind(STORE)} />);
-    fireEvent.click(screen.getByRole("link", { name: aboutSheetCopy.show }));
+    fireEvent.click(screen.getByRole("link", { name: arrivalsCopy.aboutShow }));
     expect(dismiss).toHaveBeenCalledWith([], STORE.ack);
   });
 
