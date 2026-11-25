@@ -8,6 +8,7 @@ import { emptyParams } from "../../lib/intake/params";
 import { answerChips } from "../../lib/intake/present";
 import type { CardChip } from "../../lib/intake/rows";
 import { ReadAsBar } from "./read-as-bar";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const labels = { theme: (s: string) => ({ dinosaurs: "Dinosaurs" })[s] ?? s, card: "Regisaur Alpha" };
@@ -49,7 +50,7 @@ describe("Your answers", () => {
 
   it("heads the answers Your answers, and draws every chip solid, with no deeper mark (T1)", () => {
     bar();
-    expect(screen.getByRole("heading", { name: "Your answers" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: helpMeChooseCopy.readAs.yourAnswers })).toBeTruthy();
     for (const c of screen.getAllByTestId("answer-chip")) {
       expect(c.className).toContain("border-solid");
       expect(c.className).not.toContain("border-dashed");
@@ -98,14 +99,14 @@ describe("Your answers", () => {
 
   it("says no answers were given, and still offers both ways back", () => {
     bar({ empty: true, card: null });
-    expect(screen.getByText("No answers given: every commander you haven’t built")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Change answers" }).getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs");
-    expect(screen.getByRole("link", { name: "Start over" }).getAttribute("href")).toBe("/decks/new/choose");
+    expect(screen.getByText(helpMeChooseCopy.readAs.noneAll)).toBeTruthy();
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.readAs.change }).getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs");
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.readAs.startOver }).getAttribute("href")).toBe("/decks/new/choose");
   });
 
   it("says no answers were given beside words, which are never answers", () => {
     bar({ empty: true, card: null, words: "something scary" });
-    expect(screen.getByText("No answers given: every commander you haven’t built")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.readAs.noneAll)).toBeTruthy();
     expect(screen.getByTestId("you-wrote")).toBeTruthy();
   });
 });
@@ -125,7 +126,7 @@ describe("an any-of chip", () => {
     // Spoken once: the kind, then the names, with nothing else read.
     expect(only.textContent?.replace(names.querySelector("[aria-hidden]")!.textContent!, "")).toBe("any ofOrcs, Elves or Wizards");
     expect(names.querySelector("[aria-hidden]")?.textContent).toBe("Orcs or Elves or Wizards");
-    expect(only.textContent?.startsWith("any of")).toBe(true);
+    expect(only.textContent?.startsWith(helpMeChooseCopy.readAs.kinds.anyOf)).toBe(true);
   });
 });
 

@@ -20,6 +20,7 @@ import * as realFlagsRead from "../bracket/flags-read";
 const flagsRead = realFlagsRead as unknown as { loadBracketFlags: ReturnType<typeof vi.fn> };
 import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
+import { addPanelCopy } from "../copy/decks-builder";
 
 // ---------------------------------------------------------------------------
 // colorIdentityMask
@@ -214,13 +215,13 @@ describe("groupByRole", () => {
     ];
     const result = groupByRole(cards);
     const labels = result.map(([label]) => label);
-    expect(labels).toEqual(["Ramp", "Draw", "Removal", "Wipes", "Land", "Threats & synergy"]);
+    expect(labels).toEqual(["Ramp", "Draw", "Removal", "Wipes", "Land", addPanelCopy.shelf.labels.other]);
   });
 
   it("card with role='other' lands in the Threats & synergy group", () => {
     const c = makeCard({ name: "Bear", typeLine: "Creature — Bear", cardTypeGroup: "Creatures", role: "other" });
     const result = groupByRole([c]);
-    expect(result[0][0]).toBe("Threats & synergy");
+    expect(result[0][0]).toBe(addPanelCopy.shelf.labels.other);
     expect(result[0][1][0].name).toBe("Bear");
   });
 

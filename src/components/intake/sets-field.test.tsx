@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { SetsField } from "./sets-field";
+import { collectionFilterCopy } from "../../lib/copy/collection";
 
 const sets = [{ code: "hob", name: "The Hobbit" }, { code: "hoc", name: "The Hobbit Commander" }];
 
@@ -59,7 +60,7 @@ describe("the Sets field's copy override (H35 PR 2, \"Kept for this deck\")", ()
 describe("the Sets field with nothing chosen", () => {
   it("reads Any set on its trigger, never Set 0", () => {
     render(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide />);
-    expect(screen.getByText("Any set")).toBeTruthy();
+    expect(screen.getByText(collectionFilterCopy.set.triggerNone)).toBeTruthy();
     expect(screen.queryByText("Set 0")).toBeNull();
   });
 });

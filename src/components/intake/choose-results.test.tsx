@@ -13,6 +13,8 @@ const { ReadScope } = await import("./read-panel");
 import type { ReadPhase } from "../../lib/intake/read-phase";
 const { emptyParams } = await import("../../lib/intake/params");
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
+import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const row = (i: number): ResultRow => ({
   oracleId: `0000aaaa-0000-4000-8000-${String(i).padStart(12, "0")}`, name: `Commander ${i}`, colorIdentity: ["G"],
@@ -63,18 +65,18 @@ describe("the results under a read (the read addendum R1)", () => {
     moreRows.mockResolvedValue(page(0, { rows: [], hasMore: false }));
     // Drawn before the read settled: the free order, so the next slice is asked without `r`.
     draw(page(14, { hasMore: true }), "reading", ["dinosaurs"], {}, "t=dinosaurs&v=results&r=abc");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: helpMeChooseCopy.results.more })));
     expect(moreRows.mock.calls.at(-1)![0]).toBe("t=dinosaurs&v=results");
     cleanup();
     // Drawn in the read's order: `r` rides along, so the slice continues that order.
     draw({ ...picked(14, 3), hasMore: true }, "done", [], {}, "t=dinosaurs&v=results&r=abc");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: helpMeChooseCopy.results.more })));
     expect(moreRows.mock.calls.at(-1)![0]).toBe("t=dinosaurs&v=results&r=abc");
   });
 
   it("keeps the free head when none of the read's picks is in this list", () => {
     draw(picked(14, 0), "done", [], {});
-    expect(screen.getByTestId("order-line").textContent).not.toBe("Ordered by what you wrote");
+    expect(screen.getByTestId("order-line").textContent).not.toBe(helpMeChooseCopy.results.byWords);
     expect(document.body.textContent).not.toContain("zero picks");
   });
 
@@ -94,7 +96,7 @@ describe("the results under a read (the read addendum R1)", () => {
 
   it("orders a done read's head by what was written, with its reasons and the rest under a divider", () => {
     draw(picked(14, 10), "done", [], { [DECK]: "Omnath" });
-    expect(screen.getByTestId("order-line").textContent).toBe("Ordered by what you wrote");
+    expect(screen.getByTestId("order-line").textContent).toBe(helpMeChooseCopy.results.byWords);
     expect(document.body.textContent).toContain("The read’s ten picks lead, closest first, each with a line on why. The rest follow, ordered by cards you already have.");
     // Best fits carry their reasons too.
     for (const b of screen.getAllByTestId("best-fit")) expect(b.querySelector("[data-testid='row-reason']")).toBeTruthy();
@@ -115,7 +117,7 @@ describe("the results under a read (the read addendum R1)", () => {
 
   it("draws the divider's tail only when the rest are in the owned order", () => {
     draw(picked(14, 10, "fit"), "done");
-    expect(screen.getByTestId("rest-divider").textContent).toBe("The rest of your results");
+    expect(screen.getByTestId("rest-divider").textContent).toBe(helpMeChooseCopy.results.restHead);
   });
 
   it("draws no divider with no picks, or when every row is a pick", () => {
@@ -138,7 +140,7 @@ describe("the results under a read (the read addendum R1)", () => {
   it("says an unread, stopped or failed read is not in the owned order, and keeps a fit order's own sub", () => {
     for (const phase of ["unread", "stopped", "failed", "nothing"] as const) {
       draw(page(4, { order: "owned" }), phase, []);
-      expect(screen.getByTestId("order-line").textContent).toBe("Ordered by cards you already have");
+      expect(screen.getByTestId("order-line").textContent).toBe(helpMeChooseCopy.results.byOwned);
       expect(document.body.textContent).toContain("Commanders your answers allow, owned or not");
       expect(document.querySelector("ol[data-dim]")).toBeNull();
       cleanup();
@@ -188,19 +190,19 @@ describe("the results", () => {
   it("asks for the next twelve from where the list ends, only while more exist", async () => {
     moreRows.mockResolvedValue(page(0, { rows: [row(13)], hasMore: false }));
     draw(page(12, { hasMore: true }));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: helpMeChooseCopy.results.more })));
     expect(moreRows).toHaveBeenCalledWith("t=dinosaurs&v=results", 12);
     expect(screen.getByText("Commander 13")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Show 12 more" })).toBeNull();
+    expect(screen.queryByRole("button", { name: helpMeChooseCopy.results.more })).toBeNull();
   });
 
   it("says the next slice failed to load, not that a count failed, and keeps the button", async () => {
     moreRows.mockRejectedValue(new Error("down"));
     draw(page(12, { hasMore: true }));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
-    expect(screen.getByText("Couldn’t load more commanders. Try again.")).toBeTruthy();
-    expect(screen.queryByText("Couldn’t count what you own.")).toBeNull();
-    expect(screen.getByRole("button", { name: "Show 12 more" })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: helpMeChooseCopy.results.more })));
+    expect(screen.getByText(helpMeChooseCopy.results.moreFailed)).toBeTruthy();
+    expect(screen.queryByText(helpMeChooseCopy.results.rowFailed)).toBeNull();
+    expect(screen.getByRole("button", { name: helpMeChooseCopy.results.more })).toBeTruthy();
   });
 
   it("counts a slice's figures in ONE call, and each new slice in one more", async () => {
@@ -208,7 +210,7 @@ describe("the results", () => {
     draw(page(12, { hasMore: true }));
     expect(trialFillRows).toHaveBeenCalledTimes(1);
     expect(trialFillRows.mock.calls[0][0]).toHaveLength(12);
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: helpMeChooseCopy.results.more })));
     expect(trialFillRows).toHaveBeenCalledTimes(2);
     expect(trialFillRows.mock.calls[1][0]).toEqual([row(13).oracleId, row(14).oracleId]);
   });
@@ -305,7 +307,7 @@ describe("a past run opened from History (PR 3)", () => {
   it("says a line named a deleted deck, in its place, only on a past run", () => {
     const missing = picked(14, 1); // the first pick names DECK, which `deckNames` does not hold
     draw(missing, "done", [], {}, undefined, { pastRun: true });
-    expect(screen.getByTestId("row-reason-gone").textContent).toBe("Its line named a deck you’ve since deleted.");
+    expect(screen.getByTestId("row-reason-gone").textContent).toBe(helpMeChooseHistoryCopy.past.reasonGone);
     cleanup();
     draw(missing, "done", [], {});
     expect(screen.queryByTestId("row-reason-gone")).toBeNull();

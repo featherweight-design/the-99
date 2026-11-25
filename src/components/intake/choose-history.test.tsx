@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ChooseHistoryPage, ChooseHistoryRow } from "../../lib/intake/history";
+import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 
 const page = vi.hoisted(() => ({ fn: vi.fn() }));
 vi.mock("../../app/decks/new/choose/history-actions", () => ({ chooseHistoryPage: page.fn }));
@@ -27,7 +28,7 @@ afterEach(() => { vi.useRealTimers(); });
 describe("ChooseHistory", () => {
   it("lists runs under month headings as links named by the words, the date and the outcome", () => {
     render(<ChooseHistory layout="view" initial={firstPage([A, B, C])} />);
-    const nav = screen.getByRole("navigation", { name: "Past runs" });
+    const nav = screen.getByRole("navigation", { name: helpMeChooseHistoryCopy.listLabel });
     expect(within(nav).getByText("October 2026")).toBeTruthy();
     expect(within(nav).getByText("September 2026")).toBeTruthy();
     const links = within(nav).getAllByRole("link");
@@ -35,8 +36,8 @@ describe("ChooseHistory", () => {
     expect(links[0].getAttribute("aria-label")).toBe("words a. October 13, 9 picks.");
     expect(links[1].getAttribute("aria-label")).toBe("words b. October 2, found nothing, no credit used.");
     expect(links[2].getAttribute("aria-label")).toBe("words c. September 30, 1 pick.");
-    expect(within(links[1]).getByText("found nothing · no credit used")).toBeTruthy();
-    expect(screen.getByText("Kept on your account. Opening a run uses no credit.")).toBeTruthy();
+    expect(within(links[1]).getByText(helpMeChooseHistoryCopy.row.nothing)).toBeTruthy();
+    expect(screen.getByText(helpMeChooseHistoryCopy.foot)).toBeTruthy();
   });
 
   it("draws three thumbs for a run with picks, with the art where the catalog has it, and none for a run that found nothing", () => {
@@ -88,7 +89,7 @@ describe("ChooseHistory", () => {
   it("says what will land here when the player has made no read", () => {
     render(<ChooseHistory layout="column" initial={firstPage([])} />);
     expect(screen.getByText("No runs yet")).toBeTruthy();
-    expect(screen.getByText("your past runs")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseHistoryCopy.subEmpty)).toBeTruthy();
     expect(screen.queryByRole("navigation")).toBeNull();
   });
 
@@ -114,7 +115,7 @@ describe("ChooseHistory", () => {
     page.fn.mockRejectedValueOnce(new Error("down")).mockResolvedValueOnce(firstPage([C]));
     render(<ChooseHistory layout="view" initial={firstPage([A], "cur-1")} />);
     fireEvent.click(screen.getByRole("button", { name: "Show 20 more" }));
-    await waitFor(() => expect(screen.getByText("Couldn’t load more runs. Try again.")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(helpMeChooseHistoryCopy.moreFailed)).toBeTruthy());
     expect(screen.getAllByRole("link")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Show 20 more" }));
     await waitFor(() => expect(screen.getAllByRole("link")).toHaveLength(2));
@@ -181,17 +182,17 @@ describe("ChooseHistory", () => {
     page.fn.mockImplementation(() => new Promise<ChooseHistoryPage>((r) => { release = r; }));
     render(<ChooseHistory layout="view" initial={null} />);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(screen.getByText("Loading your past runs")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(helpMeChooseHistoryCopy.loading)).toBeTruthy());
     await act(async () => { release(firstPage([A])); });
     await waitFor(() => expect(screen.getByRole("link", { name: /words a/ })).toBeTruthy());
-    expect(screen.queryByText("Loading your past runs")).toBeNull();
+    expect(screen.queryByText(helpMeChooseHistoryCopy.loading)).toBeNull();
   });
 
   it("fades the column's foot only while rows remain below it", () => {
     const sh = vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(500);
     const ch = vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(200);
     const col = render(<ChooseHistory layout="column" initial={firstPage([A, B, C])} />);
-    const nav = col.getByRole("navigation", { name: "Past runs" });
+    const nav = col.getByRole("navigation", { name: helpMeChooseHistoryCopy.listLabel });
     expect(nav.getAttribute("data-fade")).toBe("true");
     nav.scrollTop = 300; // scrolled to the end: 500 - 300 - 200 = 0 left
     fireEvent.scroll(nav);
@@ -199,7 +200,7 @@ describe("ChooseHistory", () => {
     col.unmount();
     // The phone's view does not scroll inside itself, so it never fades.
     const view = render(<ChooseHistory layout="view" initial={firstPage([A, B, C])} />);
-    expect(view.getByRole("navigation", { name: "Past runs" }).hasAttribute("data-fade")).toBe(false);
+    expect(view.getByRole("navigation", { name: helpMeChooseHistoryCopy.listLabel }).hasAttribute("data-fade")).toBe(false);
     sh.mockRestore(); ch.mockRestore();
   });
 

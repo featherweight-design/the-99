@@ -14,6 +14,7 @@ import type { ChooseParams } from "../../lib/intake/params";
 import type { ResultRow } from "../../lib/intake/rows";
 import type { Trial } from "./choose-row";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const ID = "0000aaaa-0000-4000-8000-00000000000c";
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
@@ -69,7 +70,7 @@ describe("a result row", () => {
 
   it("marks a free commander, a held one with its deck, and an unowned one with its buy tag", async () => {
     draw(row({ mark: { kind: "free" } }));
-    expect(screen.getByTestId("mark-free").textContent).toBe("owned · free");
+    expect(screen.getByTestId("mark-free").textContent).toBe(helpMeChooseCopy.results.free);
     draw(row({ mark: { kind: "held", deck: "Big Lizards" } }));
     expect(screen.getByTestId("mark-held").textContent).toBe("none free, in Big Lizards");
     draw(row({ mark: { kind: "buy", price: { kind: "priced", cents: 1234 } } }));
@@ -96,7 +97,7 @@ describe("a result row", () => {
   it("says it is counting, then shows the figures", () => {
     const { unmount } = draw(row(), pending);
     expect(screen.getByTestId("ownership-line").dataset.trial).toBe("pending");
-    expect(screen.getByText("Counting what you own…")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.results.rowPending)).toBeTruthy();
     // The pending bar breathes (Hugh, 2026-10-12).
     expect(screen.getByTestId("ownership-line").querySelectorAll(".anim-skeleton")).toHaveLength(1);
     unmount();
@@ -154,7 +155,7 @@ describe("a result row", () => {
   it("offers Retry when the count fails, and asks the list to count again", () => {
     const retry = vi.fn();
     draw(row(), { state: "failed" }, retry);
-    expect(screen.getByText("Couldn’t count what you own.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.results.rowFailed)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(retry).toHaveBeenCalledTimes(1);
   });
@@ -191,7 +192,7 @@ describe("own-only (three answers §3)", () => {
     );
     const line = screen.getByTestId("ownership-line").textContent ?? "";
     expect(line).toContain("commander");
-    expect(line).toContain("99 from your cards");
+    expect(line).toContain(helpMeChooseCopy.results.rowOwn);
     expect(line).toContain("58 of its usual 99 are yours");
     // Nothing is bought for the 99: no figure to buy.
     expect(line).not.toMatch(/to buy/);

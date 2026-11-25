@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeRoleCounts, mixSourceLine, recommendedMix, roleCellState } from "./mix";
 import type { ProfileSkeleton } from "../profile/types";
+import { roleStripCopy } from "../copy/decks-builder";
 
 const skel = (over: {
   land?: number; ramp?: number; draw?: number; removal?: number; wipes?: number;
@@ -88,8 +89,8 @@ describe("recommendedMix", () => {
 
 describe("mixSourceLine", () => {
   it("names EDHREC only when the numbers came from there", () => {
-    expect(mixSourceLine(recommendedMix(skel(), false))).toBe("EDHREC averages");
-    expect(mixSourceLine(recommendedMix(null, false))).not.toBe("EDHREC averages");
+    expect(mixSourceLine(recommendedMix(skel(), false))).toBe(roleStripCopy.sourceMeasured);
+    expect(mixSourceLine(recommendedMix(null, false))).not.toBe(roleStripCopy.sourceMeasured);
   });
 });
 
