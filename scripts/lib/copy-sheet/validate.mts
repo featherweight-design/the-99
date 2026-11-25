@@ -26,9 +26,9 @@ export const wordCount = (t: string) => t.replace(/\{[^{}]+\}/g, "x").trim().spl
 const sorted = (a: readonly string[]) => [...a].sort().join("\u0000");
 
 /** The word cap the key's own name sets (its last path segment, `#t<n>` aside), or undefined when it sets none. */
-export function wordCap(key: string): number | undefined {
+export function wordCap(key: string): { seg: string; cap: number | undefined } {
   const seg = key.split("#")[1]?.split(/[.\[#]/).filter(Boolean).filter((s) => !/^t\d+$/.test(s)).pop() ?? "";
-  return CAPS[seg];
+  return { seg, cap: CAPS[seg] };
 }
 
 /** Why a new text cannot replace the row's, or [] when it can. */
@@ -46,8 +46,7 @@ export function problems(row: CopyRow, next: string): string[] {
   if (banned) out.push(`the word "${banned[0]}"`);
   for (const re of TELLS) if (re.test(next)) out.push("a stock phrase the copy rules ban");
   for (const [re, us] of BRITISH) if (re.test(next)) out.push(`British spelling (US: ${us})`);
-  const cap = wordCap(row.key);
-  const seg = row.key.split("#")[1]?.split(/[.\[#]/).filter(Boolean).filter((s) => !/^t\d+$/.test(s)).pop() ?? "";
+  const { seg, cap } = wordCap(row.key);
   if (cap !== undefined && wordCount(next) > cap) out.push(`${wordCount(next)} words in a "${seg}" (cap ${cap})`);
   return out;
 }

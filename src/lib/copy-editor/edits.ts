@@ -55,7 +55,7 @@ export type Check = { problems: string[]; words: number; cap: number | undefined
 /** The copy sheet's refusals for a new text, and its word count with fill-ins counted as one. */
 export function check(row: EditorRow, next: string): Check {
   // `problems` reads only `key`, `placeholders` and `readOnly`; the source span fields belong to the build step.
-  return { problems: problems(row as unknown as Parameters<typeof problems>[0], next), words: wordCount(next), cap: wordCap(row.key) };
+  return { problems: problems(row as unknown as Parameters<typeof problems>[0], next), words: wordCount(next), cap: wordCap(row.key).cap };
 }
 
 /** An edit is worth keeping only when it says something other than today's words. */
