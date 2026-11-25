@@ -480,7 +480,7 @@ export function CollectionBrowser({
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
   const updateFilters = useCallback(
-    (next: BrowseFilters, intent?: FilterChangeIntent) => {
+    (next: BrowseFilters, intent?: FilterChangeIntent, leavingCombos = false) => {
       // Turning the last pip off returns the mode to Any, as Sets does (#1172) and as removing
       // the colour chip does: `Exactly` with nothing lit filters nothing, the control greys it,
       // and the URL does not write it, so state that kept it would disagree with both.
@@ -514,7 +514,7 @@ export function CollectionBrowser({
         );
       // The messages count cards; with the combos view up the pairs are what the reader is looking at, so none is spoken
       // rather than a card count that matches nothing on screen.
-      if (message && combosSide === null) publishAnnouncement(message);
+      if (message && (combosSide === null || leavingCombos)) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
       setRevealFrom(null);
@@ -640,15 +640,16 @@ export function CollectionBrowser({
       updateFilters(
         key === "free" ? { ...filters, availability: [] } : { ...filters, quick: undefined },
         key === "free" ? "clear-availability" : undefined,
+        true,
       );
       return;
     }
     // One quick chip at a time: pressing one takes the other back.
     if (key === "free") {
       captureToolEvent("find_a_deck_opened", { from: "quick_chip" });
-      updateFilters({ ...filters, quick: undefined, availability: ["free"] });
+      updateFilters({ ...filters, quick: undefined, availability: ["free"] }, undefined, true);
     } else {
-      updateFilters({ ...filters, quick: key, availability: freeAlone ? [] : filters.availability });
+      updateFilters({ ...filters, quick: key, availability: freeAlone ? [] : filters.availability }, undefined, true);
     }
   };
   const quickStrip = (layout: "wide" | "phone") => (

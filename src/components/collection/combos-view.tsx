@@ -43,13 +43,15 @@ export function useCollectionCombos(open: boolean, version: unknown): { load: Co
   useEffect(() => {
     if (!open || settled) return;
     let live = true;
+    const controller = new AbortController();
     const land = (load: CombosLoad) => live && setHeld({ version, load });
-    fetch("/api/collection-combos", { credentials: "same-origin" })
+    fetch("/api/collection-combos", { credentials: "same-origin", signal: controller.signal })
       .then((r) => (r.ok ? (r.json() as Promise<CollectionCombosWire | null>) : null))
       .then((wire) => land(wire ? { kind: "ready", sides: expandSides(wire) } : { kind: "failed" }))
       .catch(() => land({ kind: "failed" }));
     return () => {
       live = false;
+      controller.abort();
     };
   }, [open, settled, version, attempt]);
   // A retry drops the failed entry first, so the view shows loading again and the press reads as taken.

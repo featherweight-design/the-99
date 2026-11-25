@@ -28,4 +28,12 @@ describe("combo wire", () => {
   it("survives a JSON round trip, the way the route sends it", () => {
     expect(expandSides(JSON.parse(JSON.stringify(compactSides(sides))))).toEqual(sides);
   });
+
+  it("drops a pair whose card the body does not carry", () => {
+    const wire = compactSides(sides);
+    delete wire.pieces.d;
+    const out = expandSides(wire);
+    expect(out.one.pairs).toHaveLength(0);
+    expect(out.both.pairs).toHaveLength(2);
+  });
 });

@@ -24,7 +24,8 @@ export function compactSides(sides: CollectionComboSides): CollectionCombosWire 
 export function expandSides(wire: CollectionCombosWire): CollectionComboSides {
   const side = (s: WireSide): CollectionCombos => ({
     ...s,
-    pairs: s.pairs.map(({ a, b, ...rest }) => ({ ...rest, a: wire.pieces[a], b: wire.pieces[b] })),
+    // A pair naming a card the body does not carry is dropped, never drawn half-empty.
+    pairs: s.pairs.flatMap(({ a, b, ...rest }) => (wire.pieces[a] && wire.pieces[b] ? [{ ...rest, a: wire.pieces[a], b: wire.pieces[b] }] : [])),
   });
   return { both: side(wire.both), one: side(wire.one) };
 }
