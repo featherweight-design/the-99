@@ -50,7 +50,7 @@ describe("loadCollectionCombos", () => {
   it("own-both: one pair for the two directions, no price, no wanted-by, art joined from the catalog", async () => {
     h.execute.mockResolvedValue({ rows: [row("v1", A, B), row("v1", B, A)] });
     h.selectRows.push([
-      { oracleId: A, imageUri: "https://x/a.jpg", artCropUri: null },
+      { oracleId: A, imageUri: "https://x/a.jpg", artCropUri: null, colorIdentity: ["B"], typeLine: "Legendary Creature" },
       { oracleId: B, imageUri: null, artCropUri: "https://x/b-art.jpg" },
     ]);
     const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both" });
@@ -59,6 +59,8 @@ describe("loadCollectionCombos", () => {
     const [p] = out.pairs;
     expect([p.a.oracleId, p.b.oracleId].sort()).toEqual([A, B]);
     expect(p.a.imageUri ?? p.b.imageUri).toBe("https://x/a.jpg");
+    // Colors and type ride along, so the Collection's filters can narrow a pair by a card the reader does not own.
+    expect([p.a, p.b].find((x) => x.oracleId === A)).toMatchObject({ colorIdentity: ["B"], typeLine: "Legendary Creature" });
     expect(p).not.toHaveProperty("missingId");
     expect(h.prices).not.toHaveBeenCalled();
   });

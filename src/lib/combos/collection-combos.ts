@@ -25,7 +25,15 @@ export type ComboSide = "both" | "one";
 /** The most pairs one response carries, most popular first. `total` says how many there were. */
 export const MAX_COMBO_PAIRS = 300;
 
-export type ComboPiece = { oracleId: string; name: string; imageUri: string | null; artCropUri: string | null };
+/** `colorIdentity` and `typeLine` let the Collection's filters narrow a pair by a card the reader does not own. */
+export type ComboPiece = {
+  oracleId: string;
+  name: string;
+  imageUri: string | null;
+  artCropUri: string | null;
+  colorIdentity: string[];
+  typeLine: string;
+};
 
 export type CollectionComboPair = {
   variantId: string;
@@ -44,6 +52,9 @@ export type CollectionComboPair = {
 };
 
 export type CollectionCombos = { side: ComboSide; total: number; pairs: CollectionComboPair[] };
+
+/** Both sides in one response: the view opens with both toggle counts known and flipping the toggle costs nothing. */
+export type CollectionComboSides = { both: CollectionCombos; one: CollectionCombos };
 
 /** Wanted-by rows grouped by card. Rooted in the READER's own decks: another reader's deck can never appear. */
 async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<string, { id: string; name: string }[]>> {
@@ -93,7 +104,13 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
 
   const pieceIds = [...new Set(picked.flatMap((p) => [p.a.oracleId, p.b.oracleId]))];
   const art = await db
-    .select({ oracleId: cards.oracleId, imageUri: cards.imageUri, artCropUri: cards.artCropUri })
+    .select({
+      oracleId: cards.oracleId,
+      imageUri: cards.imageUri,
+      artCropUri: cards.artCropUri,
+      colorIdentity: cards.colorIdentity,
+      typeLine: cards.typeLine,
+    })
     .from(cards)
     .where(inArray(cards.oracleId, pieceIds));
   const artById = new Map(art.map((r) => [r.oracleId, r]));
@@ -105,6 +122,8 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
     name: p.name,
     imageUri: ownedArt.get(p.oracleId) ?? artById.get(p.oracleId)?.imageUri ?? null,
     artCropUri: artById.get(p.oracleId)?.artCropUri ?? null,
+    colorIdentity: artById.get(p.oracleId)?.colorIdentity ?? [],
+    typeLine: artById.get(p.oracleId)?.typeLine ?? "",
   });
 
   const missingIds = side === "one" ? [...new Set(picked.map((p) => p.missingId).filter((id): id is string => !!id))] : [];
@@ -126,4 +145,9 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
     };
   });
   return { side, total: all.length, pairs };
+}
+
+export async function loadCollectionComboSides(args: { userId: string; store: Store }): Promise<CollectionComboSides> {
+  const [both, one] = await Promise.all([loadCollectionCombos({ ...args, side: "both" }), loadCollectionCombos({ ...args, side: "one" })]);
+  return { both, one };
 }

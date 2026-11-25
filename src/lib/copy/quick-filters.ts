@@ -35,6 +35,7 @@ export const quickFilterCopy = {
     result: (n: number) => `${n} ${n === 1 ? "combo" : "combos"}`,
     emptyBoth: "No two-card combos with both cards in your collection yet.",
     emptyOne: "No combos one card away.",
+    noMatch: "No combos match these filters.",
     loadFailed: "We couldn’t load your combos.",
     tryAgain: "Try again",
     pairLabel: (a: string, b: string) => `${a} and ${b}`,

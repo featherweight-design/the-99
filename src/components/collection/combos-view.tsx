@@ -2,18 +2,20 @@
 
 // Collection quick filters (R2): the combos view, drawn in place of the card list while Two-card combos is pressed.
 // Pairs, not cards: own both (Find a deck, How it works) or own one (the missing card, its price or the draft that
-// wants it, Add to wishlist). One fetch per side while the view is open, kept here so flipping the toggle back costs nothing (closing the view drops it); the
-// route is `private, no-store` and the list payload carries only the chip's count.
+// wants it, Add to wishlist). One request fetches both sides (`useCollectionCombos`), so both toggle counts are known
+// when the list draws; the Collection's filters narrow the pairs in `browser.tsx`. The route is `private, no-store`
+// and the list payload carries only the chip's count.
 import { useEffect, useState } from "react";
 import { addToWishlistAction } from "../../app/collection/wishlist/actions";
 import { comboOpenOpts, useCardDetail } from "../cards/card-detail-context";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { PreviewButton } from "../ui/preview-button";
+import { RowSkeleton } from "../ui/tile-skeleton";
 import { useStoreInfo } from "../stores/store-provider";
 import { formatCents } from "../../lib/cards/price-fact";
 import { quickFilterCopy } from "../../lib/copy/quick-filters";
 import { isInfiniteOrGameEnding } from "../../lib/spellbook/combo-features";
-import type { CollectionComboPair, CollectionCombos, ComboPiece, ComboSide } from "../../lib/combos/collection-combos";
+import type { CollectionComboPair, CollectionComboSides, ComboPiece, ComboSide } from "../../lib/combos/collection-combos";
 
 const copy = quickFilterCopy.combos;
 
@@ -22,31 +24,36 @@ export function comboResultWord(produces: readonly string[]): string | null {
   return produces.find((f) => isInfiniteOrGameEnding([f])) ?? produces[0] ?? null;
 }
 
-type Load = { kind: "loading" } | { kind: "failed" } | { kind: "ready"; combos: CollectionCombos };
+export type CombosLoad = { kind: "loading" } | { kind: "failed" } | { kind: "ready"; sides: CollectionComboSides };
 
-/** The two sides' fetches, held for the visit. A side is fetched when first shown; a failed one is retried by the next press. */
-function useComboSide(side: ComboSide): { load: Load; retry: () => void } {
+/**
+ * Both sides in one request, fetched when the view is first open and kept for as long as `version` (the list
+ * payload the page served) is the same one: a refresh that brings new cards fetches again, a toggle or a filter
+ * costs nothing. A failed fetch is asked for again by the next press of the chip or Try again.
+ */
+export function useCollectionCombos(open: boolean, version: unknown): { load: CombosLoad; retry: () => void } {
+  const [held, setHeld] = useState<{ version: unknown; load: CombosLoad } | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [loaded, setLoaded] = useState<Partial<Record<ComboSide, Load>>>({});
+  const current = held !== null && held.version === version ? held.load : null;
+  const settled = current?.kind === "ready";
   useEffect(() => {
-    if (loaded[side]?.kind === "ready") return;
+    if (!open || settled) return;
     let live = true;
-    fetch(`/api/collection-combos?side=${side}`, { credentials: "same-origin" })
-      .then((r) => (r.ok ? (r.json() as Promise<CollectionCombos | null>) : null))
-      .then((combos) => live && setLoaded((m) => ({ ...m, [side]: combos ? { kind: "ready", combos } : { kind: "failed" } })))
-      .catch(() => live && setLoaded((m) => ({ ...m, [side]: { kind: "failed" } })));
+    const land = (load: CombosLoad) => live && setHeld({ version, load });
+    fetch("/api/collection-combos", { credentials: "same-origin" })
+      .then((r) => (r.ok ? (r.json() as Promise<CollectionComboSides | null>) : null))
+      .then((sides) => land(sides ? { kind: "ready", sides } : { kind: "failed" }))
+      .catch(() => land({ kind: "failed" }));
     return () => {
       live = false;
     };
-    // `attempt` counts Try again presses: a failed side is asked for again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [side, attempt]);
+  }, [open, settled, version, attempt]);
   // A retry drops the failed entry first, so the view shows loading again and the press reads as taken.
   const retry = () => {
-    setLoaded((m) => ({ ...m, [side]: undefined }));
+    setHeld(null);
     setAttempt((n) => n + 1);
   };
-  return { load: loaded[side] ?? { kind: "loading" }, retry };
+  return { load: current ?? { kind: "loading" }, retry };
 }
 
 /** A card of the pair. With `onOpen` (the desktop card) it is a row card: hover preview plus the press that opens its details. */
@@ -204,26 +211,34 @@ function PairCard({
 export function CombosView({
   side,
   onSide,
-  bothCount,
+  load,
+  retry,
+  pairs,
+  counts,
+  filtered,
   newVariantId,
   wide,
 }: {
   side: ComboSide;
   onSide: (side: ComboSide) => void;
-  /** The chip's own-both count, shown on the toggle before that side is fetched. */
-  bothCount: number;
+  load: CombosLoad;
+  retry: () => void;
+  /** The pairs on screen: the side's pairs the Collection's filters leave. */
+  pairs: CollectionComboPair[];
+  /** Both toggle counts after the filters, null until the pairs have loaded. */
+  counts: Record<ComboSide, number> | null;
+  /** A filter is narrowing the view: an empty list says so rather than that the reader has no combos. */
+  filtered: boolean;
   newVariantId: string | null;
   wide: boolean;
 }) {
-  const { load, retry } = useComboSide(side);
   const detail = useCardDetail();
-  const pairs = load.kind === "ready" ? load.combos.pairs : [];
   const open = (pair: CollectionComboPair, opener: HTMLElement, view?: "fits") => {
     // Find a deck looks for a home for the card the reader holds; on Own one that is never the missing piece.
     const target = view && pair.missingId === pair.a.oracleId ? pair.b : pair.a;
     detail.open(target.oracleId, undefined, undefined, { art: target.imageUri, opener, ...(view ? { view } : comboOpenOpts(pair.variantId)) });
   };
-  const count = (s: ComboSide) => (load.kind === "ready" && load.combos.side === s ? load.combos.total : s === "both" ? bothCount : null);
+  const count = (s: ComboSide) => counts?.[s] ?? null;
   return (
     <section data-combos-view className="px-[16px] pb-[24px] pt-[12px] md:px-[34px]" aria-busy={load.kind === "loading" || undefined}>
       <div className="flex flex-wrap items-center gap-[12px]">
@@ -251,7 +266,13 @@ export function CombosView({
           </button>
         </p>
       ) : load.kind === "ready" && pairs.length === 0 ? (
-        <p className="mt-[16px] text-[13px] text-[color:var(--fg-muted)]">{side === "both" ? copy.emptyBoth : copy.emptyOne}</p>
+        <p className="mt-[16px] text-[13px] text-[color:var(--fg-muted)]">{filtered ? copy.noMatch : side === "both" ? copy.emptyBoth : copy.emptyOne}</p>
+      ) : load.kind === "loading" ? (
+        <ul aria-hidden data-combos-loading className="anim-skeleton m-0 mt-[14px] grid list-none gap-[12px] p-0" style={wide ? { gridTemplateColumns: "repeat(auto-fill, minmax(520px, 1fr))" } : undefined}>
+          {Array.from({ length: wide ? 4 : 6 }, (_, i) => (
+            <RowSkeleton key={i} index={i} />
+          ))}
+        </ul>
       ) : (
         <ul className="m-0 mt-[14px] grid list-none gap-[12px] p-0" style={wide ? { gridTemplateColumns: "repeat(auto-fill, minmax(520px, 1fr))" } : undefined}>
           {pairs.map((p) => (
