@@ -5,13 +5,15 @@ const edit = (over: Record<string, unknown> = {}) => ({ key: "src/lib/copy/a.ts#
 
 describe("editBranch", () => {
   it("names the branch in UTC to the second, and the workflow's pattern accepts it", () => {
-    const name = editBranch(new Date("2026-11-24T18:35:12Z"));
-    expect(name).toBe("copy-edit-20261124-183512");
+    const name = editBranch(new Date("2026-11-24T18:35:12Z"), "a1b2");
+    expect(name).toBe("copy-edit-20261124-183512-a1b2");
     expect(EDIT_BRANCH_RE.test(name)).toBe(true);
+    expect(EDIT_BRANCH_RE.test(editBranch(new Date()))).toBe(true);
+    expect(editBranch(new Date())).not.toBe(editBranch(new Date()));
   });
 
   it("refuses anything but that shape", () => {
-    for (const bad of ["copy-edit-2026", "copy-edit-20261124-183512; rm -rf", "x/copy-edit-20261124-183512", "copy-edit-20261124-183512\n", "main"]) {
+    for (const bad of ["copy-edit-2026", "copy-edit-20261124-183512-a1b2; rm -rf", "copy-edit-20261124-183512", "copy-edit-20261124-183512-ABCD", "x/copy-edit-20261124-183512-a1b2", "copy-edit-20261124-183512-a1b2\n", "main"]) {
       expect(EDIT_BRANCH_RE.test(bad)).toBe(false);
     }
   });

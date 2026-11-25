@@ -7,12 +7,12 @@ const reply = (status: number, body?: unknown) => vi.fn(async () => new Response
 describe("dispatchCopyEdit", () => {
   it("starts the workflow on main with the branch and the edits as one JSON string, the token in the header only", async () => {
     const doFetch = reply(204);
-    expect(await dispatchCopyEdit("tok_secret", "copy-edit-20261124-183512", edits, doFetch)).toBe(true);
+    expect(await dispatchCopyEdit("tok_secret", "copy-edit-20261124-183512-a1b2", edits, doFetch)).toBe(true);
     const [url, init] = (doFetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`https://api.github.com/repos/${REPO}/actions/workflows/copy-edit.yml/dispatches`);
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok_secret");
     const body = JSON.parse(init.body as string);
-    expect(body).toEqual({ ref: "main", inputs: { branch: "copy-edit-20261124-183512", edits: JSON.stringify(edits) } });
+    expect(body).toEqual({ ref: "main", inputs: { branch: "copy-edit-20261124-183512-a1b2", edits: JSON.stringify(edits) } });
     expect(init.body as string).not.toContain("tok_secret");
   });
 
@@ -23,7 +23,7 @@ describe("dispatchCopyEdit", () => {
 });
 
 describe("findCopyEditPr", () => {
-  const branch = "copy-edit-20261124-183512";
+  const branch = "copy-edit-20261124-183512-a1b2";
 
   it("reads the pull request by head branch", async () => {
     const doFetch = reply(200, [{ number: 7, html_url: "https://example.test/7", state: "open", merged_at: null }]);

@@ -1,5 +1,5 @@
 // The two GitHub calls the copy editor makes, both with `COPY_EDIT_DISPATCH_TOKEN` (a fine-grained token for this
-// repository, Actions: write). It starts the `Copy edit` workflow and reads whether that workflow's pull request exists. It never
+// repository: Actions write to start the workflow, Pull requests read for the status lookup; a 403 there reads as `unknown`). It starts the `Copy edit` workflow and reads whether that workflow's pull request exists. It never
 // creates a branch, a commit or a pull request: the workflow does, with its own token. The token is read by the route and passed in, never logged.
 import { EDIT_BRANCH_RE, type SubmittedEdit } from "../../../scripts/lib/copy-sheet/submission.mts";
 

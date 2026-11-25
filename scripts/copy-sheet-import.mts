@@ -5,9 +5,10 @@
 //   --dry     validate and print the old -> new list against origin/main; push nothing
 //   --no-pr   stop after the commit (the worktree and branch stay for you)
 //   --local [--root <dir>]   apply in place to a tree you name, no git (what the tests and a hand edit use)
-//   --branch copy-edit-YYYYMMDD-HHMMSS   name the branch (the copy editor's workflow does, so the editor can find the PR)
-// Only `git fetch`, `git push` and `gh pr create` see a token in the environment (GH_TOKEN, GITHUB_TOKEN, COPY_EDIT_PR_TOKEN,
-// GIT_CONFIG_COUNT/KEY_0/VALUE_0): the install, typecheck, lint and commit hooks run with those removed, so no dependency script can read one.
+//   --branch copy-edit-YYYYMMDD-HHMMSS-xxxx   name the branch (the copy editor's workflow does, so the editor can find the PR)
+// Of the commands this starts, only `git fetch`, `git push` and `gh pr create` see a token in the environment (GH_TOKEN,
+// GITHUB_TOKEN, COPY_EDIT_PR_TOKEN, GIT_CONFIG_COUNT/KEY_0/VALUE_0): the install, typecheck, lint and commit hooks run with
+// those removed, so no dependency script can read one. Any other name is not removed: the workflow sets only these.
 // A bad row (placeholders, em dash, banned word, stale sheet) fails the whole import and leaves nothing behind.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -25,7 +26,7 @@ const branchAt = args.indexOf("--branch");
 const givenBranch = branchAt >= 0 ? args[branchAt + 1] : undefined;
 const csvPath = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--root" && args[i - 1] !== "--branch");
 if (!csvPath || (branchAt >= 0 && !EDIT_BRANCH_RE.test(givenBranch ?? ""))) {
-  console.error("usage: pnpm copy:import <edited.csv> [--dry] [--no-pr] [--branch copy-edit-YYYYMMDD-HHMMSS] | --local [--root <dir>]");
+  console.error("usage: pnpm copy:import <edited.csv> [--dry] [--no-pr] [--branch copy-edit-YYYYMMDD-HHMMSS-xxxx] | --local [--root <dir>]");
   process.exit(2);
 }
 const csv = readFileSync(resolve(csvPath), "utf8");

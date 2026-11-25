@@ -9,7 +9,7 @@ vi.mock("../../../../lib/copy-editor/github", () => ({ findCopyEditPr: find }));
 const { GET } = await import("./route");
 
 const ADMIN = "user_admin";
-const BRANCH = "copy-edit-20261124-183512";
+const BRANCH = "copy-edit-20261124-183512-a1b2";
 const get = (branch: string | null = BRANCH) => GET(new NextRequest(`http://localhost/api/copy-edit/status${branch === null ? "" : `?branch=${encodeURIComponent(branch)}`}`));
 
 beforeEach(() => {

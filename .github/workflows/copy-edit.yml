@@ -6,19 +6,20 @@
 #
 # THE TOKEN. `COPY_EDIT_PR_TOKEN` is an Actions secret (a fine-grained token for this repository, Contents and Pull
 # requests write), and it reaches ONE step: the one that runs the import. A pull request opened with the workflow's own
-# GITHUB_TOKEN would not start CI; this one does. Everything before that step, including the install, runs without it,
-# and inside the import only `git fetch`, `git push` and `gh pr create` see it (the install, typecheck, lint and commit
-# hooks run with every token variable removed).
+# GITHUB_TOKEN would not start CI; this one does. Everything before that step, including the install, runs without it.
+# In that step the import process itself (pnpm, tsx, this repository's own scripts) can read it; every command the
+# import starts runs with every token variable removed except `git fetch`, `git push` and `gh pr create`, so no
+# dependency's install script, the typecheck, lint or a commit hook can.
 #
 # INPUTS. `inputs.*` reaches the shell only through `env:`, never through `${{ }}` inside a `run:` line, so text an admin
-# typed cannot become a command. The branch must match copy-edit-YYYYMMDD-HHMMSS and the edits are parsed as data.
+# typed cannot become a command. The branch must match copy-edit-YYYYMMDD-HHMMSS-xxxx and the edits are parsed as data.
 name: Copy edit
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'copy-edit-YYYYMMDD-HHMMSS, named by the submit route'
+        description: 'copy-edit-YYYYMMDD-HHMMSS-xxxx, named by the submit route'
         required: true
         type: string
       edits:
@@ -29,8 +30,10 @@ on:
 permissions:
   contents: read
 
+# One group per branch: every run has its own branch, so none queues behind another (a queue keeps one pending run and
+# cancels the rest, which would silently lose a submission the route already answered 202 for).
 concurrency:
-  group: copy-edit
+  group: copy-edit-${{ inputs.branch }}
   cancel-in-progress: false
 
 jobs:
