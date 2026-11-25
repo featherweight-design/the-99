@@ -59,6 +59,9 @@ describe("the Welcome cell's line", () => {
     expect(screen.getByRole("region", { name: creditsPageCopy.bal.total(2) })).toBeTruthy();
     rerender(<Balance total={0} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
     expect(screen.getByText(creditsPageCopy.bal.total(0))).toBeTruthy();
+    // The leaf must still tell one from many: the draws above agree with the
+    // function by construction, so this is what pins the singular.
+    expect(creditsPageCopy.bal.total(1)).not.toBe(creditsPageCopy.bal.total(2));
   });
 
   it("with every row off the date stands alone", () => {
