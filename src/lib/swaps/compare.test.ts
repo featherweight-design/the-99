@@ -6,7 +6,7 @@ const c = (over: Partial<Compare>): Compare => ({ type: null, keeps: [], gains: 
 
 describe("the comparison's fit (stand-in row addendum 3a)", () => {
   it("counts one line for a short comparison at both widths", () => {
-    const short = c({ keeps: ["fixture keep a", "fixture keep b"], loses: ["haste"] });
+    const short = c({ keeps: ["fixture kp aa", "fixture kp b a"], loses: ["haste"] });
     expect(compareLines(short, 560)).toBe(1);
     expect(compareLines(short, 315)).toBe(1);
   });
@@ -14,7 +14,7 @@ describe("the comparison's fit (stand-in row addendum 3a)", () => {
   it("breaks between items, never inside one, and lets a long group start mid-line", () => {
     const long = c({
       keeps: ["removal"],
-      loses: ["protection", "fixture loss a", "fixture loss b", "fixture loss c", "fixture loss d", "recursion", "tokens"],
+      loses: ["protection", "fixture loss a one", "fixture loss b", "fixture cc", "fixture d", "recursion", "tokens"],
     });
     // Too long for one 560px line, and it starts on line one beside KEEPS rather than on a line of its own.
     expect(compareLines(long, 560)).toBe(2);
@@ -22,7 +22,7 @@ describe("the comparison's fit (stand-in row addendum 3a)", () => {
   });
 
   it("drops one gain first, then the gains group, then keeps past the first, and never a loss", () => {
-    const loses = ["protection", "fixture loss a", "fixture loss b", "fixture loss c", "fixture loss d"];
+    const loses = ["protection", "fixture loss a one", "fixture loss b", "fixture cc", "fixture d"];
     const over = c({
       keeps: ["removal", "tokens", "mill"],
       gains: ["pumps", "evasion", "mana value 1"],
@@ -38,7 +38,7 @@ describe("the comparison's fit (stand-in row addendum 3a)", () => {
 
   it("drops only the last gain when that is enough", () => {
     // Fits once `mana value 1`, the last gain, goes.
-    const near = c({ keeps: ["fixture keep a", "fixture keep b"], gains: ["protection", "evasion", "mana value 1"], loses: ["haste", "tokens"] });
+    const near = c({ keeps: ["fixture kp aa", "fixture kp b a"], gains: ["protection", "evasion", "mana value 1"], loses: ["haste", "tokens"] });
     expect(compareLines(near, 560)).toBe(2);
     const fit = fitCompare(near);
     expect(fit.gains).toEqual(["protection", "evasion"]);
