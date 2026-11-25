@@ -1,0 +1,1 @@
+CREATE INDEX "spellbook_variants_pair_idx" ON "spellbook_variants" USING btree ("variant_id") WHERE "spellbook_variants"."card_count" = 2 and cardinality("spellbook_variants"."requires_template_ids") = 0;
