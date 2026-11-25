@@ -45,7 +45,7 @@ beforeEach(() => {
     { userId: "user_colin", publicId: "pub-colin", displayName: "Colin", commanderOracleId: "sai", commanderName: "Sai", commanderArt: "https://art/sai.jpg", pods: ["Thursday pod"] },
   ]);
   m.where.mockReset().mockResolvedValue([
-    { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: "https://cards/ghalta.jpg" },
+    { oracleId: "ghalta", name: "Fixture Card", imageUri: "https://cards/ghalta.jpg" },
     { oracleId: "sol", name: "Sol Ring", imageUri: null },
   ]);
 });
@@ -60,7 +60,7 @@ describe("loadWaitingOnYou", () => {
   it("draws a match with its card, the friend's face and pods from the live grant, and drops one whose grant is gone", async () => {
     expect(await loadWaitingOnYou("user_viewer", ENV, NOW)).toEqual([{
       key: "item:1", kind: "trade-match", createdAt: new Date(NOW.getTime() - 5 * 3_600_000), unseen: true,
-      card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: "https://cards/ghalta.jpg" },
+      card: { oracleId: "ghalta", name: "Fixture Card", imageUri: "https://cards/ghalta.jpg" },
       friend: { publicId: "pub-colin", displayName: named("Colin"), commander: { oracleId: "sai", name: "Sai", artCropUri: "https://art/sai.jpg" } },
       pods: [named("Thursday pod")],
       askable: true,

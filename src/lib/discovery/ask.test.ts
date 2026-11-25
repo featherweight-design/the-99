@@ -45,7 +45,7 @@ describe("starters", () => {
 
   it("leaves out a starter whose only answer is Find a deck when the reader has no deck", () => {
     const kept = startersFor(all, false);
-    expect(kept).not.toContain("Where can my spare cards go?");
-    expect(startersFor(all, true)).toContain("Where can my spare cards go?");
+    expect(kept).not.toContain(askCopy.starters.questions[0]);
+    expect(startersFor(all, true)).toContain(askCopy.starters.questions[0]);
   });
 });

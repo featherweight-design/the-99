@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { faceCosts, frontFaceCost, hasFrontFaceCost } from "./faces";
 import { parseManaCost } from "../../components/ui/cost-pips";
-import { spokenFullManaCost, spokenManaCost } from "../copy/card-surfaces";
+import { spokenFullManaCost, spokenManaCost, manaCopy } from "../copy/card-surfaces";
 
 describe("frontFaceCost", () => {
   it("keeps a single-faced cost whole", () => {
@@ -79,7 +79,7 @@ describe("the two labels, and why there are two", () => {
 
   it("says no mana cost through both for a land", () => {
     expect(spokenFullManaCost(null)).toBe(spokenManaCost(null));
-    expect(spokenFullManaCost("")).toBe("no mana cost");
+    expect(spokenFullManaCost("")).toBe(manaCopy.costNone);
   });
 });
 
