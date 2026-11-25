@@ -87,9 +87,10 @@ describe("planCopy", () => {
       expect(p.targetNewer).toEqual([]);
     });
 
-    // A rollback, or an old manual run: this checkout knows v8 and v9, the target holds a v10 row.
+    // A rollback, or an old manual run: this checkout knows v8 and v9 (v10 is dropped from its registry here), the target holds a v10 row.
     it("is not replaced when its newer version is one this checkout does not know", () => {
-      const older = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64) };
+      const { "10": _v10, ...known } = PROMPT_SYSTEM_SHA256;
+      const older = { ...known, "9": "9".repeat(64) };
       const p = planCopy([row(a, { promptVersion: "9" }, older)], [a], [held("10")], older);
       expect(p.install).toEqual([]);
       expect(p.targetNewer).toEqual(["a"]);

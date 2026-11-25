@@ -125,8 +125,8 @@ describe("labelInputHash", () => {
   // The vocabulary plan's Task 3: the SYSTEM prompt's hash is in the payload, read from the registry
   // entry of the version asked for, so a hash names the instruction it was written under.
   it("changes with the version and its registered SYSTEM hash, and defaults to the current version", () => {
-    const reg = { ...PROMPT_SYSTEM_SHA256, "10": "f".repeat(64) };
-    expect(labelInputHash(card, "m", "10", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
+    const reg = { ...PROMPT_SYSTEM_SHA256, "11": "f".repeat(64) };
+    expect(labelInputHash(card, "m", "11", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
     expect(labelInputHash(card, "m", "8", { "8": "0".repeat(64) })).not.toBe(labelInputHash(card, "m", "8"));
     expect(labelInputHash(card, "m", LABEL_PROMPT_VERSION)).toBe(labelInputHash(card, "m"));
   });
@@ -199,12 +199,14 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "9" is the keyed reply (each answer echoes its card's request key). Recomputing the payload
-  // with the constant itself cannot see a revert, so the literal is pinned; a row hashed under "7" with
-  // this SYSTEM is shown not to match, and a v9 hash is not a v8 one.
-  it("is version 9, so a row hashed under version 7 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("9");
+  // Version "10" adds the Clue (draw) and Treasure (ramp) role lines to SYSTEM; "9" was the keyed reply.
+  // Recomputing the payload with the constant itself cannot see a revert, so the literal is pinned; a hash
+  // under an older version is not the current one. That is the hash, not freshness: an older row still reads
+  // fresh under its OWN registered version (see "keeps version 9's entry" above), so nothing relabels.
+  it("is version 10, so a hash from version 7, 8 or 9 differs from the current one", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("10");
     expect(labelInputHash(card, "m")).not.toBe(labelInputHash(card, "m", "8"));
+    expect(labelInputHash(card, "m")).not.toBe(labelInputHash(card, "m", "9"));
     const underV7 = createHash("sha256")
       .update(JSON.stringify([
         card.oracleId, renderCard(card), "7", "m", createHash("sha256").update(SYSTEM).digest("hex"),
@@ -233,6 +235,22 @@ describe("labelInputHash", () => {
     const row = { model: "m", promptVersion: "8", inputHash: labelInputHash(card, "m", "8") };
     expect(labelIsFresh(row, card)).toBe(true);
     expect(needsLabel(card, row, { redo: false, model: "m" })).toBe(false);
+  });
+
+  // THE v10 BUMP STALES NOTHING EITHER. v8 and v9 rows keep their own entries (v9's is a literal, so a bump
+  // that rewrote it instead of adding one is caught), and a v9 row owes no label to a non-list build.
+  it("keeps version 9's entry and a v9 row fresh after the v10 bump", () => {
+    expect(PROMPT_SYSTEM_SHA256["9"]).toBe("f18f7748adcae7fd6b2751af618fac4096f0367ba139af2ee5278a76f3d3e47f");
+    const row = { model: "m", promptVersion: "9", inputHash: labelInputHash(card, "m", "9") };
+    expect(labelIsFresh(row, card)).toBe(true);
+    expect(needsLabel(card, row, { redo: false, model: "m" })).toBe(false);
+    expect(needsLabel(card, row, { redo: true, model: "m" })).toBe(true);
+  });
+
+  // The Sonnet 5.5 role misses (2026-11-25): a Clue maker carries draw, a Treasure maker carries ramp.
+  it("tells the model a Clue maker is role draw and a Treasure maker is role ramp", () => {
+    expect(SYSTEM).toContain("Creating a Clue token IS draw");
+    expect(SYSTEM).toContain("creates a Treasure token is ramp, rampKind makesTreasure");
   });
 
   // The version has to be READ, not merely exported. A hash computed over a payload with
