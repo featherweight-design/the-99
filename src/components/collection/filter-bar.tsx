@@ -95,6 +95,9 @@ export function FilterBar({
   total,
   availabilityOk,
   chips,
+  quickWide = null,
+  quickPhone = null,
+  quickActive = false,
   onClearAll,
   resultLine,
   announceId,
@@ -129,6 +132,12 @@ export function FilterBar({
   total: number;
   /** Chips the chassis draws, already shaped by `collectionChips`. */
   chips: FilterChip[];
+  /** The quick-filter strip for each form, or null when nothing is drawn. The chassis row hosts the wide one, the
+   * compact form draws the phone one as its own row above the chip shelf. */
+  quickWide?: React.ReactNode;
+  quickPhone?: React.ReactNode;
+  /** A quick chip is pressed: Clear all stays live on it. */
+  quickActive?: boolean;
   onClearAll: () => void;
   /** Row 3's sentence, composed by the browser from its three counts. */
   resultLine: string;
@@ -323,6 +332,8 @@ export function FilterBar({
         <FilterChassis
           form="wide"
           chips={chips}
+          quick={quickWide}
+          quickActive={quickActive}
           onClearAll={onClearAll}
           resultLine={resultLine}
           announce={announcement}
@@ -560,6 +571,7 @@ export function FilterBar({
         </div>
       </div>
 
+      {quickPhone}
       {/* The shelf (call 2): only while a filter is on, below the head, in
           the ordinary scroll — never inside the sticky box (STATES H1, H3).
           Rendered at 44px — the chip ✕ and Clear-all's own 44px touch overlays,

@@ -43,6 +43,9 @@ import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { useMinWidth, useMinWidthHinted } from "../ui/use-min-width";
 import { COLLECTION_SORT_COOKIE, COLLECTION_VIEW_COOKIE, COLLECTION_WIDE_COOKIE, writeViewCookie } from "../ui/view-cookie";
 import { collectionChips } from "../../lib/collection/chips";
+import { quickCounts } from "../../lib/collection/quick-counts";
+import { quickFilterCopy } from "../../lib/copy/quick-filters";
+import { QuickFilterStrip, drawnQuickChips, quickChipLabel, type QuickPressed } from "./quick-filter-strip";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import type { FilterChip } from "../ui/filter-chassis";
@@ -467,7 +470,16 @@ export function CollectionBrowser({
       // in the panel: only this component knows how many cards survive the new
       // filter set, and the string quotes that figure. At most one of the two
       // selections moves per change, so the first non-null wins outright.
+      // Pressing In no deck over a pressed fact chip clears `quick` while turning Free on: that change is the
+      // availability announcement's to name, not "off".
+      const quickMessage =
+        f.quick !== filters.quick && (f.quick || f.availability === filters.availability)
+          ? f.quick
+            ? quickFilterCopy.announceOn(quickChipLabel(f.quick), filterCards(cards, f).length)
+            : quickFilterCopy.announceOff(filterCards(cards, f).length)
+          : null;
       const message =
+        quickMessage ??
         // Short-circuits the per-dimension chain: with every filter emptied at
         // once, whichever dimension answered first would name itself as the
         // thing that changed.
@@ -512,12 +524,21 @@ export function CollectionBrowser({
     (filters.availability ?? []).length > 0 ||
     filters.quick !== undefined;
 
+  // The pressed quick chip. In no deck is the Availability menu's Free, so the two are one state and the chip shows
+  // pressed whichever control set it; the strip then owns it, and it is never also an active-filter chip.
+  const availSelection = filters.availability ?? [];
+  const freeAlone = availSelection.length === 1 && availSelection[0] === "free";
+  const quickPressed: QuickPressed | undefined = filters.quick ?? (freeAlone ? "free" : undefined);
+  const quickCountsNow = useMemo(() => quickCounts(cards, filters), [cards, filters]);
+
   // `collectionChips` needs a label per code; the bar already built these.
   const chassisChips: FilterChip[] = collectionChips(filters, {
     types: typeOptions,
     sets: setOptions,
     availability: availabilityOptions,
-  }).map((chip) => ({
+  })
+    .filter((chip) => !(chip.key === "avail" && freeAlone))
+    .map((chip) => ({
     key: chip.key,
     label: chip.label,
     spoken: chip.spoken,
@@ -558,6 +579,26 @@ export function CollectionBrowser({
   // and announcing a clear would describe an event that did not happen.
   // The write still goes through, so a search of nothing but whitespace — which
   // `anyFilterActive` trims to inactive — is still emptied.
+  const pressQuick = (key: QuickPressed) => {
+    if (key === quickPressed) {
+      updateFilters(
+        key === "free" ? { ...filters, availability: [] } : { ...filters, quick: undefined },
+        key === "free" ? "clear-availability" : undefined,
+      );
+      return;
+    }
+    // One quick chip at a time: pressing one takes the other back.
+    if (key === "free") {
+      captureToolEvent("find_a_deck_opened", { from: "quick_chip" });
+      updateFilters({ ...filters, quick: undefined, availability: ["free"] });
+    } else {
+      updateFilters({ ...filters, quick: key, availability: freeAlone ? [] : filters.availability });
+    }
+  };
+  const quickStrip = (layout: "wide" | "phone") => (
+    <QuickFilterStrip counts={quickCountsNow} pressed={quickPressed} onPress={pressQuick} layout={layout} />
+  );
+  const quickDrawn = drawnQuickChips(quickCountsNow, quickPressed).length > 0;
   const clearAllFilters = () =>
     updateFilters(
       { search: "", colors: [], types: [], setCodes: [], availability: [] },
@@ -608,8 +649,7 @@ export function CollectionBrowser({
   // Tool discovery call 1. Drawn while the reader has a deck and the Free count the menu reads is above zero; on
   // Free alone the call-out drops `Show them` and every Commander-legal card gets the labelled button.
   const freeCount = availabilityOptions.find((o) => o.code === "free")?.count ?? 0;
-  const availability = filters.availability ?? [];
-  const freeAlone = availability.length === 1 && availability[0] === "free";
+  const availability = availSelection;
   const findADeckOn = findADeck !== null && findADeck.hasDeck;
   const illegalIds = useMemo(() => new Set(findADeck?.illegal ?? []), [findADeck]);
   const findADeckButtons = useMemo<FindADeckButtons | null>(
@@ -698,6 +738,9 @@ export function CollectionBrowser({
         shown={sorted.length}
         total={cards.length}
         chips={chassisChips}
+        quickWide={quickDrawn ? quickStrip("wide") : null}
+        quickPhone={quickDrawn ? quickStrip("phone") : null}
+        quickActive={quickPressed !== undefined}
         onClearAll={clearAllFilters}
         // A counter per announcement, so the same sentence spoken twice — the
         // same search re-run to the same count — is heard twice.

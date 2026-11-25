@@ -76,6 +76,14 @@ export type FilterChassisProps = {
   chips: readonly FilterChip[];
   onClearAll: () => void;
   /**
+   * Collection's quick-filter strip, drawn at the head of row 2 ahead of the chips with a hairline between them.
+   * Absent (the default) leaves row 2 exactly as it was, which is what every other route renders; null or
+   * undefined means nothing is drawn, so `No filters on` still prints when the chips are empty too.
+   */
+  quick?: React.ReactNode;
+  /** A quick chip is pressed: it is a filter the chips do not list, so Clear all stays live on it. */
+  quickActive?: boolean;
+  /**
    * Row 3's sentence, finished by the route. Four routes word their counts
    * differently and none of them is a lane, so the chassis takes the sentence
    * rather than the state that produces it.
@@ -245,7 +253,7 @@ export function FilterChipPill({ chip }: { chip: FilterChip }) {
 }
 
 export function FilterChassis({
-  controls, sort, chips, onClearAll, resultLine, form, after,
+  controls, sort, chips, onClearAll, resultLine, form, after, quick, quickActive = false,
   silentResult, resultTrailing, announce, announceId, revision, warnResult,
 }: FilterChassisProps) {
   return (
@@ -309,8 +317,12 @@ export function FilterChassis({
         style={{ minHeight: CHIP_ROW_MIN_PX }}
         data-chassis-row="chips"
       >
+        {quick}
+        {quick && chips.length > 0 && (
+          <div aria-hidden className="h-[16px] w-px flex-none bg-[color:var(--border-strong)]" data-chassis-quick-hairline />
+        )}
         {chips.length === 0 ? (
-          <span className="font-mono text-[11px] leading-[14px] text-[color:var(--fg-faint)] py-[3px]">
+          quick ? null : <span className="font-mono text-[11px] leading-[14px] text-[color:var(--fg-faint)] py-[3px]">
             {chassisCopy.chips.none}
           </span>
         ) : (
@@ -324,7 +336,7 @@ export function FilterChassis({
             outlived it, which is the point of moving it here. */}
         <button
           type="button"
-          disabled={chips.length === 0}
+          disabled={chips.length === 0 && !quickActive}
           onClick={onClearAll}
           aria-label={sort === undefined ? chassisCopy.chips.clearAllAriaNoSort : chassisCopy.chips.clearAllAria}
           className={[
@@ -332,7 +344,7 @@ export function FilterChassis({
             "font-mono text-[11px] leading-[14px] underline",
             "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",
             "after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
-            chips.length === 0
+            chips.length === 0 && !quickActive
               ? "cursor-default text-[color:var(--fg-locked)]"
               : "cursor-pointer text-[color:var(--fg-muted)]",
           ].join(" ")}
