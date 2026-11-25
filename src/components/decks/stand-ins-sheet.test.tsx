@@ -547,7 +547,7 @@ describe("StandInGroup's markup", () => {
   const rows = Array.from({ length: 7 }, (_, i) => ({
     oracleId: `r${i}`, name: `Row ${i}`, imageUri: null, free: false, soft: 0, cents: 100, foilOnly: false, body: [], muted: [],
   }));
-  const group = { heading: "same type · instants", order: "Fixture order", noun: "instants", rows, total: 12 };
+  const group = { heading: "same type · instants", order: swapToolsCopy.sheet.orderMostShared, noun: "instants", rows, total: 12 };
   const draw = (props: { expanded?: boolean; fetching?: boolean }) =>
     render(
       <StandInGroup group={group} {...props} onToggle={() => {}}>
