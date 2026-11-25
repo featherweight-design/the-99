@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { moreRows, trialFillRows } from "../../app/decks/new/choose/results-actions";
+import { captureEngagement } from "../../lib/analytics/posthog";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import type { ChooseParams } from "../../lib/intake/params";
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
@@ -42,6 +43,13 @@ export function ChooseResults({
   const [hasMore, setHasMore] = useState(page.hasMore);
   const [failed, setFailed] = useState(false);
   const read = useReadPhase();
+  // A run the reader started has its result on screen: sent once, never for a past run opened from History.
+  const ranSent = useRef(false);
+  useEffect(() => {
+    if (read !== "done" || view.pastRun || rows.length === 0 || ranSent.current) return;
+    ranSent.current = true;
+    captureEngagement("recommendation_run", { surface: "choose" });
+  }, [read, view.pastRun, rows.length]);
   // The read's step 1 names how many commanders the answers allow: this list is that pool.
   const reportPool = useReportPool();
   useEffect(() => { reportPool(page.total); }, [reportPool, page.total]);

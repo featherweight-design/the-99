@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const trialFillRows = vi.fn();
 const moreRows = vi.fn();
 vi.mock("../../app/decks/new/choose/results-actions", () => ({ trialFillRows, moreRows }));
+const captureEngagement = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/analytics/posthog", () => ({ captureEngagement }));
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
@@ -330,5 +332,25 @@ describe("a past run opened from History (PR 3)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("recommendation_run", () => {
+  beforeEach(() => captureEngagement.mockClear());
+
+  it("is sent once when a run the reader started renders its result", () => {
+    draw(page(3), "done");
+    expect(captureEngagement).toHaveBeenCalledExactlyOnceWith("recommendation_run", { surface: "choose" });
+  });
+
+  it("is not sent for a past run, a read still running, a failed read or no rows", () => {
+    draw(page(3), "done", [], {}, undefined, { pastRun: true });
+    cleanup();
+    draw(page(3), "reading");
+    cleanup();
+    draw(page(3), "failed");
+    cleanup();
+    draw(page(0), "done");
+    expect(captureEngagement).not.toHaveBeenCalled();
   });
 });

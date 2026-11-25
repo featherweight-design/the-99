@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { readReturnAction, type ReturnOutcome } from "../../app/credits/actions";
+import { captureEngagement } from "../../lib/analytics/posthog";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import type { ReturnRead } from "../../lib/payments/return-rule";
 import { ReceiptLink } from "./receipt-link";
@@ -47,6 +48,19 @@ export function ReturnBand({ sessionId, planRenews = null, initial, timing = BAN
     live.current = { read, onAdded, onReadFailed, timing };
   });
   const settled = state?.kind === "added" || state?.kind === "none";
+  // A paid return, once per Checkout Session (a reload of the return URL is not a second purchase): the kind only.
+  const paidKind = state && state.kind !== "none" ? (state.plan ? "plan" : "pack") : null;
+  useEffect(() => {
+    if (!paidKind) return;
+    const key = `the99.creditsBought.${sessionId}`;
+    try {
+      if (window.sessionStorage.getItem(key)) return;
+      window.sessionStorage.setItem(key, "1");
+    } catch {
+      // Storage is blocked: the per-session send ceiling still bounds it to one.
+    }
+    captureEngagement("credits_bought", { kind: paidKind });
+  }, [paidKind, sessionId]);
 
   useEffect(() => {
     if (settled) return;
