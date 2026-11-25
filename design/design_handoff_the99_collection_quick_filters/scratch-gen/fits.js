@@ -1,0 +1,1 @@
+window.__FITS='<span aria-hidden="true" style="display:inline-flex;gap:2.5px;padding:0 1px"><span style="width:5px;height:5px;transform:rotate(45deg);border:1.5px solid var(--accent)"></span><span style="width:5px;height:5px;transform:rotate(45deg);border:1.5px solid var(--accent)"></span></span>';
