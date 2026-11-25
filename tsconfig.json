@@ -1,6 +1,7 @@
 {
   "extends": "@fwd-stack/tsconfig/nextjs",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
     }

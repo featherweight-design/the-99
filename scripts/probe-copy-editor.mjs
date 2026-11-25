@@ -11,8 +11,14 @@
 //
 // Run (dev server started with ADMIN_USER_IDS=<audit user id> ADMIN_ENV_LABEL=staging):
 //   PROBE_BASE=http://localhost:3107 E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app node scripts/probe-copy-editor.mjs
+//   7+ the editor (PR 4): press a line open, the dialog (popover 420px / bottom sheet), word count, em dash refusal,
+//     chips that cannot be deleted, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
+//     wrap, read-only panel, the which-key picker. PROBE_ONLY=editor runs just this part (use it under --webpack).
+//     Every assertion needs the dialog, so each FAILS on main (no editor): the door and outlines exist there, a click
+//     on a line opens nothing, and `[role=dialog]` never appears.
 // SHOTS_DIR=<dir> also writes the per-state screenshots of /commanders/choose used for the contact sheet.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 
@@ -361,6 +367,411 @@ async function runStates(browser) {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// The editor (PR 4). Lines are found by pressing them open; a class with no real line on the probed routes uses a
+// labelled FIXTURE: a span injected on /decks carrying a real row's text, so the real matcher and editor run on it.
+const DIALOG = "[data-copy-editor] [role=dialog]";
+const EDITOR_ROUTES = ["/commanders/choose", "/decks", "/about/home", "/about", "/preview/landing"];
+const CLASSES = ["plain", "chip", "variation", "which", "readonly"];
+const rowsJson = JSON.parse(readFileSync(new URL("../.generated/copy-rows.json", import.meta.url), "utf8"));
+const base = (k) => k.replace(/#t\d+$/, "");
+const FIXTURES = (() => {
+  const chip = rowsJson.find((r) => !r.readOnly && !r.key.includes("#t") && r.placeholders.length === 1 && r.text.replace(/\{[^{}]+\}/g, "").length >= 8 && r.text.length < 40);
+  const variation = rowsJson.find((r) => r.key.endsWith("#t1") && !r.placeholders.length);
+  const by = new Map();
+  for (const r of rowsJson) if (!r.readOnly && !r.placeholders.length) by.set(r.text, new Set([...(by.get(r.text) ?? []), base(r.key)]));
+  const which = [...by].find(([t, k]) => k.size > 1 && t.length > 10 && t.length < 40)?.[0];
+  const ro = rowsJson.find((r) => r.readOnly && !r.placeholders.length && r.text.length > 4 && r.text.length < 30 && rowsJson.filter((o) => o.text === r.text).length === 1);
+  const counts = new Map();
+  for (const r of rowsJson) counts.set(r.text, (counts.get(r.text) ?? 0) + 1);
+  const plain = rowsJson.find((r) => r.kind === "text" && !r.readOnly && !r.placeholders.length && !r.key.includes("#t") && counts.get(r.text) === 1 && /^[A-Z][a-z]+ [a-z]+ [a-z]+ [a-z ]+$/.test(r.text) && r.text.length < 40 && !/\.(label|cta|button|chip|title|head|eyebrow)$/.test(r.key));
+  return { plain: plain?.text, chip: chip?.text.replace(/\{[^{}]+\}/g, "5"), variation: variation?.text, which, readonly: ro?.text };
+})();
+
+const barOf = (page) => page.locator('[data-copy-editor] [role="region"][aria-label="Copy editor"]');
+
+async function injectFixture(page, fixtureText) {
+  await page.evaluate((text) => {
+    // Park the fixture where no existing outline sits, so a press reaches it and nothing else.
+    const rects = [...document.querySelectorAll("[data-copy-editor] [data-copy-outline]")].map((e) => e.getBoundingClientRect());
+    let top = 160;
+    for (let t = 160; t < innerHeight - 160; t += 12) {
+      if (!rects.some((r) => r.right > 10 && r.left < 260 && r.bottom > t - 6 && r.top < t + 34)) { top = t; break; }
+    }
+    const el = document.createElement("span");
+    el.id = "probe-fixture-line";
+    el.textContent = text;
+    el.style.cssText = "position:fixed;left:20px;top:" + top + "px;z-index:30;color:#fff;font-size:16px";
+    document.body.appendChild(el);
+  }, fixtureText);
+  await page.waitForTimeout(900);
+  return page.evaluate(() => { const r = document.getElementById("probe-fixture-line").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left }; });
+}
+
+async function enter(page, vp, path, fixtureText) {
+  await openPage(page, fixtureText ? "/decks" : path);
+  await doorOf(page, vp).first().waitFor({ state: "visible", timeout: 15_000 });
+  await doorOf(page, vp).first().click();
+  await barOf(page).waitFor({ state: "visible", timeout: 5000 });
+  await page.waitForSelector("[data-copy-editor] [data-copy-outline]", { timeout: 10_000 }).catch(() => {});
+  if (fixtureText) await injectFixture(page, fixtureText);
+  await page.waitForTimeout(300);
+}
+
+async function listOutlines(page) {
+  return page.evaluate(() => {
+    const bar = document.querySelector('[data-copy-editor] [role="region"]')?.getBoundingClientRect();
+    const out = [];
+    for (const el of document.querySelectorAll("[data-copy-editor] [data-copy-outline]")) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8 || r.top < 70 || r.bottom > innerHeight - 90 || r.left < 0 || r.right > innerWidth) continue;
+      if (bar && r.right > bar.left && r.left < bar.right && r.bottom > bar.top && r.top < bar.bottom) continue;
+      out.push({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left, clipped: getComputedStyle(el).boxShadow.includes("inset") });
+    }
+    return out;
+  });
+}
+
+async function openLine(page, vp, pt) {
+  await target(page, vp, pt);
+  if ((await page.locator(DIALOG).count()) === 0) {
+    if (vp.touch) await page.touchscreen.tap(pt.x, pt.y);
+    else await page.mouse.click(pt.x, pt.y);
+    await page.waitForTimeout(350);
+  }
+  return (await page.locator(DIALOG).count()) > 0;
+}
+
+const classify = (page) =>
+  page.evaluate(() => {
+    const d = document.querySelector('[data-copy-editor] [role=dialog]');
+    if (!d) return null;
+    if (/Which one is this\?/.test(d.innerText)) return "which";
+    const tbs = d.querySelectorAll("[role=textbox]").length;
+    if (!tbs) return "readonly";
+    if (tbs > 1) return "variation";
+    return d.querySelector("[data-fill]") ? "chip" : "plain";
+  });
+
+async function closeDialog(page) {
+  await page.keyboard.press("Escape");
+  await page.locator(DIALOG).waitFor({ state: "detached", timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(150);
+}
+
+// Find one real line of each class by pressing lines open; fall back to a labelled fixture.
+async function survey(page, vp) {
+  const found = {};
+  for (const path of EDITOR_ROUTES) {
+    if (CLASSES.every((c) => found[c])) break;
+    const res = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" }).catch(() => null);
+    if (!res || res.status() >= 400) { console.log(`INFO  ${vp.label} survey ${path}: status ${res?.status()}`); continue; }
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    if (!(await doorOf(page, vp).count())) continue;
+    await enter(page, vp, path);
+    const pts = await listOutlines(page);
+    for (let i = 0; i < Math.min(pts.length, 45); i++) {
+      if (CLASSES.every((c) => found[c])) break;
+      if (!(await openLine(page, vp, pts[i]))) { await page.keyboard.press("Escape").catch(() => {}); continue; }
+      const cls = await classify(page);
+      if (cls && !found[cls] && !pts[i].clipped) found[cls] = { path, idx: i, real: true };
+      await closeDialog(page);
+    }
+  }
+  for (const c of CLASSES) {
+    if (found[c]) console.log(`INFO  ${vp.label}: real ${c} line on ${found[c].path} (#${found[c].idx})`);
+    else if (FIXTURES[c]) { found[c] = { fixture: FIXTURES[c], real: false }; console.log(`INFO  ${vp.label}: no real ${c} line on probed routes; FIXTURE "${FIXTURES[c]}" injected on /decks`); }
+    else console.log(`INFO  ${vp.label}: no ${c} line and no fixture`);
+  }
+  return found;
+}
+
+async function openClass(page, vp, found, cls) {
+  const first = await openClassOnce(page, vp, found, cls);
+  if (first || !found[cls]?.real || !FIXTURES[cls]) return first;
+  console.log(`INFO  ${vp.label}: real ${cls} line not re-found on visit; FIXTURE "${FIXTURES[cls]}" used instead`);
+  found[cls] = { fixture: FIXTURES[cls], real: false };
+  return openClassOnce(page, vp, found, cls);
+}
+
+async function openClassOnce(page, vp, found, cls) {
+  const f = found[cls];
+  if (!f) return null;
+  await enter(page, vp, f.path, f.fixture);
+  let pt;
+  if (f.fixture) {
+    pt = await page.evaluate(() => { const r = document.getElementById("probe-fixture-line").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left }; });
+  } else {
+    // Layout can shift between visits, so the surveyed index is only a first guess: verify the class, else scan.
+    const list = await listOutlines(page);
+    const order = [f.idx, ...list.keys()].filter((i, n, a) => a.indexOf(i) === n && list[i] && !list[i].clipped);
+    for (const i of order.slice(0, 50)) {
+      if (!(await openLine(page, vp, list[i]))) { await page.keyboard.press("Escape").catch(() => {}); continue; }
+      if ((await classify(page)) === cls) return list[i];
+      await closeDialog(page);
+    }
+    return null;
+  }
+  if (!pt) return null;
+  const ok = await openLine(page, vp, pt);
+  return ok && (await classify(page)) === cls ? pt : null;
+}
+
+const inDialog = (page, fn, arg) => page.evaluate(fn, arg);
+const activeInDialog = (page) => page.evaluate(() => !!document.activeElement?.closest('[data-copy-editor] [role=dialog]'));
+const wordsLine = async (page) => ((await page.locator(`${DIALOG} [role=status]`).first().innerText().catch(() => "")).split("\n")[0] ?? "");
+const storedEdits = (page) => page.evaluate(() => { try { return JSON.parse(localStorage.getItem("the99.copyEdits") ?? "[]"); } catch { return "unreadable"; } });
+const outlineAt = (page, pt) =>
+  page.evaluate(({ x, y }) => {
+    const probe = document.createElement("i");
+    probe.style.color = "var(--accent)";
+    document.body.appendChild(probe);
+    const accent = getComputedStyle(probe).color;
+    probe.remove();
+    for (const el of document.querySelectorAll("[data-copy-editor] [data-copy-outline]")) {
+      const r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        const cs = getComputedStyle(el);
+        return { style: cs.outlineStyle, width: cs.outlineWidth, accent: cs.outlineColor === accent, target: el.hasAttribute("data-copy-target") };
+      }
+    }
+    return null;
+  }, pt);
+
+async function runEditor(browser) {
+  for (const vp of VIEWPORTS) {
+    const L = `E ${vp.label}`;
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch });
+    // The Next dev-tools badge (bottom-left, `nextjs-portal`) sits on top of the sheet and would take the click.
+    await ctx.addInitScript(() => document.addEventListener("DOMContentLoaded", () => { const st = document.createElement("style"); st.textContent = "nextjs-portal{display:none!important}"; document.head.appendChild(st); }));
+    const page = await ctx.newPage();
+    const consoleErrors = [];
+    page.on("console", (m) => m.type() === "error" && consoleErrors.push(m.text().slice(0, 200)));
+    page.on("pageerror", (e) => consoleErrors.push(String(e).slice(0, 200)));
+    await signIn(page);
+    const found = await survey(page, vp);
+    const shot = async (name) => SHOTS && (await page.screenshot({ path: `${SHOTS}/${vp.label}-${name}.png` }));
+
+    // 1 + 2 + 6: plain line
+    let pt = await openClass(page, vp, found, "plain");
+    check(`${L} 1: pressing an editable line opens [role=dialog]`, !!pt);
+    if (pt) {
+      const g = await page.evaluate(() => { const r = document.querySelector('[data-copy-editor] [role=dialog]').getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, b: r.bottom, r: r.right, vw: innerWidth, vh: innerHeight }; });
+      if (vp.touch) {
+        check(`${L} 1: bottom sheet touches the bottom edge, width = viewport`, Math.abs(g.b - g.vh) <= 1 && Math.abs(g.w - g.vw) <= 1, JSON.stringify(g));
+      } else {
+        const under = g.t >= pt.bottom - 1;
+        const above = g.b <= pt.top + 1;
+        check(`${L} 1: popover 420px wide`, Math.abs(g.w - 420) <= 1, JSON.stringify(g));
+        check(`${L} 1: popover under the line (${under ? "under" : "flipped above"}) and inside the viewport`, (under || above) && g.l >= 0 && g.r <= g.vw && g.t >= 0 && g.b <= g.vh, JSON.stringify({ ...g, lineTop: pt.top, lineBottom: pt.bottom }));
+      }
+      const txt = await page.locator(DIALOG).innerText();
+      check(`${L} 2: shows "Now" text and a contenteditable [role=textbox]`, /\bNOW\b|\bNow\b/i.test(txt) && (await page.locator(`${DIALOG} [role=textbox][contenteditable=true]`).count()) === 1, txt.replace(/\s+/g, " ").slice(0, 120));
+      await shot("editor");
+      const tb = page.locator(`${DIALOG} [role=textbox]`);
+      const add = page.locator(`${DIALOG} button`, { hasText: /^(Add to edits|Update edit)$/ });
+      await tb.focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.type("Probe edit", { delay: 10 });
+      check(`${L} 2: typing changes the live word count (2 words)`, /\b2\b/.test(await wordsLine(page)), await wordsLine(page));
+      check(`${L} 2: valid text enables "Add to edits"`, await add.isEnabled());
+      await page.keyboard.type(" —", { delay: 10 });
+      await page.waitForTimeout(120);
+      const danger = await page.evaluate(() => {
+        const p = document.createElement("i");
+        p.style.color = "var(--danger)";
+        document.body.appendChild(p);
+        const want = getComputedStyle(p).color;
+        p.remove();
+        const lines = [...document.querySelectorAll('[data-copy-editor] [role=dialog] [role=status] div')].filter((d) => getComputedStyle(d).color === want);
+        return lines.map((d) => d.innerText);
+      });
+      check(`${L} 2: em dash shows a danger-coloured problem line`, danger.length > 0, JSON.stringify(danger));
+      check(`${L} 2: em dash disables "Add to edits"`, await add.isDisabled());
+      await shot("editor-error");
+      await page.keyboard.press("Backspace");
+      await page.keyboard.press("Backspace");
+      await page.waitForTimeout(120);
+      check(`${L} 2: fixing re-enables "Add to edits"`, await add.isEnabled(), await tb.innerText());
+      // 6 Tab wrap
+      await tb.focus();
+      let stayed = true;
+      for (let i = 0; i < 10; i++) { await page.keyboard.press("Tab"); if (!(await activeInDialog(page))) stayed = false; }
+      check(`${L} 6: 10 Tabs never leave the dialog`, stayed);
+      const edge = await page.evaluate(() => {
+        const d = document.querySelector('[data-copy-editor] [role=dialog]');
+        const items = [...d.querySelectorAll('button:not([disabled]), [contenteditable="true"]')];
+        items[0].focus();
+        return items.length;
+      });
+      await page.keyboard.press("Shift+Tab");
+      const lastHit = await page.evaluate(() => { const d = document.querySelector('[data-copy-editor] [role=dialog]'); const items = [...d.querySelectorAll('button:not([disabled]), [contenteditable="true"]')]; return document.activeElement === items.at(-1); });
+      check(`${L} 6: Shift+Tab on the first control wraps to the last (${edge} controls)`, lastHit);
+      await page.keyboard.press("Tab");
+      const firstHit = await page.evaluate(() => { const d = document.querySelector('[data-copy-editor] [role=dialog]'); const items = [...d.querySelectorAll('button:not([disabled]), [contenteditable="true"]')]; return document.activeElement === items[0]; });
+      check(`${L} 6: Tab on the last control wraps to the first`, firstHit);
+      // Esc closes
+      await closeDialog(page);
+      check(`${L} 6: Esc closes the dialog`, (await page.locator(DIALOG).count()) === 0);
+      check(`${L} 6: Esc with the dialog closed behaves as before (mode stays on, target cleared)`, await (async () => { await page.keyboard.press("Escape"); await page.waitForTimeout(150); return (await page.locator("[data-copy-target]").count()) === 0 && (await barOf(page).count()) === 1; })());
+      // focus return: focus the Done button, open with a click, Esc
+      await target(page, vp, pt);
+      await barOf(page).getByRole("button", { name: "Done" }).focus();
+      await page.evaluate(({ x, y }) => document.elementFromPoint(x, y).dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, clientX: x, clientY: y })), pt);
+      await page.waitForTimeout(350);
+      const opened = (await page.locator(DIALOG).count()) > 0;
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(250);
+      const back = await page.evaluate(() => document.activeElement?.tagName === "BUTTON" && /Done/.test(document.activeElement.textContent ?? ""));
+      check(`${L} 6: Esc returns focus to the previously focused element (Done button) [opened with a synthetic click at the line]`, opened && back, `opened=${opened} activeTag=${await page.evaluate(() => document.activeElement?.tagName + ":" + (document.activeElement?.getAttribute("role") ?? ""))}`);
+    }
+
+    // 5: persistence
+    pt = await openClass(page, vp, found, "plain");
+    if (pt) {
+      const nowText = await page.locator(`${DIALOG} [role=textbox]`).innerText();
+      await page.locator(`${DIALOG} [role=textbox]`).focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.type("Probe edit", { delay: 10 });
+      await page.locator(`${DIALOG} button`, { hasText: "Add to edits" }).click();
+      await page.waitForTimeout(300);
+      check(`${L} 5: Add to edits closes the dialog`, (await page.locator(DIALOG).count()) === 0);
+      let st = await storedEdits(page);
+      const one = Array.isArray(st) && st.length === 1 ? st[0] : null;
+      check(`${L} 5: localStorage the99.copyEdits holds {key,from,to}`, !!one && typeof one.key === "string" && one.to === "Probe edit" && typeof one.from === "string" && one.from.length > 0, JSON.stringify(st).slice(0, 200));
+      await page.mouse.move(2, vp.height - 2).catch(() => {});
+      await page.waitForTimeout(150);
+      let o = await outlineAt(page, pt);
+      check(`${L} 5: edited line gets a solid 1px accent outline`, o && o.style === "solid" && o.width === "1px" && o.accent, JSON.stringify(o));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      await doorOf(page, vp).first().click();
+      await barOf(page).waitFor({ state: "visible" });
+      await page.waitForSelector("[data-copy-editor] [data-copy-outline]", { timeout: 10_000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      // A fixture span does not survive a reload: put it back (it parks where no outline sits, same as before).
+      if (found.plain.fixture) pt = await injectFixture(page, found.plain.fixture);
+      st = await storedEdits(page);
+      check(`${L} 5: edit survives a reload`, Array.isArray(st) && st.length === 1 && st[0].to === "Probe edit");
+      o = await outlineAt(page, pt);
+      check(`${L} 5: outline still solid 1px accent after reload`, o && o.style === "solid" && o.width === "1px" && o.accent, JSON.stringify(o));
+      const again = await openLine(page, vp, pt);
+      const btns = await page.locator(`${DIALOG} button`).allInnerTexts();
+      check(`${L} 5: reopening shows "Update edit" and "Remove edit"`, again && btns.includes("Update edit") && btns.includes("Remove edit"), JSON.stringify(btns));
+      check(`${L} 5: reopened field holds the edited text (was "${nowText.slice(0, 30)}")`, (await page.locator(`${DIALOG} [role=textbox]`).innerText().catch(() => "")) === "Probe edit");
+      const rmErr = await page.locator(`${DIALOG} button`, { hasText: "Remove edit" }).click({ timeout: 4000 }).then(() => "", (e) => String(e).split("\n")[0].slice(0, 160));
+      await page.waitForTimeout(300);
+      st = await storedEdits(page);
+      check(`${L} 5: Remove edit clears storage and closes`, Array.isArray(st) && st.length === 0 && (await page.locator(DIALOG).count()) === 0, JSON.stringify(st).slice(0, 120) + " " + rmErr);
+    }
+
+    // 3: chips
+    pt = await openClass(page, vp, found, "chip");
+    check(`${L} 3: a {name} line opens an editor with chips${found.chip?.real ? "" : " [FIXTURE]"}`, !!pt && (await page.locator(`${DIALOG} [data-fill]`).count()) > 0);
+    if (pt) {
+      const n0 = await page.locator(`${DIALOG} [data-fill]`).count();
+      await page.locator(`${DIALOG} [role=textbox]`).focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.press("Backspace");
+      await page.waitForTimeout(150);
+      const n1 = await page.locator(`${DIALOG} [data-fill]`).count();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.press("Delete");
+      await page.waitForTimeout(150);
+      const n2 = await page.locator(`${DIALOG} [data-fill]`).count();
+      check(`${L} 3: select-all + Backspace/Delete leaves chip count unchanged (${n0} -> ${n1} -> ${n2})`, n0 === n1 && n1 === n2 && n0 > 0);
+      await closeDialog(page);
+    }
+
+    // 4: variations
+    pt = await openClass(page, vp, found, "variation");
+    check(`${L} 4: a variation line opens several fields${found.variation?.real ? "" : " [FIXTURE]"}`, !!pt && (await page.locator(`${DIALOG} [role=textbox]`).count()) > 1);
+    if (pt) {
+      const t = (await page.locator(DIALOG).innerText()).replace(/\s+/g, " ");
+      check(`${L} 4: fields labelled "When n is 1" and "Otherwise"`, /When n is 1/.test(t) && /Otherwise/.test(t), t.slice(0, 220));
+      await closeDialog(page);
+    }
+
+    // 7: read-only
+    pt = await openClass(page, vp, found, "readonly");
+    check(`${L} 7: a read-only line opens the read-only panel${found.readonly?.real ? "" : " [FIXTURE]"}`, !!pt && (await classify(page)) === "readonly");
+    if (pt) {
+      const t = (await page.locator(DIALOG).innerText()).replace(/\s+/g, " ");
+      const btns = await page.locator(`${DIALOG} button`).allInnerTexts();
+      check(`${L} 7: lock text, reason, "Copy key" and "Close", no textbox`, /🔒/.test(t) && btns.includes("Copy key") && btns.includes("Close") && (await page.locator(`${DIALOG} [role=textbox]`).count()) === 0 && t.length > 40, t.slice(0, 200));
+      await shot("readonly");
+      await closeDialog(page);
+    }
+
+    // 8: which one
+    pt = await openClass(page, vp, found, "which");
+    check(`${L} 8: same words under two keys opens "Which one is this?"${found.which?.real ? "" : " [FIXTURE]"}`, !!pt && (await classify(page)) === "which");
+    if (pt) {
+      const keys = await page.locator(`${DIALOG} li button`).allInnerTexts();
+      check(`${L} 8: picker lists >1 keys (${keys.length})`, keys.length > 1, JSON.stringify(keys));
+      await shot("which");
+      await page.locator(`${DIALOG} li button`).first().click();
+      await page.waitForTimeout(250);
+      const cls = await classify(page);
+      check(`${L} 8: picking a key shows the editor (${cls})`, cls === "plain" || cls === "chip" || cls === "variation");
+      await closeDialog(page);
+    }
+    check(`${L}: no page errors during the editor run`, consoleErrors.filter((e) => !/Clerk|clerk|favicon|Failed to load resource|shell:|user_prefs|\[browser\]/i.test(e)).length === 0, consoleErrors.slice(0, 3).join(" | "));
+    await ctx.close();
+  }
+}
+
+async function editorShots(browser) {
+  const { default: sharp } = await import("sharp");
+  const files = [];
+  for (const vp of SHOT_VIEWPORTS) {
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch });
+    const page = await ctx.newPage();
+    await signIn(page);
+    const found = await survey(page, vp);
+    const row = [];
+    const snap = async (state) => { const f = `${SHOTS}/${vp.label}-editor-${state}.png`; await page.screenshot({ path: f }); row.push([state, f]); };
+    if (await openClass(page, vp, found, "plain")) {
+      await snap("open");
+      await page.locator(`${DIALOG} [role=textbox]`).focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.type("Probe — edit", { delay: 5 });
+      await page.waitForTimeout(150);
+      await snap("error");
+      await closeDialog(page);
+    }
+    if (await openClass(page, vp, found, "readonly")) { await snap("readonly"); await closeDialog(page); }
+    if (await openClass(page, vp, found, "variation")) { await snap("variation"); await closeDialog(page); }
+    files.push([vp, row]);
+    await ctx.close();
+  }
+  const rows = [];
+  const cellH = 560;
+  for (const [vp, row] of files) {
+    const cells = [];
+    for (const [state, f] of row) {
+      const img = await sharp(f).resize({ height: cellH - 28 }).png().toBuffer();
+      const meta = await sharp(img).metadata();
+      const label = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${meta.width}" height="28"><rect width="100%" height="100%" fill="#222"/><text x="6" y="19" font-family="monospace" font-size="14" fill="#fff">${vp.label} - ${state}</text></svg>`);
+      const cell = await sharp({ create: { width: meta.width, height: cellH, channels: 3, background: "#222" } }).composite([{ input: label, top: 0, left: 0 }, { input: img, top: 28, left: 0 }]).png().toBuffer();
+      cells.push({ buf: cell, w: meta.width });
+    }
+    let x = 0;
+    const comps = cells.map((c) => { const o = { input: c.buf, left: x, top: 0 }; x += c.w + 8; return o; });
+    const buf = await sharp({ create: { width: Math.max(x, 1), height: cellH, channels: 3, background: "#555" } }).composite(comps).png().toBuffer();
+    const f = `${SHOTS}/editor-sheet-${vp.label}.png`;
+    await sharp(buf).toFile(f);
+    rows.push(f);
+  }
+  const metas = await Promise.all(rows.map((f) => sharp(f).metadata()));
+  const W = Math.max(...metas.map((m) => m.width));
+  const H = metas.reduce((a, m) => a + m.height + 8, 0);
+  let y = 0;
+  const stitched = await sharp({ create: { width: W, height: H, channels: 3, background: "#555" } }).composite(rows.map((f, i) => { const o = { input: f, left: 0, top: y }; y += metas[i].height + 8; return o; })).png().toBuffer();
+  await sharp(stitched).toFile(`${SHOTS}/editor-contact-sheet.png`);
+  console.log(`editor contact sheet: ${SHOTS}/editor-contact-sheet.png`);
+}
+
 async function shots(browser) {
   const { default: sharp } = await import("sharp");
   const path = "/commanders/choose";
@@ -417,9 +828,13 @@ try {
   await clerkSetup();
   if (CLOSED) await runGateClosed(browser);
   else {
-    await runOpen(browser);
-    await runStates(browser);
-    if (SHOTS) await shots(browser);
+    if (process.env.PROBE_ONLY !== "editor") {
+      await runOpen(browser);
+      await runStates(browser);
+      if (SHOTS) await shots(browser);
+    }
+    await runEditor(browser);
+    if (SHOTS) await editorShots(browser);
   }
 } finally {
   await browser.close();

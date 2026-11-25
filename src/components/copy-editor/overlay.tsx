@@ -7,22 +7,24 @@ import { copyEditorCopy } from "../../lib/copy/copy-editor";
 import { keyLabel } from "../../lib/copy-editor/key-label";
 import { indexRows, type RowIndex } from "../../lib/copy-editor/match";
 import type { EditorRow } from "../../lib/copy-editor/rows";
+import { Editor } from "./editor";
+import { readEdits, writeEdits, type Edit } from "../../lib/copy-editor/edits";
 import { entryAt, OVERLAY_ATTR, place, scanPage, type Entry, type Placed } from "./scan";
 
-type Load = { state: "loading" } | { state: "ready"; index: RowIndex } | { state: "error"; notBuilt: boolean };
+type Load = { state: "loading" } | { state: "ready"; index: RowIndex; rows: EditorRow[] } | { state: "error"; notBuilt: boolean };
 
 /** The rows are the same for every page of a session; a reload fetches them again. */
-let loaded: RowIndex | null = null;
+let loaded: { index: RowIndex; rows: EditorRow[] } | null = null;
 
 async function loadRows(): Promise<Load> {
-  if (loaded) return { state: "ready", index: loaded };
+  if (loaded) return { state: "ready", ...loaded };
   try {
     const res = await fetch("/api/copy-edit/rows", { cache: "no-store" });
     if (!res.ok) return { state: "error", notBuilt: res.status === 503 };
     const body = (await res.json()) as { rows?: EditorRow[] };
     if (!Array.isArray(body.rows)) return { state: "error", notBuilt: false };
-    loaded = indexRows(body.rows);
-    return { state: "ready", index: loaded };
+    loaded = { index: indexRows(body.rows), rows: body.rows };
+    return { state: "ready", ...loaded };
   } catch {
     return { state: "error", notBuilt: false };
   }
@@ -44,6 +46,21 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
   const [targetId, setTargetId] = useState<number | null>(null);
   const [touch, setTouch] = useState(false);
   const [barTop, setBarTop] = useState(0);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [edits, setEdits] = useState<Edit[]>(readEdits);
+  const editingRef = useRef<number | null>(null);
+  useEffect(() => {
+    editingRef.current = editing;
+  }, [editing]);
+  const saveEdits = useCallback((upsert: Edit[], drop: string[]) => {
+    setEdits((cur) => {
+      const gone = new Set([...drop, ...upsert.map((e) => e.key)]);
+      const next = [...cur.filter((e) => !gone.has(e.key)), ...upsert];
+      writeEdits(next);
+      return next;
+    });
+    setEditing(null);
+  }, []);
   const entries = useRef<Entry[]>([]);
   const placedRef = useRef<Placed[]>([]);
   const frame = useRef(0);
@@ -52,6 +69,7 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
     targetRef.current = targetId;
   }, [targetId]);
   const index = load.state === "ready" ? load.index : null;
+  const rows = load.state === "ready" ? load.rows : null;
 
   useEffect(() => {
     if (!on) return;
@@ -117,11 +135,17 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
       e.stopPropagation();
       const isTouch = (e as PointerEvent).pointerType === "touch";
       setTouch(isTouch);
+      if (editingRef.current !== null) return;
       const hit = entryAt(placedRef.current, e.clientX, e.clientY);
+      // Desktop: the line is already targeted by hover, so a click opens it. Phone: the first tap targets, the second opens.
+      if (hit && hit.entry.id === targetRef.current) {
+        setEditing(hit.entry.id);
+        return;
+      }
       setTargetId(hit ? hit.entry.id : null);
     };
     const onMove = (e: PointerEvent) => {
-      if (e.pointerType === "touch") return;
+      if (e.pointerType === "touch" || editingRef.current !== null) return;
       setTouch(false);
       if (inOverlay(e.target)) return;
       const hit = entryAt(placedRef.current, e.clientX, e.clientY);
@@ -130,11 +154,12 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         // The first Esc lets go of the targeted line; the next one ends the mode.
-        if (e.defaultPrevented) return;
+        if (e.defaultPrevented || editingRef.current !== null) return;
         if (targetRef.current === null) stop();
         else setTargetId(null);
         return;
       }
+      if (editingRef.current !== null) return;
       if (!e.altKey || (e.key !== "ArrowDown" && e.key !== "ArrowUp")) return;
       e.preventDefault();
       const list = [...placedRef.current].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
@@ -157,6 +182,8 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
   }, [on, stop]);
 
   const target = useMemo(() => placed.find((p) => p.entry.id === targetId) ?? null, [placed, targetId]);
+  const opened = editing === null ? null : (placed.find((p) => p.entry.id === editing) ?? null);
+  const editedKeys = useMemo(() => new Set(edits.map((e) => e.key)), [edits]);
 
   if (!on) return null;
   const hint = touch ? copyEditorCopy.bar.hintPhone : copyEditorCopy.bar.hintDesktop;
@@ -169,7 +196,8 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
         {placed.map((p) => {
           const hit = target?.entry.id === p.entry.id;
           const ro = p.entry.readOnly !== "";
-          const ring = hit ? "2px solid var(--accent)" : ro ? "1px dotted var(--fg-faint)" : "1px dashed color-mix(in srgb, var(--accent) 60%, transparent)";
+          const edited = !ro && p.entry.matches.some((m) => editedKeys.has(m.row.key));
+          const ring = edited ? "1px solid var(--accent)" : hit ? "2px solid var(--accent)" : ro ? "1px dotted var(--fg-faint)" : "1px dashed color-mix(in srgb, var(--accent) 60%, transparent)";
           return (
             <div
               key={p.entry.id}
@@ -185,7 +213,7 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
                 outline: p.clipped ? undefined : ring,
                 outlineOffset: p.clipped ? undefined : hit ? 3 : 2,
                 boxShadow: p.clipped ? `inset 0 0 0 ${hit ? 2 : 1}px ${hit ? "var(--accent)" : ro ? "var(--fg-faint)" : "color-mix(in srgb, var(--accent) 60%, transparent)"}` : undefined,
-                background: hit && !ro ? "color-mix(in srgb, var(--accent) 14%, transparent)" : undefined,
+                background: edited ? "color-mix(in srgb, var(--accent) 12%, transparent)" : hit && !ro ? "color-mix(in srgb, var(--accent) 14%, transparent)" : undefined,
               }}
             />
           );
@@ -221,6 +249,7 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
           {copyEditorCopy.bar.done}
         </button>
       </div>
+      {opened && rows && <Editor rows={rows} matches={opened.entry.matches} box={opened.box} edits={edits} onSave={saveEdits} onClose={() => setEditing(null)} />}
     </div>
   );
 }
