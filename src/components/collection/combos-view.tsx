@@ -154,10 +154,10 @@ function PairCard({
     return (
       <li>
         <PreviewButton
-          imageUri={pair.a.imageUri}
+          imageUri={first.imageUri}
           type="button"
           data-combo-pair
-          aria-label={quickFilterCopy.combos.pairLabel(pair.a.name, pair.b.name)}
+          aria-label={quickFilterCopy.combos.pairLabel(first.name, second.name)}
           onClick={(e) => onOpen(pair, e.currentTarget)}
           className="flex w-full cursor-pointer items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-transparent p-[12px] text-left"
         >
