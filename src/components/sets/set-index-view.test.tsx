@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { SetIndexView } from "./set-index-view";
 import type { SetIndexRow } from "../../lib/sets/read";
+import { setsIndexCopy } from "../../lib/copy/set-collections";
 
 let search = "";
 vi.mock("next/navigation", () => ({
@@ -27,8 +28,8 @@ const noSearch = () => Promise.resolve([]);
 describe("SetIndexView — S1 first run", () => {
   it("points at upload when nothing has been uploaded", () => {
     render(<SetIndexView sets={[]} cardCount={0} onSearch={noSearch} />);
-    expect(screen.getByText("Upload your collection and the sets appear")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Upload a collection" }))
+    expect(screen.getByText(setsIndexCopy.firstRun.heading)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: setsIndexCopy.firstRun.primary }))
       .toHaveAttribute("href", "/collection/replace");
   });
 
@@ -37,7 +38,7 @@ describe("SetIndexView — S1 first run", () => {
   it("draws its empty titles as h2s, never a second h1", async () => {
     const { unmount } = render(<SetIndexView sets={[]} cardCount={0} onSearch={noSearch} />);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(screen.getByRole("heading", { level: 2, name: "Upload your collection and the sets appear" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: setsIndexCopy.firstRun.heading })).toBeTruthy();
     unmount();
     const onSearch = vi.fn().mockResolvedValue([]);
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
@@ -99,7 +100,7 @@ describe("SetIndexView — S5 not indexed", () => {
         onSearch={noSearch}
       />,
     );
-    expect(screen.getByText("no checklist yet")).toBeInTheDocument();
+    expect(screen.getByText(setsIndexCopy.notIndexed.tag)).toBeInTheDocument();
     expect(screen.queryByText(/%/)).toBeNull();
     expect(screen.queryByText(/0 \/ 0/)).toBeNull();
   });
@@ -120,7 +121,7 @@ describe("SetIndexView — a set with no base run", () => {
       />,
     );
     expect(screen.queryByText("17 owned")).toBeNull();
-    expect(screen.queryByText("no checklist yet")).toBeNull();
+    expect(screen.queryByText(setsIndexCopy.notIndexed.tag)).toBeNull();
     expect(screen.getByRole("link")).toHaveAccessibleName(/17 of 180/);
   });
 });
@@ -136,7 +137,7 @@ describe("SetIndexView — search rows", () => {
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "brothers" } });
     await waitFor(() => expect(screen.getByText("The Brothers' War")).toBeInTheDocument());
-    expect(screen.queryByText("no checklist yet")).toBeNull();
+    expect(screen.queryByText(setsIndexCopy.notIndexed.tag)).toBeNull();
   });
 
   it("names the set in an unindexed row so two of them are not announced alike", () => {
@@ -205,7 +206,7 @@ describe("SetIndexView — S3 and S4 search", () => {
     const field = screen.getByRole("searchbox");
     fireEvent.change(field, { target: { value: "zzzz" } });
     await waitFor(() => expect(screen.getByText("No collectible set matches zzzz")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+    fireEvent.click(screen.getByRole("button", { name: setsIndexCopy.noMatch.action }));
     await waitFor(() => expect(screen.getByText("Edge of Eternities")).toBeInTheDocument());
   });
 });
@@ -320,7 +321,7 @@ describe("SetIndexView — recovering from a failed search", () => {
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "dusk" } });
     await waitFor(() => expect(screen.getByText(/didn’t go through/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: setsIndexCopy.searchFailed.action }));
     await waitFor(() => expect(screen.getByText("Duskmourn")).toBeInTheDocument());
     expect(onSearch).toHaveBeenLastCalledWith("dusk");
   });
@@ -392,7 +393,7 @@ describe("SetIndexView — the extras figure", () => {
         onSearch={noSearch}
       />,
     );
-    expect(screen.getByText("no checklist yet")).toBeInTheDocument();
+    expect(screen.getByText(setsIndexCopy.notIndexed.tag)).toBeInTheDocument();
     expect(screen.queryByText(/extras/)).toBeNull();
   });
 

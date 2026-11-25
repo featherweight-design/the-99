@@ -11,6 +11,7 @@ import { ArchiveView } from "./archive-view";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { toMonthCounts } from "../../lib/announcements/archive-model";
 import type { FeedView } from "../../lib/feed/home";
+import { feedCopy } from "../../lib/copy/feed";
 
 const NOW = "2026-11-08T12:00:00.000Z";
 const post = (n: number, at: string, o: Partial<FeedView> = {}): FeedView => ({
@@ -64,8 +65,8 @@ describe("ArchiveView", () => {
   it("names the kinds in short at a phone and in full from md, and marks the chosen one", () => {
     view();
     const radios = screen.getAllByRole("radio");
-    expect(radios.map((r) => r.getAttribute("aria-label"))).toEqual(["All", "Secret Lair", "Commander decklists", "Wizards news"]);
-    expect(radios.map((r) => r.querySelector(".md\\:hidden")?.textContent)).toEqual(["All", "Secret Lair", "Decklists", "News"]);
+    expect(radios.map((r) => r.getAttribute("aria-label"))).toEqual(["All", feedCopy.home.kicker["secret-lair"], feedCopy.news.kinds["commander-decklists"].name, feedCopy.home.quietName["wizards-news"]]);
+    expect(radios.map((r) => r.querySelector(".md\\:hidden")?.textContent)).toEqual(["All", feedCopy.home.kicker["secret-lair"], "Decklists", "News"]);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
   });
 
@@ -73,36 +74,36 @@ describe("ArchiveView", () => {
     load.mockResolvedValue({ items: [post(4, "2025-02-10T10:00:00Z", { kind: "commander-decklists" })], next: null });
     const { container } = view();
     expect(screen.getByText("3 of 6")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show older" }));
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.older }));
     expect(container.querySelector("[data-archive-loading]")).not.toBeNull();
     await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4));
     expect(load).toHaveBeenCalledWith("all", first.next);
-    expect(screen.queryByRole("button", { name: "Show older" })).toBeNull();
+    expect(screen.queryByRole("button", { name: feedCopy.archive.older })).toBeNull();
     expect([...container.querySelectorAll("[data-archive-month]")].map((h) => h.getAttribute("data-archive-month"))).toEqual(["2026-11", "2026-10", "2025-02"]);
   });
 
   it("keeps the rows and says it failed when a page does not load, then Try again reads it", async () => {
     load.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce({ items: [post(4, "2025-02-10T10:00:00Z")], next: null });
     const { container } = view();
-    fireEvent.click(screen.getByRole("button", { name: "Show older" }));
-    expect(await screen.findByText("We couldn’t load older posts.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.older }));
+    expect(await screen.findByText(feedCopy.archive.failedOlder)).toBeInTheDocument();
     expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4));
-    expect(screen.queryByText("We couldn’t load older posts.")).toBeNull();
+    expect(screen.queryByText(feedCopy.archive.failedOlder)).toBeNull();
   });
 
   it("treats a switched-off action (null) as a failed page", async () => {
     load.mockResolvedValue(null);
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Show older" }));
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.older }));
     expect(await screen.findByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
   it("flips a kind in place, writes the address through mirrorUrl, and serves a held kind without reading again", async () => {
     load.mockResolvedValue({ items: [post(3, "2026-10-14T10:00:00Z", { kind: "commander-decklists" })], next: null });
     const { container } = view();
-    fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
+    fireEvent.click(screen.getByRole("radio", { name: feedCopy.news.kinds["commander-decklists"].name }));
     expect(mirror).toHaveBeenLastCalledWith(`${window.location.pathname}?kind=commander-decklists`);
     expect(load).toHaveBeenCalledWith("commander-decklists", null);
     await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(1));
@@ -192,7 +193,7 @@ describe("ArchiveView", () => {
 
   it("flipping kind while parked on a month the new kind never posted in draws the empty line without reading", () => {
     view({ anchor: "2025-03", page: { items: [post(7, "2025-03-04T10:00:00Z")], next: null } });
-    fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
+    fireEvent.click(screen.getByRole("radio", { name: feedCopy.news.kinds["commander-decklists"].name }));
     expect(screen.getByText("No Commander decklists in March 2025.")).toBeInTheDocument();
     expect(load).not.toHaveBeenCalled();
   });
@@ -201,7 +202,7 @@ describe("ArchiveView", () => {
     let done!: (v: unknown) => void;
     load.mockReturnValue(new Promise((r) => { done = r; }));
     const { container } = view();
-    const older = screen.getByRole("button", { name: "Show older" });
+    const older = screen.getByRole("button", { name: feedCopy.archive.older });
     fireEvent.click(older);
     fireEvent.click(older);
     expect(load).toHaveBeenCalledTimes(1);
@@ -213,7 +214,7 @@ describe("ArchiveView", () => {
   it("keeps the pages a reader loaded when the same view is served again", async () => {
     load.mockResolvedValue({ items: [post(4, "2025-02-10T10:00:00Z")], next: null });
     const { container, rerender } = view();
-    fireEvent.click(screen.getByRole("button", { name: "Show older" }));
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.older }));
     await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4));
     rerender(<ArchiveView kind="all" anchor={null} page={{ ...first }} counts={counts} now={NOW} />);
     expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4);
@@ -222,10 +223,10 @@ describe("ArchiveView", () => {
   it("retries a kind whose first read failed when it is entered again", async () => {
     load.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce({ items: [post(3, "2026-10-14T10:00:00Z", { kind: "commander-decklists" })], next: null });
     const { container } = view();
-    fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
-    expect(await screen.findByText("We couldn’t load announcements.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: feedCopy.news.kinds["commander-decklists"].name }));
+    expect(await screen.findByText(feedCopy.archive.failedFirst)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "All" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
+    fireEvent.click(screen.getByRole("radio", { name: feedCopy.news.kinds["commander-decklists"].name }));
     expect(load).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(1));
   });
@@ -241,7 +242,7 @@ describe("ArchiveView", () => {
   it("names the order beside the jump at a phone, and keeps Show older at 44px at every width", () => {
     const { container } = view();
     expect(container.querySelector("[data-archive-order]")!.textContent).toBe("newest first");
-    const older = screen.getByRole("button", { name: "Show older" });
+    const older = screen.getByRole("button", { name: feedCopy.archive.older });
     expect(older.className).toContain("min-h-[44px]");
     expect(older.className).not.toContain("md:min-h");
   });

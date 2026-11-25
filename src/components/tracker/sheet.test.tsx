@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { commit, replay, type Game, type GameConfig } from "../../lib/tracker/engine";
 import type { PlaySeat } from "./panel";
 import { Sheet, type SheetTab } from "./sheet";
+import { trackerCopy } from "../../lib/copy/tracker";
 
 const config: GameConfig = { tableId: "t", startingLife: 40, seats: [{ seat: 0, commanders: 1 }, { seat: 1, commanders: 2 }], first: 0, layout: "phone-2" };
 const seats: PlaySeat[] = [
@@ -22,7 +23,7 @@ describe("tracker sheet", () => {
 
   it("lists the five tabs in order, with damage and tax in the tab labels", () => {
     const html = render("damage", game);
-    const order = ["Commander damage", "Counters", "Tax", "Mana", "Table"].map((t) => html.indexOf(`>${t}`));
+    const order = [trackerCopy.sheet.tabs.damage, "Counters", "Tax", "Mana", "Table"].map((t) => html.indexOf(`>${t}`));
     expect(order.every((n, i) => n > 0 && (i === 0 || n > order[i - 1]))).toBe(true);
     expect(html).toContain(">10</em>");
     expect(html).toContain(">+4</em>");
@@ -46,12 +47,12 @@ describe("tracker sheet", () => {
   });
   it("offers ten counters and no custom one", () => {
     const html = render("counters", game);
-    for (const name of ["Poison", "Energy", "Experience", "Rad", "Tickets", "Speed", "Storm", "The Ring", "City’s blessing", "Dungeon"]) expect(html).toContain(name);
+    for (const name of ["Poison", "Energy", "Experience", "Rad", "Tickets", "Speed", "Storm", trackerCopy.counters.ring.name, trackerCopy.counters.blessing.name, "Dungeon"]) expect(html).toContain(name);
     expect(html).not.toContain("Other");
   });
   it("shows the next cast's tax on the Tax tab", () => {
     const html = render("tax", game);
-    expect(html).toContain("Next cast costs");
+    expect(html).toContain(trackerCopy.sheet.taxNext);
     expect(html).toMatch(/text-\[44px\][^>]*>\+(<!-- -->)?4</);
   });
   it("heads the sheet with the player's name and deck, then life", () => {

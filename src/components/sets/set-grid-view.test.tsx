@@ -4,8 +4,10 @@ import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { NARROW_HIDE, SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
-import { setPageCopy } from "../../lib/copy/set-collections";
+import { setPageCopy, setFilterCopy } from "../../lib/copy/set-collections";
 import { StoreProvider } from "../stores/store-provider";
+import { filterCopy } from "../../lib/copy/lanes";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
 
 const replace = vi.fn();
 let search = "";
@@ -145,14 +147,14 @@ describe("SetGridView — the two sections", () => {
 
   it("says the figure counts the base run only", () => {
     view([p("1")], []);
-    expect(screen.getByText("checklist only · extras counted apart")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.head.ratioNote)).toBeInTheDocument();
   });
 
   it("offers the extras jump only when there are extras to jump to", () => {
     view([p("1")], []);
-    expect(screen.queryByText("extras ↓")).toBeNull();
+    expect(screen.queryByText(setPageCopy.sections.jump)).toBeNull();
     view([p("1"), p("277", { booster: false })], []);
-    expect(screen.getByText("extras ↓")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.sections.jump)).toBeInTheDocument();
   });
 });
 
@@ -186,7 +188,7 @@ describe("SetGridView — 0% and 100%", () => {
 
   it("closes a complete set with no extras, and never renders 0 / 0", () => {
     const { container } = view([p("1")], ["1"]);
-    expect(screen.getByText("Nothing left in this set")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.complete.noExtras)).toBeInTheDocument();
     expect(container.textContent).not.toContain("0 / 0");
   });
 });
@@ -419,7 +421,7 @@ describe("SetGridView — the cost strip's scope", () => {
         staleAsOf={null}
       />,
     );
-    expect(screen.getByText("Cost to finish the extras")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cost.labelExtras)).toBeInTheDocument();
     expect(screen.getByText("Send 2 to Mana Pool")).toBeInTheDocument();
   });
 
@@ -521,7 +523,7 @@ describe("SetGridView — phone and desktop are one document", () => {
     // The handoff draws a zero figure rather than a strip that disappears.
     search = "c=U";
     view([p("1", { colorIdentity: ["W"] })], []);
-    expect(screen.getByText("Cost to complete")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cost.label)).toBeInTheDocument();
     expect(screen.queryByText(/Send \d+ to Mana Pool/)).toBeNull();
   });
 
@@ -806,7 +808,7 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   it("prints the rest line rather than collapsing row 2", () => {
     view([p("1"), p("2")], ["1"]);
     expect(chips()).toBeInTheDocument();
-    expect(screen.getByText("No filters on")).toBeInTheDocument();
+    expect(screen.getByText(chassisCopy.chips.none)).toBeInTheDocument();
   });
 
   // H13: the chassis's Clear, always drawn and inert when nothing is on.
@@ -998,7 +1000,7 @@ describe("SetGridView — the rarity panel's semantics", () => {
     stubDesktop(true);
     view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
     fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
-    const list = screen.getByRole("listbox", { name: "Filter by rarity" });
+    const list = screen.getByRole("listbox", { name: setFilterCopy.rarityPanel.panelAriaLabel });
     expect(list).toHaveAttribute("aria-multiselectable", "true");
   });
 
@@ -1104,7 +1106,7 @@ describe("SetGridView — the last route out of a stale m=1", () => {
     search = "m=1&c=W";
     view([p("1")], ["1"]);
     const clear = screen.getByRole("button", { name: /^Clear all filters/ });
-    expect(clear.textContent).toContain("Clear all filters");
+    expect(clear.textContent).toContain(chassisCopy.chips.clearAllAriaNoSort);
   });
 });
 
@@ -1153,7 +1155,7 @@ describe("SetGridView — the name search", () => {
     expect(field()).toBeInTheDocument();
     // The set is in the accessible name and not in the placeholder: the index's own field
     // says "Find any set" in the same skin one tap away.
-    expect(field()).toHaveAttribute("placeholder", "Find a card in this set");
+    expect(field()).toHaveAttribute("placeholder", setFilterCopy.search.placeholder);
   });
 
   it("is the only child of the row that shrinks", () => {
@@ -1228,7 +1230,7 @@ describe("SetGridView — the name search", () => {
       view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
       fireEvent.change(field(), { target: { value: "plains" } });
       act(() => void vi.advanceTimersByTime(50));
-      fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+      fireEvent.click(screen.getByRole("button", { name: setFilterCopy.search.clear }));
       act(() => void vi.advanceTimersByTime(300));
       expect((field() as HTMLInputElement).value).toBe("");
       // The keystroke never landed, so the bar is still bare and nothing wrote the dropped query.
@@ -1246,7 +1248,7 @@ describe("SetGridView — the name search", () => {
     try {
       view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
       fireEvent.change(field(), { target: { value: "p" } });
-      const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+      const clear = screen.getByLabelText(setFilterCopy.search.clear, { selector: "button" });
       expect(clear).toBeVisible();
       expect(clear).toHaveAttribute("tabindex", "0");
     } finally {
@@ -1314,14 +1316,14 @@ describe("SetGridView — the name search", () => {
   it("shortens the placeholder on the phone and keeps the full name", () => {
     stubDesktop(false);
     view([p("1"), p("2")], []);
-    expect(field()).toHaveAttribute("placeholder", "Find a card");
+    expect(field()).toHaveAttribute("placeholder", setFilterCopy.search.placeholderShort);
     expect(field()).toHaveAccessibleName("Search cards in Duskmourn");
   });
 
   it("uses the long placeholder on the desktop", () => {
     stubDesktop(true);
     view([p("1"), p("2")], []);
-    expect(field()).toHaveAttribute("placeholder", "Find a card in this set");
+    expect(field()).toHaveAttribute("placeholder", setFilterCopy.search.placeholder);
   });
 
   // The badge counts dimensions. The field is visible on the row beside it, so counting it
@@ -1364,7 +1366,7 @@ describe("SetGridView — the name search", () => {
       const empty = screen.getByText(/Nothing in Duskmourn matches/)
         .closest("section") as HTMLElement;
       expect([...empty.querySelectorAll("button")][0])
-        .toHaveAccessibleName("Clear the search");
+        .toHaveAccessibleName(setFilterCopy.search.clear);
     });
 
     // `q=plains&c=U` returns nothing in a set that plainly contains Plains: the name is
@@ -1386,8 +1388,8 @@ describe("SetGridView — the name search", () => {
       // document. The order under test is the one inside this block.
       const empty = screen.getByText(/No cards matching/).closest("section") as HTMLElement;
       const buttons = [...empty.querySelectorAll("button")];
-      expect(buttons[0]).toHaveAccessibleName("Clear the search");
-      expect(buttons[1]).toHaveAccessibleName("Clear all filters and the search");
+      expect(buttons[0]).toHaveAccessibleName(setFilterCopy.search.clear);
+      expect(buttons[1]).toHaveAccessibleName(setFilterCopy.clearAllAria);
     });
 
     // With missing-only on and every match already owned, the shipped good-news branch
@@ -1723,7 +1725,7 @@ describe("SetGridView — colour match", () => {
     stubDesktop(true);
     search = "c=W";
     view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["W", "U"] })], []);
-    fireEvent.click(screen.getAllByRole("radio", { name: "Exactly these" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: filterCopy.match.exactly })[0]);
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W&m=exact");
     expect(cellNames()).toEqual(["Card 1"]);
   });
@@ -1765,7 +1767,7 @@ describe("SetGridView — colour match", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     const sheet = screen.getByRole("dialog");
     const exactly = [...sheet.querySelectorAll<HTMLElement>('[role="radio"]')]
-      .find((r) => r.getAttribute("aria-label") === "Exactly these") as HTMLElement;
+      .find((r) => r.getAttribute("aria-label") === filterCopy.match.exactly) as HTMLElement;
     expect(exactly).toBeDefined();
     fireEvent.click(exactly);
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W&m=exact");
@@ -1930,7 +1932,7 @@ describe("SetGridView — the search field clears itself", () => {
   it("offers a clear once something is typed", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    const clear = screen.getByRole("button", { name: "Clear the search" });
+    const clear = screen.getByRole("button", { name: setFilterCopy.search.clear });
     expect(clear).toBeVisible();
     fireEvent.click(clear);
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
@@ -1940,7 +1942,7 @@ describe("SetGridView — the search field clears itself", () => {
   // last character goes.
   it("holds the control's box while the field is empty", () => {
     view([p("1"), p("2")], []);
-    const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+    const clear = screen.getByLabelText(setFilterCopy.search.clear, { selector: "button" });
     expect(clear).not.toBeVisible();
     expect(clear).toHaveAttribute("tabindex", "-1");
     expect(field()).toBeInTheDocument();
@@ -1956,7 +1958,7 @@ describe("SetGridView — focus survives clearing the search", () => {
   it("returns focus to the field from the field's own ×", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+    fireEvent.click(screen.getByRole("button", { name: setFilterCopy.search.clear }));
     expect(document.activeElement).toBe(field());
   });
 
@@ -2000,7 +2002,7 @@ describe("SetGridView — a blank query has one inactive state", () => {
   it("offers the clear for whitespace typed into the box too", () => {
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
     fireEvent.change(screen.getByRole("searchbox", { name: "Search cards in Duskmourn" }), { target: { value: "  " } });
-    const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+    const clear = screen.getByLabelText(setFilterCopy.search.clear, { selector: "button" });
     expect(clear).toBeVisible();
     expect(clear).toHaveAttribute("tabindex", "0");
   });
@@ -2008,7 +2010,7 @@ describe("SetGridView — a blank query has one inactive state", () => {
   it("and live for a real one", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+    const clear = screen.getByLabelText(setFilterCopy.search.clear, { selector: "button" });
     expect(clear).toBeVisible();
     expect(clear).toHaveAttribute("tabindex", "0");
   });
@@ -2047,13 +2049,13 @@ describe("SetGridView — every Clear-all names the search too", () => {
     const sheet = screen.getByRole("dialog");
     const clear = [...sheet.querySelectorAll("button")]
       .find((b) => /Clear all filters/.test(b.textContent ?? ""));
-    expect(clear).toHaveAttribute("aria-label", "Clear all filters and the search");
+    expect(clear).toHaveAttribute("aria-label", setFilterCopy.clearAllAria);
   });
 
   it("names it on the chip line", () => {
     search = "q=plains&c=W";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    expect(screen.getByRole("button", { name: "Clear all filters and the search" }))
+    expect(screen.getByRole("button", { name: setFilterCopy.clearAllAria }))
       .toBeInTheDocument();
   });
 
@@ -2062,7 +2064,7 @@ describe("SetGridView — every Clear-all names the search too", () => {
     view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
     const empty = screen.getByText(/No cards matching/).closest("section") as HTMLElement;
     const buttons = [...empty.querySelectorAll("button")];
-    expect(buttons[1]).toHaveAccessibleName("Clear all filters and the search");
+    expect(buttons[1]).toHaveAccessibleName(setFilterCopy.clearAllAria);
   });
 });
 
@@ -2073,20 +2075,20 @@ describe("SetGridView — row 2 under a query alone", () => {
   it("says no OTHER filters are on", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    expect(screen.getByText("No other filters on")).toBeInTheDocument();
-    expect(screen.queryByText("No filters on")).toBeNull();
+    expect(screen.getByText(setFilterCopy.noOtherFilters)).toBeInTheDocument();
+    expect(screen.queryByText(chassisCopy.chips.none)).toBeNull();
   });
 
   it("and says none are on when none are", () => {
     view([p("1"), p("2")], []);
-    expect(screen.getByText("No filters on")).toBeInTheDocument();
+    expect(screen.getByText(chassisCopy.chips.none)).toBeInTheDocument();
   });
 
   // The only escape when the search is the sole active control, so it clears 24px.
   it("gives the field's clear a 24px target", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" })], []);
-    const clear = screen.getByRole("button", { name: "Clear the search" });
+    const clear = screen.getByRole("button", { name: setFilterCopy.search.clear });
     expect(clear.className).toContain("h-[24px]");
     expect(clear.className).toContain("w-[24px]");
   });

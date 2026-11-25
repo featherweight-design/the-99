@@ -8,6 +8,7 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DayNight } from "../../lib/tracker/engine";
 import { Spine } from "./spine";
+import { trackerCopy } from "../../lib/copy/tracker";
 
 afterEach(cleanup);
 
@@ -104,7 +105,7 @@ describe("Spine Menu", () => {
     const back = items[1];
     expect(menu.contains(back)).toBe(true);
     expect(back.getAttribute("href")).toBe("/friends/table/t1");
-    expect(back.textContent).toContain("Back to the table");
+    expect(back.textContent).toContain(trackerCopy.strip.back);
     expect(back.textContent).toContain("The game stays on this phone. Back to the game picks it up.");
     expect(document.activeElement).toBe(items[0]);
   });
@@ -121,7 +122,7 @@ describe("Spine Menu", () => {
     expect(screen.queryByRole("menu")).toBeNull();
     expect(document.activeElement).toBe(b());
     fireEvent.click(b());
-    fireEvent.click(screen.getByRole("button", { name: "Close the menu" }));
+    fireEvent.click(screen.getByRole("button", { name: trackerCopy.strip.menuClose }));
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
@@ -137,7 +138,7 @@ describe("Spine Menu", () => {
   it("lands pending life before leaving", () => {
     render(<Strip />);
     fireEvent.click(screen.getByTestId("strip-menu"));
-    fireEvent.click(screen.getByText("Back to the table"));
+    fireEvent.click(screen.getByText(trackerCopy.strip.back));
     expect(onLeave).toHaveBeenCalledTimes(1);
   });
 

@@ -104,7 +104,7 @@ describe("Cards for the 99", () => {
     push.mockClear();
     render(<IntakeForm themes={[]} initial={emptyParams()} />);
     const group = screen.getByRole("radiogroup", { name: helpMeChooseCopy.intake.pool });
-    fireEvent.click(within(group).getByRole("radio", { name: "Only cards I own" }));
+    fireEvent.click(within(group).getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
     expect(screen.getByText(helpMeChooseCopy.intake.budgetCaptionOwn)).toBeTruthy();
     fireEvent.submit(group.closest("form")!);
     expect(String(push.mock.calls[0][0])).toContain("pool=own");
@@ -129,30 +129,30 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
 
   it("7a: empty, the press is plain and says nothing of credits", () => {
     render(<IntakeForm themes={[]} initial={emptyParams()} standing={credit} />);
-    expect(screen.queryByText("1 credit")).toBeNull();
+    expect(screen.queryByText(helpMeChooseCopy.read.cost)).toBeNull();
     expect(screen.queryByText(/Uses a credit/)).toBeNull();
   });
 
   it("7b: with text and a credit free, the press carries the pill and the first-use line", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary horrors" }} standing={credit} />);
-    expect(screen.getAllByText("1 credit").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(helpMeChooseCopy.read.cost).length).toBeGreaterThan(0);
     expect(presses()[0].getAttribute("aria-label")).toBe(helpMeChooseCopy.read.pressAria);
     expect(screen.getAllByText(/Uses a credit\. 9 of 10 left/).length).toBeGreaterThan(0);
     expect(screen.getByText("13 / 800")).toBeTruthy();
     // 32 on the phone's 48 button, 30 on the desktop's 44 (the read's design table).
-    expect(screen.getAllByText("1 credit")[0].className).toContain("h-[32px] md:h-[30px]");
+    expect(screen.getAllByText(helpMeChooseCopy.read.cost)[0].className).toContain("h-[32px] md:h-[30px]");
   });
 
   it("7c: with text and no credit, no pill, and the line says the words won't be read", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10 }} />);
-    expect(screen.queryByText("1 credit")).toBeNull();
+    expect(screen.queryByText(helpMeChooseCopy.read.cost)).toBeNull();
     expect(screen.getAllByText(/^Won’t be read: 0 of 10 left/).length).toBeGreaterThan(0);
     expect(screen.getByText(helpMeChooseCopy.intake.extra.captionSpent)).toBeTruthy();
   });
 
   it("paused: no pill, no spent caption, and the pause said once per viewport, by the press's line", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, paused: true }} />);
-    expect(screen.queryByText("1 credit")).toBeNull();
+    expect(screen.queryByText(helpMeChooseCopy.read.cost)).toBeNull();
     expect(screen.queryByText(helpMeChooseCopy.intake.extra.captionSpent)).toBeNull();
     // The desktop press and the phone press each draw the line once (one is hidden per viewport); the box draws no caption.
     const said = screen.getAllByText(creditsCopy.paused);
@@ -190,7 +190,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
 
   it("draws the plain press when the standing could not be read", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={null} />);
-    expect(screen.queryByText("1 credit")).toBeNull();
+    expect(screen.queryByText(helpMeChooseCopy.read.cost)).toBeNull();
     expect(screen.queryByText(/Uses a credit|Won’t be read|left/)).toBeNull();
   });
 

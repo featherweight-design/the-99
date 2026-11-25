@@ -2,7 +2,7 @@
 // failures, Remove, and where focus goes.
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { wishlistCopy } from "../../lib/copy/wishlist";
+import { wishlistCopy, wishlistPrintingCopy } from "../../lib/copy/wishlist";
 import type { WishlistPrintingView } from "../../lib/wishlist/printing-line";
 import { CardWishlist } from "./card-wishlist";
 
@@ -83,7 +83,7 @@ describe("on the list", () => {
 
   it("labels the stepper as the want in all, with what the collection holds after it", () => {
     mount(3, 2);
-    expect(screen.getByText("want in all")).toBeInTheDocument();
+    expect(screen.getByText(wishlistCopy.details.want)).toBeInTheDocument();
     expect(screen.getByText("you have 2")).toBeInTheDocument();
   });
 
@@ -392,7 +392,7 @@ describe("Printing line (wishlist printing)", () => {
       wanted: { id: "a", setCode: "SLD", collectorNumber: "2125", imageUri: null, price: null, soldOut: true },
     }));
     expect(screen.getByText("Mana Pool has none now. Any printing is $1.49.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Any printing" }));
+    fireEvent.click(screen.getByRole("button", { name: wishlistPrintingCopy.box.any }));
     await waitFor(() => expect(choosePrinting).toHaveBeenCalledWith(CARD, null));
     await waitFor(() => expect(onWantedChange).toHaveBeenCalledWith(null, true));
   });

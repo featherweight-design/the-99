@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { SeatState } from "@/lib/tracker/engine";
 import { HALO, Panel, type PlaySeat } from "./panel";
+import { trackerCopy } from "../../lib/copy/tracker";
 
 const seat: PlaySeat = { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai Artifacts" };
 const base: SeatState = {
@@ -29,10 +30,10 @@ describe("tracker panel", () => {
     expect(on).toContain('aria-label="You lose 1 life"');
     expect(on).toContain('aria-label="You gain 1 life"');
     expect(on).toContain('aria-label="Your sheet"');
-    expect(on).toContain("End turn");
+    expect(on).toContain(trackerCopy.panel.endTurn);
     expect(on).toContain('data-testid="turn-ring"');
     const off = render(base, false);
-    expect(off).not.toContain("End turn");
+    expect(off).not.toContain(trackerCopy.panel.endTurn);
     expect(off).not.toContain('data-testid="turn-ring"');
   });
   it("flips to the Out face with Undo and no tap halves", () => {
@@ -69,15 +70,15 @@ describe("tracker panel", () => {
     expect(long).not.toContain('aria-label="End turn"');
   });
   it("draws the damage taken from a commander with its name, and the top tax", () => {
-    const from = { ...seat, seat: 2, you: false, commander: "Ghalta, Primal Hunger", art: "/a.jpg" } as PlaySeat;
+    const from = { ...seat, seat: 2, you: false, commander: "Fixture Card", art: "/a.jpg" } as PlaySeat;
     const html = renderToStaticMarkup(
       <Panel cell={cell} canvas={{ w: 390, h: 844 }} seat={seat} state={{ ...base, damage: { "2:0": 6 }, tax: [2, 0] }} active={false} round={1} seats={new Map([[2, from]])} monarch={false} initiative={false} onSheet={() => {}} disabled={false} onLife={() => {}} onEndTurn={() => {}} onUndo={() => {}} />,
     );
-    expect(html).toContain('aria-label="Ghalta, Primal Hunger 6. Open it in the sheet"');
+    expect(html).toContain('aria-label="Fixture Card 6. Open it in the sheet"');
     expect(html).toContain('aria-label="Tax +4. Open it in the sheet"');
   });
   it("leads with what ends the game, draws compact figures, and keeps the words in the label", () => {
-    const from = { ...seat, seat: 2, you: false, commander: "Ghalta, Primal Hunger", art: "/a.jpg" } as PlaySeat;
+    const from = { ...seat, seat: 2, you: false, commander: "Fixture Card", art: "/a.jpg" } as PlaySeat;
     const counters = { ...base.counters, poison: 9, energy: 2 } as SeatState["counters"];
     const html = renderToStaticMarkup(
       <Panel cell={cell} canvas={{ w: 390, h: 844 }} seat={seat} state={{ ...base, counters, damage: { "2:0": 6 }, tax: [2, 0] }} active={false} round={1} seats={new Map([[2, from]])} monarch initiative={false} onSheet={() => {}} disabled={false} onLife={() => {}} onEndTurn={() => {}} onUndo={() => {}} />,
@@ -85,21 +86,21 @@ describe("tracker panel", () => {
     const label = (t: string) => html.indexOf(`aria-label="${t}. Open it in the sheet"`);
     // Poison 9/10 is nearer lethal than 6/21 damage, so it leads; tax and the other counters follow.
     expect(label("Poison 9")).toBeGreaterThan(-1);
-    expect(label("Poison 9")).toBeLessThan(label("Ghalta, Primal Hunger 6"));
-    expect(label("Ghalta, Primal Hunger 6")).toBeLessThan(label("Tax +4"));
+    expect(label("Poison 9")).toBeLessThan(label("Fixture Card 6"));
+    expect(label("Fixture Card 6")).toBeLessThan(label("Tax +4"));
     expect(label("Tax +4")).toBeLessThan(label("Energy 2"));
     // The chip shows its figure, the words ride in the title.
-    expect(html).toContain('title="Ghalta, Primal Hunger 6"');
+    expect(html).toContain('title="Fixture Card 6"');
     expect(html).toMatch(/<span aria-hidden="[^"]*">\+4<\/span>/);
     expect(html).not.toMatch(/<span aria-hidden="[^"]*">Poison 9<\/span>/);
     expect(html).toContain('data-total="5"');
   });
   it("names the commander that put the seat out", () => {
-    const from = { ...seat, seat: 2, you: false, commander: "Ghalta, Primal Hunger" } as PlaySeat;
+    const from = { ...seat, seat: 2, you: false, commander: "Fixture Card" } as PlaySeat;
     const html = renderToStaticMarkup(
       <Panel cell={cell} canvas={{ w: 390, h: 844 }} seat={seat} state={{ ...base, out: { reason: { kind: "commander", from: 2, cmdr: 0 }, round: 3, entry: 4 } }} active={false} round={3} seats={new Map([[2, from]])} monarch={false} initiative={false} onSheet={() => {}} disabled={false} onLife={() => {}} onEndTurn={() => {}} onUndo={() => {}} />,
     );
-    expect(html).toContain("21 commander damage from Ghalta, Primal Hunger · round 3");
+    expect(html).toContain("21 commander damage from Fixture Card · round 3");
   });
   it("puts one halo of the theme's own ground behind the pending figure, behind its glyphs", () => {
     expect(HALO).toContain("isolate");

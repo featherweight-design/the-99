@@ -170,7 +170,7 @@ describe("7e, 7f: stopped and failed", () => {
   it("tags a failed read in danger and says the credit came back", () => {
     draw({ kind: "failed" });
     const tag = screen.getByTestId("read-tag");
-    expect(tag.textContent).toBe("didn’t finish");
+    expect(tag.textContent).toBe(helpMeChooseCopy.read.failTag);
     expect(tag.className).toContain("text-[color:var(--danger)]");
     expect(text()).toContain(helpMeChooseCopy.read.failed);
     expect(screen.getByRole("button", { name: "1 credit. Try again." })).toBeTruthy();
@@ -179,7 +179,7 @@ describe("7e, 7f: stopped and failed", () => {
 
   it("draws Try again plain when the standing could not be read: the pill only for a credit known to be free", () => {
     draw({ kind: "failed" }, { over: null });
-    expect(screen.getByRole("button", { name: /Try again/ }).textContent).toBe("Try again");
+    expect(screen.getByRole("button", { name: /Try again/ }).textContent).toBe(helpMeChooseCopy.read.retry);
   });
 
   it("tries again with the same answers and words, and no read id", async () => {
@@ -216,8 +216,8 @@ describe("7e, 7f: stopped and failed", () => {
 
   it("draws Try again with no pill when no credit is left", () => {
     draw({ kind: "stopped" }, { over: { used: 10 } });
-    const retry = screen.getByRole("button", { name: "Try again" });
-    expect(retry.textContent).toBe("Try again");
+    const retry = screen.getByRole("button", { name: helpMeChooseCopy.read.retry });
+    expect(retry.textContent).toBe(helpMeChooseCopy.read.retry);
     noReadIt();
   });
 });
@@ -226,7 +226,7 @@ describe("paused: the model-call switch is off", () => {
   const PAUSED = creditsCopy.paused;
   it("holds Try again and says the pause under it", () => {
     draw({ kind: "failed" }, { over: { paused: true } });
-    const retry = screen.getByRole("button", { name: "Try again" }) as HTMLButtonElement;
+    const retry = screen.getByRole("button", { name: helpMeChooseCopy.read.retry }) as HTMLButtonElement;
     expect(retry.disabled).toBe(true);
     expect(screen.getByTestId("read-line").textContent).toBe(PAUSED);
   });

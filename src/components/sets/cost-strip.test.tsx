@@ -75,7 +75,7 @@ describe("CostStrip", () => {
         scope="extras"
       />,
     );
-    expect(screen.getByText("Cost to finish the extras")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cost.labelExtras)).toBeInTheDocument();
     expect(screen.getByText("over 98 of the 105 you are missing")).toBeInTheDocument();
   });
 
@@ -106,7 +106,7 @@ describe("CostStrip when nothing missing can be costed", () => {
       />,
     );
     expect(screen.queryByText("$0.00")).toBeNull();
-    expect(screen.getAllByText("no price").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(setPageCopy.cost.noneCostable).length).toBeGreaterThan(0);
   });
 });
 

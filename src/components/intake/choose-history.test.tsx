@@ -88,7 +88,7 @@ describe("ChooseHistory", () => {
 
   it("says what will land here when the player has made no read", () => {
     render(<ChooseHistory layout="column" initial={firstPage([])} />);
-    expect(screen.getByText("No runs yet")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseHistoryCopy.empty.head)).toBeTruthy();
     expect(screen.getByText(helpMeChooseHistoryCopy.subEmpty)).toBeTruthy();
     expect(screen.queryByRole("navigation")).toBeNull();
   });
@@ -97,7 +97,7 @@ describe("ChooseHistory", () => {
     page.fn.mockResolvedValue(firstPage([A]));
     render(<ChooseHistory layout="view" initial={null} />);
     expect(screen.getByText(/didn’t load\. They’re kept/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: helpMeChooseHistoryCopy.retry }));
     await waitFor(() => expect(screen.getByRole("link", { name: /words a/ })).toBeTruthy());
     expect(page.fn).toHaveBeenCalledWith(null);
   });
@@ -105,19 +105,19 @@ describe("ChooseHistory", () => {
   it("pages with Show 20 more, drops a row it already drew, and removes the press at the end", async () => {
     page.fn.mockResolvedValue(firstPage([A, C], null));
     render(<ChooseHistory layout="view" initial={firstPage([A, B], "cur-1")} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show 20 more" }));
+    fireEvent.click(screen.getByRole("button", { name: helpMeChooseHistoryCopy.more }));
     await waitFor(() => expect(screen.getAllByRole("link")).toHaveLength(3));
     expect(page.fn).toHaveBeenCalledWith("cur-1");
-    expect(screen.queryByRole("button", { name: "Show 20 more" })).toBeNull();
+    expect(screen.queryByRole("button", { name: helpMeChooseHistoryCopy.more })).toBeNull();
   });
 
   it("keeps the rows and says so when a page fails to load, and asks again on the next press", async () => {
     page.fn.mockRejectedValueOnce(new Error("down")).mockResolvedValueOnce(firstPage([C]));
     render(<ChooseHistory layout="view" initial={firstPage([A], "cur-1")} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show 20 more" }));
+    fireEvent.click(screen.getByRole("button", { name: helpMeChooseHistoryCopy.more }));
     await waitFor(() => expect(screen.getByText(helpMeChooseHistoryCopy.moreFailed)).toBeTruthy());
     expect(screen.getAllByRole("link")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Show 20 more" }));
+    fireEvent.click(screen.getByRole("button", { name: helpMeChooseHistoryCopy.more }));
     await waitFor(() => expect(screen.getAllByRole("link")).toHaveLength(2));
   });
 
@@ -181,7 +181,7 @@ describe("ChooseHistory", () => {
     let release: (p: ChooseHistoryPage) => void = () => {};
     page.fn.mockImplementation(() => new Promise<ChooseHistoryPage>((r) => { release = r; }));
     render(<ChooseHistory layout="view" initial={null} />);
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: helpMeChooseHistoryCopy.retry }));
     await waitFor(() => expect(screen.getByText(helpMeChooseHistoryCopy.loading)).toBeTruthy());
     await act(async () => { release(firstPage([A])); });
     await waitFor(() => expect(screen.getByRole("link", { name: /words a/ })).toBeTruthy());
@@ -219,10 +219,10 @@ describe("ChooseHistory", () => {
 
   it("draws the column's smaller targets and the view's 44px ones from the same component", () => {
     const col = render(<ChooseHistory layout="column" initial={firstPage([A], "c")} />);
-    expect(col.getByRole("button", { name: "Show 20 more" }).className).toContain("min-h-[30px]");
+    expect(col.getByRole("button", { name: helpMeChooseHistoryCopy.more }).className).toContain("min-h-[30px]");
     col.unmount();
     const view = render(<ChooseHistory layout="view" initial={firstPage([A], "c")} />);
-    expect(view.getByRole("button", { name: "Show 20 more" }).className).toContain("min-h-[44px]");
+    expect(view.getByRole("button", { name: helpMeChooseHistoryCopy.more }).className).toContain("min-h-[44px]");
     expect(view.container.textContent).toContain("›");
   });
 });
