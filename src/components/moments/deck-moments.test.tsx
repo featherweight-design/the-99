@@ -137,7 +137,7 @@ describe("the Analysis tab's anchor", () => {
     return (
       <BuilderTabs
         tabs={[
-          { id: "deck", label: "Your deck", accessibleName: "Your deck" },
+          { id: "deck", label: "Fixture deck tab", accessibleName: "Fixture deck tab" },
           { id: "analysis", label: "Analysis", accessibleName: "Analysis" },
         ]}
         view="deck"
@@ -152,7 +152,7 @@ describe("the Analysis tab's anchor", () => {
     await seen(tab);
     const note = screen.getByRole("note", { name: momentsCopy.noteName(momentsCopy.suggestedChanges.tool) });
     expect(tab.getAttribute("aria-describedby")).toBe(note.id);
-    expect(screen.getByRole("tab", { name: "Your deck" }).getAttribute("aria-describedby")).toBeNull();
+    expect(screen.getByRole("tab", { name: "Fixture deck tab" }).getAttribute("aria-describedby")).toBeNull();
   });
   it("Tab from Dismiss goes on past the inactive tab, which is out of the tab order", async () => {
     wrap(

@@ -6,10 +6,11 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/credits", useRouter: ()
 import { CreditsLoading } from "./credits-loading";
 import { CreditsReadFailed } from "./read-failed";
 import { CreditsHead } from "./credits-head";
+import { creditsPageCopy } from "../../lib/copy/credits-page";
 
 afterEach(cleanup);
 
-const LINE = "Browsing is always free. Anything we write just for you uses a credit.";
+const LINE = creditsPageCopy.viewsFree;
 
 describe("C1: the page says browsing is free", () => {
   it("the head draws the line verbatim, after the sub, at 13px in the body ink", () => {

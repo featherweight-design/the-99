@@ -80,7 +80,7 @@ describe("findExcludedMatches", () => {
 
   it("gives each hidden match the slug its page opens at, and no slug read without one", async () => {
     classifyMatches.mockReturnValue([
-      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null },
+      { oracleId: "h1", name: "Fixture Card", cause: "hidden", pct: null },
       { oracleId: "h2", name: "Ghalta, Stampede Tyrant", cause: "hidden", pct: null },
       { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
     ]);
@@ -88,7 +88,7 @@ describe("findExcludedMatches", () => {
     const out = await findExcludedMatches("gha", { sort: "new" });
     expect(loadHiddenSlugs.mock.calls[0].slice(0, 3)).toEqual(["user_1", ["h1", "h2"], ["c1"]]);
     expect(out).toEqual([
-      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      { oracleId: "h1", name: "Fixture Card", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
       // No list holds a slug for it: the held state then offers no page rather than a 404.
       { oracleId: "h2", name: "Ghalta, Stampede Tyrant", cause: "hidden", pct: null, slug: null },
       { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
@@ -104,11 +104,11 @@ describe("findExcludedMatches", () => {
   // rather than reclassifying it; a hide on a commander the player does not own stays.
   it("drops a hidden match the player owns and keeps one they do not", async () => {
     classifyMatches.mockReturnValue([
-      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null },
+      { oracleId: "h1", name: "Fixture Card", cause: "hidden", pct: null },
       { oracleId: "h2", name: "Ghalta, Stampede Tyrant", cause: "hidden", pct: null },
       { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
     ]);
-    loadOwnedHiddenNameMatches.mockResolvedValueOnce([{ oracleId: "h1", name: "Ghalta, Primal Hunger" }]);
+    loadOwnedHiddenNameMatches.mockResolvedValueOnce([{ oracleId: "h1", name: "Fixture Card" }]);
     loadHiddenIds.mockResolvedValue(["h1", "h2"]);
     const out = await findExcludedMatches("gha", { sort: "new" });
     expect(loadOwnedHiddenNameMatches).toHaveBeenCalledWith("user_1", "gha");
@@ -161,10 +161,10 @@ describe("findOwnedExcludedMatches", () => {
   // Owned hides only (the reader's own lane), so the matched ids stand in for the collection and no
   // collection read is made: the slug comes from the persisted scores.
   it("reports an owned hidden match by name, with its page's slug", async () => {
-    loadOwnedHiddenNameMatches.mockResolvedValue([{ oracleId: "h1", name: "Ghalta, Primal Hunger" }]);
+    loadOwnedHiddenNameMatches.mockResolvedValue([{ oracleId: "h1", name: "Fixture Card" }]);
     loadHiddenSlugs.mockResolvedValueOnce(new Map([["h1", "ghalta-primal-hunger"]]));
     expect(await findOwnedExcludedMatches(" ghal ")).toEqual([
-      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      { oracleId: "h1", name: "Fixture Card", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
     ]);
     expect(loadOwnedHiddenNameMatches).toHaveBeenCalledWith("user_1", "ghal");
     expect(loadHiddenSlugs.mock.calls[0].slice(0, 3)).toEqual(["user_1", ["h1"], ["h1"]]);

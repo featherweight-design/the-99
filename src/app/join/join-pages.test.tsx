@@ -120,7 +120,7 @@ describe("/sign-up", () => {
     expect([...fan.querySelectorAll("[data-fan]")].map((e) => e.getAttribute("data-fan"))).toEqual(["left", "right", "front"]);
     expect(screen.getAllByTestId("friend-card-word").length).toBe(1);
     expect(screen.getByTestId("friend-card-word").textContent).toBe(inviteOnlyCopy.backWord);
-    const b = screen.getByText("Invite someone new");
+    const b = screen.getByText((inviteOnlyCopy.body[1] as { em: string }).em);
     expect(b.tagName).toBe("B");
     expect(b.className).toContain("font-medium");
   });

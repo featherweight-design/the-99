@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isValidElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SWITCH_NAMES } from "../../../lib/flags/registry";
-import { ABOUT_AREA_IDS, ABOUT_SECTIONS } from "../../../lib/copy/about-pages";
+import { ABOUT_AREA_IDS, ABOUT_SECTIONS, ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 
 // /about/[area] (About visual PR 3): an unknown area is a 404; a known one draws its sections in order, each at its own
 // id, from the reader's switches (Review Focus 2: a label switched off is gone from the list and the pins, and the
@@ -98,7 +98,7 @@ describe("/about/[area]", () => {
       expect(html).toContain(`id="${s.id}"`);
       expect(html).toContain(`href="#${s.id}"`);
     }
-    expect(html).toContain("On this page");
+    expect(html).toContain(ABOUT_PAGE_STRINGS.onThisPage);
   });
 
   it("every Analysis and Tuning label has its line and pin, whatever the retired switches say (Review Focus 2)", async () => {
@@ -154,7 +154,7 @@ describe("/about/[area]", () => {
     const html = renderToStaticMarkup(await draw("decks"));
     expect(html).toContain('href="/about/decks?lit=decks%2Fanalysis%2Fcuts#tuning"');
     // The card's Where line (R4 board 5) replaces its Show me link.
-    expect(html).toContain("Show it above ↑");
+    expect(html).toContain(ABOUT_PAGE_STRINGS.toolWhere);
     expect(html).not.toContain("How it works ›");
   });
 
@@ -276,7 +276,7 @@ describe("/about/[area]", () => {
 
 describe("/about/[area], reached by the ? (PR 6a)", () => {
   it("draws the back bar for a validated from, named for its screen", async () => {
-    expect((await draw("collection", { from: "/collection/replace" })).props.back).toEqual({ from: "/collection/replace", screen: "Upload a file" });
+    expect((await draw("collection", { from: "/collection/replace" })).props.back).toEqual({ from: "/collection/replace", screen: ABOUT_SECTIONS[3].name });
     expect((await draw("decks", { from: "/credits", lit: "rule/credits" })).props.back).toEqual({ from: "/credits", screen: "Credits" });
     expect((await draw("decks")).props.back).toBeNull();
   });
@@ -285,7 +285,7 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
     const own = "/decks/0b6c2f4e-1111-4222-8333-444455556666";
     expect((await draw("decks", { from: own })).props.back).toEqual({ from: own, screen: "Sai" });
     const other = "/decks/7a0e0000-0000-4000-8000-000000000001";
-    expect((await draw("decks", { from: other })).props.back).toEqual({ from: other, screen: "Your deck" });
+    expect((await draw("decks", { from: other })).props.back).toEqual({ from: other, screen: ABOUT_SECTIONS[7].name });
   });
 
   it("draws no bar for a from that could leave the app, or names nothing", async () => {

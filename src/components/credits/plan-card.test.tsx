@@ -2,7 +2,7 @@
 // with what, the closed outcomes saying something, the wait after a cancel or a keep, and `reduced`.
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { planOffer } from "../../lib/copy/credits-page";
+import { planOffer, creditsPageCopy } from "../../lib/copy/credits-page";
 import type { PlanCardModel } from "../../lib/payments/page-model";
 import type { PlanCardState } from "../../lib/payments/plan-card-rule";
 
@@ -21,7 +21,7 @@ afterEach(cleanup);
 
 const buttons = () => screen.queryAllByRole("button").map((b) => b.textContent);
 /** Update card opens Stripe in a new tab, so it ends in the link-out icon. */
-const updateCardIcon = () => screen.getByRole("button", { name: "Update card" }).querySelector("svg[data-link-out]");
+const updateCardIcon = () => screen.getByRole("button", { name: creditsPageCopy.plan.updateCard }).querySelector("svg[data-link-out]");
 
 describe("the states", () => {
   it("K1: the four fine-print lines come BEFORE the Subscribe press, and the price and the Stripe line are drawn", () => {
@@ -32,18 +32,18 @@ describe("the states", () => {
     expect(items).toHaveLength(4);
     const subscribe = screen.getByRole("button", { name: "Subscribe · $5 a month" });
     for (const li of items) expect(li.compareDocumentPosition(subscribe) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText("Checkout on Stripe · US cards")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.plan.via)).toBeTruthy();
     expect(buttons()).toEqual(["Subscribe · $5 a month"]);
     expect(container.querySelector("h2")).toBeNull();
   });
 
   it("K2: renews date, plan credits, Cancel plan leading, what it does, then Update card", () => {
     render(<PlanCard plan={plan("active")} onToast={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: "Your plan" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: creditsPageCopy.plan.heading })).toBeTruthy();
     expect(screen.getByText("Renews November 16 · $5")).toBeTruthy();
     expect(screen.getByText("74 plan credits, rolling over")).toBeTruthy();
     expect(screen.getByText("Canceling keeps your 74 plan credits until November 16, then they expire. Pack credits aren’t affected.")).toBeTruthy();
-    expect(buttons()).toEqual(["Cancel plan", "Update card"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.cancel, creditsPageCopy.plan.updateCard]);
     expect(updateCardIcon()!.getAttribute("aria-hidden")).toBe("true");
   });
 
@@ -52,7 +52,7 @@ describe("the states", () => {
     expect(screen.getByText("Ends November 16")).toBeTruthy();
     expect(screen.getByText("Your 74 plan credits expire on November 16. You won’t be charged again.")).toBeTruthy();
     expect(screen.getByText("Keeps your credits and renews on November 16, as before.")).toBeTruthy();
-    expect(buttons()).toEqual(["Keep my plan"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.keep]);
   });
 
   it("K4: the words carry the warning (days left), and the border and the words use --warning", () => {
@@ -61,7 +61,7 @@ describe("the states", () => {
     expect(says.className).toContain("var(--warning)");
     expect(screen.getByText("Ends November 16").className).toContain("var(--warning)");
     expect(container.querySelector("[data-plan-state=ending]")?.className).toContain("var(--warning)");
-    expect(buttons()).toEqual(["Keep my plan"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.keep]);
   });
 
   it.each([[1, "in 1 day"], [0, "today"]])("K4: %s days left reads %s", (days, words) => {
@@ -71,11 +71,11 @@ describe("the states", () => {
 
   it("K5: payment failed, credits still work, Update card leads and Cancel plan is the text button after it", () => {
     const { container } = render(<PlanCard plan={plan("pastDue")} onToast={vi.fn()} />);
-    expect(screen.getByText("Your payment didn’t go through")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.plan.dueTitle)).toBeTruthy();
     expect(screen.getByText(/Your 74 plan credits still work for now/)).toBeTruthy();
     // Stripe's `unpaid` also lands here: nothing may promise a retry.
     expect(screen.queryByText(/try again/)).toBeNull();
-    expect(buttons()).toEqual(["Update card", "Cancel plan"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.updateCard, creditsPageCopy.plan.cancel]);
     expect(container.querySelector("[data-plan-state=pastDue]")?.className).toContain("var(--warning)");
     expect(screen.getByRole("button", { name: /Update card/ }).className).toContain("bg-[color:var(--accent)]");
   });
@@ -100,14 +100,14 @@ describe("reduced (payments off for the reader)", () => {
     rerender(<PlanCard plan={plan("ending")} reduced onToast={vi.fn()} />);
     expect(buttons()).toEqual([]);
     rerender(<PlanCard plan={plan("active")} reduced onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Cancel plan", "Update card"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.cancel, creditsPageCopy.plan.updateCard]);
     rerender(<PlanCard plan={plan("pastDue")} reduced onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Update card", "Cancel plan"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.updateCard, creditsPageCopy.plan.cancel]);
   });
 
   it("is off by default", () => {
     render(<PlanCard plan={plan("cancelled")} onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Keep my plan"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.keep]);
   });
 });
 
@@ -124,13 +124,13 @@ describe("Subscribe", () => {
   });
 
   it.each([
-    ["off", "Buying credits isn’t available right now."],
-    ["already", "You already have a plan."],
-    ["unverified", "Verify your email address to buy credits."],
-    ["throttled", "Too many tries. Wait a little, then try again."],
-    ["unconfigured", "Buying credits isn’t set up here yet."],
-    ["failed", "Couldn’t start checkout. Try again."],
-    ["blocked", "Buying is paused on this account. Email support@the-99.dev and we’ll sort it out. Your free credits and everything else work as usual."],
+    ["off", creditsPageCopy.buy.off],
+    ["already", creditsPageCopy.buy.already],
+    ["unverified", creditsPageCopy.buy.unverified],
+    ["throttled", creditsPageCopy.buy.throttled],
+    ["unconfigured", creditsPageCopy.buy.unconfigured],
+    ["failed", creditsPageCopy.buy.failed],
+    ["blocked", creditsPageCopy.buy.blocked],
   ] as const)("says %s and gives the press back", async (reason, text) => {
     m.buyPlan.mockResolvedValue({ ok: false, reason });
     const onToast = vi.fn();
@@ -145,15 +145,15 @@ describe("Cancel plan and Keep my plan", () => {
   it("Cancel calls cancelPlanAction with no arguments, then waits and re-reads until the page shows it", async () => {
     m.cancel.mockResolvedValue({ ok: true, unchanged: false });
     const view = render(<PlanCard plan={plan("active")} timing={SLOW} onToast={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel plan" }));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.cancel }));
     await waitFor(() => expect(m.cancel).toHaveBeenCalledWith());
-    expect((await screen.findByText("Updating your plan"))).toBeTruthy();
+    expect((await screen.findByText(creditsPageCopy.plan.working))).toBeTruthy();
     // Held while it waits: no second press can go out.
-    expect((screen.getByRole("button", { name: "Cancel plan" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: creditsPageCopy.plan.cancel }) as HTMLButtonElement).disabled).toBe(true);
     await waitFor(() => expect(m.refresh.mock.calls.length).toBeGreaterThan(1));
     view.rerender(<PlanCard plan={plan("cancelled", { days: 20 })} timing={SLOW} onToast={vi.fn()} />);
-    expect(screen.queryByText("Updating your plan")).toBeNull();
-    expect(screen.getByRole("button", { name: "Keep my plan" })).toBeTruthy();
+    expect(screen.queryByText(creditsPageCopy.plan.working)).toBeNull();
+    expect(screen.getByRole("button", { name: creditsPageCopy.plan.keep })).toBeTruthy();
     expect(document.querySelector("[role=status].sr-only")?.textContent).toBe("Plan canceled. Your 74 plan credits last until November 16.");
     const calls = m.refresh.mock.calls.length;
     await new Promise((r) => setTimeout(r, 60));
@@ -163,14 +163,14 @@ describe("Cancel plan and Keep my plan", () => {
   it("Keep calls keepPlanAction and waits for ACTIVE, not for any change", async () => {
     m.keep.mockResolvedValue({ ok: true, unchanged: false });
     const view = render(<PlanCard plan={plan("ending", { days: 2 })} timing={SLOW} onToast={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.keep }));
     await waitFor(() => expect(m.keep).toHaveBeenCalledWith());
     expect(m.cancel).not.toHaveBeenCalled();
-    await screen.findByText("Updating your plan");
+    await screen.findByText(creditsPageCopy.plan.working);
     view.rerender(<PlanCard plan={plan("cancelled", { days: 20 })} timing={SLOW} onToast={vi.fn()} />);
-    expect(screen.getByText("Updating your plan")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.plan.working)).toBeTruthy();
     view.rerender(<PlanCard plan={plan("active")} timing={SLOW} onToast={vi.fn()} />);
-    expect(screen.queryByText("Updating your plan")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.plan.working)).toBeNull();
     expect(document.querySelector("[role=status].sr-only")?.textContent).toBe("Plan kept. It renews on November 16.");
   });
 
@@ -178,21 +178,21 @@ describe("Cancel plan and Keep my plan", () => {
     m.cancel.mockResolvedValue({ ok: true, unchanged: false });
     const onToast = vi.fn();
     render(<PlanCard plan={plan("active")} timing={FAST} onToast={onToast} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel plan" }));
-    await waitFor(() => expect(onToast).toHaveBeenCalledWith("Still updating your plan. Reload in a moment to see it."));
-    expect(screen.queryByText("Updating your plan")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.cancel }));
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith(creditsPageCopy.plan.slow));
+    expect(screen.queryByText(creditsPageCopy.plan.working)).toBeNull();
     const calls = m.refresh.mock.calls.length;
     await new Promise((r) => setTimeout(r, 60));
     expect(m.refresh.mock.calls.length).toBe(calls);
     expect(onToast).toHaveBeenCalledTimes(1);
-    expect((screen.getByRole("button", { name: "Cancel plan" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: creditsPageCopy.plan.cancel }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("stops re-reading when the card unmounts", async () => {
     m.cancel.mockResolvedValue({ ok: true, unchanged: false });
     const view = render(<PlanCard plan={plan("active")} timing={{ intervalMs: 10, maxTries: 1000 }} onToast={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel plan" }));
-    await screen.findByText("Updating your plan");
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.cancel }));
+    await screen.findByText(creditsPageCopy.plan.working);
     view.unmount();
     const calls = m.refresh.mock.calls.length;
     await new Promise((r) => setTimeout(r, 60));
@@ -203,32 +203,32 @@ describe("Cancel plan and Keep my plan", () => {
     m.cancel.mockResolvedValue({ ok: true, unchanged: true });
     const onToast = vi.fn();
     render(<PlanCard plan={plan("active")} timing={FAST} onToast={onToast} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel plan" }));
-    await waitFor(() => expect(onToast).toHaveBeenCalledWith("Your plan was already canceled."));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.cancel }));
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith(creditsPageCopy.plan.outcome.alreadyCancelled));
     expect(m.refresh).toHaveBeenCalled();
   });
 
   it.each([
-    ["unconfigured", "Plan changes aren’t set up here yet."],
-    ["not_found", "We couldn’t find a plan on your account."],
-    ["failed", "Couldn’t update your plan. Try again."],
+    ["unconfigured", creditsPageCopy.plan.outcome.unconfigured],
+    ["not_found", creditsPageCopy.plan.outcome.not_found],
+    ["failed", creditsPageCopy.plan.outcome.failed],
   ] as const)("a refused cancel (%s) says so, waits for nothing and gives the press back", async (reason, text) => {
     m.cancel.mockResolvedValue({ ok: false, reason });
     const onToast = vi.fn();
     render(<PlanCard plan={plan("active")} timing={FAST} onToast={onToast} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel plan" }));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.cancel }));
     await waitFor(() => expect(onToast).toHaveBeenCalledWith(text));
-    expect(screen.queryByText("Updating your plan")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.plan.working)).toBeNull();
     expect(m.refresh).not.toHaveBeenCalled();
-    await waitFor(() => expect((screen.getByRole("button", { name: "Cancel plan" }) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect((screen.getByRole("button", { name: creditsPageCopy.plan.cancel }) as HTMLButtonElement).disabled).toBe(false));
   });
 
   it("a thrown action is the failed line", async () => {
     m.keep.mockRejectedValue(new Error("boom"));
     const onToast = vi.fn();
     render(<PlanCard plan={plan("cancelled")} onToast={onToast} />);
-    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
-    await waitFor(() => expect(onToast).toHaveBeenCalledWith("Couldn’t update your plan. Try again."));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.keep }));
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith(creditsPageCopy.plan.outcome.failed));
   });
 });
 
@@ -249,14 +249,14 @@ describe("Update card", () => {
     const onToast = vi.fn();
     render(<PlanCard plan={plan("active")} onToast={onToast} />);
     fireEvent.click(screen.getByRole("button", { name: /Update card/ }));
-    await waitFor(() => expect(onToast).toHaveBeenCalledWith("Plan changes aren’t set up here yet."));
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith(creditsPageCopy.plan.outcome.unconfigured));
     expect(screen.queryByRole("button", { name: /Update card/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: creditsPageCopy.plan.cancel })).toBeTruthy();
   });
 
   it.each([
-    ["not_found", "We couldn’t find a plan on your account."],
-    ["failed", "Couldn’t open the card page. Try again."],
+    ["not_found", creditsPageCopy.plan.outcome.not_found],
+    ["failed", creditsPageCopy.plan.outcome.cardFailed],
   ] as const)("%s says so and gives the press back", async (reason, text) => {
     m.card.mockResolvedValue({ ok: false, reason });
     const onToast = vi.fn();
@@ -309,7 +309,7 @@ describe("Keep refused for payments, forwarded", () => {
     const onToast = vi.fn();
     const onFailure = vi.fn();
     render(<PlanCard plan={plan("cancelled")} onToast={onToast} onFailure={onFailure} />);
-    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.keep }));
     await waitFor(() => expect(onFailure).toHaveBeenCalledWith(reason));
     expect(onToast).not.toHaveBeenCalled();
   });
@@ -318,20 +318,20 @@ describe("Keep refused for payments, forwarded", () => {
     const onToast = vi.fn();
     const onFailure = vi.fn();
     render(<PlanCard plan={plan("cancelled")} onToast={onToast} onFailure={onFailure} />);
-    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
-    await waitFor(() => expect(onToast).toHaveBeenCalledWith("Couldn’t update your plan. Try again."));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.keep }));
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith(creditsPageCopy.plan.outcome.failed));
     expect(onFailure).not.toHaveBeenCalled();
   });
 });
 
 describe("Keep refused for payments", () => {
-  it.each([["off", "Keeping your plan isn’t available right now."], ["blocked", "Buying is paused on this account, so the plan can’t be kept. Email support@the-99.dev and we’ll sort it out."]] as const)("%s says so and waits for nothing", async (reason, text) => {
+  it.each([["off", creditsPageCopy.plan.outcome.off], ["blocked", creditsPageCopy.plan.outcome.blocked]] as const)("%s says so and waits for nothing", async (reason, text) => {
     m.keep.mockResolvedValue({ ok: false, reason });
     const onToast = vi.fn();
     render(<PlanCard plan={plan("cancelled")} onToast={onToast} />);
-    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.keep }));
     await waitFor(() => expect(onToast).toHaveBeenCalledWith(text));
-    expect(screen.queryByText("Updating your plan")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.plan.working)).toBeNull();
   });
 });
 
@@ -341,22 +341,22 @@ describe("K5 while cancelling", () => {
     render(<PlanCard plan={due()} onToast={vi.fn()} />);
     // Stripe is still retrying, so nothing here promises there will be no further charge.
     expect(screen.queryByText(/charged again/)).toBeNull();
-    expect(screen.getByText("Your payment didn’t go through")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.plan.dueTitle)).toBeTruthy();
     expect(screen.getByText("Your 74 plan credits expire on December 4. The plan will not renew.")).toBeTruthy();
-    expect(buttons()).toEqual(["Update card", "Keep my plan"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.updateCard, creditsPageCopy.plan.keep]);
     expect(updateCardIcon()).toBeTruthy();
   });
   it("reduced drops Keep and keeps Update card", () => {
     render(<PlanCard plan={due()} reduced onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Update card"]);
+    expect(buttons()).toEqual([creditsPageCopy.plan.updateCard]);
   });
   it("a cancel pressed on a past-due plan is reached once the row says cancelling, even though the state stays past due", async () => {
     m.cancel.mockResolvedValue({ ok: true, unchanged: false });
     const view = render(<PlanCard plan={plan("pastDue")} timing={{ intervalMs: 10, maxTries: 1000 }} onToast={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel plan" }));
-    await screen.findByText("Updating your plan");
+    fireEvent.click(screen.getByRole("button", { name: creditsPageCopy.plan.cancel }));
+    await screen.findByText(creditsPageCopy.plan.working);
     view.rerender(<PlanCard plan={due()} timing={{ intervalMs: 10, maxTries: 1000 }} onToast={vi.fn()} />);
-    expect(screen.queryByText("Updating your plan")).toBeNull();
-    expect(buttons()).toEqual(["Update card", "Keep my plan"]);
+    expect(screen.queryByText(creditsPageCopy.plan.working)).toBeNull();
+    expect(buttons()).toEqual([creditsPageCopy.plan.updateCard, creditsPageCopy.plan.keep]);
   });
 });

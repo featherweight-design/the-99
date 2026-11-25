@@ -71,7 +71,7 @@ describe("M5 and M6, the other-ways press", () => {
         card={POLY}
         openStandIns={tools ? () => tools.openStandIns(POLY) : undefined}
         standIn={standIn}
-        standInAria="Cheaper stand-ins"
+        standInAria={"Fixture stand-in aria"}
         limitFigure="$10"
       />
     );

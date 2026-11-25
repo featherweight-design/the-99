@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../../components/public/commander-page", () => ({ PublicCommanderPage: () => null }));
 
 import PublicCommanderRoute, { generateMetadata } from "./page";
+import { publicPagesCopy } from "../../../lib/copy/public-pages";
 
 const route = (slug: string) => PublicCommanderRoute({ params: Promise.resolve({ slug }) });
 const commander = { name: "Zimone, Infinite Analyst", state: "ok" };
@@ -65,7 +66,7 @@ describe("the public commander route", () => {
       expect(m.description).toBe("Zimone turns each X spell into a cheaper next one.");
       expect(m.alternates?.canonical).toBe("/commander/zimone-infinite-analyst-0b3f2c9e6a41");
       expect(m.openGraph).toMatchObject({
-        title: "Zimone, Infinite Analyst · Commander · The 99", url: "/commander/zimone-infinite-analyst-0b3f2c9e6a41", type: "website", siteName: "The 99",
+        title: "Zimone, Infinite Analyst · Commander · The 99", url: "/commander/zimone-infinite-analyst-0b3f2c9e6a41", type: "website", siteName: publicPagesCopy.shell.wordmarkPhone,
       });
       expect(m.twitter).toMatchObject({ card: "summary_large_image", title: "Zimone, Infinite Analyst · Commander · The 99" });
       expect(read).toHaveBeenCalledWith("zimone-0b3f2c9e6a41");

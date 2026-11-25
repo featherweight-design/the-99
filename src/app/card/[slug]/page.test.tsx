@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../../components/public/card-page", () => ({ PublicCardPage: () => null }));
 
 import PublicCardRoute, { generateMetadata } from "./page";
+import { publicPagesCopy } from "../../../lib/copy/public-pages";
 
 const route = (slug: string) => PublicCardRoute({ params: Promise.resolve({ slug }) });
 const card = { name: "Sol Ring", printings: [] };
@@ -63,7 +64,7 @@ describe("the public card route", () => {
       expect(m.title).toBe("Sol Ring · The 99");
       expect(m.description).toBe("Artifact. {T}: Add {C}{C}.");
       expect(m.alternates?.canonical).toBe("/card/sol-ring-6ad8011d3471");
-      expect(m.openGraph).toMatchObject({ title: "Sol Ring · The 99", url: "/card/sol-ring-6ad8011d3471", type: "website", siteName: "The 99" });
+      expect(m.openGraph).toMatchObject({ title: "Sol Ring · The 99", url: "/card/sol-ring-6ad8011d3471", type: "website", siteName: publicPagesCopy.shell.wordmarkPhone });
       expect(m.twitter).toMatchObject({ card: "summary_large_image", title: "Sol Ring · The 99" });
       expect(read).toHaveBeenCalledWith("sol-rnig-6ad8011d3471");
       // The metadata counts nothing: the page does, once.

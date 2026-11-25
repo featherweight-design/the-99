@@ -87,7 +87,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const DECK = { id: "11111111-1111-4111-8111-111111111111", name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, built: 99, bodySize: 99 };
-const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 2, onWishlist: true };
+const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Fixture Card", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 2, onWishlist: true };
 
 describe("a friend's page group", () => {
   beforeEach(() => {
@@ -177,12 +177,12 @@ describe("a friend's page group", () => {
     const html = renderToString(await FriendSparesPage({ params: params() }));
     expect(html).toContain(plain(p.spares.line([named("Thursday pod")])));
     expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
-    expect(html.indexOf("Ghalta, Primal Hunger")).toBeLessThan(html.indexOf("Sol Ring"));
+    expect(html.indexOf("Fixture Card")).toBeLessThan(html.indexOf("Sol Ring"));
     expect(html).toContain("2 spares");
     expect(html).toContain("1 spare");
     expect(html.match(/data-testid="spare-on-wishlist"/g)).toHaveLength(1);
     // Neither fixture card has art, so each names itself in the card's place.
-    expect(html.match(/data-testid="spare-name"[^>]*>Ghalta, Primal Hunger</g)).toHaveLength(1);
+    expect(html.match(/data-testid="spare-name"[^>]*>Fixture Card</g)).toHaveLength(1);
   });
 
   // The reader's wishlist always rides the spares read now its switch is retired.
