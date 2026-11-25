@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { accountCopy } from "../copy/account";
 import { DOING_MAX, WHAT_MAX, deviceSummary, pageOf, parseReport } from "./report-rule";
 
 const ok = { what: "The deck page went blank", doing: "", page: "/decks/abc", source: "error", digest: null, sentryEventId: null };
@@ -65,7 +66,7 @@ describe("pageOf", () => {
 describe("deviceSummary", () => {
   it("names the browser and the system, never the header", () => {
     const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
-    expect(deviceSummary(ua)).toBe("Safari on iPhone");
+    expect(deviceSummary(ua)).toBe(accountCopy.devices.name("Safari", "iPhone"));
     expect(deviceSummary("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")).toBe("Chrome on Windows");
     expect(deviceSummary("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Gecko/20100101 Firefox/131.0")).toBe("Firefox on Mac");
   });

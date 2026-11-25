@@ -5,6 +5,7 @@
  *
  * Client-safe: nothing here imports a server module.
  */
+import { accountCopy } from "../copy/account";
 import type { DeviceWord } from "../copy/push-settings";
 
 export type Permission = "default" | "granted" | "denied";
@@ -70,7 +71,7 @@ export function iosVersion(ua: string, maxTouchPoints = 0): [number, number] | n
 export function deviceLabel(ua: string): string {
   const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\/|FxiOS/.test(ua) ? "Firefox" : /Chrome\/|CriOS/.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
   const os = /iPhone|iPod/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "Windows" : /Mac OS X|Macintosh/.test(ua) ? "macOS" : /Linux|CrOS/.test(ua) ? "Linux" : "";
-  return os ? `${browser} on ${os}` : browser;
+  return os ? accountCopy.devices.name(browser, os) : browser;
 }
 
 /** The VAPID public key as the bytes `pushManager.subscribe` takes (base64url in, `Uint8Array` out). */

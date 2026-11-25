@@ -1,3 +1,4 @@
+import { synopsisCopy } from "../../../src/lib/copy/synopsis";
 import { describe, expect, it } from "vitest";
 
 import { compareHtml, type CompareDeck } from "./overview-stages-html.mjs";
@@ -22,7 +23,7 @@ describe("the side-by-side page", () => {
     expect(page).toContain("<dt>Mid</dt>");
     expect(page).toContain("<dt>Close</dt>");
     expect(page).toContain("<dt>Wins by</dt>");
-    expect(page).toContain("Core strategy");
+    expect(page).toContain(synopsisCopy.modal.primer.strategy);
     expect(page).toContain("Refused (over_budget)");
   });
   it("escapes what the model wrote, and stacks the columns below desktop width", () => {

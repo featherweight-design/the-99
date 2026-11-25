@@ -1,6 +1,7 @@
 // The device row's rule (push handoff `STATES-push.md`): facts in, one of the six states out, and the words and
 // payload the column hands the server.
 import { describe, expect, it } from "vitest";
+import { accountCopy } from "../copy/account";
 import { applicationServerKey, deviceLabel, devicePayload, deviceState, deviceWord, iosTooOld, iosVersion, type DeviceFacts } from "./device";
 
 const desktop: DeviceFacts = { ios: null, standalone: false, phone: false, pushApi: true, registration: true, permission: "default", subscribed: false };
@@ -72,7 +73,7 @@ describe("iosVersion", () => {
 describe("deviceLabel", () => {
   it("names the browser and the system, never the raw user agent", () => {
     expect(deviceLabel("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36")).toBe("Chrome on Android");
-    expect(deviceLabel("Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1")).toBe("Safari on iPhone");
+    expect(deviceLabel("Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1")).toBe(accountCopy.devices.name("Safari", "iPhone"));
     expect(deviceLabel("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36 Edg/126.0")).toBe("Edge on Windows");
     expect(deviceLabel("Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:126.0) Gecko/20100101 Firefox/126.0")).toBe("Firefox on macOS");
   });

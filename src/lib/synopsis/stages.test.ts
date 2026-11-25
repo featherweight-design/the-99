@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { synopsisCopy } from "../copy/synopsis";
 import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
@@ -945,7 +946,7 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
       { text: "Sacrifice a [[Forest]] creature land with [[Meren of Clan Nel Toth]] out.", evidence: ["c7", "c1"] },
     ];
     const before = docFromStagesReply(r, 3);
-    expect(checkShape(before, [], 3).offenders.some((o) => o.includes("Key cards"))).toBe(false);
+    expect(checkShape(before, [], 3).offenders.some((o) => o.includes(synopsisCopy.modal.sections.keyCards))).toBe(false);
     const { doc: out, report } = dedupeSections(before, FACTS);
     expect(out.keyCards).toHaveLength(4);
     expect(report.droppedKeyCards).toEqual([{ card: "Grave Titan", explainedIn: "stages" }]);

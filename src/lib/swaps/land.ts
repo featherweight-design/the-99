@@ -8,6 +8,7 @@
  * reader is H3's: a stand-in names what the original did that it does not, and never claims to give
  * up nothing when the original's text holds something it cannot account for.
  */
+import { swapToolsCopy } from "../copy/swap-tools";
 import { frontFaceOracle } from "../recs/faces";
 import { ANY_COLOR } from "../recs/mana";
 
@@ -353,10 +354,10 @@ export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/\b(?:storage|charge) counters?\b|\bchoose not to untap this land\b/, "storing mana"],
   [/\badd\b[^.]*\bfor each\b|\badd (?:\{[wubrgc]\}){2,}/, "its extra mana"],
   [/\bdestroy target (?:nonbasic )?land\b/, "land destruction"],
-  [/\bexile [^.]*\bgraveyards?\b/, "graveyard hate"],
+  [/\bexile [^.]*\bgraveyards?\b/, swapToolsCopy.sheet.job.graveyardHate],
   [/\b(?:destroy|exile) (?:all|each)\b|\bdestroy the rest\b/, "a board wipe"],
   [/\b(?:destroy|exile) target\b/, "removal"],
-  [/\bcounter target\b/, "a counterspell"],
+  [/\bcounter target\b/, swapToolsCopy.sheet.job.counterspell],
   [/\bcopy target [^.]*\bspell\b/, "copying a spell"],
   [/\bdraws? (?:a|one|two|x) cards?\b/, "card draw"],
   [/\bcreate[s]? [^.]*\btokens?\b/, "making tokens"],
@@ -365,12 +366,12 @@ export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/\bscry (?:\d+|x)\b|\bsurveil (?:\d+|x)\b/, "card selection"],
   [/\bmills?\b/, "milling"],
   [/\bdeals? \w+ damage to (?:any target|target|each)\b/, "dealing damage"],
-  [/\bgain \w+ life\b/, "life gain"],
+  [/\bgain \w+ life\b/, swapToolsCopy.sheet.job.lifegain],
   [/\buntap target\b/, "untapping a permanent"],
   [/\bhexproof\b|\bindestructible\b|\bshroud\b|\bprotection from\b|\bregenerate\b/, "protection"],
   [/cycling\b/, "cycling"],
   [/\bproliferate\b/, "proliferate"],
-  [/\bput [^.]*\+1\/\+1 counters?\b/, "+1/+1 counters"],
+  [/\bput [^.]*\+1\/\+1 counters?\b/, swapToolsCopy.sheet.job.counters],
   [/\bcan't be blocked\b/, "evasion"],
   [/\btarget [^.]*creature gets\b|\bcreatures you control get\b/, "a pump"],
   [/\b(?:gains?|have) (?:double strike|first strike|deathtouch|lifelink|haste|vigilance|flying|trample)\b/, "granting an ability"],

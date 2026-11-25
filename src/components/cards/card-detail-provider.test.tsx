@@ -54,7 +54,7 @@ async function click(el: HTMLElement) {
  * The desktop footer's Prev/Next. A sibling known only by id gives the phone's peek the same bare
  * name, and jsdom lays out neither width, so a test that means the footer says so.
  */
-function footer(name: "Previous card" | "Next card"): HTMLElement {
+function footer(name: typeof cardCarouselCopy.prevAria | typeof cardCarouselCopy.nextAria): HTMLElement {
   const found = screen.getAllByRole("button", { name }).filter((el) => !el.closest('[data-testid="card-band"]'));
   if (found.length !== 1) throw new Error(`expected one footer "${name}", found ${found.length}`);
   return found[0];
@@ -445,7 +445,7 @@ describe("CardDetailProvider", () => {
         </CardDetailProvider>,
       );
       await click(screen.getByText("Arcane Signet"));
-      expect(await screen.findAllByRole("button", { name: /Next card: Ring of Renown/ })).not.toHaveLength(0);
+      expect(await screen.findAllByRole("button", { name: cardCarouselCopy.neighborAria("next", "Ring of Renown") })).not.toHaveLength(0);
     });
 
     // The picks are the server's snapshot; a card the deck no longer holds is the Collection's, as
@@ -523,7 +523,7 @@ describe("CardDetailProvider", () => {
         </CardDetailProvider>,
       );
       await click(screen.getByText("Arcane Signet"));
-      expect(await screen.findAllByRole("button", { name: /Next card: Ring of Renown/ })).not.toHaveLength(0);
+      expect(await screen.findAllByRole("button", { name: cardCarouselCopy.neighborAria("next", "Ring of Renown") })).not.toHaveLength(0);
     });
 
     // The modal draws its gradient for a printing with no image, so the plate pointing at that

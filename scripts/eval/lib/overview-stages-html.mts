@@ -1,3 +1,4 @@
+import { synopsisCopy } from "../../../src/lib/copy/synopsis";
 import { SECTION_SCOPE, STAGE_LABELS, type landKeepTable, type OverviewDoc, type StagesChecks } from "../../../src/lib/synopsis/stages";
 
 /**
@@ -46,7 +47,7 @@ function panel(side: "Today" | "Stages", p: ComparePanel, landLine: string): str
   const refusedNote = (section: string) => p.refused.filter((r) => r.section === section).map((r) => `<p class="refused">Refused (${esc(r.reason)}): a reader sees the refusal here.</p>`).join("");
   out.push(`<h4>Overview</h4>${refusedNote("overview")}${d.overview.map((l) => `<p>${line(l.text)}</p>`).join("")}`);
   out.push(`<h4>Primer</h4>${refusedNote("primer")}`);
-  if (d.strategy.length > 0) out.push(`<h5>Core strategy</h5><ol>${d.strategy.map((l) => `<li>${line(l.text)}</li>`).join("")}</ol>`);
+  if (d.strategy.length > 0) out.push(`<h5>${synopsisCopy.modal.primer.strategy}</h5><ol>${d.strategy.map((l) => `<li>${line(l.text)}</li>`).join("")}</ol>`);
   if (d.stages.length > 0) {
     out.push(`<h5>Game plan</h5><dl class="stages">${d.stages.map((l, i) => `<dt>${esc(STAGE_LABELS[i] ?? `Extra ${i + 1}`)}</dt><dd>${line(l.text)}</dd>`).join("")}</dl>`);
   }

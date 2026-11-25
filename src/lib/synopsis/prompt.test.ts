@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { SynopsisFacts } from "./facts";
 import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS } from "./limits";
 import { ASSESSMENT_TOPICS } from "./types";
-import { buildSynopsisPrompt, overLengthLines } from "./prompt";
+import { ACTIVATED_HATE_EXAMPLE, buildSynopsisPrompt, overLengthLines } from "./prompt";
 import { figuresIn } from "./validate";
 import type { CheckedSynopsis } from "./types";
 
@@ -254,7 +254,7 @@ describe("buildSynopsisPrompt under contract 8", () => {
   it("names every checklist topic once and the hate cards the corpus missed", () => {
     const { system } = buildSynopsisPrompt(FACTS, undefined, C8);
     for (const t of ASSESSMENT_TOPICS) expect(system.split(`- ${t}:`).length - 1, t).toBe(1);
-    for (const hate of ["Rest in Peace", "Bojuka Bog", "Dauthi Voidwalker", "Null Rod", "Collector Ouphe", "Cursed Totem", "Farewell", "Propaganda"]) {
+    for (const hate of ["Rest in Peace", "Bojuka Bog", "Dauthi Voidwalker", "Null Rod", "Collector Ouphe", ACTIVATED_HATE_EXAMPLE, "Farewell", "Propaganda"]) {
       expect(system).toContain(`[[${hate}]]`);
     }
     expect(system).toContain(`at most ${EVIDENCE_MAX}`);
