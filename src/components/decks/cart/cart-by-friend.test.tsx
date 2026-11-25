@@ -1013,12 +1013,12 @@ describe("the Friend filter (v2 PR 9)", () => {
           fireEvent.click(screen.getByRole("radio", { name: c.radio }));
           expect(drawnRows(c.view)).toBe(c.rows);
           expect(resultLine()).toBe(c.line);
-          const cardsOf = (n: number) => copy.panels.owned.footerTotal(n);
-          const none = (n: number) => (n === 0 ? "no cards" : cardsOf(n));
+          const owned = copy.panels.owned;
+          const none = (n: number) => (n === 0 ? owned.optionAriaUnavailable("None") : owned.optionAria("None", n));
           if (width === "desktop") {
             fireEvent.click(screen.getByRole("button", { name: /^Owned options, Any, collapsed$/ }));
             expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual([
-              `Any, ${cardsOf(c.rows)}`, "You own some, no cards", `None, ${none(c.rows)}`,
+              owned.optionAria("Any", c.rows), "You own some, no cards", none(c.rows),
             ]);
           } else {
             fireEvent.click(screen.getByRole("button", { name: "Filter cards, 1 on" }));
