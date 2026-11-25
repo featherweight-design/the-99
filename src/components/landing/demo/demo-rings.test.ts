@@ -19,10 +19,13 @@ describe("ringTarget", () => {
 
   it("keeps the rings that never promise a card regardless of the flag", () => {
     for (const index of [1, 3, 4]) expect(ringTarget(index, false)).not.toBeNull();
-    // Steps 7 and 8 draw no ring: their tabs are no press the step teaches.
-    for (const index of [6, 7]) expect(ringTarget(index, true)).toBeNull();
+    // Steps 8 and 9 (the nine-step index 7 and 8) draw no ring: their tabs are no press the step teaches. Step 7, Upgrade, rings a card only when a press opens one.
+    for (const index of [7, 8]) expect(ringTarget(index, true)).toBeNull();
+    expect(ringTarget(6)).toBeNull();
+    expect(ringTarget(6, true)).not.toBeNull();
     // A step with no ring has no label either, and a step with a ring has one.
-    landingCopy.demo.steps.forEach((step, index) => expect(step.press === null).toBe(ringTarget(index, true) === null));
+    const { steps, upgradeStep } = landingCopy.demo;
+    [...steps.slice(0, 6), upgradeStep, ...steps.slice(6)].forEach((step, index) => expect(step.press === null).toBe(ringTarget(index, true) === null));
     expect(ringTarget(1)).toBe("[data-fit-chip]");
   });
 
@@ -41,6 +44,7 @@ describe("ringTarget", () => {
     for (const fine of [true, false]) expect(ringTarget(3, true, fine)).not.toContain("role='group'");
     // Step 6's label sits above the card name's ring, not over the name.
     expect(ringPlace(5)).toBe("above");
+    expect(ringPlace(6)).toBe("above");
   });
 });
 
@@ -74,5 +78,14 @@ describe("stepOpensCards", () => {
     expect(stepOpensCards(data({ ...base, suggested: { state: { items: [{ addOracleId: "a1", cutOracleId: "x1" }] } } }), details("a1", "x1"), 5)).toBe(false);
     expect(stepOpensCards(data({ ...base, choose: null }), details("c1"), 2)).toBe(false);
     expect(stepOpensCards(data(base), details("c1", "c2"), 3)).toBe(false);
+  });
+
+  it("reads the Upgrade step's cards (the run's swaps and the commanders) at index 6", () => {
+    const upgrade = { runId: "r", panel: { runs: [{ id: "r", pairs: [{ addId: "u1", cutId: "u2" }] }], commanders: [{ cards: [{ oracleId: "k1" }] }] } };
+    const withUpgrade = data({ ...base, upgrade });
+    expect(stepOpensCards(withUpgrade, null, 6)).toBe(false);
+    expect(stepOpensCards(withUpgrade, details("u1", "u2"), 6)).toBe(false);
+    expect(stepOpensCards(withUpgrade, details("u1", "u2", "k1"), 6)).toBe(true);
+    expect(stepOpensCards(data(base), details("u1", "u2", "k1"), 6)).toBe(false);
   });
 });

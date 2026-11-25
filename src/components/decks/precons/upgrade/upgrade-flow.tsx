@@ -19,8 +19,8 @@ import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strate
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import type { UpgradePicks } from "../../../../lib/precons/upgrade/apply";
 import type { SuggestedChangesPress } from "../../suggested-changes-run";
-import { picksOf } from "./upgrade-lines";
-import { markUpgradeSeenAction } from "../../../../lib/precons/upgrade/actions";
+import { picksOf, type UpgradeActionDeps } from "./upgrade-lines";
+import { markUpgradeSeenAction, pickUpgradeLineAction, upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
 import { CreditsText } from "../../../ui/credits-text";
 import { SheetGrabber } from "../../../ui/sheet-grabber";
 import { IntroStep } from "./intro-step";
@@ -40,6 +40,12 @@ const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 
 /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
 export type FlowApply = { nextVersion: number; onApply: (runId: string, picks: UpgradePicks) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
+
+/** The run's own pick store and set bracket read. The result view takes its actions as a prop so the landing demo, which draws it, imports no server action. */
+const LIVE_LINE_ACTIONS: UpgradeActionDeps = {
+  pick: (runId, lineId, picked) => pickUpgradeLineAction(runId, lineId, picked),
+  setBracket: (fileName, runId, adds, cuts) => upgradeSetBracketAction(fileName, runId, adds, cuts),
+};
 
 export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, onSeen, onPicked }: {
   /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
@@ -308,7 +314,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
           {/* A run already in a deck, opened from a list: free to open, and its press stays live (a second deck from the same swaps is allowed). An unused run draws no note. */}
           {stage === "results" && shown && fromList && shown.deck && <p data-used-note className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.usedNote(shown.deck.name)}</p>}
-          {stage === "results" && shown && <ResultView panel={panel} run={shown} fileName={fileName} press={resultPress} after={another} onPicked={onPicked} />}
+          {stage === "results" && shown && <ResultView panel={panel} run={shown} fileName={fileName} press={resultPress} after={another} onPicked={onPicked} lineActions={LIVE_LINE_ACTIONS} />}
           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setFromStart(false); setHistory(false); }} />}
           {/* The start screen (call 2): the newest kept run above the intro's lead, when one is kept; the intro below is unchanged. */}
           {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} onOpen={() => { setOpened(newest.id); setFromStart(true); setFromHistory(false); }} />}

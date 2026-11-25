@@ -9,7 +9,7 @@
 import { useMemo, type ReactNode } from "react";
 import type { Bracket } from "../../../../lib/profile/types";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
-import { dollars } from "../../../../lib/copy/credits-page";
+import { dollars } from "../../../../lib/copy/dollars";
 import { WUBRG_COLOR, inWubrgOrder } from "../../../../lib/cards/colors";
 import type { OfferedCommander, PanelCard, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import type { SwapCombo } from "../../../../lib/precons/upgrade/validate";
@@ -23,7 +23,6 @@ import { factComboEntries } from "../../mark-key-entries";
 import { StrategyIcon } from "../../strategy-icon";
 import { CardDetailTrigger, useCardDetailIfAny } from "../../../cards/card-detail-context";
 import type { StrategyKey } from "@/lib/strategy/score";
-import { pickUpgradeLineAction, upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
 import { SuggestedChangesRun, type SuggestedChangesPress } from "../../suggested-changes-run";
 import { UpgradePriceLine } from "./upgrade-price-line";
 import { figuresOf, upgradeActions, upgradeAsk, upgradeLines, upgradePermits, type UpgradeActionDeps } from "./upgrade-lines";
@@ -170,11 +169,6 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** The run's own pick store and set bracket read; a test hands in its own. Read at the call, so a result never picked reaches no pick. */
-const LIVE_LINE_ACTIONS: UpgradeActionDeps = {
-  pick: (runId, lineId, picked) => pickUpgradeLineAction(runId, lineId, picked),
-  setBracket: (fileName, runId, adds, cuts) => upgradeSetBracketAction(fileName, runId, adds, cuts),
-};
 const noop = () => {};
 /** No press handed in: the bar's place stays, off. */
 const PRESS_OFF: SuggestedChangesPress = { label: () => "", onPress: noop, off: true };
@@ -199,7 +193,7 @@ export function demoLineActions(run: PanelRun, seed: number[] | null): UpgradeAc
   };
 }
 
-export function ResultView({ panel, run, fileName = "", press = null, after = null, onPicked, lineActions = LIVE_LINE_ACTIONS, demo = false }: {
+export function ResultView({ panel, run, fileName = "", press = null, after = null, onPicked, lineActions, demo = false }: {
   panel: UpgradePanel;
   run: PanelRun;
   /** The precon file the run belongs to: the set bracket read is keyed by it. */
@@ -210,7 +204,7 @@ export function ResultView({ panel, run, fileName = "", press = null, after = nu
   after?: ReactNode;
   /** A pick was stored: the run's unpicked lines now, so the run reopened shows them (G28). */
   onPicked?: (runId: string, unpicked: string[]) => void;
-  lineActions?: UpgradeActionDeps;
+  lineActions: UpgradeActionDeps;
   /** The landing demo (A5b): no You asked, no Apply place, and picks through `lineActions` (`demoLineActions`), stored nowhere. */
   demo?: boolean;
 }) {

@@ -20,6 +20,7 @@ import { StepBuy, deckRoleOf, shoppingDeckOf } from "./demo-step-buy";
 import { cardStepsFor } from "./demo-detail";
 import { StepDeck } from "./demo-step-deck";
 import { StepGetTo99 } from "./demo-step-get-to-99";
+import { StepUpgrade } from "./demo-step-upgrade";
 import type { DemoCardStep } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 
@@ -95,13 +96,13 @@ export { DemoCardHost } from "./demo-card-host";
 export { loadDemoCardDetails, mergeCardChunks } from "../../../lib/demo/card-details";
 export { detailFor } from "./demo-detail";
 
-/** The card-details chunks the step on screen needs (`cardStepsFor`): step 8's Shopping list names the deck whose chunk it takes. */
+/** The card-details chunks the step on screen needs (`cardStepsFor`): step 9's Shopping list names the deck whose chunk it takes. */
 export function cardStepsOf(data: Projected, index: number): DemoCardStep[] {
-  const deck = index === 7 ? shoppingDeckOf(data) : null;
+  const deck = index === 8 ? shoppingDeckOf(data) : null;
   return cardStepsFor(index, deck ? deckRoleOf(data, deck) : null);
 }
 
-/** One body per step, by index; an index past the eight draws nothing. */
+/** One body per step, by index; an index past the nine draws nothing. */
 export function StepBody({ index, data, publicPages, onOpenCard }: { index: number; data: Projected; publicPages: boolean; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
   switch (index) {
     case 0:
@@ -118,8 +119,10 @@ export function StepBody({ index, data, publicPages, onOpenCard }: { index: numb
     case 5:
       return <DemoDeckScope role="played"><StepSuggested data={data} /></DemoDeckScope>;
     case 6:
-      return <StepGetTo99 data={data} />;
+      return <StepUpgrade data={data} />;
     case 7:
+      return <StepGetTo99 data={data} />;
+    case 8:
       return <StepBuy data={data} onOpenCard={onOpenCard} />;
     default:
       return null;
