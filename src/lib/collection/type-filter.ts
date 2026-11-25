@@ -40,6 +40,7 @@ export function buildTypeOptions(cards: BrowseListCard[], filters: BrowseFilters
     types: [],
     setCodes: filters.setCodes,
     availability: filters.availability,
+    quick: filters.quick,
   });
 
   return AVAILABLE_TYPES.map((label) => {

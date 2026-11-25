@@ -43,6 +43,7 @@ export function buildColorOptions(cards: BrowseListCard[], filters: BrowseFilter
     types: filters.types,
     setCodes: filters.setCodes,
     availability: filters.availability,
+    quick: filters.quick,
   });
 
   return WUBRG.map((code) => {
