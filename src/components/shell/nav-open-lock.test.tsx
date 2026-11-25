@@ -4,6 +4,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
@@ -67,8 +68,8 @@ describe("the open lock, desktop rail", () => {
       </>,
     );
     fireEvent.pointerEnter(slot("Decks"));
-    fireEvent.click(within(noteOf(slot("Decks"))).getByRole("button", { name: "Go to step 1" }));
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Upload a CSV" }));
+    fireEvent.click(within(noteOf(slot("Decks"))).getByRole("button", { name: refreshCopy.firstRun.lock.goToStep1 }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: refreshCopy.firstRun.uploadCsv }));
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -76,7 +77,7 @@ describe("the open lock, desktop rail", () => {
     pathname = "/collection";
     render(<NavRail locked openLock={FIRST_RUN} theme="amonkhet" />);
     fireEvent.pointerEnter(slot("Decks"));
-    fireEvent.click(within(noteOf(slot("Decks"))).getByRole("button", { name: "Go to step 1" }));
+    fireEvent.click(within(noteOf(slot("Decks"))).getByRole("button", { name: refreshCopy.firstRun.lock.goToStep1 }));
     expect(push).toHaveBeenCalledWith("/");
     expect(push).not.toHaveBeenCalledWith("/collection/replace");
   });
@@ -88,8 +89,8 @@ describe("the open lock, desktop rail", () => {
     );
     fireEvent.pointerEnter(slot("Decks"));
     const note = noteOf(slot("Decks"));
-    expect(within(note).queryByRole("button", { name: "Go to step 1" })).toBeNull();
-    fireEvent.click(within(note).getByRole("button", { name: "Add your cards" }));
+    expect(within(note).queryByRole("button", { name: refreshCopy.firstRun.lock.goToStep1 })).toBeNull();
+    fireEvent.click(within(note).getByRole("button", { name: refreshCopy.firstRun.lock.addYourCards }));
     expect(push).toHaveBeenCalledWith("/collection");
   });
 
@@ -98,7 +99,7 @@ describe("the open lock, desktop rail", () => {
     expect(slot("Collection")).toBeInTheDocument();
     expect(slot("Decks")).toHaveAccessibleDescription("Decks opens once your cards are in. So do Collection and Commanders.");
     fireEvent.pointerEnter(slot("Decks"));
-    fireEvent.click(within(noteOf(slot("Decks"))).getByRole("button", { name: "Go to step 1" }));
+    fireEvent.click(within(noteOf(slot("Decks"))).getByRole("button", { name: refreshCopy.firstRun.lock.goToStep1 }));
     expect(push).toHaveBeenCalledWith("/collection/replace");
   });
 
@@ -135,8 +136,8 @@ describe("the open lock, phone tab bar", () => {
     render(<TabBar locked openLock={WITH_DECKS} />);
     fireEvent.click(slot("Commanders"));
     const note = noteOf(slot("Commanders"));
-    expect(note).toHaveTextContent("Your decks are on Home until then.");
-    fireEvent.click(within(note).getByRole("button", { name: "Add your cards" }));
+    expect(note).toHaveTextContent(refreshCopy.firstRun.lock.withDecks);
+    fireEvent.click(within(note).getByRole("button", { name: refreshCopy.firstRun.lock.addYourCards }));
     expect(push).toHaveBeenCalledWith("/collection");
   });
 
@@ -145,6 +146,6 @@ describe("the open lock, phone tab bar", () => {
     fireEvent.click(slot("Decks"));
     const note = noteOf(slot("Decks"));
     expect(note).not.toHaveTextContent("Your decks are on Home");
-    expect(within(note).getByRole("button", { name: "Go to step 1" })).toBeInTheDocument();
+    expect(within(note).getByRole("button", { name: refreshCopy.firstRun.lock.goToStep1 })).toBeInTheDocument();
   });
 });

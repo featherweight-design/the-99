@@ -74,7 +74,7 @@ describe("requestText", () => {
 
   it("Declined: the friend is keeping it; nobody else, or who else has one", () => {
     expect(plain(requestText(req("a", "no"), NOW).title)).toBe("Colin is keeping Jace, Multiverse Architect");
-    expect(plain(requestText(req("a", "no"), NOW).detail)).toBe("Nobody else you know has a spare of it.");
+    expect(plain(requestText(req("a", "no"), NOW).detail)).toBe(spareCopy.request.mine.nobodyElse);
     expect(plain(requestText(req("a", "no", { othersWithSpare: [named("Max")] }), NOW).detail)).toBe("Max has a spare too.");
     expect(plain(requestText(req("a", "no", { othersWithSpare: [named("Max"), named("Chris"), named("Sam")] }), NOW).detail)).toBe("Max and 2 more have a spare too.");
   });
@@ -82,7 +82,7 @@ describe("requestText", () => {
   it("No answer: the friend didn't answer, requested N days ago (the ask's own age), timed at the expiry", () => {
     const createdAt = new Date(NOW.getTime() - 15 * DAY);
     const t = requestText(req("a", "expired", { createdAt }), NOW);
-    expect([t.kind, plain(t.title), plain(t.detail)]).toEqual(["No answer", "Colin didn’t answer about Jace, Multiverse Architect", "Requested 15 days ago, for Thopter Works."]);
+    expect([t.kind, plain(t.title), plain(t.detail)]).toEqual([spareCopy.request.mine.kind.expired, "Colin didn’t answer about Jace, Multiverse Architect", "Requested 15 days ago, for Thopter Works."]);
     expect(t.at.getTime()).toBe(createdAt.getTime() + 14 * DAY);
     // Whole days elapsed, never the expiry window's length: 21 days and a few hours read 21.
     const old = new Date(NOW.getTime() - 21 * DAY - 5 * 3_600_000);
@@ -90,8 +90,8 @@ describe("requestText", () => {
   });
 
   it("No longer spare and No longer needed", () => {
-    expect(txt(requestText(req("a", "unavailable"), NOW))).toMatchObject({ kind: "No longer spare", title: "Colin no longer has a spare Jace, Multiverse Architect", detail: m.noLongerSpareDetail });
-    expect(txt(requestText(req("a", "unneeded"), NOW))).toMatchObject({ kind: "No longer needed", title: "You asked Colin for Jace, Multiverse Architect", detail: m.noLongerNeededDetail });
+    expect(txt(requestText(req("a", "unavailable"), NOW))).toMatchObject({ kind: spareCopy.request.mine.kind.unavailable, title: "Colin no longer has a spare Jace, Multiverse Architect", detail: m.noLongerSpareDetail });
+    expect(txt(requestText(req("a", "unneeded"), NOW))).toMatchObject({ kind: spareCopy.request.mine.kind.unneeded, title: "You asked Colin for Jace, Multiverse Architect", detail: m.noLongerNeededDetail });
   });
 });
 
@@ -210,7 +210,7 @@ describe("YourRequests", () => {
   });
 
   // The pressed control is taken at the press: a reader who tabs elsewhere while the action is out keeps their focus.
-  it.each(["✕", "Ask again"])("a %s whose action is slow does not pull back a reader who moved on", async (which) => {
+  it.each(["✕", spareCopy.request.askAgain])("a %s whose action is slow does not pull back a reader who moved on", async (which) => {
     let finishClose: (v: unknown) => void = () => {};
     let finishAsk: (v: unknown) => void = () => {};
     actions.closeSpareAction.mockReturnValue(new Promise((res) => { finishClose = res; }));
@@ -230,7 +230,7 @@ describe("YourRequests", () => {
 
   // A press that succeeded keeps every press locked until its redraw arrives: a second press during a slow refresh
   // would resend a write the first already made, and report a failure after a success.
-  it.each(["✕", "Ask again"])("a %s that succeeded stays locked until the redraw arrives", async (which) => {
+  it.each(["✕", spareCopy.request.askAgain])("a %s that succeeded stays locked until the redraw arrives", async (which) => {
     actions.closeSpareAction.mockResolvedValue({ ok: true, closed: "cleared" });
     actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
     const rows = [req("a", "expired"), req("b", "yes")];
@@ -260,7 +260,7 @@ describe("YourRequests", () => {
     expect(screen.getByRole("alert").textContent).toContain(r.failed);
   });
 
-  it.each(["✕", "Ask again"])("a failed %s: the shared toast, the row as it was, no refresh", async (which) => {
+  it.each(["✕", spareCopy.request.askAgain])("a failed %s: the shared toast, the row as it was, no refresh", async (which) => {
     actions.closeSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
     actions.askSpareAction.mockResolvedValue({ ok: false, reason: "asked" });
     render(<YourRequests rows={[req("a", "expired")]} now={NOW} />);

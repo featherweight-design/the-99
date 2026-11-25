@@ -8,6 +8,7 @@ import { named } from "../../lib/person-name/mint";
 import type { TableGame } from "../../lib/social/rule-zero-games";
 import type { ClosedTable } from "../../lib/social/rule-zero-table";
 import { TableClosed } from "./table-closed";
+import { trackerCopy } from "../../lib/copy/tracker";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), usePathname: () => "/friends/table/table-1" }));
 vi.mock("../../app/friends/table/result-actions", () => ({ gameLoggedAction: vi.fn(async () => null) }));
@@ -69,8 +70,8 @@ describe("the closed table's Your game cards", () => {
     render(<TableClosed closed={wire(closed([later, game({ result: { kind: "draw" } })]))} />);
     const cards = screen.getAllByRole("region", { name: copy.yourGame });
     expect(cards).toHaveLength(2);
-    expect(within(cards[0]).getByText("You won")).toBeTruthy();
-    expect(within(cards[1]).getByText("A draw")).toBeTruthy();
+    expect(within(cards[0]).getByText(trackerCopy.table.wonYou)).toBeTruthy();
+    expect(within(cards[1]).getByText(trackerCopy.table.draw)).toBeTruthy();
     expect(within(cards[0]).getByRole("link", { name: ruleZeroCopy.page.log }).getAttribute("href")).toContain(`game=${Date.parse("2026-11-20T05:00:00Z")}`);
   });
 

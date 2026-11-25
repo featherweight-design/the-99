@@ -26,7 +26,7 @@ vi.mock("../../app/feed-dismiss-actions", () => ({ dismissFeedItemAction: vi.fn(
 const GHALTA = "00000000-0000-4000-8000-0000000000c1";
 const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin") };
 const NOW = "2026-10-27T12:00:00.000Z";
-const CARDS = [{ oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null }];
+const CARDS = [{ oracleId: GHALTA, name: "Fixture Card", imageUri: null }];
 const AS_OF = new Date("2026-10-26T00:00:00Z");
 const PRICES = { [GHALTA]: { cents: 210, foilCents: null, etchedCents: null, asOf: AS_OF } };
 const friend = (name: string, publicId: string, spare: number) => ({ oracleId: GHALTA, friend: { publicId, displayName: named(name), commander: null, pods: [named("Walk pod")] }, spare });
@@ -34,13 +34,13 @@ const friend = (name: string, publicId: string, spare: number) => ({ oracleId: G
 const READ = [friend("Ana", "p-ana", 3), friend("Colin", COLIN.publicId, 1)];
 const item: FeedView = {
   key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f", kind: "trade-match", at: NOW, unseen: true,
-  card: { oracleId: GHALTA, name: "Ghalta, Primal Hunger", image: null, art: null, colorIdentity: ["G"] },
+  card: { oracleId: GHALTA, name: "Fixture Card", image: null, art: null, colorIdentity: ["G"] },
   friend: COLIN, href: `/friends/${COLIN.publicId}/spares?spare=${GHALTA}`, opens: null, outbound: null, name: null, setSize: null,
   owned: null, drop: null, combo: null, answer: null, askable: true,
 } as unknown as FeedView;
 const trade: TradeMatchRow = {
   key: item.key, kind: "trade-match", createdAt: new Date(NOW), unseen: true,
-  card: { oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null },
+  card: { oracleId: GHALTA, name: "Fixture Card", imageUri: null },
   friend: { ...COLIN, displayName: named("Colin"), commander: null }, pods: [named("Walk pod")], askable: true,
 };
 const open = (state: AskStateLine["state"]): AskStateLine => ({

@@ -24,6 +24,7 @@ import { TOAST_MS } from "../collection/edit-toast";
 import type { Friend } from "../../lib/social/access";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
+import { folderCopy } from "../../lib/copy/folders";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 /** No open table: each pod card draws its Rule 0 check row. */
@@ -336,7 +337,7 @@ describe("the friends list", () => {
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
     expect(screen.getByText(plain(socialCopy.friends.removeHeading(named("Dave"))))).toBeTruthy();
     expect(screen.getByText(plain(socialCopy.friends.removeBody(named("Dave")))).closest(".ph-no-capture")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: folderCopy.del.cancel })).toHaveFocus();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
     expect(a.unfriendAction).toHaveBeenCalledWith("p-dave");
     expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(1);

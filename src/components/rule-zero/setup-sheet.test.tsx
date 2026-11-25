@@ -9,6 +9,7 @@ import { plain } from "../../lib/person-name/testing";
 import type { SetupMember } from "../../lib/social/rule-zero";
 import { SetupSheet, type SetupData } from "./setup-sheet";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+import { socialCopy } from "../../lib/copy/social";
 
 /** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
 const expectTrimmed = (img: HTMLImageElement) => {
@@ -54,7 +55,7 @@ describe("who's playing (U1, U2, V1)", () => {
     expect(you.getAttribute("aria-checked")).toBe("true");
     expect(you.getAttribute("aria-disabled")).toBe("true");
     expect(tile(/^Colin/).textContent).toContain("owner");
-    expect(tile(/^Max/).textContent).toContain("not a friend");
+    expect(tile(/^Max/).textContent).toContain(socialCopy.pods.notFriendTag);
     expect(tile(/^Max/).textContent).toContain(c.picksOwn);
     const chris = tile(/^Chris/);
     expect(chris.getAttribute("aria-disabled")).toBe("true");
