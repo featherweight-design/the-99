@@ -113,7 +113,7 @@ describe("accountTiles (A4, A6, A7)", () => {
   it("draws credits left, spend, presses and the hub, with no reset while credits remain", () => {
     const tiles = accountTiles({ ...base, credits: { used: 2, limit: 5, reopensAt: null } });
     expect(tiles.map((t) => [t.label, t.figure, t.sub])).toEqual([
-      [adminCopy.accounts.cols.credits, "3 of 5 left", null],
+      [adminCopy.accounts.tiles.credits, "3 of 5 left", null],
       ["Spent in October", "$1.420", null],
       ["Runs", "34", null],
       [adminCopy.accounts.tiles.hub, "Drawn", "2 of its tools on"],

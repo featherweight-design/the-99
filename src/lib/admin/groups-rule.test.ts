@@ -137,10 +137,10 @@ describe("what an account gains or loses", () => {
 
   it("names the switches a move turns on and off, and a removal's losses", () => {
     const fx = memberEffects(snapshot, T, ["u_hugh", "u_theo", "u_jun"], explain);
-    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining([adminCopy.costs.featureNames.suggested_changes_v2, flagCopy.PUSH_ENABLED.label, "Feedback"]));
+    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining([flagCopy.SUGGESTED_CHANGES_V2_ENABLED.label, flagCopy.PUSH_ENABLED.label, "Feedback"]));
     expect(fx.get("u_theo")!.toThis.losses).toEqual([]);
     expect(fx.get("u_hugh")!.toThis).toEqual({ gains: [], losses: [] });
-    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining([adminCopy.costs.featureNames.suggested_changes_v2, flagCopy.PUSH_ENABLED.label]));
+    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining([flagCopy.SUGGESTED_CHANGES_V2_ENABLED.label, flagCopy.PUSH_ENABLED.label]));
     expect(fx.get("u_jun")!.toNone).toEqual({ gains: [], losses: [] });
   });
 

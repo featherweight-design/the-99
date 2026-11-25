@@ -23,7 +23,7 @@ describe("CheckAccount", () => {
 
   it("shows the account named by the URL", () => {
     render(<CheckAccount explanations={EXPLAINED} initial="u1" />);
-    expect(screen.getByTestId("check-result").textContent).toBe("On · account override");
+    expect(screen.getByTestId("check-result").textContent).toBe("On · fixture source");
   });
 
   it("shows a pick's value and source, and mirrors it into the URL without navigating", () => {
