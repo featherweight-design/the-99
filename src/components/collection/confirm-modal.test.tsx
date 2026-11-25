@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { ShortDeck } from "../../lib/collection/write";
 import { ConfirmModal } from "./confirm-modal";
 import type { UploadPreview } from "../../app/collection/actions";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { replaceCopy } from "../../lib/copy/replace";
 
 const preview = {
   filename: "collection.csv",
@@ -45,7 +47,7 @@ describe("ConfirmModal", () => {
 
   it("opens with focus on Keep current, the answer that changes nothing (D9)", () => {
     renderModal();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Keep current" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: replaceCopy.confirm.keep }));
   });
 
   // Continue and this button are the two deliberate presses; there is no typed third.
@@ -76,7 +78,7 @@ describe("ConfirmModal", () => {
 
   it("holds both buttons while the replace runs, and says so on the primary", () => {
     renderModal({ pending: true });
-    expect(screen.getByRole("button", { name: "Keep current" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: replaceCopy.confirm.keep })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Replacing…" })).toBeDisabled();
   });
 
@@ -148,7 +150,7 @@ describe("ConfirmModal", () => {
       const [open, setOpen] = useState(false);
       return (
         <>
-          <button type="button" onClick={() => setOpen(true)}>Sync collection</button>
+          <button type="button" onClick={() => setOpen(true)}>Fixture trigger</button>
           {open && (
             <ConfirmModal
               preview={preview}
@@ -165,7 +167,7 @@ describe("ConfirmModal", () => {
 
     it("returns focus to the control that opened it, never the removed Cancel", () => {
       render(<Host />);
-      const trigger = screen.getByRole("button", { name: "Sync collection" });
+      const trigger = screen.getByRole("button", { name: "Fixture trigger" });
       trigger.focus();
       fireEvent.click(trigger);
       fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -178,7 +180,7 @@ describe("ConfirmModal", () => {
       // A box on every element is what a browser gives it: the fallback then reaches the first deck link.
       vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
       render(<Host />);
-      const trigger = screen.getByRole("button", { name: "Sync collection" });
+      const trigger = screen.getByRole("button", { name: "Fixture trigger" });
       trigger.focus();
       fireEvent.click(trigger);
       expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
@@ -186,7 +188,7 @@ describe("ConfirmModal", () => {
 
     it("takes Cancel again when a refused confirm redraws the warning with other decks (E6)", () => {
       const { rerender } = render(<Host />);
-      const trigger = screen.getByRole("button", { name: "Sync collection" });
+      const trigger = screen.getByRole("button", { name: "Fixture trigger" });
       trigger.focus();
       fireEvent.click(trigger);
       trigger.focus();
@@ -223,7 +225,7 @@ describe("ConfirmModal's capped column", () => {
     const title = screen.getByRole("heading");
     expect(body.contains(title)).toBe(false);
     expect(title.className).toContain("flex-none");
-    for (const name of ["Keep current", "Replace with 120 cards"]) {
+    for (const name of [replaceCopy.confirm.keep, "Replace with 120 cards"]) {
       const button = screen.getByRole("button", { name });
       expect(body.contains(button)).toBe(false);
       expect(button.parentElement!.className).toContain("flex-none");
@@ -257,7 +259,7 @@ describe("ConfirmModal's capped column", () => {
     const title = screen.getByRole("heading");
     expect(body.contains(title)).toBe(false);
     expect(title.className).toContain("flex-none");
-    for (const name of ["Cancel", "Sync anyway"]) {
+    for (const name of ["Cancel", collectionEditCopy.shortWarning.confirmSync]) {
       const button = screen.getByRole("button", { name });
       expect(body.contains(button)).toBe(false);
       expect(button.parentElement!.className).toContain("flex-none");

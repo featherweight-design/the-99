@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryRow } from "../../db/schema";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 const preview = vi.fn();
 const revert = vi.fn();
@@ -51,8 +52,8 @@ describe("revertLines", () => {
       rows: [row("Sol Ring", 5, 1)],
     });
     expect(lines).toEqual([
-      expect.objectContaining({ name: "Sol Ring", then: 1, now: 5, reason: "Changed since" }),
-      expect.objectContaining({ name: "Arcane Signet", then: 0, now: 0, reason: "Already back" }),
+      expect.objectContaining({ name: "Sol Ring", then: 1, now: 5, reason: collectionEditCopy.revert.reasonSince }),
+      expect.objectContaining({ name: "Arcane Signet", then: 0, now: 0, reason: collectionEditCopy.revert.reasonBack }),
     ]);
   });
 
@@ -65,7 +66,7 @@ describe("RevertConfirm for a Sync (call 7, G3)", () => {
   it("is titled `Revert this sync?` and says the token changes it made stay", async () => {
     preview.mockResolvedValue({ ...matches, syncTokens: 114 });
     render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="Oct 9, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
-    expect(screen.getByRole("dialog", { name: "Revert this sync?" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: collectionEditCopy.revert.titleSync })).toBeTruthy();
     expect(await screen.findByText("The 114 token changes it made stay.")).toBeTruthy();
     expect(screen.queryByText(/vault\.csv/)).toBeNull();
   });
@@ -75,8 +76,8 @@ describe("RevertConfirm for a Sync (call 7, G3)", () => {
     render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="Oct 9, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
     expect(await screen.findByText("The 1 token change it made stays.")).toBeTruthy();
     expect(screen.getByText(/Some of these cards have changed since/)).toBeTruthy();
-    expect(screen.getByText("Changed since")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Revert what’s left" })).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.revert.reasonSince)).toBeTruthy();
+    expect(screen.getByRole("button", { name: collectionEditCopy.revert.confirmPartial })).toBeTruthy();
   });
 
   it("draws neither for a Replace", async () => {
@@ -96,7 +97,7 @@ describe("revertLines · details", () => {
     const today = row("Sol Ring", 2, 2);
     today.before = { quantity: 2, scryfallId: "p2", condition: "NM" };
     today.after = { quantity: 2, scryfallId: "p1", condition: "NM" };
-    expect(revertLines({ entryRows: [entry], rows: [today] })[0].reason).toBe("Printing or condition");
+    expect(revertLines({ entryRows: [entry], rows: [today] })[0].reason).toBe(collectionEditCopy.revert.reasonDetails);
   });
 });
 
@@ -145,9 +146,9 @@ describe("RevertConfirm", () => {
     preview.mockResolvedValue({ ...matches, differs: true, rows: [row("Sol Ring", 5, 1)] });
     open();
     expect(await screen.findByText(/This does less than the original/)).toBeTruthy();
-    expect(screen.getByText("Already back")).toBeTruthy();
-    expect(screen.getByText("Changed since")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Revert what’s left" })).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.revert.reasonBack)).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.revert.reasonSince)).toBeTruthy();
+    expect(screen.getByRole("button", { name: collectionEditCopy.revert.confirmPartial })).toBeTruthy();
   });
 
   it("offers only Close when there is nothing left to undo", async () => {
@@ -181,7 +182,7 @@ describe("RevertConfirm", () => {
     expect(revert).not.toHaveBeenCalled();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getByRole("heading", { name: "Reverting leaves a deck short" })).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Revert anyway" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRevert })));
     expect(revert).toHaveBeenCalledWith("e1", expect.any(String), { a: 1 }, decks);
     expect(onReverted).toHaveBeenCalled();
   });
@@ -196,7 +197,7 @@ describe("RevertConfirm", () => {
     await pressRevert();
     expect(preview.mock.calls[0]).toEqual(["e1"]);
     expect(screen.getByText("HD Gishath", { exact: false })).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Revert anyway" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRevert })));
     expect(revert.mock.calls[0]).toHaveLength(4);
   });
 
@@ -205,15 +206,15 @@ describe("RevertConfirm", () => {
     revert.mockResolvedValue({ wouldShort: [deck("d1", "Atraxa"), deck("d2", "Korvold")] });
     const { onReverted } = open();
     await pressRevert();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Revert anyway" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRevert })));
     expect(screen.getByRole("status").textContent).toMatch(/This changed while you were deciding/);
     expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" })).toBeTruthy();
     expect(screen.getAllByText("new")).toHaveLength(1);
     expect(onReverted).not.toHaveBeenCalled();
     // The warning fills the dialog's fixed column, so its own buttons stay pinned: no scroll box holds them.
-    expect(screen.getByRole("button", { name: "Revert anyway" }).closest(".overflow-y-auto")).toBeNull();
+    expect(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRevert }).closest(".overflow-y-auto")).toBeNull();
     // And at its foot however short the list: the action row takes the free space above it.
-    expect(screen.getByRole("button", { name: "Revert anyway" }).parentElement!.className).toMatch(/\bmt-auto\b/);
+    expect(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRevert }).parentElement!.className).toMatch(/\bmt-auto\b/);
     expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" }).parentElement?.parentElement?.className).toMatch(/\*:flex-1/);
   });
 
@@ -253,7 +254,7 @@ describe("RevertConfirm", () => {
     await pressRevert();
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(/Sol Ring has been removed from the card catalog/)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "We couldn’t revert this" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: collectionEditCopy.revert.catalogTitle })).toBeTruthy();
     expect(onReverted).not.toHaveBeenCalled();
   });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NoResults } from "./no-results";
+import { collectionBrowseCopy } from "../../lib/copy/collection-browse";
 
 // Forced-state coverage for the richness pass's no-results re-skin. The state
 // is only reachable in the running app behind auth, so the four heading
@@ -54,7 +55,7 @@ describe("NoResults", () => {
     renderNoResults("counterspell", ["R"]);
     expect(
       screen.getAllByText(
-        "Nothing in your collection clears every filter. Drop one of them.",
+        collectionBrowseCopy.noResults.caption,
       ),
     ).toHaveLength(1);
   });
@@ -89,7 +90,7 @@ describe("NoResults", () => {
       />,
     );
     const buttons = screen.getAllByRole("button");
-    expect(buttons.map((b) => b.textContent)).toEqual(["Keep only search", "Clear all filters"]);
+    expect(buttons.map((b) => b.textContent)).toEqual([collectionBrowseCopy.noResults.keepSearch, collectionBrowseCopy.noResults.cta]);
     // Neither press hides at a breakpoint any more.
     for (const b of buttons) expect(b.className).not.toMatch(/(^|\s)hidden(\s|$)/);
     // 48 on the phone, 32 hugging from sm (640), never md.
@@ -106,7 +107,7 @@ describe("NoResults", () => {
 
   it("filters only: Clear all filters alone", () => {
     renderNoResults("  ", ["R"]);
-    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Clear all filters"]);
-    expect(screen.queryByRole("button", { name: "Keep only search" })).toBeNull();
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([collectionBrowseCopy.noResults.cta]);
+    expect(screen.queryByRole("button", { name: collectionBrowseCopy.noResults.keepSearch })).toBeNull();
   });
 });

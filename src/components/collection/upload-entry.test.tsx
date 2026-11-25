@@ -9,6 +9,9 @@ vi.mock("../../app/collection/actions", () => ({
 
 import { UploadEntry } from "./upload-entry";
 import { COLLECTION_FILE_MAX_BYTES } from "../../lib/upload-limits";
+import { moreGuideApps } from "../../lib/copy/collection-sources";
+import { collectionSources } from "../../lib/copy/collection-sources";
+import { importReviewCopy } from "../../lib/copy/import-review";
 
 // A File reporting a size without allocating it.
 function fileOfSize(bytes: number): File {
@@ -18,7 +21,7 @@ function fileOfSize(bytes: number): File {
 }
 
 function choose(file: File) {
-  const input = screen.getByLabelText("Upload collection CSV") as HTMLInputElement;
+  const input = screen.getByLabelText(importReviewCopy.entry.uploadAria) as HTMLInputElement;
   fireEvent.change(input, { target: { files: [file] } });
 }
 
@@ -61,7 +64,7 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     expect(screen.getByRole("alert").textContent).toContain("The 99 needs a Name and a Quantity column in the first row.");
     expect(previewUpload).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "How to export" }));
-    expect(screen.getByRole("dialog", { name: "How to export your collection" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: collectionSources.signedIn.title })).toBeTruthy();
   });
 
   it("names Quantity when only the quantity is missing", async () => {
@@ -76,15 +79,15 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     expect(await screen.findByText("This file has no Quantity column")).toBeTruthy();
     expect(screen.getByText(/This looks like a Delver Lens file\./)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "How to export from Delver Lens" }));
-    const d = screen.getByRole("dialog", { name: "How to export your collection" });
-    expect(within(d).getByRole("button", { name: "Delver Lens" })).toHaveAttribute("aria-expanded", "true");
+    const d = screen.getByRole("dialog", { name: collectionSources.signedIn.title });
+    expect(within(d).getByRole("button", { name: moreGuideApps.find((a) => a.id === "delver")!.name })).toHaveAttribute("aria-expanded", "true");
   });
 
   it("names the app too when the server refuses a file whose header it read", async () => {
-    previewUpload.mockRejectedValueOnce(new Error("We couldn’t read this file."));
+    previewUpload.mockRejectedValueOnce(new Error("Fixture server refusal"));
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
     choose(csv("Quantity,Name,Simple Name,Set,Card Number,Set Code,Printing\n1,Sol Ring,Sol Ring,Commander,1,CMD,Normal\n"));
-    expect(await screen.findByText("We couldn’t read this file.")).toBeTruthy();
+    expect(await screen.findByText("Fixture server refusal")).toBeTruthy();
     expect(screen.getByText(/This looks like a TCGplayer file\./)).toBeTruthy();
   });
 
@@ -105,16 +108,16 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
   it("says a UTF-16 file is not a UTF-8 CSV, with no claim that a column is missing", async () => {
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
     choose(csv("N\u0000a\u0000m\u0000e\u0000,\u0000Q\u0000\n\u0000"));
-    expect(await screen.findByText("This file isn’t a UTF-8 CSV. Export it as CSV (UTF-8), or paste the list instead.")).toBeTruthy();
+    expect(await screen.findByText(importReviewCopy.errors.notUtf8)).toBeTruthy();
     expect(screen.queryByText(/has no .* column/)).toBeNull();
     expect(previewUpload).not.toHaveBeenCalled();
   });
 
-  it("keeps the shipped words for a failure on the server", async () => {
-    previewUpload.mockRejectedValueOnce(new Error("We couldn’t read this file."));
+  it("shows the server's refusal message when it refuses the file", async () => {
+    previewUpload.mockRejectedValueOnce(new Error("Fixture server refusal"));
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
     choose(csv("Name,Quantity\nSol Ring,1\n"));
-    expect(await screen.findByText("We couldn’t read this file.")).toBeTruthy();
+    expect(await screen.findByText("Fixture server refusal")).toBeTruthy();
     expect(screen.queryByText(/has no .* column/)).toBeNull();
   });
 

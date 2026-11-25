@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AddCardsSheetProps } from "./add-cards-sheet";
 import { COLLECTION_SAVED_EVENT } from "./edit-toast";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 // Add a card from anywhere, PR 2: the shell's Add cards host (READINESS O5).
 const settle = vi.fn(async () => {});
@@ -51,7 +52,7 @@ const tree = (total = 4492) => (
 function mount() {
   return render(tree());
 }
-const sheet = () => screen.queryByRole("dialog", { name: "Add cards" });
+const sheet = () => screen.queryByRole("dialog", { name: collectionEditCopy.head.add });
 const press = (name: string) => act(async () => screen.getByRole("button", { name }).click());
 
 beforeEach(() => {
@@ -167,7 +168,7 @@ describe("AddCardsHost", () => {
     expect(took).toEqual([true, false]);
     expect(second).toHaveBeenCalledWith({ saved: false });
     await waitFor(() => expect(sheet()).toBeTruthy());
-    expect(screen.getAllByRole("dialog", { name: "Add cards" })).toHaveLength(1);
+    expect(screen.getAllByRole("dialog", { name: collectionEditCopy.head.add })).toHaveLength(1);
     expect(sheetProps).toHaveBeenLastCalledWith(expect.objectContaining({ initialQuery: "a" }));
     expect(first).not.toHaveBeenCalled();
     // While the sheet is up, too.

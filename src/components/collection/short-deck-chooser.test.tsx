@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ShortChoice } from "../../lib/collection/write";
 import { ShortDeckChooser, choosable, defaultMarks, keeperOf } from "./short-deck-chooser";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 afterEach(cleanup);
 
@@ -38,7 +39,7 @@ describe("ShortDeckChooser", () => {
     const onConfirm = draw(two);
     expect(screen.getByRole("radio", { name: /Deck b/ }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByRole("radio", { name: /Deck a/ }).getAttribute("aria-checked")).toBe("false");
-    fireEvent.click(screen.getByRole("button", { name: "Remove anyway" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRemove }));
     expect(onConfirm).toHaveBeenCalledWith([expect.objectContaining({ deckId: "b", oracleId: "o1", short: 1 })], null);
   });
 
@@ -46,10 +47,10 @@ describe("ShortDeckChooser", () => {
     const onConfirm = draw(two);
     fireEvent.click(screen.getByRole("radio", { name: /Deck a/ }));
     expect(screen.getByRole("radio", { name: /Deck a/ }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByRole("button", { name: "Back to first committed" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Remove anyway" }));
+    expect(screen.getByRole("button", { name: collectionEditCopy.shortWarning.chooser.back })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRemove }));
     expect(onConfirm).toHaveBeenCalledWith([expect.objectContaining({ deckId: "a" })], { oracleId: "o1", deckId: "b" });
-    fireEvent.click(screen.getByRole("button", { name: "Back to first committed" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.shortWarning.chooser.back }));
     expect(screen.getByRole("radio", { name: /Deck b/ }).getAttribute("aria-checked")).toBe("true");
   });
 
@@ -61,6 +62,6 @@ describe("ShortDeckChooser", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Deck c/ }));
     expect(screen.getByText("1 of 2 picked")).toBeTruthy();
     expect(screen.getByText("Pick 1 more to go short.")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Remove anyway" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmRemove }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

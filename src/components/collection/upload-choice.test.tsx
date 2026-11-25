@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { UploadChoice, type SyncChoice } from "./upload-choice";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 const noop = () => {};
 const base = {
@@ -38,7 +39,7 @@ describe("UploadChoice with the Sync switch off", () => {
     expect(screen.getByRole("heading").textContent).toBe("Replace or add?Replace your collection, or add to it?");
     expect(screen.getByRole("radiogroup").className).toContain("md:grid-cols-2");
     expect(screen.getByRole("radiogroup").className).not.toContain("md:grid-cols-3");
-    expect(screen.queryByText("Sync my collection")).toBeNull();
+    expect(screen.queryByText(collectionEditCopy.upload.syncTitle)).toBeNull();
   });
 
   it("puts the radio on the title row on desktop (R2), for Replace and Add too", () => {
@@ -53,7 +54,7 @@ describe("UploadChoice with the Sync switch off", () => {
     // The ring keeps its 2px drop under top 22 on desktop too.
     expect(ring).toContain("mt-[2px]");
     expect(ring).not.toContain("md:mt-0");
-    expect(within(replace).getByText("Replace my collection").className).toContain("md:pl-[34px]");
+    expect(within(replace).getByText(collectionEditCopy.upload.replaceTitle).className).toContain("md:pl-[34px]");
   });
 });
 
@@ -83,7 +84,7 @@ describe("UploadChoice with Sync", () => {
     expect(radios.every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
     expect(within(radios[2]).getByText("4,616 → 4,632 cards")).toBeTruthy();
     expect(within(radios[2]).getByText("Keeps the 121 cards you changed in the app since your Oct 2 upload.")).toBeTruthy();
-    expect(screen.getByRole("heading").textContent).toBe("What’s this file for?");
+    expect(screen.getByRole("heading").textContent).toBe(collectionEditCopy.upload.choiceTitleSync);
     expect(screen.getByRole("radiogroup").className).toContain("md:grid-cols-3");
     // Replace and Add keep their words with the third card beside them.
     expect(radios[0].textContent).toContain("Your collection becomes exactly this file.");
@@ -93,13 +94,13 @@ describe("UploadChoice with Sync", () => {
   it("names the review it leads to, and continues to it once the pick's own read is in", () => {
     const onContinue = vi.fn();
     const { rerender } = render(<UploadChoice {...base} sync={sync({ figure: null })} picked="sync" onPick={noop} onContinue={onContinue} />);
-    expect(screen.getByText("Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.upload.nextSync)).toBeTruthy();
     // Its review is drawn from that read, so Continue waits for it, and for a read that failed.
-    expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync })).toBeDisabled();
     rerender(<UploadChoice {...base} sync={sync({ figure: "failed" })} picked="sync" onPick={noop} onContinue={onContinue} />);
-    expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync })).toBeDisabled();
     rerender(<UploadChoice {...base} sync={sync()} picked="sync" onPick={noop} onContinue={onContinue} />);
-    fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync }));
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
@@ -114,11 +115,11 @@ describe("UploadChoice with Sync", () => {
   it("keeps an unavailable Sync drawn, focusable and described by its reason, in a box where the figure was", () => {
     const onPick = vi.fn();
     render(<UploadChoice {...base} sync={sync({ unavailable: "noRecord" })} picked={null} onPick={onPick} />);
-    const card = screen.getByRole("radio", { name: "Sync my collection" });
+    const card = screen.getByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(card.getAttribute("aria-disabled")).toBe("true");
     const reason = document.getElementById(card.getAttribute("aria-describedby") ?? "");
     expect(reason?.textContent).toBe(
-      "Sync compares against your last Replace, or a Sync of everything, and there isn’t one it can read. Replace or Add will work.",
+      collectionEditCopy.upload.syncUnavailableNoRecord,
     );
     expect(reason?.className).toContain("border-dashed");
     expect(reason?.className).toContain("mt-[6px]");
@@ -140,15 +141,15 @@ describe("UploadChoice with Sync", () => {
 
   it("says the file changes nothing without claiming it matches the last upload", () => {
     render(<UploadChoice {...base} sync={sync({ note: { kind: "noChange" } })} picked={null} onPick={noop} />);
-    expect(screen.getByText("Nothing in this file changes your collection.")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.upload.syncNoChange)).toBeTruthy();
     expect(screen.queryByText(/It matches your last upload/)).toBeNull();
   });
 
   it("names a never-uploaded collection's reason alone", () => {
     render(<UploadChoice {...base} sync={sync({ unavailable: "neverUploaded", anchorAt: null })} picked={null} onPick={noop} />);
-    const card = screen.getByRole("radio", { name: "Sync my collection" });
+    const card = screen.getByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(document.getElementById(card.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
-      "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
+      collectionEditCopy.upload.syncUnavailableNoUpload,
     );
   });
 
@@ -179,7 +180,7 @@ describe("UploadChoice with Sync", () => {
 });
 
 describe("UploadChoice · a file with no matched card", () => {
-  const reason = "Only tokens in this file matched. Replace and Add need at least one card.";
+  const reason = collectionEditCopy.upload.choiceNoCards;
 
   it("draws Replace and Add unavailable with the reason in place of the figure, and names Sync at the foot", () => {
     const picks: string[] = [];
@@ -202,8 +203,8 @@ describe("UploadChoice · a file with no matched card", () => {
     expect(document.activeElement).toBe(add);
     fireEvent.keyDown(add, { key: "ArrowRight" });
     expect(picks).toEqual(["sync"]);
-    expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
-    expect(screen.getByText("Next: the tokens this sync changes. Your cards don’t move.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync })).toBeDisabled();
+    expect(screen.getByText(collectionEditCopy.upload.nextSyncTokens)).toBeTruthy();
   });
 
   it("draws both cards as shipped without it", () => {
@@ -225,13 +226,13 @@ describe("UploadChoice · the stale file", () => {
     expect(banner.compareDocumentPosition(screen.getByRole("radiogroup")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole("note").contains(banner)).toBe(true);
     // The lede tightens above the banner.
-    expect(screen.getByText("Nothing changes until you confirm on the next screen.").className).toContain("mb-[18px]");
+    expect(screen.getByText(collectionEditCopy.upload.choiceLede).className).toContain("mb-[18px]");
   });
 
   it("keeps the lede's shipped margin with no banner", () => {
     render(<UploadChoice {...base} sync={sync()} picked={null} onPick={noop} />);
     expect(screen.queryByRole("note")).toBeNull();
-    expect(screen.getByText("Nothing changes until you confirm on the next screen.").className).toContain("mb-[24px]");
+    expect(screen.getByText(collectionEditCopy.upload.choiceLede).className).toContain("mb-[24px]");
   });
 
   it("draws the no-newer banner with no token sentence when no token changes", () => {
@@ -248,9 +249,9 @@ describe("UploadChoice · the stale file", () => {
   it("draws the follow-up only with Sync picked, after the cards and never inside one, with what it adds picked", () => {
     const s = sync({ stale: { kind: "older", missing: 16 }, followUp: followUp() });
     const { rerender } = render(<UploadChoice {...base} sync={s} picked="replace" onPick={noop} />);
-    expect(screen.queryByRole("group", { name: "What should Sync take from this file?" })).toBeNull();
+    expect(screen.queryByRole("group", { name: collectionEditCopy.upload.staleQuestion })).toBeNull();
     rerender(<UploadChoice {...base} sync={s} picked="sync" onPick={noop} />);
-    const group = screen.getByRole("group", { name: "What should Sync take from this file?" });
+    const group = screen.getByRole("group", { name: collectionEditCopy.upload.staleQuestion });
     expect(screen.getByRole("radiogroup").contains(group)).toBe(false);
     const options = within(group).getAllByRole("radio");
     expect(options.map((o) => (o as HTMLInputElement).checked)).toEqual([true, false, false]);
@@ -269,10 +270,10 @@ describe("UploadChoice · the stale file", () => {
   it("waits for an option's own read before drawing its body, and drops a token clause with no tokens to change", () => {
     const f = { ...followUp(), adds: { cards: 3, tokens: 0 }, tokens: null, all: { up: 3, leaving: 16, down: 2, tokens: 0 } };
     render(<UploadChoice {...base} sync={sync({ stale: { kind: "older", missing: 16 }, followUp: f })} picked="sync" onPick={noop} />);
-    const group = screen.getByRole("group", { name: "What should Sync take from this file?" });
+    const group = screen.getByRole("group", { name: collectionEditCopy.upload.staleQuestion });
     expect(within(group).getByText("3 cards going up or new. Nothing leaves or goes down.")).toBeTruthy();
     expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down.")).toBeTruthy();
-    expect(within(group).getByRole("radio", { name: "Only its tokens" })).toBeTruthy();
+    expect(within(group).getByRole("radio", { name: collectionEditCopy.upload.staleTokensTitle })).toBeTruthy();
   });
 
   it("hands a follow-up press to the flow", () => {

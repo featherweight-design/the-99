@@ -43,7 +43,7 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
   scryfallId: "s1", setCode: "c21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
   imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {}, ...over,
 });
-const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" })];
+const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Fixture Set Name", collectorNumber: "1512" })];
 
 beforeEach(() => {
   outcomes.length = 0;
@@ -154,7 +154,7 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     expect(screen.queryByText(copy.needsPrinting("Sol Ring"))).toBeNull();
     land(TWO);
     await waitFor(() => expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeTruthy());
-    expect(screen.getByText("Secret Lair", { exact: false })).toBeTruthy();
+    expect(screen.getByText("Fixture Set Name", { exact: false })).toBeTruthy();
   });
 
   it("puts nothing on the list when a scanned card's printings could not be read", async () => {
