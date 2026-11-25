@@ -67,8 +67,10 @@ export async function copyEditStatus(token: string, branch: string, doFetch: typ
     const { workflow_runs: runs } = (await res.json()) as { workflow_runs?: { display_title: string; status: string; conclusion: string | null; html_url: string }[] };
     const run = runs?.find((r) => r.display_title === `Copy edit ${branch}`);
     if (!run) return { state: "none" };
-    // A finished run with no pull request is a failure, except a success whose pull request GitHub has not listed yet.
-    if (run.status !== "completed" || run.conclusion === "success") return { state: "pending" };
+    if (run.status !== "completed") return { state: "pending" };
+    // A success with no pull request listed is GitHub's list catching up: `none`, so the tray's own wait (and its "no
+    // pull request yet" line) covers it instead of a pending that never ends.
+    if (run.conclusion === "success") return { state: "none" };
     return { state: "failed", runUrl: run.html_url };
   } catch {
     return { state: "unknown" };

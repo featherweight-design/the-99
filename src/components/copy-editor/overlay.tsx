@@ -286,10 +286,7 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
             dismiss();
           }}
           onSubmit={submit}
-          onClose={() => {
-            setTrayOpen(false);
-            dismiss();
-          }}
+          onClose={() => setTrayOpen(false)}
         />
       )}
     </div>

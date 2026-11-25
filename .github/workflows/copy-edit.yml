@@ -14,6 +14,9 @@
 # INPUTS. `inputs.*` reaches the shell only through `env:`, never through `${{ }}` inside a `run:` line, so text an admin
 # typed cannot become a command. The branch must match copy-edit-YYYYMMDD-HHMMSS-xxxx and the edits are parsed as data.
 name: Copy edit
+# The status route finds this run by its title, so the branch name is part of it. This line is display only (not a
+# shell); the branch is still matched against the pattern above before anything uses it.
+run-name: Copy edit ${{ inputs.branch }}
 
 on:
   workflow_dispatch:

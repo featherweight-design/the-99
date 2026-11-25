@@ -20,7 +20,7 @@
 //     on a line opens nothing, and `[role=dialog]` never appears.
 //   8+ the tray (PR 5): the bar's "N edits ›" opens it; Remove, Clear all; Open pull request (submit and status are
 //     mocked in the page: no dispatch ever happens) through submitting, "on its way", "Pull request #N opened" and the
-//     bar's "PR #N open"; the 409 stale banner with Redo, a failed run giving the edits back, 429, a dropped request;
+//     bar's "PR #N open"; the 409 stale banner, a failed run giving the edits back, 429, a dropped request;
 //     Esc closes the tray and not the mode. PROBE_ONLY=tray runs just this part. Each FAILS on main (no tray).
 // SHOTS_DIR=<dir> also writes the per-state screenshots of /commanders/choose used for the contact sheet.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -918,12 +918,12 @@ async function runTray(browser) {
     await submitBtn().click();
     await page.locator(`${TRAY} [role=alert]`).waitFor({ timeout: 4000 }).catch(() => {});
     check(`${L} 10: 409 shows the out-of-date banner naming one edit`, /One edit is out of date/.test(await page.locator(`${TRAY} [role=alert]`).innerText().catch(() => "")));
-    check(`${L} 10: the stale row carries a danger border, its reason and Redo; the other does not`, (await page.locator(`${TRAY} li button`, { hasText: "Redo" }).count()) === 1 && (await page.locator(`${TRAY} li`).filter({ hasText: "Changed since you made this edit" }).count()) === 1);
+    check(`${L} 10: the stale row carries a danger border and its reason; the other does not`, (await page.locator(`${TRAY} li`).filter({ hasText: "changed on main after your edit" }).count()) === 1);
     check(`${L} 10: the edits are kept and the button reads "Try again"`, (await page.locator(`${TRAY} li`).count()) === 2 && (await submitBtn().innerText()) === "Try again");
     await shot("failed");
-    await page.locator(`${TRAY} li button`, { hasText: "Redo" }).click();
+    await page.locator(`${TRAY} li button`, { hasText: "Edit" }).first().click();
     await page.locator(DIALOG).filter({ hasText: "Update edit" }).waitFor({ timeout: 3000 }).catch(() => {});
-    check(`${L} 10: Redo opens the editor on that line`, (await page.locator(`${DIALOG}`).filter({ hasText: "Update edit" }).count()) >= 1);
+    check(`${L} 10: Edit opens the editor on that line`, (await page.locator(`${DIALOG}`).filter({ hasText: "Update edit" }).count()) >= 1);
     await page.keyboard.press("Escape");
     for (const [status, text] of [[429, /One a minute/], [503, /did not take it/]]) {
       await mock(async (route) => route.fulfill(json(status, { error: "x" })), async (route) => route.fulfill(json(200, { state: "none" })));

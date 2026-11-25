@@ -105,7 +105,7 @@ describe("POST /api/copy-edit/submit: the body", () => {
 });
 
 describe("POST /api/copy-edit/submit: a stale row", () => {
-  it("is 409 naming the stale keys (rule-broken rows alongside do not hide them), and starts nothing", async () => {
+  it("is 409 naming the stale keys, and starts nothing", async () => {
     const res = await post({ edits: [{ ...edit, from: "Zork plinth zero" }] });
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "stale", keys: [edit.key] });

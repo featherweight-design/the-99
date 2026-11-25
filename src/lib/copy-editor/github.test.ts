@@ -62,10 +62,13 @@ describe("copyEditStatus", () => {
     expect(doFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("is pending while the run is queued or going, and once it succeeded but the pull request is not listed", async () => {
+  it("is none for a success whose pull request is not listed, so the tray's own wait covers it", async () => {
+    expect(await copyEditStatus("t", branch, twice([], run("completed", "success")))).toEqual({ state: "none" });
+  });
+
+  it("is pending while the run is queued or going", async () => {
     expect(await copyEditStatus("t", branch, twice([], run("queued", null)))).toEqual({ state: "pending" });
     expect(await copyEditStatus("t", branch, twice([], run("in_progress", null)))).toEqual({ state: "pending" });
-    expect(await copyEditStatus("t", branch, twice([], run("completed", "success")))).toEqual({ state: "pending" });
   });
 
   it("is failed, with the run link, when the run ended without a pull request", async () => {

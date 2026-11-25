@@ -107,7 +107,7 @@ export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, on
                   const { file, path } = keyLabel(e.key);
                   const row = byKey.get(e.key);
                   const stale = staleKeys.has(e.key);
-                  const reason = stale ? (row ? t.stale(row.text) : t.unknown) : ruleKeys.has(e.key) ? t.rule : null;
+                  const reason = stale ? (row ? t.stale : t.unknown) : ruleKeys.has(e.key) ? (row && !row.readOnly ? t.rule : t.unknown) : null;
                   return (
                     <li key={e.key} className={`rounded-[10px] border px-3 py-2 ${reason ? "border-[color:var(--danger)]" : "border-[color:var(--border-strong)]"}`}>
                       <div className="truncate font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--fg-faint)]">
@@ -119,7 +119,7 @@ export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, on
                       <div className="mt-1 flex gap-3 text-[12px]">
                         {row && !row.readOnly && (
                           <button type="button" onClick={() => onEdit(e.key)} className="text-[color:var(--accent-text)] underline">
-                            {stale ? t.redo : t.edit}
+                            {t.edit}
                           </button>
                         )}
                         <button type="button" onClick={() => onRemove(e.key)} className="text-[color:var(--fg-muted)] underline">
