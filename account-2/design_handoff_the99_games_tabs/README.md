@@ -1,0 +1,27 @@
+# Games tabs redesign · R1 (2026-11-25, account 2)
+
+Hugh's ask: redesign Decks › Games and Deck details › Games (rows hard to read), and replace the native selects on
+Decks › Games with custom components. R1 = three concepts; Hugh picks one, R2 fleshes it out.
+
+Canvas: https://claude.ai/artifact/8pkTj22gDkKYCHQG6DR8n9 (Main, Filters, A/B/C × Desktop/Phone).
+
+## Feedback → answers
+1. Trophy placement · A: badge pinned to the winner's seat tile corner · B: own "Won by" column · C: winner in the row headline ("Lost to Peter"), badge on their face.
+2. "vs" offset · all three drop the vs line (A seat grid, B "At the table" column, C face stack + sheet).
+3. Floating version · stamped with the deck (A deck tile, B under deck name, C subline / sheet seat).
+4. No grouping · A three bands per game, marks split Helped / Hurt · B strict columns with a header row per month · C one-line rows, details grouped in the game sheet.
+5. Month headings · all: each month is a box (SectionPanel PANEL) whose band carries HomeSectionHead's type (◆, display 17px, mono count) + month record. Proposed app-wide (Keep, Matchups here; later Request history months, Friends sections, Stats).
+
+## Shared: filters (Filters board, F1–F5)
+- Deck: custom trigger (art stack, count) → anchored panel (desktop, search + rows with art + game counts + ✓) / Sheet (phone, 56px rows). Lists only decks with games; foot says how many are left out and why.
+- Result: inline SegmentedSwitch Any · Won · Lost · Drawn (desktop view row; phone inside Filter games sheet).
+- Played against: shipped anchored panel; trigger shows the picked face + name with ✕ to clear.
+- F3 filters on: accent-edged triggers, filtered summary line.
+
+## Concept C behaviour change
+Rows open a game drawer (desktop) / sheet (phone) instead of jumping to the deck tab; cross-deck sheet has "Open on {deck} ›", deck tab sheet has Delete game (replaces the row ✕).
+
+## Fixtures
+Colin, Peter, Max, Chris; art crops already in the project (Gisa, Sai, Sokka, Omnath, Ghalta, Giada, Ishai, Bruse, Kilo). Chrome: rail/tab bar/top bar cropped from public/about/pages/amonkhet captures.
+
+scratch-gen/gen_games.py writes the boards; shoot.js renders and measures them.

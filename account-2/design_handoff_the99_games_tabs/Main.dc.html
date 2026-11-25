@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Games tabs R1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(art/cinzel-variable.woff2) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(art/ibm-plex-sans-variable.woff2) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(art/ibm-plex-mono-500.woff2) format("woff2");font-weight:500}
+body{margin:0;background:#0f0d0a}
+
+:root{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-inset:#1B1712;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F;}
+.wrap{display:flex;gap:80px;align-items:flex-start;padding:0}
+.P,.D{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-inset:#1B1712;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F; box-sizing:border-box;background:var(--bg);font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg);position:relative;font-size:14px}
+.P *,.D *{box-sizing:border-box}
+.P{width:390px;display:flex;flex-direction:column;flex:none}
+.D{width:1300px;display:grid;grid-template-columns:62px minmax(0,1fr);flex:none}
+.rail{background:var(--surface-rail);border-right:1px solid var(--border)}
+.rail img{display:block;width:62px;height:900px;position:sticky;top:0}
+.ptop{display:block;width:390px;height:78px}
+.ptab{display:block;width:390px;height:74px;margin-top:auto}
+.main{min-width:0;padding:24px 32px 40px;display:flex;flex-direction:column;gap:16px}
+.pm{padding:4px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.mono{font-family:"IBM Plex Mono",monospace}
+.faint{color:var(--fg-faint)}.muted{color:var(--fg-muted)}.locked{color:var(--fg-locked)}
+h1,h2,h3,p{margin:0}
+.disp{font-family:"Cinzel",serif;font-weight:700;font-variant:small-caps;letter-spacing:.02em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:0 14px;border-radius:9px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font:500 13px "IBM Plex Sans",sans-serif;white-space:nowrap}
+.btn.cream{background:#EDE6D8;color:#14110E;border-color:#EDE6D8;font-weight:600}
+.P .btn{min-height:44px;font-size:14px}
+.tile{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:12px 14px}
+.tile b{font-weight:500;font-size:13.5px;display:block}.tile>span>span{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint)}
+.chev{color:var(--fg-faint);flex:none}
+/* SegmentedSwitch */
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--border-strong);border-radius:9px;flex:none}
+.seg span{display:inline-flex;align-items:center;gap:6px;padding:0 12px;min-height:32px;border-radius:7px;font-size:13px;color:var(--fg-muted);font-weight:500}
+.seg span.on{background:var(--elevated);color:var(--fg);font-weight:600}
+.seg span i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--fg-faint)}
+.P .seg span{min-height:38px;padding:0 13px}
+/* filter trigger (games-filter-controls TRIGGER) */
+.trg{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated);padding:0 12px 0 10px;min-height:38px;font-size:13px;font-weight:500;color:var(--fg)}
+.trg.on{border-color:var(--accent)}
+.trg .lab{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.trg .x{color:var(--fg-muted);margin-left:2px}
+.P .trg{min-height:44px}
+.stk{display:inline-flex}.stk img{width:20px;height:20px;border-radius:5px;object-fit:cover;border:1.5px solid var(--elevated);margin-left:-7px}.stk img:first-child{margin-left:0}
+.vrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fstat{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint)}
+.fstat u{color:var(--fg-locked)}
+.hl{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.hl h2{font-size:21px}
+.P .hl h2{font-size:19px}
+.facts{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint);line-height:1.8}
+.facts b{color:var(--fg-body);font-weight:500}
+/* the section pattern: SectionPanel box + band, Home's heading type in the band */
+.box{border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);overflow:hidden}
+.band{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 10px 0 16px;background:var(--surface-rail);border-bottom:1px solid var(--border)}
+.hh{display:flex;align-items:center;gap:9px;font-family:"Cinzel",serif;font-weight:600;font-size:17px;line-height:1.2;color:var(--fg)}
+.hh .dia{width:7px;height:7px;transform:rotate(45deg);background:var(--accent);flex:none}
+.hh .ct{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--accent)}
+.band .rec{margin-left:auto;display:flex;gap:6px;align-items:center;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint)}
+.band .rec b{font-weight:500;color:var(--fg-body)}
+.P .band{min-height:52px;padding-left:14px}
+.P .hh{font-size:16px}
+/* shared row bits */
+.rs{flex:none;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font:600 12px "IBM Plex Mono",monospace;border:1px solid var(--border-strong);color:var(--fg-body)}
+.rs.w{border-color:var(--success);color:var(--success)}
+.pill{flex:none;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:7px;font:600 12px "IBM Plex Sans",sans-serif;border:1px solid var(--border-strong);color:var(--fg-body)}
+.pill.w{border-color:var(--success);color:var(--success);background:color-mix(in srgb,var(--success) 10%,transparent)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px 4px 8px;font:500 10.5px "IBM Plex Mono",monospace;background:var(--elevated);color:var(--fg-body);white-space:nowrap}
+.chip i{width:6px;height:6px;border-radius:50%;flex:none}
+.chip i.g{background:var(--success)}.chip i.y{background:var(--warning)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.mg{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.mg .ml{flex:none;width:52px;padding-top:5px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.mgs{display:flex;flex-wrap:wrap;gap:8px 28px}
+.note{display:flex;gap:10px;min-width:0}
+.note:before{content:"";flex:none;width:2px;border-radius:2px;background:var(--border-strong)}
+.note span{font-style:italic;font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
+.stamp{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;border:1px solid var(--border-strong);font:500 10px "IBM Plex Mono",monospace;color:var(--fg-muted);flex:none;letter-spacing:.02em}
+.face{position:relative;flex:none;width:22px;height:22px;border-radius:5px;overflow:hidden;background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 8.5px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.tro{color:var(--accent);display:inline-flex;flex:none}
+.xbtn{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;border:1px solid var(--border);color:var(--fg-locked);font:13px "IBM Plex Mono",monospace}
+.P .xbtn{width:44px;height:44px}
+.row{border-top:1px solid var(--border)}
+.row:first-of-type{border-top:0}
+/* ---------- A: seats ---------- */
+.a-row{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.a-top{display:flex;align-items:center;gap:10px}
+.a-top .meta{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.a-top .end{margin-left:auto;display:flex;align-items:center;gap:8px}
+.seats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.seat{position:relative;height:58px;border-radius:9px;overflow:hidden;background:var(--surface-sunken);border:1px solid var(--border)}
+.seat img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 25%;opacity:.5}
+.seat:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,17,14,.92) 0%,rgba(20,17,14,.55) 70%,rgba(20,17,14,.2) 100%)}
+.seat .t{position:absolute;left:10px;right:30px;bottom:8px;z-index:1;display:flex;flex-direction:column;gap:1px}
+.seat .t b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.seat .t span{font-size:11.5px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .who{position:absolute;left:10px;top:7px;z-index:1;font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.seat.me{border-color:var(--border-strong)}
+.seat.me img{opacity:.75}
+.seat.win{border:1.5px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+.seat.win img{opacity:.8}
+.seat .badge{position:absolute;right:7px;top:7px;z-index:1;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#14110E;display:flex;align-items:center;justify-content:center}
+.seat.ini{display:flex}
+.seat.ini .big{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:500 18px "IBM Plex Mono",monospace;color:var(--fg-locked);z-index:1}
+.seat.ini.win .big{right:36px}
+.P .seats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.P .seat{height:54px}
+.P .a-row{padding:14px 14px 16px}
+.P .mgs{flex-direction:column;gap:8px}
+/* ---------- B: ledger ---------- */
+.b-cols{display:grid;grid-template-columns:44px 230px minmax(0,1fr) 150px 280px 74px 30px;column-gap:16px;align-items:start}
+.b-cols.bd{grid-template-columns:44px 64px minmax(0,1fr) 150px 360px 74px 30px}
+.b-hd{padding:9px 16px 8px;border-bottom:1px solid var(--border);font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-locked)}
+.b-row{padding:13px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.b-row .cell{min-height:26px;display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.b-dk{display:flex;align-items:center;gap:10px;min-width:0}
+.b-dk img{width:36px;height:36px;border-radius:7px;object-fit:cover;flex:none}
+.b-dk b{font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-dk>span>span{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint);display:flex;gap:6px;align-items:center;margin-top:3px}
+.opp{display:flex;align-items:center;gap:7px;font-size:12.5px;min-width:0;white-space:nowrap}
+.opp .s{color:var(--fg-faint);overflow:hidden;text-overflow:ellipsis}
+.b-win{display:flex;align-items:center;gap:7px;font-size:12.5px;min-height:26px}
+.b-win.me{color:var(--success);font-weight:600}
+.b-date{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);line-height:26px;text-align:right}
+.b-note{padding-left:290px}
+.b-note.bd{padding-left:120px}
+.b-row .chips .chip{padding:3px 9px 3px 7px;font-size:10px}
+.P .b-row{padding:14px}
+.pb-top{display:flex;align-items:center;gap:10px}
+.pb-grid{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:6px 12px;padding:10px 0 0;border-top:1px solid var(--border)}
+.pb-lab{font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-locked)}
+/* ---------- C: headline rows + game sheet ---------- */
+.c-row{display:flex;align-items:center;gap:14px;min-height:72px;padding:12px 12px 12px 16px}
+.c-art{position:relative;width:44px;height:44px;border-radius:9px;overflow:hidden;flex:none;background:var(--elevated)}
+.c-art img{width:100%;height:100%;object-fit:cover}
+.c-art .rs{position:absolute;right:-1px;bottom:-1px;width:20px;height:20px;font-size:10px;border-radius:6px;background:var(--bg)}
+.c-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.c-t h3{font-family:"Cinzel",serif;font-weight:700;font-size:15.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-t h3 em{font-style:normal;color:var(--success)}
+.c-t .sub{display:flex;align-items:center;gap:7px;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap;overflow:hidden}
+.c-t .sub .n{font:400 12.5px "IBM Plex Sans",sans-serif;color:var(--fg-body)}
+.c-fs{display:flex;align-items:center;flex:none}
+.c-fs .fc{position:relative;width:30px;height:30px;border-radius:8px;overflow:visible;margin-left:-8px;flex:none}
+.c-fs .fc:first-child{margin-left:0}
+.c-fs .fc .in{position:absolute;inset:0;border-radius:8px;overflow:hidden;border:2px solid var(--surface-inset);background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 9px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.c-fs .fc img{width:100%;height:100%;object-fit:cover}
+.c-fs .fc.win .in{border-color:var(--accent)}
+.c-fs .fc .tb{position:absolute;right:-5px;top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#14110E;display:flex;align-items:center;justify-content:center;z-index:2}
+.c-date{flex:none;width:52px;text-align:right;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.c-row.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+.P .c-row{gap:12px;padding:12px 10px 12px 14px;min-height:76px}
+.P .c-t h3{font-size:15px}.P .c-fs .fc{width:28px;height:28px;margin-left:-11px}
+/* game sheet / drawer */
+.gs{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 22px 50px rgba(0,0,0,.6)}
+.gs-h{display:flex;align-items:flex-start;gap:12px;padding:16px 10px 14px 18px;border-bottom:1px solid var(--border)}
+.gs-h h3{font-family:"Cinzel",serif;font-weight:700;font-size:20px;line-height:1.25}
+.gs-h .m{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);margin-top:6px}
+.gs-x{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);flex:none}
+.gs-s{padding:14px 18px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--border)}
+.gs-s:last-child{border-bottom:0}
+.gs-l{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.sr{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 10px;border-radius:10px;background:var(--surface-inset);border:1px solid var(--border)}
+.sr img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none}
+.sr .ini2{width:40px;height:40px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-muted);flex:none}
+.sr .tt{flex:1;min-width:0}.sr .tt b{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600}.sr .tt span{font-size:12px;color:var(--fg-muted)}
+.sr .won{display:flex;align-items:center;gap:6px;font:600 12px "IBM Plex Sans",sans-serif;color:var(--accent);flex:none}
+.sr.win{border-color:var(--accent)}
+.gs-foot{display:flex;gap:10px;padding:14px 18px 18px}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:8px auto 0}
+.scrim{position:absolute;inset:0;background:rgba(8,6,4,.62);z-index:20}
+/* deck page bits */
+.dtabs{display:flex;gap:26px;padding:0 32px;border-bottom:1px solid var(--border);margin:0 -32px}
+.dtabs span{padding:18px 0 14px;font-size:14.5px;font-weight:500;color:var(--fg-muted);border-bottom:2px solid transparent;white-space:nowrap}
+.dtabs span i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint);margin-left:5px}
+.dtabs span.on{color:var(--fg);font-weight:600;border-color:var(--accent)}
+.P .dtabs{gap:20px;padding:0 16px;margin:0 -16px;overflow:hidden}
+.P .dtabs span{padding:13px 0 11px;font-size:14px}
+.keep{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.kts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kt{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.kt .k1{display:flex;justify-content:space-between;align-items:baseline;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.kt .k1 b{white-space:nowrap;font-size:14px;letter-spacing:0;text-transform:none;color:var(--success)}
+.kt .bar{height:4px;border-radius:2px;background:var(--success)}
+.kt .bar.mx{background:linear-gradient(90deg,var(--success) 0 33%,var(--warning) 33%)}
+.kt .k2{font:500 10px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.P .kts{grid-template-columns:repeat(2,minmax(0,1fr))}.P .kt .k1{font-size:9px;letter-spacing:.08em}.P .mu .n{font-size:13px}
+.mu{display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid var(--border)}
+.mu:first-of-type{border-top:0}
+.mu img{width:52px;height:38px;border-radius:6px;object-fit:cover;flex:none}
+.mu .n{flex:1;font-size:14px}
+.mu .sq{display:flex;gap:4px}
+.mu .tr{width:52px;display:flex;align-items:center;gap:5px;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.mu .g{width:60px;text-align:right;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.key{padding:10px 16px 12px;border-top:1px solid var(--border);font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.addbar{display:flex;align-items:center;gap:14px;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.addbar .f{flex:1;height:44px;border:1px solid var(--border-strong);border-radius:9px;display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--fg-faint);font-size:14px}
+.tog{width:34px;height:20px;border-radius:10px;background:var(--accent);position:relative;flex:none}.tog:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#14110E}
+/* filter panels */
+.apanel{position:absolute;z-index:30;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 22px 50px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column}
+.sf{display:flex;align-items:center;gap:9px;height:40px;margin:10px;border:1px solid var(--border-strong);border-radius:8px;padding:0 11px;color:var(--fg-faint);font-size:13.5px;background:var(--surface-inset)}
+.og{padding:8px 14px 4px;font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-locked)}
+.opt{display:flex;align-items:center;gap:11px;min-height:44px;padding:0 12px 0 14px;font-size:13.5px}
+.opt img{width:28px;height:28px;border-radius:6px;object-fit:cover;flex:none}
+.opt .ic{width:28px;height:28px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg-muted)}
+.opt .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opt .ct{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);min-width:22px;text-align:right}
+.opt .ck{width:16px;color:var(--accent);flex:none;display:flex}
+.opt.on{background:var(--elevated)}
+.opt.on .nm{font-weight:600}
+.pfoot{padding:10px 14px 12px;border-top:1px solid var(--border);font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint);line-height:1.6}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border-strong);display:flex;flex-direction:column}
+.sh-h{display:flex;align-items:center;padding:6px 4px 6px 18px}
+.sh-h h3{flex:1;font-family:"Cinzel",serif;font-weight:700;font-size:18px}
+.P .opt{min-height:56px;padding:0 16px}
+.P .opt img,.P .opt .ic{width:36px;height:36px;border-radius:8px}
+.cap{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);padding:0 0 10px;letter-spacing:.04em}
+.callout{position:absolute;z-index:40;background:#2b2116;border:1px solid var(--accent);border-radius:8px;padding:8px 10px;font:500 11px/1.45 "IBM Plex Mono",monospace;color:var(--fg);max-width:260px}
+
+
+td{padding:12px 16px;border-top:1px solid var(--border);vertical-align:top}
+</style>
+</helmet>
+<div class="P" style="width:1400px;padding:48px 56px 56px;gap:28px;display:flex;flex-direction:column">
+<div style="display:flex;flex-direction:column;gap:10px"><span class="mono" style="font-size:11px;letter-spacing:.14em;color:var(--accent)">GAMES TABS · R1 · NOV 25, 2026</span>
+<h1 class="disp" style="font-size:40px">Three ways to read a game</h1>
+<p style="font-size:15px;line-height:1.6;color:var(--fg-body);max-width:900px">Decks › Games and Deck details › Games, phone and desktop, drawn three ways: <b style="color:var(--fg)">A Seats</b>, <b style="color:var(--fg)">B Ledger</b> and <b style="color:var(--fg)">C Headline rows</b>. Pick one and the next round fleshes it out. The month boxes and the filters are the same in all three.</p></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+<section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>A · Seats</span><span class="ct">· recommended</span></h2></div><div style="padding:14px 16px;font-size:13.5px;line-height:1.55;color:var(--fg-body)">Each game is the table you sat at: your deck first, then each opponent, as art tiles. The winner’s tile is ringed with the trophy in its corner. Most personality, tallest rows.</div></section>
+<section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>B · Ledger</span><span class="ct">· dense</span></h2></div><div style="padding:14px 16px;font-size:13.5px;line-height:1.55;color:var(--fg-body)">A table: Result, Deck, At the table, Won by, Marks, Played. Everything lines up down the month. Best for scanning many games; least art.</div></section>
+<section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>C · Headline rows</span><span class="ct">· calm</span></h2></div><div style="padding:14px 16px;font-size:13.5px;line-height:1.55;color:var(--fg-body)">One line per game that says what happened (“Lost to Peter”). Selecting a row opens the game: a drawer on desktop, a sheet on phone. Marks and notes move into it.</div></section>
+</div>
+<section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>Your feedback</span><span class="ct">· how each concept answers it</span></h2></div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;line-height:1.5;color:var(--fg-body)">
+<thead><tr class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--fg-locked);text-align:left"><th style="padding:10px 16px;width:190px">POINT</th><th style="padding:10px 16px">A · SEATS</th><th style="padding:10px 16px">B · LEDGER</th><th style="padding:10px 16px">C · HEADLINE</th></tr></thead>
+<tbody><tr><td style="color:var(--fg);font-weight:600">Trophy awkwardly placed</td><td>Pinned to the winner’s seat tile, top-right corner, every time. Your own tile gets it when you win.</td><td>Its own “Won by” column: always the same spot, face + name.</td><td>The winner is the row’s headline (“Lost to Peter”) and their face carries the badge.</td></tr><tr><td style="color:var(--fg);font-weight:600">“vs” offset</td><td>No vs line: the whole table is one grid of seats, you first.</td><td>No vs line: “At the table” column, one seat per line.</td><td>No vs line: faces stacked at the row’s end; full table in the game sheet.</td></tr><tr><td style="color:var(--fg);font-weight:600">Version floating</td><td>Stamped on your deck’s seat tile, beside the deck name.</td><td>Stamped under the deck name, with the pod size.</td><td>Stamped beside the deck name in the subline and on your seat in the sheet.</td></tr><tr><td style="color:var(--fg);font-weight:600">No consistent grouping</td><td>Three bands per game: result + pod/date, the table, marks split into Helped / Hurt, then the note.</td><td>Strict columns with a header row in every month box.</td><td>One-line rows; details grouped in the sheet: The table, Marks, Note.</td></tr><tr><td style="color:var(--fg);font-weight:600">Month headings lost</td><td colspan="3">All three: each month is a box with Home’s heading type in its band (◆, display face, count) and the month’s record at the end.</td></tr></tbody></table></section>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+<section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>Section heads, app-wide</span><span class="ct">· proposal</span></h2></div><div style="padding:14px 16px;font-size:13.5px;line-height:1.6;color:var(--fg-body)">The month heading moves inside its box, as Request history’s months did, and takes Home’s heading type (the ◆, the display face at 17px, the count in mono). The same band carries Keep and Matchups here. The rest of the app can follow in a sweep later: Request history months, the Friends sections, the Stats cards.</div></section>
+<section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>Filters</span><span class="ct">· Filters board</span></h2></div><div style="padding:14px 16px;font-size:13.5px;line-height:1.6;color:var(--fg-body)">No native selects. Deck: the anchored panel on desktop, a sheet on phone, with deck art and game counts, only decks with games (the foot says why the rest are missing). Result: four options, so it is inline as a switch, no dropdown. Played against: the shipped panel, its trigger now showing who you picked with a ✕ to clear.</div></section>
+</div>
+<p class="mono" style="font-size:11px;color:var(--fg-faint)">Fixtures: Colin, Peter, Max, Chris. Deck pages are drawn from the tabs down, as in your capture.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

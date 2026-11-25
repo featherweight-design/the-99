@@ -1,0 +1,104 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-25T22:55:00Z"
+ },
+ "title": "Games tabs redesign",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1400,
+   "h": 1069,
+   "title": "Main \u00b7 three concepts"
+  },
+  "Filters.dc.html": {
+   "x": 1480,
+   "y": 0,
+   "w": 2680,
+   "h": 1602,
+   "title": "Filters \u00b7 custom components (all concepts)"
+  },
+  "A-Desktop.dc.html": {
+   "x": 0,
+   "y": 1962,
+   "w": 2680,
+   "h": 1863,
+   "title": "A Seats \u00b7 desktop"
+  },
+  "A-Phone.dc.html": {
+   "x": 2760,
+   "y": 1962,
+   "w": 860,
+   "h": 2598,
+   "title": "A Seats \u00b7 phone"
+  },
+  "B-Desktop.dc.html": {
+   "x": 0,
+   "y": 4920,
+   "w": 2680,
+   "h": 1358,
+   "title": "B Ledger \u00b7 desktop"
+  },
+  "B-Phone.dc.html": {
+   "x": 2760,
+   "y": 4920,
+   "w": 860,
+   "h": 2533,
+   "title": "B Ledger \u00b7 phone"
+  },
+  "C-Desktop.dc.html": {
+   "x": 0,
+   "y": 7813,
+   "w": 4060,
+   "h": 1191,
+   "title": "C Headline rows \u00b7 desktop"
+  },
+  "C-Phone.dc.html": {
+   "x": 4140,
+   "y": 7813,
+   "w": 1330,
+   "h": 1699,
+   "title": "C Headline rows \u00b7 phone"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Filters.dc.html",
+  "A-Desktop.dc.html",
+  "A-Phone.dc.html",
+  "B-Desktop.dc.html",
+  "B-Phone.dc.html",
+  "C-Desktop.dc.html",
+  "C-Phone.dc.html"
+ ],
+ "notes": {
+  "ta": {
+   "x": 0,
+   "y": 1702,
+   "text": "A \u00b7 Seats",
+   "kind": "title1",
+   "maxW": 3620
+  },
+  "tb": {
+   "x": 0,
+   "y": 4660,
+   "text": "B \u00b7 Ledger",
+   "kind": "title1",
+   "maxW": 3620
+  },
+  "tc": {
+   "x": 0,
+   "y": 7553,
+   "text": "C \u00b7 Headline rows",
+   "kind": "title1",
+   "maxW": 5470
+  }
+ },
+ "designSystems": []
+}
