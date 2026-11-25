@@ -53,8 +53,8 @@ describe("EmptyStateBody", () => {
   // /collection's empty branch sits under the place head, whose "Collection" is already the
   // page's h1 (E11); a second h1 there was the pre-open pass's finding.
   it("draws its title one level down when the page already has an h1", () => {
-    render(<EmptyStateTitle level={2}>Your collection is empty</EmptyStateTitle>);
-    expect(screen.getByRole("heading", { level: 2, name: "Your collection is empty" })).toBeTruthy();
+    render(<EmptyStateTitle level={2}>Fixture empty title</EmptyStateTitle>);
+    expect(screen.getByRole("heading", { level: 2, name: "Fixture empty title" })).toBeTruthy();
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
   });
 });

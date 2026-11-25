@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { SearchField, TextField } from "./text-field";
+import { searchFieldCopy } from "../../lib/copy/search-field";
 
 describe("TextField", () => {
   it("merges a caller className rather than letting it replace the chrome", () => {
@@ -99,7 +100,7 @@ describe("SearchField's clear", () => {
     const onClear = vi.fn();
     render(<Controlled initial="gishath" onClear={onClear} />);
     const input = screen.getByLabelText("Search") as HTMLInputElement;
-    const clear = screen.getByRole("button", { name: "Clear search" });
+    const clear = screen.getByRole("button", { name: searchFieldCopy.clear });
     expect(fireEvent.mouseDown(clear)).toBe(false);
     fireEvent.click(clear);
     expect(onClear).toHaveBeenCalledTimes(1);
@@ -109,18 +110,18 @@ describe("SearchField's clear", () => {
 
   it("stays mounted but hidden and out of the accessibility tree while the field is empty", () => {
     const { container } = render(<Controlled />);
-    expect(screen.queryByRole("button", { name: "Clear search" })).toBeNull();
+    expect(screen.queryByRole("button", { name: searchFieldCopy.clear })).toBeNull();
     const hidden = container.querySelector("button")!;
     expect(hidden.style.visibility).toBe("hidden");
     expect(hidden.tabIndex).toBe(-1);
     fireEvent.change(screen.getByLabelText("Search"), { target: { value: "a" } });
     expect(container.querySelector("button")!.style.visibility).toBe("visible");
-    expect(screen.getByRole("button", { name: "Clear search" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: searchFieldCopy.clear })).toBeTruthy();
   });
 
   it("offers the clear for spaces too, so a reader can always empty the box", () => {
     render(<Controlled initial="   " />);
-    expect(screen.getByRole("button", { name: "Clear search" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: searchFieldCopy.clear })).toBeTruthy();
   });
 
   it("puts the clear after a caller's trailing element", () => {
@@ -134,7 +135,7 @@ describe("SearchField's clear", () => {
   it("does not clear a field the caller has disabled", () => {
     const onClear = vi.fn();
     render(<SearchField aria-label="Search" value="x" disabled onChange={() => {}} onClear={onClear} />);
-    const clear = screen.getByRole("button", { name: "Clear search" }) as HTMLButtonElement;
+    const clear = screen.getByRole("button", { name: searchFieldCopy.clear }) as HTMLButtonElement;
     expect(clear.disabled).toBe(true);
     expect(clear.tabIndex).toBe(-1);
     fireEvent.click(clear);

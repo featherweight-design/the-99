@@ -23,6 +23,7 @@ import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
 import { explainedCopy, hideCommanderCopy } from "../../lib/copy/commander-explained";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const noSynergyCards: SynergyCard[] = [];
 
@@ -372,7 +373,7 @@ describe("CommanderDetail card details trigger", () => {
   // unreachable at that width.
   it("offers a card-details control at both widths", () => {
     render(<CommanderDetail hidden={false} commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
-    expect(screen.getAllByRole("button", { name: "View card details" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: changeCommanderCopy.detailsAria })).toHaveLength(2);
   });
 });
 
@@ -586,7 +587,7 @@ describe("the dot key reads the synergy panel too", () => {
     );
     // Role Coverage is entirely free; the marker is in the panel below it.
     expect(screen.getAllByText(explainedCopy.committed.dotOwned).length).toBeGreaterThan(0);
-    expect(screen.queryByText("Owned and available.")).toBeNull();
+    expect(screen.queryByText(explainedCopy.committed.dotFree)).toBeNull();
   });
 
   it("keeps the claim when nothing anywhere is marked", () => {
@@ -601,7 +602,7 @@ describe("the dot key reads the synergy panel too", () => {
         avail="all"
       />,
     );
-    expect(screen.getAllByText("Owned and available.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(explainedCopy.committed.dotFree).length).toBeGreaterThan(0);
   });
 });
 

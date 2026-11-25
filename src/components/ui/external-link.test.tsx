@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ExternalLink } from "./external-link";
+import { ExternalLink, NEW_TAB_SUFFIX } from "./external-link";
 
 describe("ExternalLink", () => {
   it("opens in a new tab without handing the opener over", () => {
@@ -12,14 +12,14 @@ describe("ExternalLink", () => {
 
   it("names itself with the label and the new-tab suffix, in that order", () => {
     const { container } = render(
-      <ExternalLink href="https://manapool.com" label="Buy these at Mana Pool" />,
+      <ExternalLink href="https://manapool.com" label="Fixture link" />,
     );
     // Asserted on the DOM rather than the computed accessible name:
     // dom-accessibility-api trims each text node before joining them, which
     // drops the suffix's leading space that a screen reader does read.
-    expect(container.querySelector(".sr-only")!.textContent).toBe(" (opens in a new tab)");
+    expect(container.querySelector(".sr-only")!.textContent).toBe(NEW_TAB_SUFFIX);
     expect(screen.getByRole("link").textContent).toBe(
-      "Buy these at Mana Pool (opens in a new tab)",
+      `Fixture link${NEW_TAB_SUFFIX}`,
     );
   });
 

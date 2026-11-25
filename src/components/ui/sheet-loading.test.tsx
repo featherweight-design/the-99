@@ -21,7 +21,7 @@ describe("SheetLoading in a sheet", () => {
     render(
       <ModalPanel title="Cheaper stand-ins" closeLabel="Close" onClose={() => {}}>
         <div data-testid="column" className="flex flex-col">
-          <SheetLoading heading="Checking the binder" status="finding lands" />
+          <SheetLoading heading="Fixture loading heading" status="finding lands" />
         </div>
       </ModalPanel>,
     );
@@ -41,12 +41,12 @@ describe("SheetLoading in a sheet", () => {
     const loader = screen.getByRole("status");
     expect(loader.className).toMatch(/(^| )flex-1( |$)/);
     expect(loader.className).toMatch(/(^| )min-h-\[250px\]( |$)/);
-    expect(loader).toHaveTextContent("Checking the binder");
+    expect(loader).toHaveTextContent("Fixture loading heading");
     expect(loader).toHaveTextContent("finding lands");
   });
 
   it("the compact draw keeps the picker's shipped minimum and still grows", () => {
-    render(<SheetLoading heading="Checking your decks" compact />);
+    render(<SheetLoading heading="Fixture compact heading" compact />);
     const loader = screen.getByRole("status");
     expect(loader.className).toMatch(/(^| )min-h-\[230px\]( |$)/);
     expect(loader.className).toMatch(/(^| )flex-1( |$)/);

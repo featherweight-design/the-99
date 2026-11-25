@@ -241,11 +241,11 @@ describe("Sheet", () => {
 });
 
 describe("SheetHeader", () => {
-  const header = { title: "Filters", closeLabel: "Close filters", onDismiss: () => {} };
+  const header = { title: "Filters", closeLabel: "Fixture close", onDismiss: () => {} };
 
   it("keeps the 30px close plate and gives it a 44px coarse-pointer hit", () => {
     render(<SheetHeader {...header} />);
-    expect(screen.getByRole("button", { name: "Close filters" })).toHaveClass("h-[30px]", "pointer-coarse:after:h-[max(44px,100%)]");
+    expect(screen.getByRole("button", { name: "Fixture close" })).toHaveClass("h-[30px]", "pointer-coarse:after:h-[max(44px,100%)]");
   });
 
   it("shows a count beside the title, and hides a zero", () => {
@@ -258,7 +258,7 @@ describe("SheetHeader", () => {
   it("dismisses from the close control", () => {
     const onDismiss = vi.fn();
     render(<SheetHeader {...header} onDismiss={onDismiss} />);
-    fireEvent.click(screen.getByLabelText("Close filters"));
+    fireEvent.click(screen.getByLabelText("Fixture close"));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
@@ -266,7 +266,7 @@ describe("SheetHeader", () => {
 describe("Sheet — header drag (opt-in)", () => {
   const header = (
     <div>
-      <h2>Import issues</h2>
+      <h2>Fixture sheet title</h2>
       <button type="button">Close</button>
       <div role="tablist">
         <span role="tab" tabIndex={0}>
@@ -282,13 +282,13 @@ describe("Sheet — header drag (opt-in)", () => {
   it("starts a drag from the header's own text", () => {
     const onDismiss = vi.fn();
     render(<Sheet {...props} open onDismiss={onDismiss} header={header} headerDrag />);
-    drag(screen.getByText("Import issues"), 80);
+    drag(screen.getByText("Fixture sheet title"), 80);
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it("follows the pointer from the header, like the handle", () => {
     render(<Sheet {...props} open header={header} headerDrag />);
-    const title = screen.getByText("Import issues");
+    const title = screen.getByText("Fixture sheet title");
     fireEvent.pointerDown(title, { clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(title, { clientY: 40, pointerId: 1 });
     expect(offset()).toBe(40);
@@ -307,14 +307,14 @@ describe("Sheet — header drag (opt-in)", () => {
   it("keeps the header in the accessibility tree", () => {
     // The handle's wrapper is aria-hidden; the header's must not be.
     render(<Sheet {...props} open header={header} headerDrag />);
-    expect(screen.getByRole("heading", { name: "Import issues" })).toBeInTheDocument();
-    expect(screen.getByText("Import issues").closest("[aria-hidden]")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Fixture sheet title" })).toBeInTheDocument();
+    expect(screen.getByText("Fixture sheet title").closest("[aria-hidden]")).toBeNull();
   });
 
   it("is off by default: a header drag moves nothing", () => {
     const onDismiss = vi.fn();
     render(<Sheet {...props} open onDismiss={onDismiss} header={header} />);
-    drag(screen.getByText("Import issues"), 200);
+    drag(screen.getByText("Fixture sheet title"), 200);
     expect(onDismiss).not.toHaveBeenCalled();
     expect(document.querySelector("[data-sheet-drag]")).toBeNull();
   });

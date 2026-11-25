@@ -307,7 +307,7 @@ describe("AvailabilityMarker chip density", () => {
         density="chip"
       />,
     );
-    expect(container.textContent).toBe("none free");
+    expect(container.textContent).toBe(availabilityCopy.marker.hard);
     expect(screen.queryByTitle("Atraxa")).toBeNull();
   });
 });
@@ -360,8 +360,8 @@ describe("AvailabilityMarker sparse claimants", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0)} density="row" />,
     );
-    expect(container.textContent).toBe("none free");
-    expect(markerAria(a(1, 1, 0))).toBe("no free copies");
+    expect(container.textContent).toBe(availabilityCopy.marker.hard);
+    expect(markerAria(a(1, 1, 0))).toBe(availabilityCopy.marker.hardAriaCountOnly);
   });
 
   // No names means no count either: `overAria(5, 0)` would say "0 of your
@@ -463,7 +463,7 @@ describe("markerAria", () => {
   // `nameless` is /collection's contract: count-only in the label too.
   it("never speaks a deck name when nameless", () => {
     expect(markerAria(a(1, 1, 0, ["Atraxa"]), { nameless: true })).toBe(
-      "no free copies",
+      availabilityCopy.marker.hardAriaCountOnly,
     );
   });
 

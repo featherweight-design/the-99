@@ -116,7 +116,7 @@ describe("the one box — all three occupants, forced", () => {
         plate={false}
       />,
     ).container.firstElementChild as HTMLElement,
-    render(<BuyTag variant="tile" plate={false} density="collapsed" label="Not owned" />)
+    render(<BuyTag variant="tile" plate={false} density="collapsed" label="Fixture state" />)
       .container.firstElementChild as HTMLElement,
     render(<ProxyTag variant="band" plate={false} />).container
       .firstElementChild as HTMLElement,

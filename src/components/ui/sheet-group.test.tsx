@@ -21,7 +21,7 @@ describe("SheetGroupHeading", () => {
   });
 
   it("takes the heading level from its caller", () => {
-    render(<SheetGroupHeading as="h3" label="Yours · 3" note="by figure" />);
+    render(<SheetGroupHeading as="h3" label="Yours · 3" note="Fixture note" />);
     expect(screen.getByRole("heading", { name: "Yours · 3" }).tagName).toBe("H3");
   });
 });

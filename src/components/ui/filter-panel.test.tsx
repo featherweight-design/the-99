@@ -228,7 +228,7 @@ describe("FilterPanel", () => {
     // `detail: 1` is a real press. `fireEvent.click` defaults it to 0, which is what a
     // native button reports for Enter and Space — so the default is the KEYBOARD case, and
     // a test that omits it is testing the other branch.
-    fireEvent.click(screen.getByRole("button", { name: "Back to filters" }), { detail: 1 });
+    fireEvent.click(screen.getByRole("button", { name: collectionFilterCopy.set.done }), { detail: 1 });
     expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
@@ -241,7 +241,7 @@ describe("FilterPanel", () => {
     const trigger = screen.getByRole("button", { name: /Filter by set/ });
     const focus = vi.spyOn(trigger, "focus");
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("button", { name: "Back to filters" }), { detail: 0 });
+    fireEvent.click(screen.getByRole("button", { name: collectionFilterCopy.set.done }), { detail: 0 });
     expect(focus).toHaveBeenCalledWith({ preventScroll: false });
   });
 
@@ -318,7 +318,7 @@ describe("FilterPanel", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getAllByRole("listbox")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Back to filters" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: collectionFilterCopy.set.done })).toBeTruthy();
   });
 
   it("filters the list as the search field is typed into", () => {
@@ -369,7 +369,7 @@ describe("FilterPanel", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "zzzz" } });
     expect(screen.getByText(collectionFilterCopy.set.emptyTitle)).toBeTruthy();
     // Desktop drops the footer here; the sheet cannot — Back to filters is its way out.
-    expect(screen.getByRole("button", { name: "Back to filters" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: collectionFilterCopy.set.done })).toBeTruthy();
   });
 
   it("closes the desktop popover when focus tabs out of it", () => {
@@ -967,7 +967,7 @@ describe("Type ▾ in the filter bar", () => {
     setViewport(true);
     renderBar([]);
     openType();
-    const panel = screen.getByRole("dialog", { name: "Filter by type" });
+    const panel = screen.getByRole("dialog", { name: collectionFilterCopy.type.panelAriaLabel });
     // The Sort <select> is also a combobox, so scope this to the panel.
     expect(within(panel).queryByRole("combobox")).toBeNull();
   });
@@ -1053,7 +1053,7 @@ describe("FilterBar sort and color controls", () => {
   it("sorting is a panel, not a native select", () => {
     setViewport(true);
     renderBar();
-    expect(screen.queryByRole("combobox", { name: "Sort cards" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: collectionFilterCopy.sort.panelAriaLabel })).toBeNull();
     expect(screen.getByRole("button", { name: /Sort cards/ })).toBeTruthy();
   });
 
