@@ -7,6 +7,7 @@ import type { Edit } from "../../lib/copy-editor/edits";
 import { keyLabel } from "../../lib/copy-editor/key-label";
 import type { EditorRow } from "../../lib/copy-editor/rows";
 import { REPO } from "../../lib/copy-editor/github";
+import { SteadyLabel } from "../ui/steady-label";
 import { OVERLAY_ATTR } from "./scan";
 import type { Sub } from "./use-submission";
 
@@ -143,7 +144,7 @@ export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, on
               )}
               <button type="button" disabled={edits.length === 0 || submitting} onClick={onSubmit} className={`${primaryClass} flex items-center gap-2`}>
                 {submitting && <Spinner />}
-                {submitting ? t.submitting : failed ? t.retry : t.submit}
+                <SteadyLabel hold={[t.submit, t.submitting, t.retry]}>{submitting ? t.submitting : failed ? t.retry : t.submit}</SteadyLabel>
               </button>
             </div>
           </>
