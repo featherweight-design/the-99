@@ -1,0 +1,66 @@
+# Makes the PostHog dashboards in scripts/lib/posthog-dashboards/definitions.mts, in the project named by the
+# POSTHOG_PROJECT_ID repository secret (the production analytics project). Manual only: there is no schedule and no push
+# trigger, so nothing runs unless someone dispatches it.
+#
+# `apply` is false by default, which is a dry run: it reads the project (GET only) and prints what it would create or
+# update. `apply: true` writes. It matches dashboards and insights by name and never deletes.
+#
+# THE KEY. POSTHOG_PERSONAL_API_KEY is a personal API key (scoped to dashboards and insights), not the `phc_` key the browser
+# sends events with. It is an Actions secret and reaches ONE step, the one that runs the script; the install before it
+# runs without it. `inputs.*` reaches the shell only through `env:`.
+name: PostHog dashboards
+run-name: PostHog dashboards (${{ inputs.apply && 'apply' || 'dry run' }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'true writes the dashboards; false (the default) is a dry run that only reads'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: posthog-dashboards
+  cancel-in-progress: false
+
+jobs:
+  dashboards:
+    # Only the copy of this workflow on main may run (a dispatch names a ref).
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Make the dashboards
+        env:
+          POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+          POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+          if [ -z "$POSTHOG_PERSONAL_API_KEY" ] || [ -z "$POSTHOG_PROJECT_ID" ]; then
+            echo "POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID must both be set as repository secrets"
+            exit 1
+          fi
+          if [ "$APPLY" = "true" ]; then
+            pnpm posthog:dashboards --apply
+          else
+            pnpm posthog:dashboards
+          fi
