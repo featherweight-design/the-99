@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from "../../test-utils/render-with-row-wiring";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -1377,7 +1377,7 @@ describe("DecklistRow — an owned card this deck prints", () => {
     // The failure this closes: a reader who cannot see the dot was told `Owned`
     // about a card the deck is printing.
     expect(screen.queryByText("Owned")).toBeNull();
-    expect(screen.getByText("Not owned")).toBeInTheDocument();
+    expect(screen.getByText(ownedStateCopy.notOwned)).toBeInTheDocument();
   });
 
   it("still says Owned for a card the deck is not printing", () => {

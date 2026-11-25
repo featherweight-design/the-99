@@ -28,7 +28,7 @@ const panel: CutsPanel = {
   declaredBracket: 2,
   edhrecDecks: 3309,
   thin: false,
-  rows: [{ key: "role:draw", source: "role", label: "Card draw", figure: 8, note: "rec 7 · 1 over" }],
+  rows: [{ key: "role:draw", source: "role", label: "Fixture row label", figure: 8, note: "rec 7 · 1 over" }],
   chips: { medianPct: 46, flagCounts: {}, declared: 2 },
   resultCurrent: false,
   asked: 0,

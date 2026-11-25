@@ -238,7 +238,7 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(confirm).not.toBeNull();
     // The default count (3) is 10 or fewer changes: a new run uses a credit, never 2.
     expect(confirm.textContent).toContain(sc.intake.same.body(date, 1));
-    expect(confirm.textContent).not.toContain("2 credits");
+    expect(confirm.textContent).not.toContain(suggestedChangesV2Copy.intake.count.twoCredits);
     // The confirm stands in for the action row: nothing reserved, nothing reading.
     expect(screen.queryByRole("button", { name: sc.intake.send })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: sc.intake.same.open(date) }));
@@ -722,7 +722,7 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
       <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back } }}>{node}</ReviewRunProvider>
     ));
     const meta = document.querySelector("[data-sc-past-meta]") as HTMLElement;
-    expect(meta.textContent).toBe(`${tuningHubCopy.history.back}${tuningHubCopy.history.pastMeta("Oct 26", 4, "1 credit")}`);
+    expect(meta.textContent).toBe(`${tuningHubCopy.history.back}${tuningHubCopy.history.pastMeta("Oct 26", 4, tuningHubCopy.history.tier.credit)}`);
     // Above the heading, inside the panel.
     expect(meta.compareDocumentPosition(document.getElementById("tuning-heading")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: tuningHubCopy.history.back }));
@@ -752,7 +752,7 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     await draw(d, v2At(), [2], (node) => (
       <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
     ));
-    expect(document.querySelector("[data-sc-past-meta]")!.textContent).toContain(tuningHubCopy.history.pastMeta("Oct 26", 3, "1 credit"));
+    expect(document.querySelector("[data-sc-past-meta]")!.textContent).toContain(tuningHubCopy.history.pastMeta("Oct 26", 3, tuningHubCopy.history.tier.credit));
     expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-past")).toBe("stale");
     expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNoteUncounted);
     expect(document.querySelector("[data-sc-pick]")).toBeNull();

@@ -18,17 +18,20 @@ let pathname = "/decks/deck-1";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 // The sheet has its own tests: a stand-in that reports its props and offers a save and a close.
 const sheetProps = vi.fn();
-vi.mock("../collection/add-cards-sheet", () => ({
+vi.mock("../collection/add-cards-sheet", async () => {
+  const { collectionEditCopy: editCopy } = await import("../../lib/copy/collection-edit");
+  return {
   AddCardsSheet: (p: Extract<AddCardsSheetProps, { mode: "add" }>) => {
     sheetProps(p);
     return (
-      <div role="dialog" aria-label="Add cards">
+      <div role="dialog" aria-label={editCopy.head.add}>
         <button type="button" onClick={() => p.onSaved?.(1)}>save</button>
         <button type="button" onClick={() => p.onClose()}>done</button>
       </div>
     );
   },
-}));
+  };
+});
 
 const { QuickAddBar } = await import("./quick-add-bar");
 const { AddCardsHost } = await import("../collection/add-cards-host");

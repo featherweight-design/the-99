@@ -268,7 +268,7 @@ describe("DeckCard", () => {
       // way of saying finished beside a full green bar and `99 / 99`, and the bar
       // and the count carry it between them. See the assertion below.
       [{ statusPill: "Unresolved", unresolvedCount: 2 }, "2 lines unresolved"],
-      [{ statusPill: "Unresolved", unresolvedCount: 1 }, "1 line unresolved"],
+      [{ statusPill: "Unresolved", unresolvedCount: 1 }, refreshCopy.decks.detailUnresolved(1)],
       [{ statusPill: "Over", built: 104 }, "5 over"],
       [{ statusPill: "Building", built: 87 }, "87 / 99"],
     ];
@@ -432,7 +432,7 @@ describe("DeckCard", () => {
       );
       // `To buy`: a card is genuinely missing, so the slot stays empty. Reading
       // `1 proxy` here would mean the deck had been called finished.
-      expect(screen.queryByText("1 proxy")).not.toBeInTheDocument();
+      expect(screen.queryByText(proxyCopy.deckCard.line(1))).not.toBeInTheDocument();
     });
 
     // The seniority defect, moved into the detail row: every card owned, every

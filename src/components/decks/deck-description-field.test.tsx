@@ -132,7 +132,7 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
       const frame = screen.getByRole("combobox").closest("[data-framed-box]")!;
       expect(frame.contains(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }))).toBe(true);
       expect(frame.contains(screen.getByText(TAG_A_CARD_WORDS))).toBe(true);
-      const tip = screen.getByRole("button", { name: "How card tags work" });
+      const tip = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.infoAria });
       expect(frame.contains(tip)).toBe(false);
       expect(document.querySelector('label[for="deck-description-field"]')!.parentElement!.contains(tip)).toBe(true);
     });

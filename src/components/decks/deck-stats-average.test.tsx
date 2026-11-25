@@ -34,7 +34,7 @@ describe("DeckStatsView average card", () => {
     draw(avg());
     expect(screen.getByRole("figure", { name: "Against the average deck, 1,812 decks" })).toBeInTheDocument();
     expect(card()).toHaveTextContent("minus the average Korvold, Fae-Cursed King deck’s, from EDHREC’s 1,812 decks.");
-    expect(card()).toHaveTextContent("Counts the 99, not the commander.");
+    expect(card()).toHaveTextContent(deckStatsCopy.average.counts(99));
   });
 
   it("states each row whole in its label, with the average and the difference in words", () => {

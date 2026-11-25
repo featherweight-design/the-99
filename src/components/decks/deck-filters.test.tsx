@@ -163,7 +163,7 @@ describe("DeckFilterSheet", () => {
     render(
       <DeckFilterSheet {...props({ shown: 1 })} open onDismiss={vi.fn()} autoFocusSearch={false} />,
     );
-    expect(screen.getByRole("button", { name: "Show 1 deck" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: refreshCopy.filters.sheetDismiss(1) })).toBeInTheDocument();
   });
 
   it("hands back the same value the column would for the same tick", () => {
