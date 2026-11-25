@@ -2,6 +2,7 @@
 // lots and gifts named masked.
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { adminCopy } from "../../lib/copy/admin";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../app/admin/payments/actions", () => ({ grantCredits: vi.fn(), clearBlock: vi.fn() }));
@@ -29,8 +30,8 @@ describe("PaymentsView", () => {
   it("names the month it reads (MonthKey months count from 0), and steps back but not past now", () => {
     view();
     expect(screen.getByTestId("payments-month")).toHaveTextContent("October 2026");
-    expect(screen.getByRole("link", { name: "Previous month" })).toHaveAttribute("href", "/admin/payments?month=2026-09");
-    expect(screen.queryByRole("link", { name: "Next month" })).toBeNull();
+    expect(screen.getByRole("link", { name: adminCopy.costs.period.previous })).toHaveAttribute("href", "/admin/payments?month=2026-09");
+    expect(screen.queryByRole("link", { name: adminCopy.costs.period.next })).toBeNull();
   });
 
   it("draws USD's paid, tax and net beside model spend, and another currency apart, never added in", () => {

@@ -59,7 +59,7 @@ describe("CostsDetail, a month with runs", () => {
     const composite = container.querySelector('[data-model="claude-haiku-5-5+claude-sonnet-5-5"]') as HTMLElement;
     expect(composite).toHaveTextContent(adminCopy.costs.modelSub.composite);
     const table = screen.getByRole("table", { name: adminCopy.costs.byFeature });
-    const row = within(table).getByText("Help me choose").closest("[role=row]") as HTMLElement;
+    const row = within(table).getByText(adminCopy.costs.featureNames.intake).closest("[role=row]") as HTMLElement;
     expect(row).toHaveTextContent("haiku-5-5+sonnet-5-5");
     expect(row).toHaveTextContent(adminCopy.costs.effortUnknown);
     // A system synopsis row is the free rewrite, on its own row.
@@ -213,7 +213,7 @@ describe("CostsDetail, the eval ledgers", () => {
     expect(cells(adminCopy.costs.originalLedger).slice(3)).toEqual(["$25 hard · ask at $15", "Sep 24"]);
     // The row is the campaign's own, though none of it fell in October; the footer is October's.
     expect(cells(adminCopy.costs.originalLedger).slice(1, 3)).toEqual(["12", "$0.229"]);
-    expect(cells("Help me choose").slice(3)).toEqual(["$5 hard", "Oct 10–11"]);
+    expect(cells(adminCopy.costs.featureNames.intake).slice(3)).toEqual(["$5 hard", "Oct 10–11"]);
     expect(cells("Tuning lists").slice(3)).toEqual(["$3 hard · ask at $2.50", "Sep 30–Oct 11"]);
     expect(cells("New").slice(3)).toEqual([adminCopy.costs.noLimit, "Oct 2"]);
     expect(cells("October").slice(3)).toEqual([adminCopy.costs.nothingPending, ""]);

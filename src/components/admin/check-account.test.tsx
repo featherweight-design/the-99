@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Explanation } from "../../lib/admin/flag-page-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 const mirror = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: mirror }));
@@ -9,20 +10,20 @@ vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: mirror }));
 const { CheckAccount } = await import("./check-account");
 
 const EXPLAINED: Explanation[] = [
-  { id: "u1", label: "Hugh", on: true, source: "account override", kill: false },
+  { id: "u1", label: "Hugh", on: true, source: "fixture source", kill: false },
   { id: "u2", label: "Mara", on: false, source: "env var is off", kill: true },
 ];
 
 describe("CheckAccount", () => {
   it("selects nothing until an account is picked", () => {
     render(<CheckAccount explanations={EXPLAINED} initial={null} />);
-    expect(screen.getByRole("combobox", { name: "Check an account" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: adminCopy.flag.check })).toHaveValue("");
     expect(screen.queryByTestId("check-result")).toBeNull();
   });
 
   it("shows the account named by the URL", () => {
     render(<CheckAccount explanations={EXPLAINED} initial="u1" />);
-    expect(screen.getByTestId("check-result").textContent).toBe("On · account override");
+    expect(screen.getByTestId("check-result").textContent).toBe("On · fixture source");
   });
 
   it("shows a pick's value and source, and mirrors it into the URL without navigating", () => {

@@ -18,6 +18,8 @@ import {
   type MemberRow,
   type SavedGroup,
 } from "./groups-rule";
+import { flagCopy } from "../copy/admin";
+import { adminCopy } from "../copy/admin";
 
 const T = "11111111-1111-4111-8111-111111111111"; // testers
 const F = "22222222-2222-4222-8222-222222222222"; // friends
@@ -135,10 +137,10 @@ describe("what an account gains or loses", () => {
 
   it("names the switches a move turns on and off, and a removal's losses", () => {
     const fx = memberEffects(snapshot, T, ["u_hugh", "u_theo", "u_jun"], explain);
-    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Suggested changes v2", "Push notifications", "Feedback"]));
+    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining([flagCopy.SUGGESTED_CHANGES_V2_ENABLED.label, flagCopy.PUSH_ENABLED.label, "Feedback"]));
     expect(fx.get("u_theo")!.toThis.losses).toEqual([]);
     expect(fx.get("u_hugh")!.toThis).toEqual({ gains: [], losses: [] });
-    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining(["Suggested changes v2", "Push notifications"]));
+    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining([flagCopy.SUGGESTED_CHANGES_V2_ENABLED.label, flagCopy.PUSH_ENABLED.label]));
     expect(fx.get("u_jun")!.toNone).toEqual({ gains: [], losses: [] });
   });
 
@@ -170,9 +172,9 @@ describe("memberState", () => {
 
   it("draws a saved member, a move, an add and an unselected account", () => {
     expect(memberState(mara, true, T)).toEqual({ sub: "in testers", state: "selected", unsaved: false });
-    expect(memberState(theo, true, T)).toEqual({ sub: "moves from friends", state: "selected, not saved", unsaved: true });
+    expect(memberState(theo, true, T)).toEqual({ sub: "moves from friends", state: adminCopy.groups.selectedUnsaved, unsaved: true });
     // An account in no group says so (R3 boards, C2).
-    expect(memberState(jun, true, T)).toEqual({ sub: "no group", state: "selected, not saved", unsaved: true });
+    expect(memberState(jun, true, T)).toEqual({ sub: adminCopy.groups.inNoGroup, state: adminCopy.groups.selectedUnsaved, unsaved: true });
     expect(memberState(theo, false, T)).toEqual({ sub: "in friends", state: "unselected", unsaved: false });
     // A saved member being removed reads unselected, and is still a change.
     expect(memberState(mara, false, T)).toEqual({ sub: "in testers", state: "unselected", unsaved: true });
@@ -184,7 +186,7 @@ describe("pendingSummary", () => {
   const draft = { name: "testers", description: "", credits: "", paidLimit: "" };
   const rows = [
     row("u_mara", "Mara", { id: T, name: "testers" }, [], ["Overview v2"]),
-    row("u_theo", "Theo", { id: F, name: "friends" }, ["Overview v2", "Push notifications"]),
+    row("u_theo", "Theo", { id: F, name: "friends" }, ["Overview v2", flagCopy.PUSH_ENABLED.label]),
     row("u_jun", "Jun", null),
   ];
 
@@ -217,14 +219,14 @@ describe("pendingSummary", () => {
     expect(p.title).toBe("4 changes not saved");
     expect(p.body).toBe("Saving renames testers to beta. Saving changes the description. Saving sets daily credits to 8. Saving adds Jun to beta. Nothing changes for Jun.");
     expect(pendingSummary({ saved: { ...saved, dailyAllowance: 8 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
-      title: "Not saved",
+      title: adminCopy.groups.pending.fields,
       body: "Saving sets daily credits back to the default.",
     });
   });
 
   it("names a paid limit change as a field of its own", () => {
     expect(pendingSummary({ saved, draft: { ...draft, paidLimit: "3" }, rows, selected: new Set(["u_mara"]) })).toEqual({
-      title: "Not saved",
+      title: adminCopy.groups.pending.fields,
       body: "Saving sets daily paid runs to 3.",
       count: 1,
     });
@@ -240,7 +242,7 @@ describe("pendingSummary", () => {
 
   it("offers Create for a new group with only a name typed, and nothing for an empty one (G3)", () => {
     expect(pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toEqual({
-      title: "Not saved",
+      title: adminCopy.groups.pending.fields,
       body: "Saving creates beta.",
       count: 1,
     });
