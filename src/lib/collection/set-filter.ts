@@ -64,6 +64,7 @@ export function buildSetOptions(
     types: filters.types,
     setCodes: [],
     availability: filters.availability,
+    quick: filters.quick,
   });
   const counts = new Map<string, number>();
   for (const c of surviving) {

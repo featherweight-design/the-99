@@ -58,6 +58,7 @@ import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
 import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
 import { useCollectionFields } from "./use-collection-fields";
+import { isFreeAlone } from "../../lib/collection/quick-filters";
 import { FindADeckCallout } from "./find-a-deck-callout";
 import { FIND_A_DECK_FROM_PLACE, type FindADeckButtons } from "./find-a-deck-button";
 import type { FindADeckState } from "../../lib/collection/find-a-deck";
@@ -70,7 +71,7 @@ import { captureToolEvent } from "../../lib/analytics/posthog";
  * carried through untouched, so the browse state is written by clearing exactly
  * these and rewriting them rather than by rebuilding the whole query string.
  */
-const OWNED_PARAMS = ["q", "c", "m", "t", "s", "avail", "sort", "dir", "view", "card"] as const;
+const OWNED_PARAMS = ["q", "c", "m", "t", "s", "avail", "quick", "sort", "dir", "view", "card"] as const;
 
 function serializeParams(
   filters: BrowseFilters,
@@ -97,6 +98,8 @@ function serializeParams(
   if (filters.availability && filters.availability.length > 0) {
     p.set("avail", serializeAvailability(filters.availability));
   }
+  // One word, and never beside `avail=free`, which is In no deck (`parseBrowseParams` keeps the availability).
+  if (filters.quick && !isFreeAlone(filters)) p.set("quick", filters.quick);
   // An absence reads as the remembered sort (`withStoredSort`), so it is only faithful when that IS this order. A list
   // sorted another way than the one remembered says so, Name included: `?sort=name` over a remembered Quantity would
   // otherwise lose its override at the next reload.
@@ -506,7 +509,8 @@ export function CollectionBrowser({
     filters.colors.length > 0 ||
     filters.types.length > 0 ||
     filters.setCodes.length > 0 ||
-    (filters.availability ?? []).length > 0;
+    (filters.availability ?? []).length > 0 ||
+    filters.quick !== undefined;
 
   // `collectionChips` needs a label per code; the bar already built these.
   const chassisChips: FilterChip[] = collectionChips(filters, {
