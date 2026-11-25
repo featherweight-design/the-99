@@ -125,8 +125,8 @@ describe("labelInputHash", () => {
   // The vocabulary plan's Task 3: the SYSTEM prompt's hash is in the payload, read from the registry
   // entry of the version asked for, so a hash names the instruction it was written under.
   it("changes with the version and its registered SYSTEM hash, and defaults to the current version", () => {
-    const reg = { ...PROMPT_SYSTEM_SHA256, "10": "f".repeat(64) };
-    expect(labelInputHash(card, "m", "10", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
+    const reg = { ...PROMPT_SYSTEM_SHA256, "11": "f".repeat(64) };
+    expect(labelInputHash(card, "m", "11", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
     expect(labelInputHash(card, "m", "8", { "8": "0".repeat(64) })).not.toBe(labelInputHash(card, "m", "8"));
     expect(labelInputHash(card, "m", LABEL_PROMPT_VERSION)).toBe(labelInputHash(card, "m"));
   });
