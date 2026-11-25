@@ -10,6 +10,7 @@ import {
   serializeAvailability,
   toggleAvailability,
 } from "./availability-filter";
+import { availabilityCopy } from "../copy/availability";
 
 const base: BrowseListCard = {
   oracleId: "o",
@@ -85,8 +86,8 @@ describe("buildAvailabilityOptions", () => {
   it("labels the options in the design's words", () => {
     expect(buildAvailabilityOptions(cards, empty).map((o) => o.label)).toEqual([
       "Free",
-      "Wanted by a draft",
-      "In use",
+      availabilityCopy.collection.filterSoft,
+      availabilityCopy.collection.filterHard,
       "Over-committed",
     ]);
   });

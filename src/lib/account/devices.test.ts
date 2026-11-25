@@ -2,6 +2,7 @@
 // says them, and the "last active" wording in whole units.
 import { describe, expect, it } from "vitest";
 import { ACTIVE_NOW_MS, deviceAgo, deviceRows, type SessionLike } from "./devices";
+import { accountCopy } from "../copy/account";
 
 const NOW = Date.parse("2026-11-14T12:00:00Z");
 const MIN = 60_000;
@@ -47,8 +48,8 @@ describe("deviceRows", () => {
 
   it("falls back when Clerk names no browser, device or place", () => {
     const [phone, computer] = deviceRows([s("a", 1 * DAY, { isMobile: true }), s("b", 2 * DAY, null)], null, NOW);
-    expect(phone).toMatchObject({ browser: "Browser", device: "a phone", kind: "phone", place: null });
-    expect(computer).toMatchObject({ browser: "Browser", device: "a computer", kind: "desktop", place: null });
+    expect(phone).toMatchObject({ browser: "Browser", device: accountCopy.devices.unknownPhone, kind: "phone", place: null });
+    expect(computer).toMatchObject({ browser: "Browser", device: accountCopy.devices.unknownComputer, kind: "desktop", place: null });
   });
 
   it("names the country alone when Clerk has no city", () => {

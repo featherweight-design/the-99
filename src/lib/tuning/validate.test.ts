@@ -5,6 +5,7 @@ import { buildPlayGroup } from "../profile/play";
 import type { EvidencePack } from "./evidence";
 import type { TuningLine } from "./response-schema";
 import { chooseRefusal, shortReason, sizeLists, validateSuggestions, type Drop, type ResolvedCard } from "./validate";
+import { topOffCopy } from "../copy/top-off";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -190,12 +191,12 @@ describe("validateSuggestions", () => {
   });
 
   it("reads a figure past the focus's own name, so a name with digits in it still holds", () => {
-    const counters: EvidencePack = { ...pack, focus: { name: "+1/+1 counters", copies: 12, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    const counters: EvidencePack = { ...pack, focus: { name: "fixture +1/+1 focus", copies: 12, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
     const cite = (value: string) => validateSuggestions({
       response: { additions: [{ ...good, evidence: [{ kind: "focus", value }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }], cuts: [] }, pack: counters, resolveName,
     });
-    expect(cite("+1/+1 counters").drops).toEqual([]);
-    expect(cite("+1/+1 counters: 12 of 60").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
+    expect(cite("fixture +1/+1 focus").drops).toEqual([]);
+    expect(cite("fixture +1/+1 focus: 12 of 60").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
   });
 
   it("removes a focus citation from a cut, where the app writes its own off-plan chip", () => {
@@ -332,7 +333,7 @@ describe("validateSuggestions", () => {
     });
 
     it("lets no unchecked decklist citation alone carry a line past a failed one", () => {
-      const out = v2({ ...goodCut, rationale: "Too slow for this deck.", rationaleShort: "Slow.", evidence: [falseGames, { kind: "decklist", value: "already in the deck" }] });
+      const out = v2({ ...goodCut, rationale: "Too slow for this deck.", rationaleShort: "Slow.", evidence: [falseGames, { kind: "decklist", value: topOffCopy.list.illegalInDeck }] });
       expect(out.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "games" } });
     });
 

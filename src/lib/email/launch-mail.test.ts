@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { FEATURE_HEIGHT, launchEmailParts, LAUNCH_IMAGES } from "./launch-mail";
+import { emailShellCopy } from "../copy/emails";
 
 const UNSUB = "https://staging.the-99.dev/unsubscribe?t=" + "x".repeat(43);
 const parts = (source: "landing" | "flyer") => launchEmailParts({ origin: "https://staging.the-99.dev", source, unsubscribeUrl: UNSUB });
@@ -35,7 +36,7 @@ describe("launchEmailParts", () => {
     const { html, text } = parts("flyer");
     expect(text).not.toMatch(/[‘’“”]/);
     expect(text).toContain("99 problems, but your commander ain't one.");
-    expect(html).toContain("99 problems, but your commander ain’t one.");
+    expect(html).toContain(emailShellCopy.flavor);
   });
 });
 

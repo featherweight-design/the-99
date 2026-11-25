@@ -14,7 +14,7 @@ const NOW = new Date("2026-11-14T12:00:00Z");
 const row = (over: Record<string, unknown> = {}) => ({
   id: ID, userId: "user_sender", kind: "email", state: "reserved", qrExpiresAt: null, holdsUntil: new Date(NOW.getTime() + 86_400_000), ...over,
 });
-const SENDER = { displayName: { brand: "name" }, commander: { oracleId: "o", name: "Ghalta, Primal Hunger", artCropUri: "https://cards.scryfall.io/art_crop/x.jpg" } };
+const SENDER = { displayName: { brand: "name" }, commander: { oracleId: "o", name: "Fixture Card", artCropUri: "https://cards.scryfall.io/art_crop/x.jpg" } };
 
 beforeEach(() => {
   m.rows = [row()];
@@ -24,7 +24,7 @@ beforeEach(() => {
 describe("readHero", () => {
   it("draws the sender's hand for a live email invite, with only the name and the commander's art", async () => {
     const view = await readHero(KEY, SECRET, NOW);
-    expect(view).toEqual({ kind: "hand", name: SENDER.displayName, commander: { name: "Ghalta, Primal Hunger", artCropUri: SENDER.commander.artCropUri } });
+    expect(view).toEqual({ kind: "hand", name: SENDER.displayName, commander: { name: "Fixture Card", artCropUri: SENDER.commander.artCropUri } });
     expect(m.sender).toHaveBeenCalledWith("user_sender");
   });
 

@@ -3,6 +3,7 @@ import { named } from "../person-name/mint";
 import { plain } from "../person-name/testing";
 import type { TableView } from "../social/rule-zero-table";
 import { changedLine, reviveClosedTable, reviveTableView, seatChanged, sinceYouLooked } from "./live";
+import { ruleZeroCopy } from "../copy/rule-zero";
 
 const T = (iso: string) => new Date(`2026-10-17T${iso}Z`);
 const seat = (displayName: string, changedAt: Date, opts: { you?: boolean; deck?: string | null } = {}) =>
@@ -39,14 +40,14 @@ describe("sinceYouLooked", () => {
 
 describe("changedLine", () => {
   it("reads as the boards draw it", () => {
-    expect(changedLine(T("21:42:00"), T("21:42:59"))).toBe("changed just now");
+    expect(changedLine(T("21:42:00"), T("21:42:59"))).toBe(ruleZeroCopy.seat.changedNow);
     expect(changedLine(T("21:42:00"), T("21:43:00"))).toBe("changed 1 min ago");
     expect(changedLine(T("21:42:00"), T("22:41:59"))).toBe("changed 59 min ago");
     expect(changedLine(T("21:42:00"), T("23:42:00"))).toBe("changed 2 hr ago");
   });
 
   it("never reads a clock skewed ahead of the server as the future", () => {
-    expect(changedLine(T("21:42:30"), T("21:42:00"))).toBe("changed just now");
+    expect(changedLine(T("21:42:30"), T("21:42:00"))).toBe(ruleZeroCopy.seat.changedNow);
   });
 });
 

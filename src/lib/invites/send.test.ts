@@ -5,6 +5,7 @@ import { inviteMail, qrWatch, repeatAnswer } from "./send";
 import { INVITATION_DAYS } from "./clerk";
 import { isQrToken, joinPath } from "./rules";
 import { qrToken } from "./tokens";
+import { inviteEmailCopy } from "../copy/emails";
 
 const now = new Date("2026-10-16T12:00:00Z");
 const at = (ms: number) => new Date(now.getTime() + ms);
@@ -74,12 +75,12 @@ describe("inviteMail", () => {
   });
 
   it("draws the sender's hand when there is art, and the plain one when there is none, and never says whether the address has an account", () => {
-    const withArt = inviteMail({ ...base, senderName: "Colin", handUrl: "https://the-99.dev/email/hand/KEY.png", commanderName: "Ghalta, Primal Hunger" });
+    const withArt = inviteMail({ ...base, senderName: "Colin", handUrl: "https://the-99.dev/email/hand/KEY.png", commanderName: "Fixture Card" });
     expect(withArt.html).toContain('src="https://the-99.dev/email/hand/KEY.png"');
-    expect(withArt.html).toContain("Colin’s invitation card, with Ghalta, Primal Hunger art");
+    expect(withArt.html).toContain("Colin’s invitation card, with Fixture Card art");
     const plain = inviteMail({ ...base, senderName: "Colin" });
     expect(plain.html).toContain('src="https://the-99.dev/email/invite-hero-plain@2x.png"');
-    expect(plain.html).toContain("An invitation to The 99");
+    expect(plain.html).toContain(inviteEmailCopy.heroPlainAlt);
     expect(withArt.html + plain.html + withArt.text).not.toMatch(/already have an account|account already/i);
   });
 
