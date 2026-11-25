@@ -166,6 +166,7 @@ describe("PendingRow", () => {
 
   it("says it, not them, for one change", () => {
     expect(pending.rowBody(1)).not.toBe(pending.rowBody(2));
+    expect(pending.rowBody(1)).toContain(" it ");
     expect(pending.rowBodyNext(1, 4)).toBe("Commit it as v4 in Review.");
   });
 });

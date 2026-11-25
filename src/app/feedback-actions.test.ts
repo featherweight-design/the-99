@@ -113,6 +113,7 @@ describe("sendProblemReport signed out", () => {
       source: "report",
     });
     expect(JSON.stringify(m.values.mock.calls)).not.toContain("203.0.113.9");
+    expect(JSON.stringify(m.values.mock.calls)).not.toContain(IPHONE_UA);
     expect(m.requestFlags).not.toHaveBeenCalled();
     expect(m.enforceHit).not.toHaveBeenCalled();
     expect(m.resolveFlags).toHaveBeenCalledWith(null);
