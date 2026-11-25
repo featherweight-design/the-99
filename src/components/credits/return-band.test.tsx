@@ -7,6 +7,7 @@ import type { ReturnOutcome } from "../../app/credits/actions";
 vi.mock("../../app/credits/actions", () => ({ readReturnAction: vi.fn(), receiptAction: vi.fn() }));
 
 import { CancelledBand, ReturnBand } from "./return-band";
+import { creditsPageCopy } from "../../lib/copy/credits-page";
 
 const TIMING = { fastMs: 2000, slowMs: 10_000, slowAfterMs: 60_000 };
 const processing: ReturnOutcome = { ok: true, read: { kind: "processing", units: 40 } };
@@ -52,7 +53,7 @@ describe("ReturnBand states", () => {
     const { container } = band(read);
     expect(container.querySelector(".anim-search-progress")).not.toBeNull();
     await tick(60_000);
-    expect(screen.getByText("Still adding your credits")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.ret.slowTitle)).toBeTruthy();
     expect(screen.getByText(/You won’t be charged twice/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "support@the-99.dev" }).getAttribute("href")).toBe("mailto:support@the-99.dev");
     expect(container.querySelector(".anim-search-progress")).toBeNull();
@@ -136,7 +137,7 @@ describe("CancelledBand (R5)", () => {
   it("is one quiet line with a bare close, and the close removes it", () => {
     vi.useRealTimers();
     const { container } = render(<CancelledBand />);
-    expect(screen.getByText("Checkout closed. Nothing was charged.")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.ret.cancelled)).toBeTruthy();
     act(() => screen.getByRole("button", { name: "Dismiss" }).click());
     expect(container.textContent).toBe("");
   });

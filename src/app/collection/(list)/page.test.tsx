@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -43,12 +44,12 @@ describe("/collection, empty collection", () => {
   it("one Upload tile, the ways group, and the body that names it (S13)", async () => {
     await renderEmpty();
     expect(screen.getAllByRole("link", { name: /Upload a file/ })).toHaveLength(1);
-    const group = screen.getByRole("group", { name: "No file? Start another way" });
+    const group = screen.getByRole("group", { name: collectionEditCopy.ways.kicker });
     expect(Array.from(group.querySelectorAll("a")).map((a) => a.getAttribute("href"))).toEqual([
       "/decks/precons?pick=own&from=collection",
       "/decks/import",
     ]);
-    expect(screen.getByText("A pile of possibilities waiting for a commander. Bring a file over, or start another way.")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.ways.emptyBody)).toBeTruthy();
   });
 });
 

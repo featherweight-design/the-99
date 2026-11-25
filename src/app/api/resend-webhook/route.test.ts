@@ -18,7 +18,7 @@ const call = (body: string, opts: { sign?: boolean; ts?: number } = {}) => {
     headers: { "svix-id": "msg_1", "svix-timestamp": ts, "svix-signature": sig },
   }));
 };
-const bounce = JSON.stringify({ type: "email.bounced", data: { to: ["someone@example.com"], subject: "Your code", tags: { template: "code" } } });
+const bounce = JSON.stringify({ type: "email.bounced", data: { to: ["someone@example.com"], subject: "Fixture subject", tags: { template: "code" } } });
 
 beforeEach(() => {
   process.env.RESEND_WEBHOOK_SECRET = `whsec_${KEY}`;

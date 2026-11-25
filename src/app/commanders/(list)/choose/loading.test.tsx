@@ -4,6 +4,8 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { shellCopy } from "../../../../lib/copy/shell";
+import { helpMeChooseCopy } from "../../../../lib/copy/help-me-choose";
 
 const nav = vi.hoisted(() => ({ qs: "", path: "/decks/new/choose" }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(nav.qs), usePathname: () => nav.path }));
@@ -16,11 +18,11 @@ describe("the choose route's loading screen", () => {
     nav.qs = "t=dinosaurs&b=150&v=results";
     const { container } = render(<Loading />);
     expect(screen.getByTestId("choose-loading")).toBeTruthy();
-    expect(screen.getByText("Finding commanders…")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.results.loadingHead)).toBeTruthy();
     expect(screen.getByTestId("results-searching").querySelectorAll("ol > li")).toHaveLength(5);
     expect(screen.queryByText(/Ordered by/)).toBeNull();
     expect(screen.queryByText("We read this as")).toBeNull();
-    expect(container.textContent).not.toContain("Clearing a space");
+    expect(container.textContent).not.toContain(shellCopy.loading.deckNew.heading);
     // The header's way back is the page's own: the form, holding the answers.
     expect(screen.getByRole("link").getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs&b=150");
   });
@@ -30,12 +32,12 @@ describe("the choose route's loading screen", () => {
     nav.path = "/decks/new/choose";
     const { unmount } = render(<ShellLoading />);
     expect(screen.getByTestId("choose-loading")).toBeTruthy();
-    expect(screen.queryByText("Clearing a space")).toBeNull();
+    expect(screen.queryByText(shellCopy.loading.deckNew.heading)).toBeNull();
     unmount();
     nav.path = "/decks/new";
     render(<ShellLoading />);
     expect(screen.queryByTestId("choose-loading")).toBeNull();
-    expect(screen.getByText("Clearing a space")).toBeTruthy();
+    expect(screen.getByText(shellCopy.loading.deckNew.heading)).toBeTruthy();
     nav.path = "/decks/new/choose";
   });
 
@@ -43,7 +45,7 @@ describe("the choose route's loading screen", () => {
     nav.qs = "t=dinosaurs";
     render(<Loading />);
     expect(screen.queryByTestId("choose-loading")).toBeNull();
-    expect(screen.getByText("Clearing a space")).toBeTruthy();
+    expect(screen.getByText(shellCopy.loading.deckNew.heading)).toBeTruthy();
     // Its crown pulses like every loader's (Hugh, 2026-10-12): not drawn `still`.
     expect(document.querySelectorAll(".anim-dots")).toHaveLength(3);
   });

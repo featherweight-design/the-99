@@ -2,7 +2,7 @@
 // saying something visible, and the O4 page with no offers section.
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { packOffers } from "../../lib/copy/credits-page";
+import { packOffers, creditsPageCopy } from "../../lib/copy/credits-page";
 import { buildCreditsModel, type AllowanceFacts } from "../../lib/payments/page-model";
 import type { CreditHistoryRow } from "../../lib/payments/return";
 
@@ -30,7 +30,7 @@ describe("the page", () => {
     expect(screen.getAllByRole("listitem").filter((li) => li.hasAttribute("data-cell")).map((li) => li.getAttribute("data-cell"))).toEqual(["free"]);
     expect(screen.queryByText(/Spent in this order/i)).toBeNull();
     expect(screen.getByRole("button", { name: "Buy pack: 40 credits · $5" })).toBeTruthy();
-    expect(screen.getByText("Nothing bought yet. Receipts show here once you do.")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.hist.empty)).toBeTruthy();
     expect(screen.getByTestId("credits-total").textContent).toBe("3");
   });
 
@@ -68,7 +68,7 @@ describe("the page", () => {
     render(<CreditsView suggestedV2={false} model={model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row] })} ret={null} />);
     expect(screen.queryByText("Get more credits")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
-    expect(screen.getByText("Purchase history")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.hist.title)).toBeTruthy();
     expect(screen.getByText(/^Refunds: email/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "support@the-99.dev" }).getAttribute("href")).toBe("mailto:support@the-99.dev");
   });
@@ -82,7 +82,7 @@ describe("the page", () => {
     expect(band.querySelector("a")?.getAttribute("href")).toBe("mailto:support@the-99.dev");
     // Between the balance and the history, as the offers sit.
     expect(band.previousElementSibling?.querySelector("[data-cell]")).not.toBeNull();
-    expect(screen.getByText("Purchase history")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.hist.title)).toBeTruthy();
     expect(screen.getByTestId("credits-total").textContent).toBe("15");
   });
 
@@ -99,14 +99,14 @@ describe("the page", () => {
     const buys = screen.getAllByRole("button", { name: /^Buy / });
     expect(buys.map((b) => b.getAttribute("aria-label"))).toEqual(["Buy pack: 40 credits · $5", "Buy pack: 100 credits · $10"]);
     // The card says the count and the price; the button does not say them again.
-    expect(buys.map((b) => b.textContent)).toEqual(["Buy pack", "Buy pack"]);
+    expect(buys.map((b) => b.textContent)).toEqual([creditsPageCopy.pack.buy, creditsPageCopy.pack.buy]);
     expect(buys[0].closest("section")).toBe(buys[1].closest("section"));
     expect(container.querySelector("#credits-offers + div")?.className).toContain("flex-col");
   });
 
   it("a cancelled return draws one quiet line, and a plain visit draws no band", () => {
     const { rerender } = render(<CreditsView suggestedV2={false} model={model()} ret={{ kind: "cancelled" }} />);
-    expect(screen.getByText("Checkout closed. Nothing was charged.")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.ret.cancelled)).toBeTruthy();
     rerender(<CreditsView suggestedV2={false} model={model()} ret={null} />);
     expect(screen.queryByText(/Checkout closed/)).toBeNull();
   });
@@ -150,11 +150,11 @@ describe("the Buy press", () => {
   });
 
   it.each([
-    ["invalid", "That pack isn’t available."],
-    ["unverified", "Verify your email address to buy credits."],
-    ["throttled", "Too many tries. Wait a little, then try again."],
-    ["unconfigured", "Buying credits isn’t set up here yet."],
-    ["failed", "Couldn’t start checkout. Try again."],
+    ["invalid", creditsPageCopy.buy.invalid],
+    ["unverified", creditsPageCopy.buy.unverified],
+    ["throttled", creditsPageCopy.buy.throttled],
+    ["unconfigured", creditsPageCopy.buy.unconfigured],
+    ["failed", creditsPageCopy.buy.failed],
   ] as const)("says %s out loud and gives the press back", async (reason, text) => {
     m.buy.mockResolvedValue({ ok: false, reason });
     render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
@@ -181,7 +181,7 @@ describe("the Buy press", () => {
     m.buy.mockResolvedValue({ ok: false, reason: "off" });
     render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
     press();
-    expect((await screen.findByRole("alert")).textContent).toBe("Buying credits isn’t available right now.");
+    expect((await screen.findByRole("alert")).textContent).toBe(creditsPageCopy.buy.off);
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
     expect(screen.queryByText("Get more credits")).toBeNull();
   });
@@ -214,7 +214,7 @@ describe("the Buy press", () => {
     m.buy.mockRejectedValue(new Error("network"));
     render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
     press();
-    expect((await screen.findByRole("alert")).textContent).toBe("Couldn’t start checkout. Try again.");
+    expect((await screen.findByRole("alert")).textContent).toBe(creditsPageCopy.buy.failed);
   });
 });
 
@@ -232,7 +232,7 @@ describe("Receipt", () => {
     m.receipt.mockResolvedValueOnce({ ok: false, reason: "none" });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Receipt/ })); });
     expect(win.close).toHaveBeenCalled();
-    expect((await screen.findByRole("alert")).textContent).toBe("Couldn’t open that receipt.");
+    expect((await screen.findByRole("alert")).textContent).toBe(creditsPageCopy.hist.receiptFailed);
     vi.unstubAllGlobals();
   });
 
@@ -291,24 +291,24 @@ describe("the plan on the page", () => {
 
   it("K2: a subscribed reader gets Your plan above the pack offer, and no Subscribe", () => {
     render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ plan: 74 }), subscription: sub(false, 2), history: [planRow] })} ret={null} />);
-    const plan = screen.getByRole("heading", { name: "Your plan" });
+    const plan = screen.getByRole("heading", { name: creditsPageCopy.plan.heading });
     const packs = screen.getByRole("heading", { name: "Get more credits" });
     expect(plan.compareDocumentPosition(packs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Subscribe/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
-    expect(screen.getByText("Monthly plan, first month")).toBeTruthy();
+    expect(screen.getByRole("button", { name: creditsPageCopy.plan.cancel })).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.hist.planFirst)).toBeTruthy();
   });
 
   it("O2: the switch off keeps a held plan with Cancel and Update card, and no offers", () => {
     render(<CreditsView suggestedV2={false} model={model({ switchOn: false, allowance: allowance({ plan: 74 }), subscription: sub(false, 20), history: [planRow] })} ret={null} />);
-    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel plan", "Update card", "Receipt"]);
-    for (const name of ["Update card", "Receipt"]) expect(screen.getByRole("button", { name }).querySelector("svg[data-link-out]")).toBeTruthy();
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([creditsPageCopy.plan.cancel, creditsPageCopy.plan.updateCard, "Receipt"]);
+    for (const name of [creditsPageCopy.plan.updateCard, "Receipt"]) expect(screen.getByRole("button", { name }).querySelector("svg[data-link-out]")).toBeTruthy();
     expect(screen.queryByText("Get more credits")).toBeNull();
   });
 
   it("O3: the switch off and a cancelled plan loses Keep my plan", () => {
     render(<CreditsView suggestedV2={false} model={model({ switchOn: false, allowance: allowance({ plan: 74 }), subscription: sub(true, 20), history: [planRow] })} ret={null} />);
-    expect(screen.queryByRole("button", { name: "Keep my plan" })).toBeNull();
+    expect(screen.queryByRole("button", { name: creditsPageCopy.plan.keep })).toBeNull();
     expect(screen.getByText("Ends December 4")).toBeTruthy();
   });
 
@@ -329,7 +329,7 @@ describe("the plan on the page", () => {
     expect(screen.getByText("Plan started: 50 credits added")).toBeTruthy();
     expect(screen.getByText("Renews November 16. Cancel any time below.")).toBeTruthy();
     expect(screen.queryByText(/pack credits added/)).toBeNull();
-    expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: creditsPageCopy.plan.cancel })).toBeTruthy();
   });
 
   it("R3 then a cancel on the page: the renew line goes, the band keeps its count", () => {
@@ -338,7 +338,7 @@ describe("the plan on the page", () => {
     expect(screen.queryByText(/Renews .*Cancel any time below/)).toBeNull();
   });
 
-  it.each([["off", "Buying credits isn’t available right now."], ["blocked", "Buying is paused on this account."]] as const)("a Subscribe answered %s takes the offers away like Buy pack", async (reason, text) => {
+  it.each([["off", creditsPageCopy.buy.off], ["blocked", "Buying is paused on this account."]] as const)("a Subscribe answered %s takes the offers away like Buy pack", async (reason, text) => {
     m.buyPlan.mockResolvedValue({ ok: false, reason });
     render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Subscribe/ }));

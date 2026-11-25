@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { writtenForYouCopy } from "../../lib/copy/discovery";
-import { stripDay } from "../../lib/copy/welcome-credits";
+import { stripDay, welcomeCreditsCopy } from "../../lib/copy/welcome-credits";
 import { buildCreditsModel } from "../../lib/payments/page-model";
 import { welcomeSheet, type WelcomeFacts } from "../../lib/payments/welcome-sheet";
 import { Balance } from "./balance";
@@ -32,8 +32,8 @@ describe("the Welcome cell's line", () => {
     expect(line.textContent).toBe(`expire ${stripDay(AT)}`);
     expect(line.getAttribute("data-welcome-expires")).toBe("held");
     expect(cell().querySelector("br")).not.toBeNull();
-    fireEvent.click(within(cell()).getByRole("button", { name: "Where they work" }));
-    const dialog = screen.getByRole("dialog", { name: "Where credits work" });
+    fireEvent.click(within(cell()).getByRole("button", { name: welcomeCreditsCopy.strip.where }));
+    const dialog = screen.getByRole("dialog", { name: welcomeCreditsCopy.sheet.title });
     // Opened from /credits, the teaser is absent: the reader is already there.
     expect(within(dialog).queryByRole("link", { name: /See packs/ })).toBeNull();
   });

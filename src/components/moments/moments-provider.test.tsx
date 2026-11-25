@@ -325,7 +325,7 @@ describe("MomentsProvider", () => {
     render(
       <MomentsProvider live={LIVE} spent={["lineup"]}>
         <Control id="lineup" name="Stats" />
-        <Control id="matchups" name="Split by" />
+        <Control id="matchups" name={"Fixture split control"} />
       </MomentsProvider>,
     );
     expect(observed).toHaveLength(0);
@@ -456,7 +456,7 @@ describe("MomentsProvider", () => {
           <button type="button">behind</button>
         </div>
         <div role="dialog" aria-modal="true" aria-label="front">
-          <Control id="wishlist" name="Add to wishlist" />
+          <Control id="wishlist" name={"Fixture add control"} />
         </div>
       </MomentsProvider>,
     );
@@ -465,7 +465,7 @@ describe("MomentsProvider", () => {
       return [{}] as unknown as DOMRectList;
     };
     try {
-      onScreen("Add to wishlist");
+      onScreen("Fixture add control");
       await advance(ARRIVE_MS);
       expect(screen.getByRole("note", { name: "Add to wishlist, a tip" })).toBeTruthy();
     } finally {

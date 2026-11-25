@@ -3,6 +3,8 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
+import { discoveryCopy } from "../../../lib/copy/commander-discovery";
+import { commandersCopy } from "../../../lib/copy/commanders";
 
 const env = vi.hoisted(() => ({ value: {} as unknown as NodeJS.ProcessEnv }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -44,7 +46,7 @@ describe("the rankers at zero cards", () => {
     await draw(CommandersPage);
     expect(screen.getByRole("heading", { name: "Nothing to rank yet" })).toBeInTheDocument();
     expect(
-      screen.getByText("We rank commanders from the cards you own. Add some and every one you can build shows up here."),
+      screen.getByText(commandersCopy.noCards.body),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
     expect(screen.queryByText("No collection yet")).toBeNull();
@@ -54,7 +56,7 @@ describe("the rankers at zero cards", () => {
     await draw(DiscoverPage);
     expect(screen.getByRole("heading", { name: "Nothing to rank yet" })).toBeInTheDocument();
     expect(
-      screen.getByText("Discover finds commanders your cards are close to building. Add some and they show up here."),
+      screen.getByText(discoveryCopy.noCards.body),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
   });

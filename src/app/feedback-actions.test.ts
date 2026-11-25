@@ -104,7 +104,7 @@ describe("sendProblemReport signed out", () => {
       kind: "problem",
       answers: { what: "Blank page", doing: "Pressing Apply" },
       page: "/decks/abc",
-      device: "Safari on iPhone",
+      device: "Fixture browser",
       digest: "d1",
       sentryEventId: "e1",
       source: "report",

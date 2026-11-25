@@ -11,6 +11,7 @@ import { StatsViewSwitch } from "../decks/lineup/stats-view-switch";
 import { PreconDoor } from "../decks/precons/precon-door";
 import { UploadChoice, type SyncChoice } from "../collection/upload-choice";
 import { GuidedBanner } from "../commanders/guided-banner";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 vi.mock("../../app/moments-actions", () => ({ spendMomentAction: async () => {} }));
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
@@ -65,7 +66,7 @@ afterEach(() => {
 });
 
 describe("M12, the door in /commanders' guided banner (discovery R3 E2)", () => {
-  const doors = () => screen.getAllByRole("link", { name: "Help me choose →" });
+  const doors = () => screen.getAllByRole("link", { name: helpMeChooseCopy.door.cta });
   it("carries Help me choose on the banner's door, at either width", async () => {
     wrap(<GuidedBanner uniqueCardsRead={1418} candidateCount={64} helpMeChoose />);
     const [phone, desk] = doors();
@@ -77,7 +78,7 @@ describe("M12, the door in /commanders' guided banner (discovery R3 E2)", () => 
   });
   it("is absent with the switch off: no door, no anchor", async () => {
     wrap(<GuidedBanner uniqueCardsRead={1418} candidateCount={64} />);
-    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+    expect(screen.queryByRole("link", { name: helpMeChooseCopy.door.cta })).toBeNull();
     await seen(screen.getAllByRole("heading")[0]);
     expect(screen.queryByRole("note")).toBeNull();
   });
