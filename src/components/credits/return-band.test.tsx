@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReturnOutcome } from "../../app/credits/actions";
 
 vi.mock("../../app/credits/actions", () => ({ readReturnAction: vi.fn(), receiptAction: vi.fn() }));
+const captureEngagement = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/analytics/posthog", () => ({ captureEngagement }));
 
 import { CancelledBand, ReturnBand } from "./return-band";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
@@ -23,8 +25,27 @@ function band(read: ReturnType<typeof vi.fn>, extra: Partial<React.ComponentProp
 }
 const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 
-beforeEach(() => vi.useFakeTimers());
+beforeEach(() => { vi.useFakeTimers(); captureEngagement.mockClear(); window.localStorage.clear(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
+
+describe("credits_bought", () => {
+  it("sends the kind alone, once per Session, on a paid return", () => {
+    const first = band(vi.fn().mockResolvedValue(processing));
+    expect(captureEngagement).toHaveBeenCalledExactlyOnceWith("credits_bought", { kind: "pack" });
+    first.unmount();
+    band(vi.fn().mockResolvedValue(processing));
+    expect(captureEngagement).toHaveBeenCalledTimes(1);
+  });
+
+  it("says plan for a plan's return, and sends nothing for a Session that read as none", () => {
+    band(vi.fn(), { initial: { kind: "added", units: 40, plan: true } });
+    expect(captureEngagement).toHaveBeenCalledExactlyOnceWith("credits_bought", { kind: "plan" });
+    cleanup();
+    captureEngagement.mockClear();
+    band(vi.fn(), { sessionId: "cs_2", initial: { kind: "none" } });
+    expect(captureEngagement).not.toHaveBeenCalled();
+  });
+});
 
 describe("ReturnBand states", () => {
   it("R1: names what is being added and claims nothing landed", () => {

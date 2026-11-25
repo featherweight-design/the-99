@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const trialFillRows = vi.fn();
 const moreRows = vi.fn();
 vi.mock("../../app/decks/new/choose/results-actions", () => ({ trialFillRows, moreRows }));
+const captureEngagement = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/analytics/posthog", () => ({ captureEngagement }));
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
@@ -330,5 +332,36 @@ describe("a past run opened from History (PR 3)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("recommendation_run", () => {
+  beforeEach(() => captureEngagement.mockClear());
+
+  it("is sent once when a read the reader watched finishes, and not when a page loads already done", () => {
+    const tree = (phase: ReadPhase) => (
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ReadScope initial={phase}>
+          <ChooseResults page={page(3)} params={{ ...emptyParams(), results: true, themes: ["dinosaurs"] }} themeLabels={{ dinosaurs: "Dinosaurs" }} cardName={null} queryString="t=dinosaurs&v=results" changeHref="/decks/new/choose?t=dinosaurs" />
+        </ReadScope>
+      </CardDetailProvider>
+    );
+    const { rerender } = render(tree("reading"));
+    expect(captureEngagement).not.toHaveBeenCalled();
+    rerender(tree("done"));
+    expect(captureEngagement).toHaveBeenCalledExactlyOnceWith("recommendation_run", { surface: "choose" });
+    cleanup();
+    captureEngagement.mockClear();
+    render(tree("done"));
+    expect(captureEngagement).not.toHaveBeenCalled();
+  });
+
+  it("is not sent for a past run, a read still running or a failed read", () => {
+    draw(page(3), "done", [], {}, undefined, { pastRun: true });
+    cleanup();
+    draw(page(3), "reading");
+    cleanup();
+    draw(page(3), "failed");
+    expect(captureEngagement).not.toHaveBeenCalled();
   });
 });

@@ -14,6 +14,10 @@ export const IMPORT_SIZE_BUCKET = ["1_to_10", "11_to_100", "101_to_1000", "1001_
 export const importSizeBucket = (n: number): (typeof IMPORT_SIZE_BUCKET)[number] =>
   n <= 10 ? "1_to_10" : n <= 100 ? "11_to_100" : n <= 1000 ? "101_to_1000" : "1001_plus";
 export const UPGRADE_APPLIED_KIND = ["precon"] as const;
+/** What a purchase was: the kind only, never an amount, a balance, a plan name or a Stripe id. */
+export const CREDITS_BOUGHT_KIND = ["plan", "pack"] as const;
+/** Where a recommendation run rendered. One surface today; a closed set so a new one is added here, never typed free. */
+export const RECOMMENDATION_RUN_SURFACE = ["choose"] as const;
 
 export type EngagementEvents = {
   deck_created: { source: (typeof DECK_CREATED_SOURCE)[number] };
@@ -23,6 +27,8 @@ export type EngagementEvents = {
   wishlist_added: Record<never, never>;
   upgrade_applied: { kind: (typeof UPGRADE_APPLIED_KIND)[number] };
   friend_invite_created: Record<never, never>;
+  credits_bought: { kind: (typeof CREDITS_BOUGHT_KIND)[number] };
+  recommendation_run: { surface: (typeof RECOMMENDATION_RUN_SURFACE)[number] };
 };
 
 /** Each event's closed sets, property by property: what the guard test checks a built event against. */
@@ -34,6 +40,8 @@ export const ENGAGEMENT_EVENT_VALUES: { [E in keyof EngagementEvents]: { [P in k
   wishlist_added: {},
   upgrade_applied: { kind: UPGRADE_APPLIED_KIND },
   friend_invite_created: {},
+  credits_bought: { kind: CREDITS_BOUGHT_KIND },
+  recommendation_run: { surface: RECOMMENDATION_RUN_SURFACE },
 };
 
 /**
@@ -48,4 +56,6 @@ export const ENGAGEMENT_SEND_CEILING: { [E in keyof EngagementEvents]: number } 
   wishlist_added: 1,
   upgrade_applied: 1,
   friend_invite_created: 1,
+  credits_bought: 1,
+  recommendation_run: 1,
 };

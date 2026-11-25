@@ -2,21 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { FUNNEL_EVENTS } from "../../../src/lib/analytics/funnel-events";
 import { ENGAGEMENT_EVENT_VALUES } from "../../../src/lib/analytics/engagement-events";
 import { apiHostFor, makeClient } from "./client.mts";
-import { DASHBOARDS, NOT_YET_SENT, eventNamesIn } from "./definitions.mts";
+import { DASHBOARDS, eventNamesIn } from "./definitions.mts";
 import { contains, planRun, summarize } from "./plan.mts";
 
 const sent = new Set<string>([...Object.keys(ENGAGEMENT_EVENT_VALUES), ...FUNNEL_EVENTS]);
 const all = DASHBOARDS.flatMap((d) => d.insights);
 
 describe("the dashboard definitions", () => {
-  it("count only events something sends, or one named in NOT_YET_SENT", () => {
+  it("count only events something sends", () => {
     const counted = eventNamesIn(DASHBOARDS);
-    const unknown = [...counted].filter((e) => !sent.has(e) && !(NOT_YET_SENT as readonly string[]).includes(e));
+    const unknown = [...counted].filter((e) => !sent.has(e));
     expect(unknown).toEqual([]);
-  });
-
-  it("drop a NOT_YET_SENT name once the registry sends it", () => {
-    expect(NOT_YET_SENT.filter((e) => sent.has(e))).toEqual([]);
   });
 
   it("name every dashboard and insight once, so a match by name is unambiguous", () => {

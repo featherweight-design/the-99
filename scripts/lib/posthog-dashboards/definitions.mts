@@ -7,9 +7,6 @@
 // (`src/lib/analytics/engagement-events.ts`) and the server funnel's (`funnel-events.ts`); `definitions.test.mts` fails
 // on a name that is in neither, so a rename cannot leave a dashboard counting nothing.
 
-/** Events a definition below counts that no code sends yet. Each leaves this list in the PR that wires it. */
-export const NOT_YET_SENT = ["credits_bought", "recommendation_run"] as const;
-
 type Query = Record<string, unknown>;
 export type InsightDef = { name: string; description: string; query: Query };
 export type DashboardDef = { name: string; description: string; insights: InsightDef[] };
@@ -106,8 +103,8 @@ export const DASHBOARDS: DashboardDef[] = named([
       { name: "Wishlist adds", description: "Readers who put a card on the wishlist.", query: eventReaders("wishlist_added", "Wishlist added") },
       { name: "Precon upgrades applied", description: "Readers who applied a precon upgrade to a deck.", query: eventReaders("upgrade_applied", "Upgrade applied", "kind") },
       { name: "Friend invites created", description: "Readers who made a friend invite.", query: eventReaders("friend_invite_created", "Friend invite") },
-      { name: "Credits bought, by kind", description: "Readers who bought credits, a plan or a pack. Fills in once the event ships.", query: eventReaders("credits_bought", "Credits bought", "kind") },
-      { name: "Recommendation runs", description: "Readers whose Help me choose result rendered. Fills in once the event ships.", query: eventReaders("recommendation_run", "Recommendation run", "surface") },
+      { name: "Credits bought, by kind", description: "Readers who bought credits, a plan or a pack.", query: eventReaders("credits_bought", "Credits bought", "kind") },
+      { name: "Recommendation runs", description: "Readers whose Help me choose result rendered.", query: eventReaders("recommendation_run", "Recommendation run", "surface") },
     ],
   },
   {
