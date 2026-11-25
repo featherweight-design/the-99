@@ -236,7 +236,7 @@ describe("CostsView, other months", () => {
     expect(within(calls).getByText("$0")).toBeInTheDocument();
     expect(within(calls).getByText("0 runs")).toBeInTheDocument();
     expect(screen.getByText("No model calls in October 2026.")).toBeInTheDocument();
-    expect(screen.getByText(adminCopy.costs.tiles.perAccount).parentElement).toHaveTextContent("no accounts with runs");
+    expect(screen.getByText(adminCopy.costs.tiles.perAccount).parentElement).toHaveTextContent(adminCopy.costs.tileSub.accounts(0));
   });
 
   it("draws a past month to its end, with › live and no pace (C4)", () => {

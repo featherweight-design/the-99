@@ -6,6 +6,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
 import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/flag-page-rule";
+import { adminCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/flags/registry";
 import type { OverrideRow } from "../../lib/flags/resolve";
