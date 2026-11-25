@@ -748,7 +748,7 @@ CSS3 = '''
 .st3 .seat.none{border-style:dashed;background:transparent}
 .st3 .seat.none:after{display:none}
 .st3 .seat.none .t span{color:var(--fg-faint);text-shadow:none}
-.st3 .seat.ini .big{top:auto;bottom:10px;right:12px;transform:none}
+.st3 .seat.ini .big{top:8px;left:10px;right:auto;bottom:auto;transform:none;font-size:14px}
 .P .st3{grid-template-columns:repeat(2,minmax(0,1fr))}
 .P .st3 .seat{height:70px}
 '''
@@ -768,3 +768,179 @@ board('E-Phone.dc.html', 'R3 Seats, phone', pair(
     labelled('DECKS › GAMES', phone_decks(lambda g: e_row(g))),
     labelled('DECK DETAILS › GAMES', phone_deck(lambda g: e_row(g, True)))), 860)
 print('r3 ok')
+
+# =====================  R4 (Hugh 2026-11-25): building on Seats  =====================
+CSS4 = '''
+:root{--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46}
+.st3 .seat.empty{border:1px dashed var(--border-dashed);background:transparent}
+.st3 .seat.empty:after{display:none}
+.st3 .seat.empty .t span{color:var(--fg-locked);font:500 10.5px "IBM Plex Mono",monospace;letter-spacing:.06em;text-shadow:none}
+.seat a.open{position:absolute;inset:0;z-index:2;display:block}
+.seat .go{position:absolute;right:8px;bottom:9px;z-index:1;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px 0 9px;border-radius:12px;background:rgba(20,17,14,.72);border:1px solid rgba(237,230,216,.18);font:500 11.5px "IBM Plex Sans",sans-serif;color:var(--fg)}
+.seat .go svg{color:var(--fg)}
+.opendk{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 6px 0 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--fg-muted);text-decoration:none}
+.opendk svg{color:var(--fg-muted)}
+.opendk .sm{display:none}.P .opendk .lg{display:none}.P .opendk .sm{display:inline}.P .opendk{min-height:44px}.P .hp-r{grid-template-columns:minmax(0,1fr) auto 100px}
+/* page head: headline + primary Log a game on one line */
+.ph{display:flex;align-items:flex-end;gap:20px;padding-top:12px}
+.ph .hl{flex:1;padding-top:0}
+.P .ph{flex-direction:column;align-items:stretch;gap:14px}
+/* How it's playing */
+.hp-lead{padding:16px 16px 4px;display:flex;flex-direction:column;gap:6px}
+.hp-lead h3{font-family:"Cinzel",serif;font-weight:700;font-size:19px;line-height:1.25}
+.hp-lead p{font-size:13.5px;color:var(--fg-body);line-height:1.5}
+.hp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:min-content;gap:12px;padding:12px 16px 16px}
+.hp-cols .hp-col.tall{grid-row:span 2}
+.hp-col{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden}
+.hp-col h4{margin:0;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hp-col h4 i{width:8px;height:8px;border-radius:50%%;flex:none}
+.hp-r{display:grid;grid-template-columns:minmax(0,1fr) auto 112px;align-items:center;gap:10px;min-height:38px;padding:4px 12px;border-top:1px solid var(--border)}
+.hp-r:first-of-type{border-top:0}
+.hp-r .n{font-size:13.5px;color:var(--fg)}
+.hp-r .c{white-space:nowrap;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);text-align:right}
+.pips{display:flex;gap:4px}
+.pip{width:10px;height:10px;border-radius:50%%;border:1.5px solid var(--border-strong);box-sizing:border-box}
+.pip.u{background:var(--success);border-color:var(--success)}
+.pip.d{background:var(--warning);border-color:var(--warning)}
+.hp-key{display:flex;align-items:center;gap:14px;margin-left:auto;font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.hp-key span{display:inline-flex;align-items:center;gap:6px}
+.foot{display:flex;align-items:center;gap:12px;min-height:48px;padding:4px 8px 4px 16px;border-top:1px solid var(--border);background:var(--surface-rail)}
+.foot p{flex:1;font-size:13px;color:var(--fg-body)}
+.foot a{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap}
+.P .hp-cols{grid-template-columns:minmax(0,1fr);padding:12px 14px 14px}
+.P .hp-key{display:none}
+.P .foot{flex-direction:column;align-items:flex-start;gap:0;padding:10px 8px 6px 14px}
+.P .foot a{padding:0}
+/* Matchups v3: squares follow the name; counts past ten */
+.mu3{display:grid;grid-template-columns:56px 300px minmax(0,1fr);align-items:center;column-gap:16px;min-height:56px;padding:8px 16px;border-top:1px solid var(--border)}
+.mu3:first-of-type{border-top:0}
+.mu3 .th{width:56px;height:38px;border-radius:7px;overflow:hidden;background:var(--elevated);display:flex;align-items:center;justify-content:center;gap:2px;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.mu3 .th.pp{background:transparent}
+.mu3 .th img{width:100%%;height:100%%;object-fit:cover}
+.mu3 .th b{width:8px;height:8px;border-radius:2px;display:block}
+.mu3 .nm{min-width:0;display:flex;flex-direction:column;gap:2px}
+.mu3 .nm b{font-weight:400;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu3 .nm span{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.mu3 .rr{display:flex;align-items:center;gap:14px;min-width:0}
+.mu3 .sq{display:flex;gap:4px;flex-wrap:wrap}
+.mu3 .sq .rs{width:22px;height:22px;font-size:10.5px;border-radius:5px}
+.mu3 .ct{display:flex;align-items:center;gap:10px}
+.mu3 .ct .rq{display:flex;align-items:center;gap:6px;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.mu3 .ct .rs{width:22px;height:22px;font-size:10.5px;border-radius:5px}
+.mu3 .g{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap}
+.P .mu3{grid-template-columns:48px minmax(0,1fr);row-gap:7px;padding:10px 14px;align-items:start}
+.P .mu3 .th{width:48px;height:34px;grid-row:span 2}
+.P .mu3 .nm b{white-space:normal;font-size:13.5px;line-height:1.3}
+.P .mu3 .rr{grid-column:2;justify-content:space-between}
+'''.replace('%%', '%')
+CSS = CSS + CSS4
+
+def e4_seat_me(g, link):
+    w = g['r'] == 'W'
+    go = f'<span class="go">Open deck{chev(12)}</span><a class="open" href="#" aria-label="Open {DECKS[g["deck"]]}"></a>' if link else ''
+    return (f'<div class="seat me{" win" if w else ""}"><img src="art/{g["deck"]}.webp" alt=""><span class="who">You</span>'
+            f'<span class="t" style="right:{"112px" if link else "10px"}"><b>{DECKS[g["deck"]]}<span class="stamp" style="background:rgba(20,17,14,.6)">{g["v"]}</span></b></span>'
+            + (f'<span class="won">{trophy(12)}Won</span>' if w else '') + go + '</div>')
+def e4_row(g, deck_tab=False):
+    pill = '<span class="pill w">Won</span>' if g['r'] == 'W' else '<span class="pill">Lost</span>'
+    end = '<span class="end"><span class="xbtn">×</span></span>' if deck_tab else f'<a class="end opendk" href="#"><span class="lg">Open {DECKS[g["deck"]]}</span><span class="sm">Open deck</span>{chev(13)}</a>'
+    seats = e4_seat_me(g, False) + ''.join(d_seat(s) for s in g['seats'])
+    seats += '<div class="seat empty"><span class="t"><span>Seat not logged</span></span></div>' * max(0, g['pod'] - 1 - len(g['seats']))
+    return (f'<article class="row a-row"><div class="a-top">{pill}<span class="meta">{pods(g["pod"])} · {g["date"]}</span>{end}</div>'
+            f'<div class="st2 st3">{seats}</div>{markgroups(g)}{note(g)}</article>')
+
+# How it's playing (replaces Keep); pips are Sai's three games oldest first: Oct 30 W, Oct 30 L, Nov 1 L
+AX = {'Speed': 'u--', 'Answers': 'u--', 'Closing the game': 'u--', 'The deck’s plan': '-u-', 'Cards in hand': '--u', 'Comebacks': '--u',
+      'Mana': 'udd', 'Board presence': 'u-d'}
+def pips(p): return '<span class="pips">' + ''.join(f'<span class="pip{" u" if c=="u" else (" d" if c=="d" else "")}"></span>' for c in p) + '</span>'
+def hp_count(n, kind):
+    u = AX[n].count('u'); d = AX[n].count('d')
+    if kind == 'u': return f'up in {u} of 3'
+    if kind == 'd': return f'down in {d} of 3'
+    return f'{u} up · {d} down'
+def hp_col(title, dot, names, kind='u', tall=False):
+    rows = ''.join(f'<div class="hp-r"><span class="n">{n}</span>{pips(AX[n])}<span class="c">{hp_count(n, kind)}</span></div>' for n in names)
+    return f'<div class="hp-col{" tall" if tall else ""}"><h4><i style="background:{dot}"></i>{title}</h4>{rows}</div>'
+def how_playing(phone=False):
+    key = ('<span class="hp-key"><span><span class="pip u"></span>helped</span><span><span class="pip d"></span>hurt</span>'
+           '<span><span class="pip"></span>not marked</span></span>')
+    return (f'<section class="box">{band("How it’s playing", "from your marks", key)}'
+            '<div class="hp-lead"><h3>Mana is holding it back.</h3><p>Marked against you in 2 of 3 games. Everything else is helping, or cutting both ways.</p></div>'
+            '<div class="hp-cols">'
+            + hp_col('Helping', 'var(--success)', ['Speed', 'Answers', 'Closing the game', 'The deck’s plan', 'Cards in hand', 'Comebacks'], 'u', True)
+            + hp_col('Hurting', 'var(--warning)', ['Mana'], 'd')
+            + hp_col('Both ways', 'linear-gradient(90deg,var(--success) 50%,var(--warning) 50%)', ['Board presence'], 'b')
+            + '</div>'
+            f'<div class="foot"><p>Suggested changes uses these games to pick what to cut and add.</p><a href="#">Open Tuning{chev(13)}</a></div></section>')
+
+def th_art(a): return f'<span class="th"><img src="art/{a}.webp" alt=""></span>'
+def th_pips(cs): return '<span class="th pp">' + ''.join(f'<b style="background:var(--{c.lower()})"></b>' for c in cs) + '</span>'
+def sqs(r): return '<span class="sq">' + ''.join(f'<span class="rs{" w" if x=="W" else (" o" if x=="–" else "")}">{x}</span>' for x in r) + '</span>'
+def cts(w, l, o): return (f'<span class="ct"><span class="rq"><span class="rs w">W</span>{w}</span><span class="rq"><span class="rs">L</span>{l}</span>'
+                          f'<span class="rq"><span class="rs o">–</span>{o}</span></span>')
+def mu3(th, name, sub, r=None, counts=None):
+    n = len(r) if r else sum(counts)
+    body = sqs(r) if r else cts(*counts)
+    s = f'<span>{sub}</span>' if sub else ''
+    return f'<div class="mu3">{th}<span class="nm"><b>{name}</b>{s}</span><span class="rr">{body}<span class="g">{n} game{"" if n == 1 else "s"}</span></span></div>'
+MU_ROWS = {
+ 'Commander': [mu3(th_art('ishai'), 'Ishai, Ojutai Dragonspeaker', None, counts=(4, 5, 2)),
+               mu3(th_art('giada'), 'Giada, Font of Hope', None, list('W–LWL–')),
+               mu3(th_art('ghalta'), 'Ghalta, Primal Hunger', None, list('LLW')),
+               mu3(th_art('bruse'), 'Bruse Tarl, Boorish Herder', None, list('W–')),
+               mu3(th_art('kilo'), 'Kilo, Apogee Mind', None, list('L'))],
+ 'Colors': [mu3(th_pips('WUG'), 'Bant', 'W U G', counts=(5, 4, 2)),
+            mu3(th_pips('WUBR'.replace('B', 'B')), 'Four colors', 'no G', list('–WLW')),
+            mu3(th_pips('G'), 'Mono-green', 'G', list('LLW')),
+            mu3(th_pips('UR'), 'Izzet', 'U R', list('W–')),
+            mu3(th_pips('WUB'), 'Esper', 'W U B', list('L'))],
+ 'Friend': [mu3(th_art('ghalta'), 'Colin', None, counts=(4, 5, 2)),
+            mu3(th_art('giada'), 'Peter', None, list('W–L–WL')),
+            mu3(th_art('ishai'), 'Max', None, list('–LWL–')),
+            mu3('<span class="th">CH</span>', 'Chris', None, list('LW'))],
+}
+def matchups3(tab='Commander', phone=False):
+    segs = ''.join(f'<span class="{"on" if t==tab else ""}" style="{"flex:1;justify-content:center" if phone else ""}">{t}</span>' for t in ['Commander', 'Colors', 'Friend'])
+    seg = f'<span class="seg" style="margin-left:auto">{segs}</span>'
+    key = ('<div class="key2"><span><span class="rs w">W</span>you won</span><span><span class="rs">L</span>they won</span>'
+           '<span><span class="rs o">–</span>someone else won</span></div>')
+    return (f'<section class="box">{band("Matchups", "14 of 20 games", "" if phone else seg)}'
+            + (f'<div style="padding:10px 12px 0"><span class="seg" style="display:flex">{segs}</span></div>' if phone else '')
+            + ''.join(MU_ROWS[tab]) + key + '</section>')
+
+SMALL_MU = [mu3(th_art('ishai'), 'Ishai, Ojutai Dragonspeaker', None, list('L')), mu3(th_art('giada'), 'Giada, Font of Hope', None, list('–')),
+            mu3(th_art('bruse'), 'Bruse Tarl, Boorish Herder', None, list('W')), mu3(th_art('ghalta'), 'Ghalta, Primal Hunger', None, list('L'))]
+def matchups_small(phone=False):
+    segs = ''.join(f'<span class="{"on" if t=="Commander" else ""}" style="{"flex:1;justify-content:center" if phone else ""}">{t}</span>' for t in ['Commander', 'Colors', 'Friend'])
+    key = ('<div class="key2"><span><span class="rs w">W</span>you won</span><span><span class="rs">L</span>they won</span>'
+           '<span><span class="rs o">–</span>someone else won</span></div>')
+    return (f'<section class="box">{band("Matchups", "3 of 3 games", "" if phone else f"<span class=\"seg\" style=\"margin-left:auto\">{segs}</span>")}'
+            + (f'<div style="padding:10px 12px 0"><span class="seg" style="display:flex">{segs}</span></div>' if phone else '')
+            + ''.join(SMALL_MU) + key + '</section>')
+
+def deck_top4(phone=False):
+    tabs = '<div class="dtabs"><span>Your deck<i>99</i></span><span>Analysis</span><span>Tuning</span><span class="on">Games<i>3</i></span><span>Versions<i>4</i></span></div>'
+    head = ('<div class="ph"><div class="hl"><h2 class="disp">3 games logged. 1–2.</h2><div class="facts">pods of 2–3 · Oct to Nov 2026 · last played Nov 1</div></div>'
+            f'<span class="btn cream" style="min-height:44px;padding:0 20px;font-size:14px">Log a game</span></div>')
+    return tabs + head + how_playing(phone) + matchups_small(phone)
+def deck_desktop4():
+    body = ''.join(month_box([g for g in SAI if g['m'] == k], t, lambda g: e4_row(g, True)) for k, t in MONTHS)
+    return f'<div class="D"><div class="rail"><img src="art/rail-decks.png" alt=""></div><div class="main" style="padding-top:0">{deck_top4()}{body}</div></div>'
+def phone_deck4():
+    body = ''.join(month_box([g for g in SAI if g['m'] == k], t, lambda g: e4_row(g, True)) for k, t in MONTHS)
+    return (f'<div class="P"><img class="ptop" src="art/p-top.png" alt=""><div class="pm" style="padding-top:0">{deck_top4(True)}{body}</div>'
+            f'<div class="addbar"><span class="f">{srch()} Add a card by name · Bant</span><span class="tog"></span><span style="font-size:12.5px;color:var(--fg-body)">Owned only</span></div>'
+            f'<img class="ptab" src="art/p-tabbar-decks.png" alt="" style="margin-top:0"></div>')
+
+board('G-Desktop.dc.html', 'R4 Seats, desktop', pair(
+    labelled('DECKS › GAMES', decks_desktop(lambda g: e4_row(g))),
+    labelled('DECK DETAILS › GAMES · HD - Sai', deck_desktop4())), 2680)
+board('G-Phone.dc.html', 'R4 Seats, phone', pair(
+    labelled('DECKS › GAMES', phone_decks(lambda g: e4_row(g))),
+    labelled('DECK DETAILS › GAMES', phone_deck4())), 860)
+def mu_desk(tab): return f'<div class="D" style="grid-template-columns:minmax(0,1fr);width:1236px;background:transparent"><div>{matchups3(tab)}</div></div>'
+def mu_phone(tab): return f'<div class="P" style="padding:0 16px;background:transparent">{matchups3(tab, True)}</div>'
+board('G-Matchups.dc.html', 'R4 Matchups, fuller', '<div style="display:flex;flex-direction:column;gap:60px">'
+      + pair(*[labelled(f'DESKTOP · {t.upper()}', mu_desk(t)) for t in ['Commander', 'Colors']]) + pair(labelled('DESKTOP · FRIEND', mu_desk('Friend')))
+      + pair(*[labelled(f'PHONE · {t.upper()}', mu_phone(t)) for t in ['Commander', 'Colors', 'Friend']]) + '</div>', 2552)
+print('r4 ok')

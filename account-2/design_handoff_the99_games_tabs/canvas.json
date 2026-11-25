@@ -93,6 +93,27 @@
    "w": 860,
    "h": 2774,
    "title": "R3 Seats \u00b7 phone"
+  },
+  "G-Desktop.dc.html": {
+   "x": 0,
+   "y": -8653,
+   "w": 2680,
+   "h": 2045,
+   "title": "R4 Seats \u00b7 desktop"
+  },
+  "G-Phone.dc.html": {
+   "x": 2760,
+   "y": -8653,
+   "w": 860,
+   "h": 3056,
+   "title": "R4 Seats \u00b7 phone"
+  },
+  "G-Matchups.dc.html": {
+   "x": 3700,
+   "y": -8653,
+   "w": 2552,
+   "h": 1466,
+   "title": "R4 Matchups \u00b7 fuller (14 of 20 games)"
   }
  },
  "order": [
@@ -107,7 +128,10 @@
   "D-Desktop.dc.html",
   "D-Phone.dc.html",
   "E-Desktop.dc.html",
-  "E-Phone.dc.html"
+  "E-Phone.dc.html",
+  "G-Desktop.dc.html",
+  "G-Phone.dc.html",
+  "G-Matchups.dc.html"
  ],
  "notes": {
   "ta": {
@@ -144,6 +168,13 @@
    "text": "R3 \u00b7 Seats, with the fixes",
    "kind": "title1",
    "maxW": 3620
+  },
+  "tg": {
+   "x": 0,
+   "y": -8913,
+   "text": "R4 \u00b7 Seats, how it\u2019s playing, fuller matchups",
+   "kind": "title1",
+   "maxW": 6252
   }
  },
  "designSystems": []

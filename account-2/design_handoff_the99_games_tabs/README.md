@@ -37,3 +37,10 @@ Hugh's R1 read: B is out; C's light rows + details are strong; A's seats are the
 Hugh: R2's headline rows still didn't land; A's rows are the favourite, and a drill-down isn't needed when a game's details are this sparse.
 - Row: Lost/Won pill + pod · date, then the seat grid (5 across desktop, 2 phone), seat tiles 74px with art barely dimmed (R1 was too faded), "You" tile with deck + version stamp, winner ringed with a "🏆 Won" tag; Helped / Hurt groups; note. Cross-deck row › opens the deck's Games tab at that game (shipped); deck tab keeps the ✕.
 - Kept from R2: month band record (win-share bar + counted W/L squares), Matchups fixes (L only for the winner, dashed – when someone else won, fixed squares column, no trophy count, three-square key).
+
+## R4 (2026-11-25): building on Seats (boards G-Desktop, G-Phone, G-Matchups)
+- Row link: the corner › (shipped jump to the game on its deck's Games tab) becomes words, "Open {deck} ›" (phone "Open deck ›"), on the row's top line. Deck tab rows keep the ✕.
+- Unlogged seats: one dashed "Seat not logged" tile per missing seat, from the pod size (a 5-player game with no opponents shows 4). No edit path exists, so no "add" action.
+- Keep → "How it's playing" box: band legend (helped / hurt / not marked dots); lead = the shipped headline finding ("Mana is holding it back.") + one line; Helping (tall column) | Hurting + Both ways stacked; each mark row = one pip per game oldest→newest + "up in 1 of 3" / "down in 2 of 3" / "1 up · 1 down". Watch/Mixed retired. Footer band: "Suggested changes uses these games to pick what to cut and add." + "Open Tuning ›".
+- Page head: "3 games logged. 1–2." + facts, with Log a game as the cream primary on the right (phone full width under it).
+- Matchups v3: squares follow a fixed 300px name column, count right after them ("3 games"), past ten games the squares become counted W / L / – squares; Colors rows lead with WUBRG pips and the identity letters; Friend rows lead with the friend's most-played commander art (initials when none). Band count "14 of 20 games".
