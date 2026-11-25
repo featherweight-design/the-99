@@ -5,6 +5,8 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FeedbackRead } from "../../lib/admin/feedback";
 import type { FeedbackRow } from "../../lib/admin/feedback-rule";
+import { feedbackAdminCopy } from "../../lib/copy/admin";
+import { checkInCopy } from "../../lib/copy/report";
 
 vi.mock("../../app/admin/feedback/actions", () => ({ markRead: (id: unknown) => markRead(id), loadMore: (f: unknown, o: unknown) => loadMore(f, o) }));
 const sendCheckIn = vi.fn();
@@ -26,7 +28,7 @@ const problem = (over: Partial<FeedbackRow> = {}): FeedbackRow => ({
 const checkIn = (over: Partial<FeedbackRow> = {}): FeedbackRow => ({
   id: ID(2), kind: "check_in", name: "Jun", group: "mox-boston", at: iso(5 * 3_600_000), unread: false,
   page: null, device: null, digest: null, source: null,
-  answers: { rating: 4, uses: ["Decks", "Shopping"], pod: "Already have", note: "Wish I could see the precon." }, ...over,
+  answers: { rating: 4, uses: ["Decks", "Shopping"], pod: checkInCopy.podOptions[2], note: "Wish I could see the precon." }, ...over,
 });
 const READ = (rows: FeedbackRow[], over: Partial<FeedbackRead> = {}): FeedbackRead => ({
   rows, counts: { all: 14, problem: 6, check_in: 8 }, fresh: 2, avg: 4.16, hasMore: false, ...over,
@@ -42,7 +44,7 @@ beforeEach(() => {
 describe("FeedbackList", () => {
   it("opens the check-in as a preview from Show me the check-in, and closing it records nothing", () => {
     view(READ([problem()]));
-    fireEvent.click(screen.getByRole("button", { name: "Show me the check-in" }));
+    fireEvent.click(screen.getByRole("button", { name: feedbackAdminCopy.previewCheckIn }));
     expect(screen.getByTestId("check-in-send")).toBeTruthy();
     fireEvent.click(screen.getByTestId("check-in-not-now"));
     expect(screen.queryByTestId("check-in-send")).toBeNull();
@@ -53,7 +55,7 @@ describe("FeedbackList", () => {
 
   it("draws the pills with counts, the current one marked, and links that set the filter", () => {
     view(READ([problem()]), "problem");
-    const nav = screen.getByRole("navigation", { name: "Filter feedback" });
+    const nav = screen.getByRole("navigation", { name: feedbackAdminCopy.filterLabel });
     const links = within(nav).getAllByRole("link");
     expect(links.map((l) => l.textContent)).toEqual(["All14", "Problems6", "Check-ins8"]);
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/feedback", "/admin/feedback?filter=problem", "/admin/feedback?filter=check_in"]);
@@ -76,38 +78,38 @@ describe("FeedbackList", () => {
     expect(within(row).getByText("Problem")).toBeInTheDocument();
     expect(within(row).getByText("mox-boston")).toBeInTheDocument();
     expect(within(row).getByText("2h ago")).toBeInTheDocument();
-    expect(within(row).getByText("What happened").nextElementSibling).toHaveTextContent("The deck page went blank.");
-    expect(within(row).getByText("What I was doing").nextElementSibling).toHaveTextContent("Trying Suggested changes.");
+    expect(within(row).getByText(feedbackAdminCopy.fields.what).nextElementSibling).toHaveTextContent("The deck page went blank.");
+    expect(within(row).getByText(feedbackAdminCopy.fields.doing).nextElementSibling).toHaveTextContent("Trying Suggested changes.");
     const chips = [...row.querySelectorAll("[data-feedback-chips] > span")].map((c) => c.textContent);
-    expect(chips).toEqual(["/decks/thopter-works", "error a81f3c2e", "iPhone · Safari", "from the error screen"]);
+    expect(chips).toEqual(["/decks/thopter-works", "error a81f3c2e", "iPhone · Safari", feedbackAdminCopy.contextSource.error]);
   });
 
   it("says `from About` for the About source, and draws no chip for a source or field it lacks", () => {
     view(READ([problem({ source: "about", digest: null }), problem({ id: ID(3), source: "report", page: null, digest: null, device: null })]));
-    expect(screen.getByText("from About")).toBeInTheDocument();
+    expect(screen.getByText(feedbackAdminCopy.contextSource.about)).toBeInTheDocument();
     expect(screen.queryByText(/error [0-9a-f]{8}/)).toBeNull();
     expect(rowOf(ID(3)).querySelector("[data-feedback-chips] > span")).toBeNull();
   });
 
   it("draws `not given` for an empty problem answer", () => {
     view(READ([problem({ answers: { what: "It broke.", doing: "" } })]));
-    expect(screen.getByText("not given")).toBeInTheDocument();
+    expect(screen.getByText(feedbackAdminCopy.notGiven)).toBeInTheDocument();
   });
 
   it("draws a check-in row with its rating, uses, pod and note, and no context chips", () => {
     view(READ([checkIn()]));
     const row = rowOf(ID(2));
     expect(within(row).getByText("Check-in")).toBeInTheDocument();
-    expect(within(row).getByText("Working for you").nextElementSibling).toHaveTextContent("4 of 5");
-    expect(within(row).getByText("Uses most").nextElementSibling).toHaveTextContent("Decks, Shopping");
-    expect(within(row).getByText("Tell the pod").nextElementSibling).toHaveTextContent("Already have");
-    expect(within(row).getByText("Anything else").nextElementSibling).toHaveTextContent("Wish I could see the precon.");
+    expect(within(row).getByText(feedbackAdminCopy.fields.rating).nextElementSibling).toHaveTextContent("4 of 5");
+    expect(within(row).getByText(feedbackAdminCopy.fields.uses).nextElementSibling).toHaveTextContent("Decks, Shopping");
+    expect(within(row).getByText(feedbackAdminCopy.fields.pod).nextElementSibling).toHaveTextContent(checkInCopy.podOptions[2]);
+    expect(within(row).getByText(feedbackAdminCopy.fields.more).nextElementSibling).toHaveTextContent("Wish I could see the precon.");
     expect(row.querySelector("[data-feedback-chips] > span")).toBeNull();
   });
 
   it("draws a dash for each empty check-in answer", () => {
     view(READ([checkIn({ answers: { rating: null, uses: [], pod: "", note: "" } })]));
-    for (const label of ["Working for you", "Uses most", "Tell the pod", "Anything else"]) {
+    for (const label of [feedbackAdminCopy.fields.rating, feedbackAdminCopy.fields.uses, feedbackAdminCopy.fields.pod, feedbackAdminCopy.fields.more]) {
       expect(screen.getByText(label).nextElementSibling).toHaveTextContent("—");
     }
   });
@@ -115,15 +117,15 @@ describe("FeedbackList", () => {
   it("labels a signed-out row and draws no group chip on it", () => {
     view(READ([problem({ name: null, group: "mox-boston" })]));
     const row = rowOf(ID(1));
-    expect(within(row).getByText("Signed out")).toBeInTheDocument();
+    expect(within(row).getByText(feedbackAdminCopy.signedOut)).toBeInTheDocument();
     expect(within(row).queryByText("mox-boston")).toBeNull();
   });
 
   it("marks every name and free-text node ph-no-capture", () => {
     view(READ([problem(), checkIn(), problem({ id: ID(4), name: null })]));
     const captured = (el: HTMLElement) => el.closest(".ph-no-capture") !== null;
-    for (const t of ["Rosa", "Jun", "Signed out", "mox-boston"]) for (const el of screen.getAllByText(t)) expect(captured(el)).toBe(true);
-    for (const t of ["The deck page went blank.", "Trying Suggested changes.", "Decks, Shopping", "Already have", "Wish I could see the precon."]) {
+    for (const t of ["Rosa", "Jun", feedbackAdminCopy.signedOut, "mox-boston"]) for (const el of screen.getAllByText(t)) expect(captured(el)).toBe(true);
+    for (const t of ["The deck page went blank.", "Trying Suggested changes.", "Decks, Shopping", checkInCopy.podOptions[2], "Wish I could see the precon."]) {
       expect(captured(screen.getAllByText(t)[0])).toBe(true);
     }
     for (const el of screen.getAllByText("/decks/thopter-works")) expect(captured(el)).toBe(true);
@@ -135,8 +137,8 @@ describe("FeedbackList", () => {
     const row = rowOf(ID(1));
     expect(row.querySelector("img")).toBeNull();
     expect(row.querySelector("a")).toBeNull();
-    expect(within(row).getByText("What happened").nextElementSibling!.textContent).toBe(evil);
-    expect(within(row).getByText("What happened").nextElementSibling!.children).toHaveLength(0);
+    expect(within(row).getByText(feedbackAdminCopy.fields.what).nextElementSibling!.textContent).toBe(evil);
+    expect(within(row).getByText(feedbackAdminCopy.fields.what).nextElementSibling!.children).toHaveLength(0);
   });
 
   it("carries no account id, address or Clerk id in the markup", () => {
@@ -147,7 +149,7 @@ describe("FeedbackList", () => {
   it("clears the dot and decrements the count on a press, and sends the row's own id once", async () => {
     view(READ([problem()]));
     expect(rowOf(ID(1)).hasAttribute("data-unread")).toBe(true);
-    await act(async () => fireEvent.click(within(rowOf(ID(1))).getByRole("button", { name: "New. Mark as read" })));
+    await act(async () => fireEvent.click(within(rowOf(ID(1))).getByRole("button", { name: feedbackAdminCopy.markReadLabel })));
     expect(markRead).toHaveBeenCalledTimes(1);
     expect(markRead).toHaveBeenCalledWith(ID(1));
     expect(rowOf(ID(1)).hasAttribute("data-unread")).toBe(false);
@@ -183,27 +185,27 @@ describe("FeedbackList", () => {
 
   it("draws no Load more without more rows, and appends the next page from the rows already drawn", async () => {
     const { unmount } = view(READ([problem()]));
-    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    expect(screen.queryByRole("button", { name: feedbackAdminCopy.loadMore })).toBeNull();
     unmount();
     loadMore.mockResolvedValueOnce({ ok: true, rows: [checkIn()], hasMore: false });
     view(READ([problem()], { hasMore: true }), "problem");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: feedbackAdminCopy.loadMore })));
     expect(loadMore).toHaveBeenCalledWith("problem", 1);
     expect(rowOf(ID(2))).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    expect(screen.queryByRole("button", { name: feedbackAdminCopy.loadMore })).toBeNull();
   });
 
   it("says so, and keeps the button, when Load more fails", async () => {
     loadMore.mockResolvedValueOnce({ ok: false });
     view(READ([problem()], { hasMore: true }));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
-    expect(screen.getByText("Couldn’t load more. Try again.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Load more" })).toBeInTheDocument();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: feedbackAdminCopy.loadMore })));
+    expect(screen.getByText(feedbackAdminCopy.loadFailed)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: feedbackAdminCopy.loadMore })).toBeInTheDocument();
   });
 
   it("draws the empty line and no list when there are no rows", () => {
     view(READ([], { counts: { all: 0, problem: 0, check_in: 0 }, fresh: 0, avg: null }));
-    expect(screen.getByText("No feedback yet.")).toBeInTheDocument();
+    expect(screen.getByText(feedbackAdminCopy.empty)).toBeInTheDocument();
     expect(screen.queryByRole("list")).toBeNull();
   });
 });

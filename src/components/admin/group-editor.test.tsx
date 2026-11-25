@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupWriteResult } from "../../lib/admin/group-writes";
 import type { MemberRow, SavedGroup } from "../../lib/admin/groups-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 const refresh = vi.fn();
 const push = vi.fn();
@@ -52,7 +53,7 @@ describe("GroupEditor", () => {
     fireEvent.click(member("Theo"));
     expect(member("Theo")).toHaveAttribute("aria-checked", "true");
     expect(member("Theo")).toHaveTextContent("moves from friends");
-    expect(member("Theo")).toHaveTextContent("selected, not saved");
+    expect(member("Theo")).toHaveTextContent(adminCopy.groups.selectedUnsaved);
     expect(screen.getByText("2 selected, 1 not saved")).toBeInTheDocument();
     const bar = pending()!;
     expect(bar).toHaveTextContent("Theo selected, not saved");
@@ -79,7 +80,7 @@ describe("GroupEditor", () => {
       expect(screen.queryAllByRole("checkbox")).toEqual([]);
     }
     fireEvent.change(search, { target: { value: "nobody" } });
-    expect(screen.getByText("No account matches.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.payments.form.noMatch)).toBeInTheDocument();
   });
 
   it("sends the whole desired state on Save, and leaves the refresh to the action's own revalidation", async () => {
@@ -116,7 +117,7 @@ describe("GroupEditor", () => {
     save.mockResolvedValueOnce({ ok: false, error: "name" });
     fireEvent.change(name, { target: { value: "friends" } });
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
-    expect(screen.getByRole("alert")).toHaveTextContent("Another group has that name.");
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.groups.errors.name);
   });
 
   it("opens the confirm on a rise, and re-sends with the confirmed count", async () => {
@@ -153,7 +154,7 @@ describe("GroupEditor", () => {
     render(<GroupEditor saved={SAVED} rows={ROWS} />);
     fireEvent.click(member("Jun"));
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
-    expect(within(pending()!).getByRole("alert")).toHaveTextContent("Didn’t save. Nothing changed.");
+    expect(within(pending()!).getByRole("alert")).toHaveTextContent(adminCopy.setting.saveFailed);
   });
 
   it("calls a lost reply unknown, never nothing changed, and refreshes to reconcile", async () => {

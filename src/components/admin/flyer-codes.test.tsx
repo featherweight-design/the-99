@@ -18,6 +18,8 @@ vi.mock("../../app/admin/invites/flyer-actions", () => ({
 
 import { flyersView, type FlyerCodeRead } from "../../lib/admin/flyers-rule";
 import { FlyerCodes } from "./flyer-codes";
+import { flyerAdminCopy } from "../../lib/copy/admin";
+import { adminCopy } from "../../lib/copy/admin";
 
 const day = (d: number, m = 10) => new Date(Date.UTC(2026, m - 1, d, 9));
 const code = (over: Partial<FlyerCodeRead>): FlyerCodeRead => ({
@@ -34,7 +36,7 @@ const view = flyersView(
 describe("FlyerCodes", () => {
   it("draws the header meta, a row per code and the launch-list card", () => {
     render(<FlyerCodes view={view} />);
-    expect(screen.getByRole("heading", { name: "Flyer codes" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: adminCopy.groups.delete.facts.codes })).toBeTruthy();
     expect(screen.getByText("2 live · from your invites, 40 left · 23 on the launch list")).toBeTruthy();
     expect(document.querySelectorAll("[data-flyer]")).toHaveLength(3);
     expect(within(screen.getByTestId("launch-list-card")).getByText("Launch list · 23")).toBeTruthy();
@@ -68,8 +70,8 @@ describe("FlyerCodes with no codes", () => {
   it("keeps New flyer code, writes the zero meta and holds the muted line in a card (No-Codes.dc.html)", () => {
     render(<FlyerCodes view={empty} />);
     expect(screen.getByText("none yet · from your invites, 37 left")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "New flyer code" })).toBeTruthy();
-    expect(screen.getByTestId("flyer-codes-empty").textContent).toBe("No flyer codes yet: make one for a store, then print its flyer.");
+    expect(screen.getByRole("button", { name: flyerAdminCopy.newCode })).toBeTruthy();
+    expect(screen.getByTestId("flyer-codes-empty").textContent).toBe(flyerAdminCopy.empty);
     expect(document.querySelectorAll("[data-flyer]")).toHaveLength(0);
   });
 
@@ -77,8 +79,8 @@ describe("FlyerCodes with no codes", () => {
     render(<FlyerCodes view={empty} />);
     const card = screen.getByTestId("launch-list-card");
     expect(within(card).getByText("Launch list · 0")).toBeTruthy();
-    expect(within(card).getByText("no emails yet · a used-up or ended flyer asks for one")).toBeTruthy();
-    expect(screen.queryByText("Download CSV")).toBeNull();
+    expect(within(card).getByText(flyerAdminCopy.launchListNone)).toBeTruthy();
+    expect(screen.queryByText(flyerAdminCopy.csv)).toBeNull();
   });
 
   it("draws no empty line when a code exists", () => {
@@ -96,14 +98,14 @@ describe("New flyer code", () => {
 
   it("opens in place with Store, Group (a new group named from the store), the chips and the spend line, and Cancel closes it", () => {
     render(<FlyerCodes view={view} groups={groups} />);
-    fireEvent.click(screen.getByRole("button", { name: "New flyer code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.newCode }));
     const form = screen.getByTestId("flyer-new-form");
-    expect(screen.queryByRole("button", { name: "New flyer code" })).toBeNull();
+    expect(screen.queryByRole("button", { name: flyerAdminCopy.newCode })).toBeNull();
     fireEvent.change(within(form).getByLabelText("Store"), { target: { value: "Mox Boston" } });
     expect(within(form).getByRole("option", { name: "New group: mox-boston" })).toBeTruthy();
     expect(within(form).getByRole("option", { name: "pizza-pod" })).toBeTruthy();
-    expect(within(form).getAllByRole("listitem").map((l) => l.textContent)).toEqual(["50 sign-ups", "3 free runs a day", "15 welcome credits", "3 invites each", "ends at launch"]);
-    expect(within(form).getByText("Each sign-up spends one of your invites.")).toBeTruthy();
+    expect(within(form).getAllByRole("listitem").map((l) => l.textContent)).toEqual([flyerAdminCopy.facts[0], flyerAdminCopy.facts[1], flyerAdminCopy.facts[2], flyerAdminCopy.facts[3], flyerAdminCopy.facts[4]]);
+    expect(within(form).getByText(flyerAdminCopy.spends)).toBeTruthy();
     fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByTestId("flyer-new-form")).toBeNull();
     expect(makeCode).not.toHaveBeenCalled();
@@ -111,8 +113,8 @@ describe("New flyer code", () => {
 
   it("dims Make code until the store has text, then makes a code in a new group and closes", async () => {
     render(<FlyerCodes view={view} groups={groups} />);
-    fireEvent.click(screen.getByRole("button", { name: "New flyer code" }));
-    const make = screen.getByRole("button", { name: "Make code" }) as HTMLButtonElement;
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.newCode }));
+    const make = screen.getByRole("button", { name: flyerAdminCopy.make }) as HTMLButtonElement;
     expect(make.disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Store"), { target: { value: "Mox Boston" } });
     expect(make.disabled).toBe(false);
@@ -124,19 +126,19 @@ describe("New flyer code", () => {
 
   it("makes the code in an existing group when one is picked", async () => {
     render(<FlyerCodes view={view} groups={groups} />);
-    fireEvent.click(screen.getByRole("button", { name: "New flyer code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.newCode }));
     fireEvent.change(screen.getByLabelText("Store"), { target: { value: "Pizza Pod 2" } });
     fireEvent.change(screen.getByLabelText("Group"), { target: { value: "g-pod" } });
-    fireEvent.click(screen.getByRole("button", { name: "Make code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.make }));
     await waitFor(() => expect(makeCode).toHaveBeenCalledWith("Pizza Pod 2", "g-pod"));
   });
 
   it("keeps the form and says so when the make fails", async () => {
     makeCode.mockResolvedValue({ ok: false, error: "failed" });
     render(<FlyerCodes view={view} groups={groups} />);
-    fireEvent.click(screen.getByRole("button", { name: "New flyer code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.newCode }));
     fireEvent.change(screen.getByLabelText("Store"), { target: { value: "Mox" } });
-    fireEvent.click(screen.getByRole("button", { name: "Make code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.make }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect((screen.getByLabelText("Store") as HTMLInputElement).value).toBe("Mox");
   });
@@ -153,7 +155,7 @@ describe("Revoke", () => {
     fireEvent.click(within(document.querySelector("[data-flyer=MOX4QK]") as HTMLElement).getByTestId("flyer-revoke"));
     const dialog = screen.getByRole("dialog", { name: "Revoke Mox Boston’s code?" });
     expect(dialog.textContent).toContain("People can no longer join with MOX4QK. The 12 who joined keep their accounts, their group and their invites. Printed flyers will say it no longer works.");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Keep it" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: adminCopy.groups.delete.keep }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(revokeCode).not.toHaveBeenCalled();
   });
@@ -161,7 +163,7 @@ describe("Revoke", () => {
   it("revokes the pressed code and closes", async () => {
     render(<FlyerCodes view={view} />);
     fireEvent.click(within(document.querySelector("[data-flyer=KNT3HZ]") as HTMLElement).getByTestId("flyer-revoke"));
-    fireEvent.click(screen.getByRole("button", { name: "Revoke code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.revokeConfirm }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(revokeCode).toHaveBeenCalledWith("k");
     expect(refresh).toHaveBeenCalled();
@@ -171,9 +173,9 @@ describe("Revoke", () => {
     revokeCode.mockResolvedValue({ ok: false, error: "off" });
     render(<FlyerCodes view={view} />);
     fireEvent.click(within(document.querySelector("[data-flyer=MOX4QK]") as HTMLElement).getByTestId("flyer-revoke"));
-    fireEvent.click(screen.getByRole("button", { name: "Revoke code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.revokeConfirm }));
     const alert = await within(screen.getByRole("dialog")).findByRole("alert");
-    expect(alert.textContent).toBe("Couldn’t revoke the code, so nothing changed. Try again.");
+    expect(alert.textContent).toBe(flyerAdminCopy.revokeRefused);
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
@@ -181,9 +183,9 @@ describe("Revoke", () => {
     revokeCode.mockRejectedValue(new Error("network"));
     render(<FlyerCodes view={view} />);
     fireEvent.click(within(document.querySelector("[data-flyer=MOX4QK]") as HTMLElement).getByTestId("flyer-revoke"));
-    fireEvent.click(screen.getByRole("button", { name: "Revoke code" }));
+    fireEvent.click(screen.getByRole("button", { name: flyerAdminCopy.revokeConfirm }));
     const alert = await within(screen.getByRole("dialog")).findByRole("alert");
-    expect(alert.textContent).toBe("Lost the connection, so the code may be revoked. Check the list before trying again.");
+    expect(alert.textContent).toBe(flyerAdminCopy.revokeLost);
     expect(refresh).toHaveBeenCalled();
   });
 });
@@ -192,14 +194,14 @@ describe("Revoke", () => {
 describe("the launch date row", () => {
   const withDate = (launchDate: string | null) =>
     flyersView({ codes: [], listed: 23, held: 40, open: [], holds: [], launchDate }, new Date("2026-10-30T12:00:00Z"));
-  const dateInput = () => screen.getByLabelText("Launch date") as HTMLInputElement;
+  const dateInput = () => screen.getByLabelText(flyerAdminCopy.launchDate) as HTMLInputElement;
 
   beforeEach(() => setLaunchDate.mockReset());
 
   it("starts empty with the label, a date field, the help line and no button (D1/P1)", () => {
     render(<FlyerCodes view={withDate(null)} />);
     const row = screen.getByTestId("launch-date-row");
-    expect(within(row).getByText("Optional. Leave it blank until the date is firm.")).toBeTruthy();
+    expect(within(row).getByText(flyerAdminCopy.launchDateHelp)).toBeTruthy();
     expect(dateInput().type).toBe("date");
     expect(dateInput().value).toBe("");
     expect(screen.queryByTestId("launch-date-save")).toBeNull();
@@ -253,7 +255,7 @@ describe("the launch date row", () => {
     fireEvent.change(dateInput(), { target: { value: "2020-01-01" } });
     fireEvent.click(screen.getByTestId("launch-date-save"));
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe("Didn’t save. Nothing changed.");
+    expect(alert.textContent).toBe(adminCopy.setting.saveFailed);
     expect(dateInput().value).toBe("2020-01-01");
     expect(screen.getByTestId("launch-date-save")).toBeTruthy();
     fireEvent.change(dateInput(), { target: { value: "2026-12-01" } });
@@ -265,7 +267,7 @@ describe("the launch date row", () => {
     render(<FlyerCodes view={withDate(null)} />);
     fireEvent.change(dateInput(), { target: { value: "2026-11-20" } });
     fireEvent.click(screen.getByTestId("launch-date-save"));
-    expect((await screen.findByRole("alert")).textContent).toBe("Didn’t save. Nothing changed.");
+    expect((await screen.findByRole("alert")).textContent).toBe(adminCopy.setting.saveFailed);
     expect(dateInput().value).toBe("2026-11-20");
   });
 });
@@ -294,10 +296,10 @@ describe("Download CSV", () => {
 
   it("is hidden at zero addresses and shown with some", () => {
     const { unmount } = render(<FlyerCodes view={withListed(0)} />);
-    expect(screen.queryByText("Download CSV")).toBeNull();
+    expect(screen.queryByText(flyerAdminCopy.csv)).toBeNull();
     unmount();
     render(<FlyerCodes view={withListed(23)} />);
-    expect(within(screen.getByTestId("launch-list-card")).getByRole("button", { name: "Download CSV" })).toBeTruthy();
+    expect(within(screen.getByTestId("launch-list-card")).getByRole("button", { name: flyerAdminCopy.csv })).toBeTruthy();
   });
 
   it("saves what the server returns under its filename as text/csv", async () => {
@@ -341,14 +343,14 @@ describe("Download CSV failure line", () => {
   });
 
   it.each([
-    ["failed", { ok: false, error: "failed" }, "The server couldn’t build the download. Reload the page and try again."],
-    ["off", { ok: false, error: "off" }, "The flyer trial is off now, so there\u2019s nothing to download. Reload to see the page as it is."],
+    ["failed", { ok: false, error: "failed" }, flyerAdminCopy.csvFailed],
+    ["off", { ok: false, error: "off" }, flyerAdminCopy.csvOff],
   ])("draws the %s line with no Try again", async (_kind, reply, line) => {
     exportLaunchList.mockResolvedValue(reply);
     render(<FlyerCodes view={withListed(2)} />);
     press();
     await waitFor(() => expect(alert()?.textContent).toBe(line));
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: flyerAdminCopy.csvRetry })).toBeNull();
   });
 
   it("draws the lost line and Try again, which asks again", async () => {
@@ -357,7 +359,7 @@ describe("Download CSV failure line", () => {
     press();
     await waitFor(() => expect(alert()?.textContent).toBe("Lost touch with the server, so nothing downloaded.Try again"));
     exportLaunchList.mockResolvedValueOnce({ ok: true, filename: "f.csv", csv: "email\r\n" });
-    fireEvent.click(within(alert()!).getByRole("button", { name: "Try again" }));
+    fireEvent.click(within(alert()!).getByRole("button", { name: flyerAdminCopy.csvRetry }));
     await waitFor(() => expect(exportLaunchList).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(alert()).toBeNull());
     // The retry unmounted with the line: the focus lands on Download CSV, not the page body.

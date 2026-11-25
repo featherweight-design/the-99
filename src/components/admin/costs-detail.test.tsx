@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { costDetail, type CallRow, type DetailRows, type LabelRunRow } from "../../lib/admin/costs-detail-rule";
 import { costSummary, type CostRows } from "../../lib/admin/costs-rule";
 import { usdToMicro } from "../../lib/model/spend-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 vi.mock("../../app/admin/actions", () => ({ setOrgCap: vi.fn(), setAccountCap: vi.fn(), setSystemCeiling: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin" }));
@@ -48,19 +49,19 @@ describe("CostsDetail, a month with runs", () => {
   it("draws every block in the canvas's order", () => {
     draw({ calls, labelRuns: [labelRun] });
     expect(headings()).toEqual([
-      "Against the caps", "Keys on The 99", "Player runs, month to date", "By model", "Player against system", "By feature and model",
-      "Refunds", "Reserved against spent", "Per account", "Card label runs", "Eval ledgers",
+      adminCopy.costs.caps, adminCopy.costs.keys.title, adminCopy.costs.trendPlayer, adminCopy.costs.byModel, adminCopy.costs.split, adminCopy.costs.byFeature,
+      "Refunds", adminCopy.costs.reserved, adminCopy.costs.perAccount, adminCopy.costs.labels, adminCopy.costs.evals,
     ]);
   });
 
   it("names a composite model as one and leaves its effort not recorded (locked rule 13)", () => {
     const { container } = draw({ calls });
     const composite = container.querySelector('[data-model="claude-haiku-5-5+claude-sonnet-5-5"]') as HTMLElement;
-    expect(composite).toHaveTextContent("a composite run from before the parts table, not split");
-    const table = screen.getByRole("table", { name: "By feature and model" });
+    expect(composite).toHaveTextContent(adminCopy.costs.modelSub.composite);
+    const table = screen.getByRole("table", { name: adminCopy.costs.byFeature });
     const row = within(table).getByText("Help me choose").closest("[role=row]") as HTMLElement;
     expect(row).toHaveTextContent("haiku-5-5+sonnet-5-5");
-    expect(row).toHaveTextContent("not recorded");
+    expect(row).toHaveTextContent(adminCopy.costs.effortUnknown);
     // A system synopsis row is the free rewrite, on its own row.
     expect(within(table).getByText("Overview rewrite, free")).toBeInTheDocument();
   });
@@ -75,7 +76,7 @@ describe("CostsDetail, a month with runs", () => {
   it("holds each feature's mean against its reservation", () => {
     const { container } = draw({ calls });
     expect(container.querySelector('[data-feature="tuning"]')).toHaveTextContent(/\$0\.045 of \$0\.\d{3}/);
-    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("no run yet");
+    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent(adminCopy.costs.noPress);
   });
 
   it("says a run with no cost yet is a run, not none", () => {
@@ -86,9 +87,9 @@ describe("CostsDetail, a month with runs", () => {
   it("marks label figures so far while chunks are still collecting", () => {
     const { container } = draw({ calls, labelRuns: [{ ...labelRun, batches: 2678, open: 1 }] });
     expect(container.querySelector('[data-series="labels"]')).toHaveTextContent("$59.48 so far");
-    const labels = screen.getByRole("table", { name: "Card label runs" });
+    const labels = screen.getByRole("table", { name: adminCopy.costs.labels });
     expect(within(labels).getAllByText("$59.48 so far")).toHaveLength(2);
-    expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent("label runs still collecting or not priced");
+    expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent(adminCopy.costs.labelsPartial);
     expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent("$59.48 so far");
     // The caps hold system spend too: the ceiling and the account figures read so far as well.
     expect(screen.getByText("$59.53 so far · not set")).toBeInTheDocument();
@@ -103,17 +104,17 @@ describe("CostsDetail, a month with runs", () => {
 
   it("lists accounts by masked name, never the Clerk id (Admin R3, C5), and the label runs by run", () => {
     draw({ calls, labelRuns: [labelRun] });
-    const accounts = screen.getByRole("table", { name: "Per account" });
+    const accounts = screen.getByRole("table", { name: adminCopy.costs.perAccount });
     expect(within(accounts).getByText("Hugh H.")).toBeInTheDocument();
     expect(within(accounts).queryByText("user_hugh")).toBeNull();
     expect(within(accounts).queryByText("system")).toBeNull();
-    const labels = screen.getByRole("table", { name: "Card label runs" });
+    const labels = screen.getByRole("table", { name: adminCopy.costs.labels });
     expect(within(labels).getByText("Oct 3 · backfill-2026-10-03")).toBeInTheDocument();
     expect(within(labels).getByText("13.86M / 5.16M")).toBeInTheDocument();
   });
 
   it("names staging for label runs on production, and says none ran on staging", () => {
-    const onProduction = "Card labels run on staging; production receives copies and calls no model for them.";
+    const onProduction = adminCopy.costs.labelsOnStaging;
     const { unmount } = draw({ calls }, { env: "production" });
     expect(screen.getByText(onProduction)).toBeInTheDocument();
     expect(screen.queryByText("No label runs in October.")).toBeNull();
@@ -132,13 +133,13 @@ describe("CostsDetail, a month with runs", () => {
   it("reads an unpriceable model's spend as not priced in By model, never $0", () => {
     const { container } = draw({ calls, labelRuns: [{ ...labelRun, model: "claude-haiku-5-5" }] });
     const row = container.querySelector('[data-model="claude-haiku-5-5"]') as HTMLElement;
-    expect(row).toHaveTextContent("not priced");
+    expect(row).toHaveTextContent(adminCopy.costs.unpriced);
     expect(row).not.toHaveTextContent("$0.00");
   });
 
   it("names the viewer's own row You", () => {
     draw({ calls, labelRuns: [labelRun] }, { viewerId: "user_hugh" });
-    expect(within(screen.getByRole("table", { name: "Per account" })).getByText("You")).toBeInTheDocument();
+    expect(within(screen.getByRole("table", { name: adminCopy.costs.perAccount })).getByText("You")).toBeInTheDocument();
   });
 
   it("counts credits in the singular and the plural", () => {
@@ -188,7 +189,7 @@ describe("CostsDetail, the eval ledgers", () => {
       calls: [call({})],
       ledgers: [{ file: "ledger-cuts.jsonl", entries: [{ at: "2026-10-10T08:21:54Z", usd: 0.1, requests: 1 }, { at: "2026-10-11T08:00:00Z", usd: 2, requests: 24, pending: "r/a2" }] }],
     });
-    const table = screen.getByRole("table", { name: "Eval ledgers" });
+    const table = screen.getByRole("table", { name: adminCopy.costs.evals });
     const row = within(table).getByText("Cuts").closest("[role=row]") as HTMLElement;
     expect(row).toHaveTextContent("$0.100$2.00 pending");
     const pending = within(row).getByText("$2.00 pending");
@@ -205,17 +206,17 @@ describe("CostsDetail, the eval ledgers", () => {
         { file: "ledger-new.jsonl", entries: [{ at: "2026-10-02T19:00:00Z", usd: 0.1, requests: 1 }] },
       ],
     });
-    const table = screen.getByRole("table", { name: "Eval ledgers" });
+    const table = screen.getByRole("table", { name: adminCopy.costs.evals });
     expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Ledger", "Requests", "Settled", "Limit", "Window"]);
     const row = (name: string) => within(table).getByText(name).closest("[role=row]") as HTMLElement;
     const cells = (name: string) => within(row(name)).getAllByRole("cell").map((c) => c.textContent);
-    expect(cells("Original campaign").slice(3)).toEqual(["$25 hard · ask at $15", "Sep 24"]);
+    expect(cells(adminCopy.costs.originalLedger).slice(3)).toEqual(["$25 hard · ask at $15", "Sep 24"]);
     // The row is the campaign's own, though none of it fell in October; the footer is October's.
-    expect(cells("Original campaign").slice(1, 3)).toEqual(["12", "$0.229"]);
+    expect(cells(adminCopy.costs.originalLedger).slice(1, 3)).toEqual(["12", "$0.229"]);
     expect(cells("Help me choose").slice(3)).toEqual(["$5 hard", "Oct 10–11"]);
     expect(cells("Tuning lists").slice(3)).toEqual(["$3 hard · ask at $2.50", "Sep 30–Oct 11"]);
-    expect(cells("New").slice(3)).toEqual(["no limit in code", "Oct 2"]);
-    expect(cells("October").slice(3)).toEqual(["nothing pending", ""]);
+    expect(cells("New").slice(3)).toEqual([adminCopy.costs.noLimit, "Oct 2"]);
+    expect(cells("October").slice(3)).toEqual([adminCopy.costs.nothingPending, ""]);
   });
 
   it("draws the month's evals in their own block, apart from the split and By model", () => {
@@ -234,7 +235,7 @@ describe("CostsDetail, the eval ledgers", () => {
 
   it("says nothing pending when every worst case has settled", () => {
     draw({ calls: [call({})] });
-    expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("nothing pending")).toBeInTheDocument();
+    expect(within(screen.getByRole("table", { name: adminCopy.costs.evals })).getByText(adminCopy.costs.nothingPending)).toBeInTheDocument();
   });
 });
 
@@ -252,9 +253,9 @@ describe("CostsDetail, an eval ledger that could not be read", () => {
 describe("CostsDetail, a month with no runs (C3)", () => {
   it("hides every table but the eval ledgers", () => {
     draw({});
-    expect(headings()).toEqual(["Against the caps", "Keys on The 99", "Player runs, month to date", "Eval ledgers"]);
-    expect(screen.getByRole("table", { name: "Eval ledgers" })).toBeInTheDocument();
-    expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("Original campaign")).toBeInTheDocument();
+    expect(headings()).toEqual([adminCopy.costs.caps, adminCopy.costs.keys.title, adminCopy.costs.trendPlayer, adminCopy.costs.evals]);
+    expect(screen.getByRole("table", { name: adminCopy.costs.evals })).toBeInTheDocument();
+    expect(within(screen.getByRole("table", { name: adminCopy.costs.evals })).getByText(adminCopy.costs.originalLedger)).toBeInTheDocument();
   });
   it("still draws the month's evals, and an unreadable ledger's figure, with nothing else run", () => {
     const { container, unmount } = draw({ ledgers: [{ file: "ledger-cuts.jsonl", entries: [{ at: "2026-10-10T08:21:54Z", usd: 21.48, requests: 40 }] }] });

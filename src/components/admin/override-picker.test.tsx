@@ -2,6 +2,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Suspense, use, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { adminCopy } from "../../lib/copy/admin";
 
 const refresh = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -17,28 +18,28 @@ const draw = (kind: "group" | "user", choices = PEOPLE, taken = new Set<string>(
 describe("OverridePicker", () => {
   it("opens an inline lookup of at most seven, filtered by name, email or id prefix (F7)", () => {
     draw("user");
-    fireEvent.click(screen.getByRole("button", { name: "Add an account override" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addAccount }));
     expect(screen.getAllByRole("listitem")).toHaveLength(7);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "p3@" } });
     expect(screen.getAllByRole("listitem").map((l) => l.textContent)).toEqual(["Player 3p3@x"]);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzz" } });
-    expect(screen.getByText("No account matches.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.payments.form.noMatch)).toBeInTheDocument();
   });
 
   it("adds a pending row that writes nothing until On or Off, then saves with its note", async () => {
     draw("user");
-    fireEvent.click(screen.getByRole("button", { name: "Add an account override" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addAccount }));
     fireEvent.click(screen.getByRole("button", { name: /Player 2/ }));
     expect(screen.getByTestId("pending-override")).toBeInTheDocument();
     expect(set).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByRole("textbox", { name: "Note (optional)" }), { target: { value: "early look" } });
+    fireEvent.change(screen.getByRole("textbox", { name: adminCopy.setting.note }), { target: { value: "early look" } });
     await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
     expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "user_2", value: "on", note: "early look" });
   });
 
   it("hands back to the add button once saved", async () => {
     render(<OverridePicker kind="group" name="FEEDBACK_ENABLED" label="Feedback" choices={[{ id: "g1", label: "friends", sub: "g1", search: "friends" }]} taken={new Set()} killed={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addGroup }));
     fireEvent.click(screen.getByRole("button", { name: /friends/ }));
     await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
     expect(screen.queryByTestId("pending-override")).toBeNull();
@@ -66,7 +67,7 @@ describe("OverridePicker", () => {
     }
     refresh.mockImplementationOnce(() => startRefresh());
     render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Add an account override" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addAccount }));
     fireEvent.click(screen.getByRole("button", { name: /Player 2/ }));
     await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
     expect(screen.getByTestId("pending-override")).toBeInTheDocument();
@@ -76,34 +77,34 @@ describe("OverridePicker", () => {
 
   it("returns focus to the Add button after a save", async () => {
     draw("user");
-    fireEvent.click(screen.getAllByRole("button", { name: "Add an account override" }).at(-1)!);
+    fireEvent.click(screen.getAllByRole("button", { name: adminCopy.flag.addAccount }).at(-1)!);
     fireEvent.click(screen.getByRole("button", { name: /Player 1/ }));
     await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Off" })));
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add an account override" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: adminCopy.flag.addAccount }));
   });
 
   it("caps a long group list at seven, with a search that reaches the rest", () => {
     const many = Array.from({ length: 9 }, (_, i) => ({ id: `g${i}`, label: `group ${i}`, sub: `g${i}`, search: `group ${i}` }));
     draw("group", many);
-    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addGroup }));
     expect(screen.getAllByRole("listitem")).toHaveLength(7);
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search groups" }), { target: { value: "group 8" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: adminCopy.flag.groupSearch }), { target: { value: "group 8" } });
     expect(screen.getAllByRole("listitem").map((l) => l.textContent)).toEqual(["group 8g8"]);
   });
 
   it("marks a target that already has a row `already set` and unpickable (F8)", () => {
     draw("group", [{ id: "g1", label: "friends", sub: "g1", search: "friends" }, { id: "g2", label: "testers", sub: "g2", search: "testers" }], new Set(["g1"]));
-    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addGroup }));
     expect(screen.getByRole("button", { name: /friends/ })).toBeDisabled();
-    expect(screen.getByText("already set")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.flag.already)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /testers/ })).toBeEnabled();
   });
 
   it("says there are no groups yet, and is disabled under a kill", () => {
     draw("group", []);
-    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
-    expect(screen.getByText("No groups yet.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.addGroup }));
+    expect(screen.getByText(adminCopy.groups.none)).toBeInTheDocument();
     draw("user", PEOPLE, new Set(), true);
-    expect(screen.getAllByRole("button", { name: "Add an account override" }).at(-1)).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: adminCopy.flag.addAccount }).at(-1)).toBeDisabled();
   });
 });

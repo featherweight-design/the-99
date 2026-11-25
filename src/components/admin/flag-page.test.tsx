@@ -6,7 +6,6 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
 import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/flag-page-rule";
-import { flagCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/flags/registry";
 import type { OverrideRow } from "../../lib/flags/resolve";
@@ -58,7 +57,7 @@ describe("SwitchPageView", () => {
     expect(ladder.querySelector('[data-rung="account"]')).toHaveAttribute("data-deciding", "true");
     expect(ladder.querySelector('[data-rung="group"]')).not.toHaveAttribute("data-deciding");
     expect(screen.getByTestId("switch-result").textContent).toBe("On for 1 of 2: Hugh");
-    expect(screen.getByText("No group override.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.flag.noGroup)).toBeInTheDocument();
     const row = document.querySelector('[data-override="u2"]') as HTMLElement;
     expect(within(row).getByText("Mara")).toBeInTheDocument();
     expect(within(row).getByText("Off")).toBeInTheDocument();
@@ -80,21 +79,21 @@ describe("SwitchPageView", () => {
     const killed = ladder.querySelector('[data-rung="killed"]') as HTMLElement;
     expect(killed).toHaveAttribute("data-deciding", "true");
     expect(killed.textContent).toBe("Killedthe app-wide rowdecides for all 2");
-    expect(within(killed).getByText("the app-wide row").className).toContain("var(--danger)");
+    expect(within(killed).getByText(adminCopy.flag.killedApp).className).toContain("var(--danger)");
     expect(ladder.querySelector('[data-rung="account"]')?.textContent).toContain("refused");
     // All features sits between Account and Group, labelled and drawn as every other rung (`Flags-Kill` K3).
     expect(ladder.querySelector('[data-rung="all"]')?.textContent).toBe("All featuresNonedecides for none");
     const app = screen.getByTestId("switch-app");
     expect(within(app).getByRole("radio", { name: "Killed" })).toHaveAttribute("aria-checked", "true");
     expect(within(app).getByRole("radio", { name: "On" })).toBeEnabled();
-    expect(app.textContent).toContain("Killed is the kill switch: off for everyone, overrides refused.");
+    expect(app.textContent).toContain(adminCopy.flag.appKilledNote);
     const row = document.querySelector('[data-override="u2"]') as HTMLElement;
-    expect(within(row).getByText("refused, killed")).toBeInTheDocument();
+    expect(within(row).getByText(adminCopy.flag.refusedMeta)).toBeInTheDocument();
     expect(within(row).getByRole("radio", { name: "On" })).toBeDisabled();
     expect(within(row).getByRole("radio", { name: "Off" })).toBeDisabled();
     expect(within(row).getByRole("button", { name: "Clear" })).toBeEnabled();
     // No new override is added under the kill.
-    expect(screen.getByRole("button", { name: "Add an account override" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: adminCopy.flag.addAccount })).toBeDisabled();
   });
 
   it("draws All features on its own rung, between Account and Group, with its count (`Flags-Kill` K5)", () => {
@@ -149,8 +148,8 @@ describe("SwitchPageView", () => {
 
   it("warns when Clerk or the overrides could not be read", () => {
     draw("SUGGESTED_CHANGES_V2_ENABLED", {}, [], [], { clerk: "down", overridesRead: false });
-    expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
-    expect(screen.getByText("Overrides didn’t load. Every flag shows its fallback.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.accounts.clerkDown)).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.flags.overridesUnread)).toBeInTheDocument();
   });
 });
 
@@ -159,19 +158,19 @@ describe("AdminHead on a switch's page", () => {
     // Welcome credits: the one compound switch left once the Analysis tab's switch retired.
     path.current = "/admin/flags/WELCOME_CREDITS_ENABLED";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(flagCopy.WELCOME_CREDITS_ENABLED.label);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Fixture welcome flag");
     expect(screen.getByText("WELCOME_CREDITS_ENABLED")).toBeInTheDocument();
     // A feature switch draws no kind tag; only a model switch is tagged.
     expect(screen.queryByText("model")).toBeNull();
     expect(screen.getByText("needs Buying credits")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "‹ Feature flags" })).toHaveAttribute("href", "/admin/flags");
-    expect(screen.getByRole("link", { name: "Feature flags" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: adminCopy.flag.back })).toHaveAttribute("href", "/admin/flags");
+    expect(screen.getByRole("link", { name: adminCopy.tabs.flags })).toHaveAttribute("aria-current", "page");
   });
 
   it("stays the list's head for an unknown name", () => {
     path.current = "/admin/flags/NOPE_ENABLED";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Feature flags");
-    expect(screen.queryByRole("link", { name: "‹ Feature flags" })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(adminCopy.tabs.flags);
+    expect(screen.queryByRole("link", { name: adminCopy.flag.back })).toBeNull();
   });
 });

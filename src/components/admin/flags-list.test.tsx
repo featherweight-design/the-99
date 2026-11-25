@@ -4,7 +4,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { switchRows } from "../../lib/admin/flags-rule";
-import { flagCopy } from "../../lib/copy/admin";
+import { flagCopy, adminCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import type { OverrideRow } from "../../lib/flags/resolve";
 import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../../lib/flags/registry";
@@ -78,14 +78,14 @@ describe("SwitchesList", () => {
 
   it("searches the name and the variable, and offers Show all when nothing matches (L2, L3)", () => {
     draw({});
-    const search = screen.getByRole("searchbox", { name: "Search by name or variable" });
+    const search = screen.getByRole("searchbox", { name: adminCopy.flags.search });
     fireEvent.change(search, { target: { value: "suggested" } });
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["SUGGESTED_CHANGES_V2_ENABLED"]);
     fireEvent.change(search, { target: { value: "list_cache" } });
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["LIST_CACHE_ENABLED"]);
     fireEvent.change(search, { target: { value: "zzzz" } });
-    expect(screen.getByText("None match.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+    expect(screen.getByText(adminCopy.flags.noneMatch)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.flags.showAll }));
     expect(search).toHaveValue("");
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
   });
@@ -205,28 +205,28 @@ describe("SwitchesList", () => {
 
   it("says so when the accounts are the stored ids because Clerk could not be read (STATES A3)", () => {
     draw({}, [], ["u1"], { clerk: "down" });
-    expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.accounts.clerkDown)).toBeInTheDocument();
   });
 
   it("says nothing about Clerk when Clerk answered", () => {
     draw({});
-    expect(screen.queryByText("Names didn’t load from Clerk.")).toBeNull();
+    expect(screen.queryByText(adminCopy.accounts.clerkDown)).toBeNull();
   });
 
   it("says so when the overrides could not be read", () => {
     draw({}, [], ["u1"], { overridesRead: false });
-    expect(screen.getByText("Overrides didn’t load. Every flag shows its fallback.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.flags.overridesUnread)).toBeInTheDocument();
   });
 });
 
 describe("AdminHead on /admin/flags", () => {
   it("marks the Feature flags tab, after Costs, and titles the page", () => {
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1, name: "Feature flags" })).toBeInTheDocument();
-    const tabs = within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link");
+    expect(screen.getByRole("heading", { level: 1, name: adminCopy.tabs.flags })).toBeInTheDocument();
+    const tabs = within(screen.getByRole("navigation", { name: adminCopy.tabsLabel })).getAllByRole("link");
     expect(tabs.map((t) => [t.textContent, t.getAttribute("aria-current")])).toEqual([
       ["Costs", null],
-      ["Feature flags", "page"],
+      [adminCopy.tabs.flags, "page"],
       ["Groups", null],
       ["Accounts", null],
       ["Models", null],
