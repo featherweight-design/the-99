@@ -28,6 +28,7 @@ import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { FeedPress, feedText, listsText, pressWraps, seesLists, usePostHero } from "../feed/feed-item";
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { feedAge } from "../../lib/feed/age";
 import { comboViewHref } from "../../lib/feed/combo-view-href";
 import { PersonText } from "../../lib/person-name";
@@ -200,6 +201,7 @@ export function LeadStory({
             {item.kind === "combo" && item.combo && (
               <Link href={comboViewHref(item.combo.variantId)} data-feed-combos-view className="inline-flex h-[40px] items-center px-[4px] font-sans text-[13.5px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] md:h-[36px] md:text-[13px]">
                 {`${feedCopy.home.press.combosView} ›`}
+                <PendingReporter href={comboViewHref(item.combo.variantId)} />
               </Link>
             )}
             {ask && !receipt && (
