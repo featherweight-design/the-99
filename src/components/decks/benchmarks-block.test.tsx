@@ -12,7 +12,7 @@ const combatHeavy: DependencyWire = { row: "combat", strength: "heavy", routes: 
 describe("BenchmarksBlock", () => {
   it("draws four grades, each meter announcing its step", () => {
     render(<BenchmarksBlock benchmarks={wire()} analyzedAt="2026-10-01T12:00:00Z" />);
-    expect(screen.getByRole("heading", { name: (name) => name.includes(copy.heading) })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: copy.heading })).toBeTruthy();
     expect(screen.getByText(copy.caption)).toBeTruthy();
     expect(screen.getByRole("img", { name: copy.stepAria(copy.names.velocity, "Typical", 3) })).toBeTruthy();
     expect(screen.getByRole("img", { name: copy.stepAria(copy.names.flow, "High", 4) })).toBeTruthy();
@@ -102,7 +102,7 @@ describe("BenchmarksBlock", () => {
         expect(el.outerHTML).not.toMatch(/\bmd:/);
       }
       // The body wrapper under the band is the block's own, so its classes hold no md: either.
-      expect(container.querySelector("[data-benchmarks] > div")!.className).not.toMatch(/\bmd:/);
+      expect(container.querySelector("[data-benchmarks] > div:last-child")!.className).not.toMatch(/\bmd:/);
       // The Dependencies box and its head hold the shared InfoTip, which keeps its own placement,
       // so only their own classes are the block's.
       const box = container.querySelector("[data-dependencies]")!;
