@@ -51,3 +51,10 @@ Hugh: R2's headline rows still didn't land; A's rows are the favourite, and a dr
 - How it's playing = one list that scales: name | status (Hurting / Both ways / Helping, ordered that way) | one dot per game, oldest first, last 10 at most ("+N earlier" on desktop, hidden on phone) | count ("down in 8 of 14"). "From your marks" dropped. Lead finding + one line above; Open Tuning footer. H-Fuller shows it with 14 games.
 - Keys: both boxes put their key in a row at the bottom of the box, above any footer.
 - Matchups desktop: grid thumb | name | count | squares, so the game count sits left of the squares and rows don't stagger (phone unchanged). Colors rows use the Stats color pips (PIP_STYLE lettered squares, --w/u/b/r/g with --pip-ink-*).
+
+## R6 (2026-11-25): compact How it's playing, filled figure, Stats identity mark (boards I-Desktop, I-Phone, I-Fuller)
+- Seat not logged: the figure is filled (--elevated) with a solid --border-dashed outline; the "?" is gone. The tile keeps its dashed edge.
+- Colors matchups lead with the shipped IdentityMark (decks/lineup/identity-mark.tsx: clustered 7px pips in a 26px box, dashed halo union), not lettered squares.
+- How it's playing is tighter in both options: the lead finding and its line share one row; the status moves to a dot before the name, and the count is coloured by status ("down 8 of 14", "up 6 of 14", "4 up · 3 down"). Dots show the last 10 games; the key says so.
+  - A (recommended): desktop splits the list into two columns of rows. Phone shows the top 3 rows (worst first) and a "Show N more" row.
+  - B: tiles, 4 across on desktop and 2 on phone (top 4 on phone, then "Show N more").

@@ -135,6 +135,27 @@
    "w": 2552,
    "h": 1721,
    "title": "R5 Fuller · How it’s playing (14 games) + Matchups"
+  },
+  "I-Desktop.dc.html": {
+   "x": 0,
+   "y": -14612,
+   "w": 2680,
+   "h": 1748,
+   "title": "R6 Deck › Games desktop · A two-column list, B tiles"
+  },
+  "I-Phone.dc.html": {
+   "x": 2760,
+   "y": -14612,
+   "w": 860,
+   "h": 1912,
+   "title": "R6 Deck › Games phone · A and B"
+  },
+  "I-Fuller.dc.html": {
+   "x": 3700,
+   "y": -14612,
+   "w": 2552,
+   "h": 2062,
+   "title": "R6 Seat not logged, Colors identity mark, 14 games"
   }
  },
  "order": [
@@ -155,7 +176,10 @@
   "G-Matchups.dc.html",
   "H-Desktop.dc.html",
   "H-Phone.dc.html",
-  "H-Fuller.dc.html"
+  "H-Fuller.dc.html",
+  "I-Desktop.dc.html",
+  "I-Phone.dc.html",
+  "I-Fuller.dc.html"
  ],
  "notes": {
   "ta": {
@@ -204,6 +228,13 @@
    "x": 0,
    "y": -12450,
    "text": "R5 · Grounded summary, one-list How it’s playing, matchups tidy",
+   "kind": "title1",
+   "maxW": 6252
+  },
+  "ti": {
+   "x": 0,
+   "y": -14872,
+   "text": "R6 · Compact How it’s playing (A list, B tiles), filled figure, Stats identity mark",
    "kind": "title1",
    "maxW": 6252
   }

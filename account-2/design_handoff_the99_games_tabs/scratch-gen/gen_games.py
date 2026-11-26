@@ -1113,3 +1113,116 @@ board('H-Fuller.dc.html', 'R5 fuller states (14 games)', '<div style="display:fl
       + pair(labelled('PHONE · HOW IT’S PLAYING', full_phone(FULL_HOW())), *[labelled(f'PHONE · MATCHUPS · {t.upper()}', full_phone(matchups4(MU4[t], '14 of 20 games', t, True))) for t in ['Commander', 'Colors', 'Friend']])
       + '</div>', 2552)
 print('r5 ok')
+
+# ======================= R6 =======================
+CSS6 = '''
+/* anon seat: filled figure, solid outline, no ? */
+.st3 .seat.anon .sil{color:var(--border-dashed)}
+.st3 .seat.anon .sil path,.st3 .seat.anon .sil circle{fill:var(--elevated);stroke:var(--border-dashed);stroke-width:1.6}
+/* IdentityMark (decks/lineup/identity-mark.tsx) */
+.idm{position:relative;display:inline-block;flex:none;width:26px;height:26px}
+.idm i{position:absolute;border-radius:50%%;display:block}
+.idm i.o{background:var(--border-dashed)}
+.idm i.in{background:var(--surface-inset)}
+.idm i.p{box-shadow:inset 0 0 0 1px rgba(0,0,0,.3)}
+.mu4.im{grid-template-columns:26px 310px 64px minmax(0,1fr)}
+.P .mu4.im .idm{grid-row:span 2}
+/* How it's playing, compact (A): status dot on the name, two columns on desktop */
+.hp6{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--border);margin-top:10px}
+.hp6 .r{display:grid;grid-template-columns:minmax(0,1fr) auto 118px;align-items:center;column-gap:16px;min-height:40px;padding:4px 16px;border-top:1px solid var(--border)}
+.hp6 .r:nth-child(-n+2){border-top:0}
+.hp6 .r:nth-child(even){border-left:1px solid var(--border)}
+.hp6 .n{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--fg);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp6 .n i,.hp7 .n i{width:8px;height:8px;border-radius:50%%;flex:none}
+.hp6 .n i.d,.hp7 .n i.d{background:var(--warning)}.hp6 .n i.u,.hp7 .n i.u{background:var(--success)}
+.hp6 .n i.b,.hp7 .n i.b{background:linear-gradient(90deg,var(--success) 50%%,var(--warning) 50%%)}
+.hp6 .c,.hp7 .c{font:500 11px "IBM Plex Mono",monospace;white-space:nowrap;text-align:right}
+.c.d{color:var(--warning)}.c.u{color:var(--success)}.c.b{color:var(--fg-muted)}
+.hp6 .pips,.hp7 .pips{gap:4px}
+.hp6 .pip,.hp7 .pip{width:9px;height:9px}
+.more6{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-top:1px solid var(--border);font-size:13px;font-weight:600;color:var(--accent)}
+.P .hp6{grid-template-columns:minmax(0,1fr)}
+.P .hp6 .r{grid-template-columns:minmax(0,1fr) auto;row-gap:6px;padding:9px 14px;border-left:0!important}
+.P .hp6 .r:nth-child(2){border-top:1px solid var(--border)}
+.P .hp6 .pp{grid-column:1;grid-row:2}
+.P .hp6 .c{grid-column:2;grid-row:1}
+.hp-lead.tight{padding:14px 16px 0;flex-direction:row;align-items:baseline;gap:12px;flex-wrap:wrap}
+.hp-lead.tight h3{font-size:17px}
+.hp-lead.tight p{font-size:13px}
+/* B: tiles */
+.hp7{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 16px 14px}
+.hp7 .t{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-raised)}
+.hp7 .n{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp7 .ln{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.P .hp7{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 12px 14px}
+.P .hp7 .pip{width:8px;height:8px}.P .hp7 .pips{gap:3px}
+.P .hp7 .ln{flex-direction:column;align-items:flex-start;gap:6px}
+'''.replace('%%', '%')
+CSS = CSS + CSS6
+SIL = ('<svg class="sil" viewBox="0 0 56 60" aria-hidden="true">'
+       '<circle cx="28" cy="20" r="10"/><path d="M6 60c0-13 10-22 22-22s22 9 22 22z"/></svg>')
+
+IDC = {1: [(0, 0)], 2: [(-4, 0), (4, 0)], 3: [(0, -4.6), (4, 2.3), (-4, 2.3)], 4: [(0, -5.6), (5.6, 0), (0, 5.6), (-5.6, 0)]}
+import math
+IDC[5] = [(6.8*math.cos(math.radians(-90+i*72)), 6.8*math.sin(math.radians(-90+i*72))) for i in range(5)]
+def idmark(cs):
+    cols = [c for c in 'WUBRG' if c in cs]
+    cen = IDC[len(cols)]
+    ys = [p[1] for p in cen]; dy = -(min(ys)+max(ys))/2
+    halos = cen + [(0, 0)] if len(cols) >= 3 else cen
+    at = lambda x, y, r: f'left:{13+x-r:.2f}px;top:{13+y+dy-r:.2f}px;width:{2*r}px;height:{2*r}px'
+    s = ''.join(f'<i class="o" style="{at(x,y,5.5)}"></i>' for x, y in halos)
+    s += ''.join(f'<i class="in" style="{at(x,y,4.5)}"></i>' for x, y in halos)
+    s += ''.join(f'<i class="p" style="{at(x,y,3.5)};background:var(--{c.lower()})"></i>' for c, (x, y) in zip(cols, cen))
+    return f'<span class="idm">{s}</span>'
+def mu6(cs, name, r=None, counts=None):
+    return mu4(idmark(cs), name, r, counts).replace('class="mu4"', 'class="mu4 im"', 1)
+MU4['Colors'] = [mu6('WUG', 'Bant', counts=(5, 4, 2)), mu6('WUBR', 'Four colors <span>no G</span>', list('–WLW')),
+                 mu6('G', 'Mono-green', list('LLW')), mu6('UR', 'Izzet', list('W–')), mu6('WUB', 'Esper', list('L'))]
+
+def cnt6(kind, u, d, total):
+    return f'down {d} of {total}' if kind == 'd' else (f'up {u} of {total}' if kind == 'u' else f'{u} up · {d} down')
+def hp6_rows(rows, total):
+    return ''.join(f'<div class="r"><span class="n"><i class="{k}"></i>{n}</span><span class="pp" style="display:flex">{pips(p)}</span>'
+                   f'<span class="c {k}">{cnt6(k,u,d,total)}</span></div>' for n, k, p, u, d in rows)
+KEY6 = ('<div class="key2"><span><span class="pip u"></span>helped</span><span><span class="pip d"></span>hurt</span>'
+        '<span><span class="pip"></span>not marked</span><span>last 10 games, oldest first</span></div>')
+FOOT6 = '<div class="foot"><p>Suggested changes uses these games to pick what to cut and add.</p><a href="#">Open Tuning' + chev(13) + '</a></div>'
+def lead6(lead, sub): return f'<div class="hp-lead tight"><h3>{lead}</h3><p>{sub}</p></div>'
+def how6(rows, total, lead, sub, phone=False, cap=3):
+    shown, rest = (rows[:cap], rows[cap:]) if phone else (rows, [])
+    more = f'<div class="more6">Show {len(rest)} more{caret()}</div>' if rest else ''
+    return (f'<section class="box">{band("How it’s playing", f"{total} games")}{lead6(lead, sub)}'
+            f'<div class="hp6">{hp6_rows(shown, total)}</div>{more}{KEY6}{FOOT6}</section>')
+def how7(rows, total, lead, sub, phone=False, cap=4):
+    shown, rest = (rows[:cap], rows[cap:]) if phone else (rows, [])
+    tiles = ''.join(f'<div class="t"><span class="n"><i class="{k}"></i>{n}</span><span class="ln">{pips(p)}<span class="c {k}">{cnt6(k,u,d,total)}</span></span></div>' for n, k, p, u, d in shown)
+    more = f'<div class="more6">Show {len(rest)} more{caret()}</div>' if rest else ''
+    return (f'<section class="box">{band("How it’s playing", f"{total} games")}{lead6(lead, sub)}'
+            f'<div class="hp7">{tiles}</div>{more}{KEY6}{FOOT6}</section>')
+SAI_LEAD = ('Mana is holding it back.', 'Marked against you in 2 of 3 games.')
+FULL_LEAD = ('Mana is holding it back.', 'Marked against you in 8 of 14 games, and in 4 of the last 5.')
+def deck_top6(how, phone=False):
+    tabs = '<div class="dtabs"><span>Your deck<i>99</i></span><span>Analysis</span><span>Tuning</span><span class="on">Games<i>3</i></span><span>Versions<i>4</i></span></div>'
+    return tabs + '<div style="height:6px"></div>' + summary_deck() + how(SAI_HP, 3, *SAI_LEAD, phone=phone) + matchups4(SMALL4, '3 of 3 games', phone=phone)
+def deck_desktop6(how):
+    body = ''.join(month_box([g for g in SAI if g['m'] == k], t, lambda g: e5_row(g, True)) for k, t in MONTHS)
+    return f'<div class="D"><div class="rail"><img src="art/rail-decks.png" alt=""></div><div class="main" style="padding-top:0">{deck_top6(how)}{body}</div></div>'
+def phone_deck6(how):
+    body = ''.join(month_box([g for g in SAI if g['m'] == k], t, lambda g: e5_row(g, True)) for k, t in MONTHS[:1])
+    return (f'<div class="P"><img class="ptop" src="art/p-top.png" alt=""><div class="pm" style="padding-top:0">{deck_top6(how, True)}{body}</div>'
+            f'<img class="ptab" src="art/p-tabbar-decks.png" alt="" style="margin-top:0"></div>')
+board('I-Desktop.dc.html', 'R6 Deck › Games, desktop: A two-column list, B tiles',
+      pair(labelled('A · TWO-COLUMN LIST (recommended) · HD - Sai', deck_desktop6(how6)), labelled('B · TILES · HD - Sai', deck_desktop6(how7))), 2680)
+board('I-Phone.dc.html', 'R6 Deck › Games, phone: A and B',
+      pair(labelled('A · TOP 3, SHOW MORE', phone_deck6(how6)), labelled('B · TILES, TOP 4', phone_deck6(how7))), 860)
+FH6 = lambda how, ph=False: how(FULL_HP, 14, *FULL_LEAD, phone=ph)
+board('I-Fuller.dc.html', 'R6 fuller states (14 games) + Colors with the Stats identity mark', '<div style="display:flex;flex-direction:column;gap:60px">'
+      + pair(labelled('DESKTOP · SEAT NOT LOGGED', full_desk('<section class="box">' + ''.join(e5_row(g) for g in GAMES if g['pod'] - 1 > len(g['seats'])) + '</section>')),
+             labelled('PHONE · SEAT NOT LOGGED', full_phone('<section class="box">' + ''.join(e5_row(g) for g in GAMES if g['pod'] - 1 > len(g['seats'])) + '</section>')))
+      + pair(labelled('A · DESKTOP · 14 GAMES', full_desk(FH6(how6))), labelled('B · DESKTOP · 14 GAMES', full_desk(FH6(how7))))
+      + pair(labelled('DESKTOP · MATCHUPS · COLORS (Stats identity mark)', full_desk(matchups4(MU4['Colors'], '14 of 20 games', 'Colors'))),
+             labelled('PHONE · MATCHUPS · COLORS', full_phone(matchups4(MU4['Colors'], '14 of 20 games', 'Colors', True))))
+      + pair(labelled('A · PHONE · 14 GAMES', full_phone(FH6(how6, True))), labelled('B · PHONE · 14 GAMES', full_phone(FH6(how7, True))))
+      + '</div>', 2552)
+print('r6 ok')
