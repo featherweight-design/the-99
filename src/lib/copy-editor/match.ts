@@ -67,7 +67,7 @@ export function fillValues(row: EditorRow, visible: string | undefined): Record<
   if (!m) return {};
   const out: Record<string, string> = {};
   names.forEach((n, i) => {
-    if (!(n in out)) out[n] = m[i + 1];
+    if (!Object.hasOwn(out, n)) out[n] = m[i + 1];
   });
   return out;
 }

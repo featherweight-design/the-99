@@ -683,6 +683,8 @@ async function runEditor(browser) {
     check(`${L} 3: a {name} line opens an editor with chips${found.chip?.real ? "" : " [FIXTURE]"}`, !!pt && (await chips()) > 0);
     if (pt) {
       const n0 = await chips();
+      const insAll = page.locator(`${DIALOG} button[aria-label^="Insert "]`);
+      const nIns0 = await insAll.count();
       const x = page.locator(`${DIALOG} [data-fill] [data-fill-remove]`).first();
       const hasX = (await x.count()) > 0;
       const label = hasX ? await x.getAttribute("aria-label") : null;
@@ -708,10 +710,12 @@ async function runEditor(browser) {
       const live = () => page.locator(`${DIALOG} [aria-live=polite]`).innerText().catch(() => "");
       check(`${L} 3: the removal is announced`, / removed$/.test(await live()), await live());
       // Insert at cursor (addendum I1): the removed fill-in is offered back, with what it reads here when the page shows it.
-      const ins = page.locator(`${DIALOG} button[aria-label^="Insert "]`);
+      // The button for the removed name, whatever else the line already offered (a row can supply more fill-ins than it uses).
+      const removedName = (label ?? "").replace(/^Remove /, "");
+      const ins = page.locator(`${DIALOG} button[aria-label="Insert ${removedName} at the cursor"]`);
       const nIns = await ins.count();
       const insText = nIns ? (await ins.first().innerText()).replace(/\s+/g, " ") : "";
-      check(`${L} 3: the removed fill-in is offered under "Insert at cursor"`, nIns === 1 && /insert at cursor/i.test(await page.locator(DIALOG).innerText()), insText);
+      check(`${L} 3: the removed fill-in is offered under "Insert at cursor"`, nIns === 1 && (await insAll.count()) === nIns0 + 1 && /insert at cursor/i.test(await page.locator(DIALOG).innerText()), insText);
       const insH = nIns ? Math.round((await ins.first().boundingBox())?.height ?? 0) : 0;
       check(`${L} 3: the insert button is ${vp.touch ? 40 : 32}px tall`, insH === (vp.touch ? 40 : 32), String(insH));
       await field().focus();
@@ -720,7 +724,7 @@ async function runEditor(browser) {
       else if (nIns) await ins.first().click();
       await page.waitForTimeout(200);
       const focusedIns = await page.evaluate(() => document.activeElement?.getAttribute("role"));
-      check(`${L} 3: pressing it puts the chip back and the row goes (${await chips()} chips, ${await ins.count()} buttons)`, (await chips()) === n0 && (await ins.count()) === 0);
+      check(`${L} 3: pressing it puts the chip back and the row goes (${await chips()} chips, ${await ins.count()} buttons)`, (await chips()) === n0 && (await ins.count()) === 0 && (await insAll.count()) === nIns0);
       check(`${L} 3: the field keeps focus after an insert, and it is announced`, focusedIns === "textbox" && / inserted$/.test(await live()), `${focusedIns} ${await live()}`);
       // Keyboard: the ✕ is a Tab stop from the field, and Enter on it removes the chip with focus back in the field.
       if (!vp.touch) {
@@ -775,7 +779,7 @@ async function runEditor(browser) {
       await page.waitForTimeout(150);
       const msg = (await page.locator(`${DIALOG} [role=status]`).innerText().catch(() => "")).replace(/\s+/g, " ");
       check(`${L} 3: an unknown fill-in {bogus} is refused (Add disabled, reason shown)`, (await addBtn().isDisabled().catch(() => false)) && /\{bogus\} is not a fill-in/i.test(msg), msg.slice(0, 160));
-      check(`${L} 3: the unknown name gets no fill-in note`, !/bogus (is filled in|reads)/.test(msg), msg.slice(0, 160));
+      check(`${L} 3: the unknown name gets no fill-in note`, !/bogus\}? (is filled in|reads)/.test(msg), msg.slice(0, 160));
       await closeDialog(page);
     }
 

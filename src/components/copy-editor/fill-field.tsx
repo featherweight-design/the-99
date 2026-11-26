@@ -133,7 +133,7 @@ export function FillField({
     build(el, value, removeLabel);
     if (autoFocus) {
       el.focus();
-      // The caret starts at the end, so an insert before the editor places it lands there.
+      // The caret starts at the end, so an insert before the user places a caret lands there.
       const end = document.createRange();
       end.selectNodeContents(el);
       end.collapse(false);
@@ -175,12 +175,19 @@ export function FillField({
         if (!el) return;
         // Back into the field (the phone keyboard stays up), at the caret it last had, then the chip goes there.
         el.focus();
+        // A copy, so the edit below never mutates the saved Range; collapsed to its end, so a selection is never replaced.
+        // No caret ever placed (focus alone puts it at the start): the end.
         const sel = window.getSelection();
-        const at = caret.current;
-        if (sel && at && el.contains(at.startContainer)) {
-          sel.removeAllRanges();
-          sel.addRange(at);
+        const saved = caret.current;
+        let at: Range;
+        if (saved && el.contains(saved.startContainer)) at = saved.cloneRange();
+        else {
+          at = document.createRange();
+          at.selectNodeContents(el);
         }
+        at.collapse(false);
+        sel?.removeAllRanges();
+        sel?.addRange(at);
         insertChip(el, name, removeLabel);
         commit();
         onFillChange?.(name, "inserted");

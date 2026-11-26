@@ -150,7 +150,17 @@ function Body({
   const shown = useMemo(() => Object.fromEntries(set.map((r) => [r.key, fillValues(r, visible)])), [set, visible]);
   const fields = useRef<Record<string, FillFieldHandle | null>>({});
   const [said, setSaid] = useState("");
-  const announce = useCallback((name: string, how: "removed" | "inserted") => setSaid(how === "removed" ? t.removed(name) : t.inserted(name)), []);
+  // The same words twice would not change the live line, so a repeat gets a trailing no-break space and is read again.
+  const announce = useCallback((name: string, how: "removed" | "inserted") => {
+    const next = how === "removed" ? t.removed(name) : t.inserted(name);
+    setSaid((prev) => (prev === next ? `${next} ` : next));
+  }, []);
+  // One stable ref callback per field, so React does not detach and reattach the handle on every keystroke.
+  const handles = useRef<Record<string, (h: FillFieldHandle | null) => void>>({});
+  const handleFor = (key: string) =>
+    (handles.current[key] ??= (h) => {
+      fields.current[key] = h;
+    });
   const made = (key: string) => edits.find((e) => e.key === key);
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(set.map((r) => [r.key, made(r.key)?.to ?? r.text])));
   const [copied, setCopied] = useState(false);
@@ -219,9 +229,7 @@ function Body({
               value={values[r.key]}
               invalid={c.problems.length > 0}
               autoFocus={i === 0}
-              handle={(h) => {
-                fields.current[r.key] = h;
-              }}
+              handle={handleFor(r.key)}
               onFillChange={announce}
               onChange={(next) => setValues((v) => ({ ...v, [r.key]: next }))}
             />
@@ -283,7 +291,6 @@ function InsertRow({ names, values, onInsert }: { names: string[]; values: Recor
             key={name}
             type="button"
             aria-label={t.insertLabel(name)}
-            onPointerDown={(e) => e.preventDefault()}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onInsert(name)}
             className="flex h-10 min-w-0 max-w-full items-center gap-[6px] rounded-[8px] border border-dashed border-[color:color-mix(in_srgb,var(--accent)_55%,transparent)] px-[10px] hover:border-solid hover:bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] active:border-solid active:bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] md:h-8"
