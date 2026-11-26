@@ -23,7 +23,7 @@ import { GhostButton, PrimaryButton } from "../ui/button";
 import { useMinWidth } from "../ui/use-min-width";
 import { DeckSelect } from "./lineup/deck-select";
 import {
-  AgainstWideTrigger, againstOptions, chosenAgainst, DeckPhonePicker, DeckWideTrigger, GamesFilterSheet, OptionName, ResultWideTrigger,
+  AgainstWideTrigger, againstOptions, chosenAgainst, DeckPhonePicker, DeckWideTrigger, GamesFilterSheet, OptionName, ResultSwitch,
   type AgainstOption, type DeckChoice,
 } from "./games-filter-controls";
 import { TrophyIcon } from "./trophy-icon";
@@ -159,8 +159,8 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
               <>
                 {viewSwitch}
                 <span aria-hidden className="h-[20px] w-px flex-none bg-[color:var(--border)]" />
-                <DeckWideTrigger decks={decks} filter={f} onChange={gf.change} />
-                <ResultWideTrigger filter={f} onChange={gf.change} />
+                <DeckWideTrigger decks={decks} filter={f} counts={deckCounts} onChange={gf.change} />
+                <ResultSwitch filter={f} onChange={gf.change} />
                 <AgainstWideTrigger options={options} filter={f} onChange={gf.change} />
               </>
             ) : (
@@ -192,7 +192,6 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
                 filter={f}
                 onChange={gf.change}
                 options={options}
-                byResult={data.aggregates.byResult}
                 shown={summary.games}
               />
             )

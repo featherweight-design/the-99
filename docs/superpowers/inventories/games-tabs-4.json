@@ -1,0 +1,125 @@
+{
+  "feature": "Games tabs PR 4: Filters (handoff design_handoff_the99_games_tabs)",
+  "note": "Needs the audit account with at least 3 games (PATTERN_MIN) so the filter controls draw.",
+  "out": "contact-sheets/games-tabs-4",
+  "shares": [
+    {
+      "binding": "ResultSwitch",
+      "module": "src/components/decks/games-filter-controls.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "games-phone",
+      "label": "Decks Games filters at phone",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "ResultSwitch",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-decks-games]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "games-desktop",
+      "label": "Decks Games filters at desktop",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "ResultSwitch",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-decks-games]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "phone-deck-sheet",
+      "label": "Deck sheet open at phone",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "ResultSwitch",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-decks-games]",
+          "settle": 2500
+        },
+        {
+          "click": "button[aria-label=\"Deck\"]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "phone-filter-sheet",
+      "label": "Filter games sheet (Result switch) at phone",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "ResultSwitch",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-decks-games]",
+          "settle": 2500
+        },
+        {
+          "click": "button:has-text(\"Filter games\")",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "desktop-deck-panel",
+      "label": "Deck panel open at desktop",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "ResultSwitch",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-decks-games]",
+          "settle": 2500
+        },
+        {
+          "click": "button[aria-label=\"Deck\"]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "desktop-against-panel",
+      "label": "Played against panel open at desktop",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "ResultSwitch",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-decks-games]",
+          "settle": 2500
+        },
+        {
+          "click": "button[aria-label=\"Played against\"]",
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}
