@@ -593,7 +593,7 @@ export function TuningHub({
             <div data-hub-toolbar="" className="ml-auto flex items-center gap-[12px] pb-[8px]">{opened.toolbar}</div>
           ) : null}
           </div>
-          {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
+          {/* PHONE: the tool alone under a picker row; its sheet is the switcher, and its All tools row the way back to the landing. */}
           <div className="anim-gentle-in flex items-center md:hidden">
             {/* A reopened v2 run carries its own `‹ History` (History B and C): the phone keeps the picker off here. */}
             {(opened.tool === "history" && past) || (reviewing && !reviewing.v2) ? (
