@@ -1,0 +1,32 @@
+{
+  "feature": "Deck details refresh PR 6: the Recommended mix box, N over in the cell foot, and the Why these numbers tiles (handoff design_handoff_the99_deck_details_refresh, R3-Mix, R3-MixWhy)",
+  "note": "Needs the HD - Brago fixture deck: Ramp, Draw, Removal and Wipes sit over their targets and Land is short, so the N over foot and the Land cell both draw.",
+  "out": "contact-sheets/deck-refresh-6",
+  "shares": [
+    {
+      "binding": "DeckBox",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "mix-box",
+      "label": "Your deck: the Recommended mix box, closed",
+      "view": "src/components/decks/role-counter-strip.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [{ "goto": "/decks/${DECK_ID}", "settle": 9000 }]
+    },
+    {
+      "id": "mix-why",
+      "label": "Your deck: Why these numbers? open, one tile per role",
+      "view": "src/components/decks/role-counter-strip.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/decks/${DECK_ID}", "settle": 9000 },
+        { "click": "button:has-text(\"Why these numbers?\")", "settle": 1500 }
+      ]
+    }
+  ]
+}

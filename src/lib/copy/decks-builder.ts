@@ -117,21 +117,19 @@ export const addPanelCopy = {
     rationaleToggle: "Why these numbers?",
     rationaleToggleAria: "Show why each role has the target it has",
     rationaleClose: "Hide",
-    // The disclosure's four lines, verbatim from the canvas (CV:466-469).
-    // Four lines for five roles: Removal and Wipes share line 3 as drawn, so
-    // this is four authored groupings rather than a map over the mix.
-    // Each body opens with the em dash that joins it to its bold heading; the
-    // heading itself is composed from the deck's own mix so the panel can never
-    // quote a target the cell above it disagrees with. These are the one
-    // surface in the addendum that ships em dashes — the rationale copy is
-    // quoted, not rewritten, and must not be "fixed".
-    rationaleBodies: {
-      ramp: "— you want your commander out a turn early, every game.",
-      draw: "— a four-player table runs you out of cards before it runs you out of life.",
-      removalWipes:
-        "— three opponents means three threats you didn’t plan for.",
-      land: "— advisory: a cheap curve wants fewer, a heavy one wants more.",
+    // The Why tiles' four bodies (R3-MixWhy): one tile per role, Removal and Wipes sharing the third as drawn.
+    // The tile's name, target and "you have" figure are composed from the deck's own mix and counts, so a tile can
+    // never quote a target the cell above it disagrees with.
+    rationaleTiles: {
+      ramp: "You want your commander out a turn early, every game.",
+      draw: "A four-player table runs you out of cards before it runs you out of life.",
+      removalWipes: "Three opponents means three threats you didn’t plan for.",
+      land: "Advisory: a cheap curve wants fewer, a heavy one wants more.",
     },
+    /** The tile's count line; `have` is one figure, or two joined with " · " for the shared Removal and Wipes tile. */
+    tileHave: (have: string) => `you have ${have}`,
+    /** The cell foot of a role over its target (R3-Mix); Land keeps `was N` when a draft moved it. */
+    cellOver: (over: number) => `${over} over`,
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────

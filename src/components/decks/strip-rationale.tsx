@@ -1,129 +1,133 @@
-// Strip rationale disclosure — §Role Counter Strip (#184).
+// The mix box's "Why these numbers?" disclosure (R3-Mix, R3-MixWhy). One button in the box foot opens one tile per
+// role inside the box: an icon, the target, "you have N" and the role's rationale line. Removal and Wipes share the
+// third tile, as drawn, so four tiles carry five roles. The name, target and count are composed from the deck's own
+// mix and counts, so a tile can never quote a target the cell above it disagrees with.
 //
-// One disclosure for the whole strip, where there were five per-cell buttons.
-// Five separate expansions each pushing the strip taller became one panel that
-// answers the whole strip at once, which is how a player reads it anyway.
-//
-// Four lines for five roles: Removal and Wipes share line 3, as drawn. The
-// bodies are quoted copy; the bold headings are composed from the deck's own `mix`
-// so the panel can never quote a target the cell above it disagrees with.
+// One button for both states: its label reads "Why these numbers?" closed and "Hide" open, and it keeps its place in
+// the foot, so a keyboard user's focus is not dropped when the panel opens or closes.
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
+import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
+import { DeckBoxFoot } from "./deck-box";
 
-const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixRole[] }[] = [
+type TileKey = keyof typeof addPanelCopy.strip.rationaleTiles;
+
+/** The drawn role icons (16-unit grid, 1.4 stroke). */
+const ICONS: Record<TileKey, React.ReactNode> = {
+  ramp: (
+    <>
+      <path d="M3 11.5 6.5 8l2.5 2.5L13 6" />
+      <path d="M10 6h3v3" />
+    </>
+  ),
+  draw: (
+    <>
+      <rect x="2.5" y="4" width="6.5" height="9" rx="1" />
+      <path d="M6 4V3a1 1 0 0 1 1-1h5.5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9" />
+    </>
+  ),
+  removalWipes: (
+    <>
+      <circle cx="8" cy="8" r="5.5" />
+      <circle cx="8" cy="8" r="2" />
+      <path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15" />
+    </>
+  ),
+  land: <path d="M1.5 13.5 6 6l3 4.5 2-3 3.5 6Z" />,
+};
+
+const TILES: { key: TileKey; roles: MixRole[] }[] = [
   { key: "ramp", roles: ["ramp"] },
   { key: "draw", roles: ["draw"] },
   { key: "removalWipes", roles: ["removal", "wipes"] },
   { key: "land", roles: ["land"] },
 ];
 
-const heading = (roles: MixRole[], mix: RecommendedMix) =>
-  roles
-    .map((role) => {
-      const cell = mix.cells[role];
-      return `${cell.label} ${cell.advisory ? "~" : ""}${cell.target}`;
-    })
-    .join(" · ");
+const joined = (parts: (string | number)[]) => parts.join(" · ");
 
-export function StripRationale({ mix }: { mix: RecommendedMix }) {
+export function StripRationale({ mix, counts }: { mix: RecommendedMix; counts: Record<MixRole, number> }) {
   const [open, setOpen] = useState(false);
-  // Per instance, not per module: two strips on one page would otherwise share
-  // an id, and `aria-describedby` resolves to whichever element the document
-  // reached first rather than to this trigger's own sentence.
+  // Per instance, so two strips on one page never share an id.
   const panelId = useId();
   const descriptionId = `${panelId}-description`;
-  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  /*
-    One tree for both states, rather than an early return per state.
-
-    The two states are drawn differently — a bare row when closed, a header
-    inside the panel box when open — but they were also two different subtrees,
-    so React unmounted the trigger on every toggle and the keyboard user's focus
-    fell to `document.body` the instant they opened the thing. Same element, same
-    position, classes doing the drawing.
-
-    §Rationale panel, open: bg --surface-sunken, border 1px --border,
-    border-left 3px --accent, br 9px, p 11px 13px, mt 10px, internal gap 7px.
-    §Rationale disclosure trigger, closed: own row, mt 12px.
-  */
   return (
-    <div
-      className={
-        open
-          ? "mt-[10px] rounded-[9px] px-[13px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-accent"
-          : "mt-[12px]"
-      }
-    >
-      <div className="flex items-baseline justify-between gap-[10px]">
-        {/* The authored sentence describes rather than names. As an `aria-label`
-            it replaced the drawn text, so the accessible name held none of the
-            words on screen — WCAG 2.5.3, and a voice-control user asking for
-            "Why these numbers" would not have reached it.
-
-            It does not follow the panel open: it reads "Show why each role has
-            the target it has", which is a lie once the panel is showing, and
-            the panel below is the answer it was offering. */}
-        <span id={descriptionId} className="sr-only">
-          {addPanelCopy.strip.rationaleToggleAria}
-        </span>
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setOpen((wasOpen) => !wasOpen)}
-          aria-expanded={open}
-          aria-describedby={open ? undefined : descriptionId}
-          aria-controls={open ? panelId : undefined}
-          className={
-            open
-              ? `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent-text cursor-pointer`
-              // Closed, the row sits 12px under the role cells; the hit drops 1px so its 12.75px reach stays off them.
-              : `${TOUCH_HIT_INLINE} pointer-coarse:after:mt-px font-mono text-[11px] text-accent-text border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer`
-          }
-        >
-          {addPanelCopy.strip.rationaleToggle}
-        </button>
-        {/* §Rationale panel — the drawn close, beside the title.
-
-            Hide unmounts itself, so focus has to be handed somewhere on the way
-            out or it lands on `document.body`. The trigger is where the user
-            came from and is the only control still on screen afterwards. */}
-        {open && (
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              triggerRef.current?.focus();
-            }}
-            // `Hide` draws about 32px wide, so it takes TOUCH_HIT's 44px width too (6px each side, inside the 10px gap
-            // and the panel's 13px padding).
-            className={`${TOUCH_HIT} font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer transition-colors`}
-          >
-            {addPanelCopy.strip.rationaleClose}
-          </button>
-        )}
-      </div>
-
-      {/* §Rationale panel — lines */}
+    <>
       {open && (
         <div
           id={panelId}
           role="region"
           aria-label={addPanelCopy.strip.rationaleToggle}
-          className="flex flex-col gap-[7px] mt-[9px]"
+          className="grid grid-cols-1 gap-[10px] bg-[color:var(--surface-sunken)] p-[12px] [border-top:1px_solid_var(--border)] md:grid-cols-4 md:gap-[12px] md:px-[16px] md:pb-[16px] md:pt-[14px]"
         >
-          {LINES.map((line) => (
-            <p key={line.key} className="text-[12px] leading-[1.55] text-fg-body">
-              <b className="font-semibold text-fg">{heading(line.roles, mix)}</b>{" "}
-              {addPanelCopy.strip.rationaleBodies[line.key]}
-            </p>
-          ))}
+          {TILES.map(({ key, roles }) => {
+            const targets = joined(roles.map((role) => mix.cells[role].target));
+            const have = joined(roles.map((role) => counts[role]));
+            return (
+              <div
+                key={key}
+                data-mix-tile={key}
+                className="grid grid-cols-[36px_minmax(0,1fr)] gap-x-[12px] gap-y-[4px] rounded-[10px] bg-[color:var(--surface)] p-[12px] [border:1px_solid_var(--border)] md:flex md:flex-col md:gap-[10px] md:px-[14px] md:pb-[14px] md:pt-[12px]"
+              >
+                <span
+                  aria-hidden
+                  className="row-span-2 flex size-[36px] flex-none items-center justify-center rounded-[8px] bg-[color:var(--elevated)] text-[color:var(--accent-text)] md:row-span-1"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {ICONS[key]}
+                  </svg>
+                </span>
+                <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px] whitespace-nowrap">
+                  <b className="text-[14px] font-semibold text-[color:var(--fg)]">
+                    {joined(roles.map((role) => mix.cells[role].label))}
+                  </b>
+                  <span className="font-mono text-[13px] font-medium text-[color:var(--fg)]">
+                    {roles.length === 1 && mix.cells[roles[0]].advisory ? "~" : ""}
+                    {targets}
+                  </span>
+                  <span
+                    className="ml-auto font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
+                  >
+                    {addPanelCopy.strip.tileHave(have)}
+                  </span>
+                </div>
+                <p className="col-start-2 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] md:col-start-auto">
+                  {addPanelCopy.strip.rationaleTiles[key]}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
+      <DeckBoxFoot className="min-h-[44px] justify-center bg-[color:var(--surface-rail)]">
+        {/* The authored sentence describes rather than names (WCAG 2.5.3): the accessible name keeps the drawn words.
+            It does not follow the panel open, where it would read as a lie. */}
+        <span id={descriptionId} className="sr-only">
+          {addPanelCopy.strip.rationaleToggleAria}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+          aria-expanded={open}
+          aria-describedby={open ? undefined : descriptionId}
+          aria-controls={open ? panelId : undefined}
+          className={`${TOUCH_HIT_INLINE} self-start text-[12.5px] font-medium text-[color:var(--accent-text)] cursor-pointer`}
+        >
+          {open ? addPanelCopy.strip.rationaleClose : addPanelCopy.strip.rationaleToggle}
+        </button>
+      </DeckBoxFoot>
+    </>
   );
 }
