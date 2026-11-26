@@ -12,6 +12,7 @@
 //
 // - Delete account, at the foot: its line and an outline press in `--danger` words that opens the delete (`DeleteAccount`).
 
+import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { leaveDialogsForNavigation } from "../../lib/a11y/dialog";
@@ -151,7 +152,7 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
 
   return (
     <section aria-labelledby="settings-account" className="mt-[26px] md:mt-[34px]">
-      <h2 id="settings-account" className={SECTION_HEAD}>{a.head}</h2>
+      <h2 id="settings-account" className={SECTION_HEAD}><BandText text={a.head} /></h2>
       <ul className="m-0 mt-[4px] list-none p-0">
         <li className={LI}>
           {editing ? (

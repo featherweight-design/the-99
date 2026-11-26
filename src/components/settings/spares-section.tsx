@@ -7,6 +7,7 @@
 // The page reads; this holds what a press changed until the server's redraw lands (every write revalidates
 // `/settings`). A write that fails puts the value back and says so in the shared social toast, as `/friends` does.
 
+import { BandText } from "../decks/deck-box";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { BrowseListCard } from "../../lib/collection/browse";
@@ -101,7 +102,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
 
   return (
     <section aria-labelledby="settings-spares" className="mt-[26px] md:mt-[34px]">
-      <h2 id="settings-spares" className={SECTION_HEAD}>{c.head}</h2>
+      <h2 id="settings-spares" className={SECTION_HEAD}><BandText text={c.head} /></h2>
       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
       <div className="mt-[12px] flex flex-wrap items-center gap-[10px] text-[14px] leading-[1.5] text-[color:var(--fg)]">
         <span>{c.before}</span>
@@ -110,7 +111,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
       </div>
       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.alsoOffer}</p>
       <WhoSees pods={pods} />
-      <h3 className="m-0 mt-[22px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.keptHead(shown.length)}</h3>
+      <h3 className="m-0 mt-[24px] font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)]"><BandText text={c.keptHead(shown.length)} /></h3>
       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.keptExplain}</p>
       <KeepSearch keptKey={keptKey} onFail={fail} />
       {shown.length > 0 && (

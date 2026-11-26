@@ -25,6 +25,7 @@ import { socialCopy } from "../../lib/copy/social";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
+import { bandName } from "../decks/deck-box";
 
 const P = socialCopy.pods;
 /** No open table: each pod card draws its Rule 0 check row. */
@@ -72,8 +73,8 @@ describe("the section", () => {
 
   it("draws its empty state for a reader with a friend and no pod", () => {
     render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
-    expect(screen.getByRole("heading", { name: P.head(0) })).toBeTruthy();
-    expect(screen.getByRole("region", { name: P.head(0) })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: bandName(P.head(0)) })).toBeTruthy();
+    expect(screen.getByRole("region", { name: bandName(P.head(0)) })).toBeTruthy();
     expect(screen.getByTestId("pods-empty").textContent).toContain(P.emptyTitle);
   });
 

@@ -11,6 +11,7 @@
 // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
 import { useRouter } from "next/navigation";
 import { BAND, PANEL } from "./section-panel";
+import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
 import { feedAge } from "../../lib/feed/age";
@@ -178,14 +179,18 @@ export function YourRequests({ rows, now, bare = false }: { rows: readonly YourR
 
   return (
     <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className={bare ? "" : PANEL}>
-      <h2
-        id="your-requests"
-        tabIndex={-1}
-        className={bare ? "sr-only" : BAND}
-      >
-        {m.head(rows.length)}
-        <span className="flex items-center gap-[4px]"><span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span></span>
-      </h2>
+      {bare ? (
+        <h2 id="your-requests" tabIndex={-1} className="sr-only">
+          <BandText text={m.head(rows.length)} />
+        </h2>
+      ) : (
+        <div className={BAND}>
+          <h2 id="your-requests" tabIndex={-1} className="m-0 min-w-0 text-[length:inherit] font-[inherit] leading-[inherit] outline-none">
+            <BandText text={m.head(rows.length)} />
+          </h2>
+          <span className="flex items-center gap-[4px]"><span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span></span>
+        </div>
+      )}
       <ul className="m-0 flex list-none flex-col p-0">
         {rows.map((a, index) => {
           const text = requestText(a, now);

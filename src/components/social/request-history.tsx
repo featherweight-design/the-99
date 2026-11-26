@@ -3,6 +3,7 @@
 // every one made or offered to them (To you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
 // (card at card shape, the friend's face in the corner, kicker, title, line) with no ✕ and no Ask again: the live list keeps
 // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
+import { BandTitle } from "../decks/deck-box";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -86,8 +87,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
       {groups.map((g, gi) => (
         <section key={g.label} className={`${PANEL} ${gi === 0 ? "mt-[18px]!" : "mt-[16px]!"}`}>
           <h2 className={BAND}>
-            {g.label}
-            <span className="pr-[8px] font-sans text-[12.5px] font-medium normal-case tracking-normal">{g.rows.length}</span>
+            <BandTitle title={g.label} count={g.rows.length} />
           </h2>
           <ul className="m-0 flex list-none flex-col p-0">
             {g.rows.map((e) => {

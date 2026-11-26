@@ -17,6 +17,7 @@
 // and the column, its head and the foot's push clause leave; In app keeps its head. The band's right padding is 0 at
 // every state, as the board's `.dv` draws it (its can't line included). Without `push` there is no band.
 
+import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFeedKinds } from "../../app/settings/feed-actions";
@@ -332,7 +333,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
 
   return (
     <section aria-labelledby="settings-news" className="mt-[26px] md:mt-[34px]">
-      <h2 id="settings-news" className={SECTION_HEAD}>{c.head}</h2>
+      <h2 id="settings-news" className={SECTION_HEAD}><BandText text={c.head} /></h2>
       {push && (
         <div
           data-push-device={device?.state ?? "reading"}

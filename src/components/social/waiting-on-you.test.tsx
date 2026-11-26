@@ -11,6 +11,7 @@ import type { SpareRequestRow, WaitingRow } from "../../lib/social/waiting";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+import { bandName } from "../decks/deck-box";
 
 /** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
 const expectTrimmed = (img: HTMLImageElement) => {
@@ -43,14 +44,14 @@ describe("WaitingOnYou", () => {
 
   it("heads the section with every row it shows, seen or not", () => {
     render(<WaitingOnYou rows={[ROW, { ...ROW, key: "item:2", unseen: false }]} now={NOW} />);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(2));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(`◆${bandName(w.head(2))}`);
     expect(screen.getAllByTestId("waiting-row")).toHaveLength(2);
   });
 
   it("shows the five newest, then Home's Show all N, which shows every row in place; the head counts them all", () => {
     const rows = Array.from({ length: 7 }, (_, i) => ({ ...ROW, key: `item:${i}`, createdAt: new Date(NOW.getTime() - (i + 1) * 3_600_000) }));
     render(<WaitingOnYou rows={rows} now={NOW} />);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(7));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(`◆${bandName(w.head(7))}`);
     expect(screen.getAllByTestId("waiting-row")).toHaveLength(5);
     expect(screen.getByText(feedCopy.home.more(2))).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: feedCopy.home.showAll(7) }));
@@ -177,7 +178,7 @@ describe("WaitingOnYou, spare requests", () => {
     expect(document.activeElement).toBe(within(receipt).getByTestId("spare-receipt-status"));
     // The receipt keeps the row's place, first; the head counts the one ask still waiting.
     expect(screen.getByTestId("waiting-on-you").querySelector("li")).toBe(receipt);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(1));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(`◆${bandName(w.head(1))}`);
   });
 
   it("Show all names what the head counts, never the visit's receipts", async () => {
@@ -185,7 +186,7 @@ describe("WaitingOnYou, spare requests", () => {
     const asks = Array.from({ length: 7 }, (_, i): SpareRequestRow => ({ ...ASK, key: `req-${i}`, ask: { ...ASK.ask, id: `req-${i}` } }));
     render(<WaitingOnYou rows={asks} now={NOW} />);
     await act(async () => fireEvent.click(screen.getAllByRole("button", { name: /^Yes,/ })[0]));
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(6));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(`◆${bandName(w.head(6))}`);
     expect(screen.getByRole("button", { name: feedCopy.home.showAll(6) })).toBeTruthy();
     expect(screen.getByText(feedCopy.home.more(2))).toBeTruthy();
   });

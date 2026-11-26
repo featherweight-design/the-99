@@ -25,6 +25,7 @@ import type { Friend } from "../../lib/social/access";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import { folderCopy } from "../../lib/copy/folders";
+import { bandName } from "../decks/deck-box";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 /** No open table: each pod card draws its Rule 0 check row. */
@@ -317,7 +318,7 @@ describe("the friends list", () => {
       expect.stringContaining("DaveSokka, Tenacious Tacticiansince Oct 2"),
       expect.stringContaining("JOJosince Sep 14"),
     ]);
-    expect(screen.getByRole("heading", { name: socialCopy.friends.head(2) })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: bandName(socialCopy.friends.head(2)) })).toBeTruthy();
   });
 
   it("draws the empty box, with no search, and no open links section", () => {
@@ -361,7 +362,7 @@ describe("the friends list", () => {
       fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named(name))) }));
       fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
       await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
-      expect(screen.getByRole("heading", { name: socialCopy.friends.head(left) })).toHaveFocus();
+      expect(screen.getByRole("heading", { name: bandName(socialCopy.friends.head(left)) })).toHaveFocus();
     }
   });
 
@@ -405,7 +406,7 @@ describe("friend links", () => {
   it("lists the open ones with their time left, under a day in the warning colour", () => {
     // A link made a moment ago has a minute under seven days: it reads 7, as the boards draw it.
     draw({ links: [link(1, new Date(NOW.getTime() + 7 * 86_400_000 - 60_000)), link(2, new Date("2026-10-16T09:00:00Z"))] });
-    expect(screen.getByRole("heading", { name: socialCopy.invites.head(2) })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: bandName(socialCopy.invites.head(2)) })).toBeTruthy();
     expect(screen.getByText("7 days left")).toBeTruthy();
     expect(screen.getByText(socialCopy.invites.left(30_000)).className).toContain("--warning");
   });

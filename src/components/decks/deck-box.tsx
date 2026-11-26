@@ -28,11 +28,31 @@ export function BandTitle({ title, count }: { title: ReactNode; count?: ReactNod
     <span className="min-w-0">
       <span aria-hidden className="mr-[8px] text-[color:var(--accent-text)]">◆</span>
       {title}
+      {count != null ? " " : null}
       {count != null ? (
-        <span className="ml-[10px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">{count}</span>
+        <span className="ml-[6px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">{count}</span>
       ) : null}
     </span>
   );
+}
+
+/** A band's "Title · N" copy split on its last " · ": the title, and the count when there is one. */
+export function splitBand(text: string): { title: string; count?: string } {
+  const cut = text.lastIndexOf(" · ");
+  return cut < 0 ? { title: text } : { title: text.slice(0, cut), count: text.slice(cut + 3) };
+}
+
+/** The accessible name `BandText` gives a heading: the title, a space, the count. */
+export function bandName(text: string): string {
+  const { title, count } = splitBand(text);
+  return count === undefined ? title : `${title} ${count}`;
+}
+
+/** A band's "Title · N" copy drawn as the deck boxes' head: the diamond, the title, the mono count. A string with no
+ *  " · " is the title alone. The split is on the last " · ", so a title may not hold one itself. */
+export function BandText({ text }: { text: string }) {
+  const { title, count } = splitBand(text);
+  return <BandTitle title={title} count={count} />;
 }
 
 /** The band as one flex row: the heading at the start, `aside` beside it at the end. The aside is a sibling of the

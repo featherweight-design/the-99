@@ -28,6 +28,7 @@ import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { settingsCopy } from "../../lib/copy/settings";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { named } from "../../lib/person-name/mint";
+import { bandName } from "../decks/deck-box";
 
 const C = settingsCopy.spares;
 const SOL = "11111111-1111-4111-8111-111111111111";
@@ -131,7 +132,7 @@ describe("who sees them", () => {
 describe("kept back", () => {
   it("draws a kept card as the collection row, counted in the head", () => {
     render(<SparesSection spareMin={1} pods={[]} kept={[card()]} />);
-    expect(screen.getByText(C.keptHead(1))).toBeTruthy();
+    expect(screen.getByRole("heading", { name: bandName(C.keptHead(1)) })).toBeTruthy();
     expect(screen.getByText("Sol Ring")).toBeTruthy();
     expect(screen.getByText("×3")).toBeTruthy();
   });

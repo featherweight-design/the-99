@@ -21,6 +21,7 @@ import { WaitingOnYou } from "../social/waiting-on-you";
 import { FeedItemRow } from "./feed-item";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { WaitingRow } from "../../lib/social/waiting";
+import { bandName } from "../decks/deck-box";
 import { feedCopy } from "../../lib/copy/feed";
 import { socialCopy } from "../../lib/copy/social";
 import { named } from "../../lib/person-name/mint";
@@ -286,11 +287,11 @@ describe("the waiting list", () => {
 
   it("hides a trade match under its feed key and an ask under ask:<request id>, the head counting what is left", async () => {
     render(<WaitingOnYou rows={[ask, trade]} now={NOW_D} />);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(2));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(`◆${bandName(w.head(2))}`);
     const rows = screen.getAllByTestId("waiting-row");
     await act(async () => { fireEvent.click(within(rows[1]).getByRole("button", { name: /^Hide/ })); });
     expect(m.dismiss).toHaveBeenCalledWith(trade.key);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(1));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(`◆${bandName(w.head(1))}`);
     await act(async () => { fireEvent.click(within(screen.getAllByTestId("waiting-row")[0]).getByRole("button", { name: /^Hide/ })); });
     expect(m.dismiss).toHaveBeenLastCalledWith("ask:bbbbbbbb-1d2a-4c3b-8e5f-6a7b8c9d0e1f");
     expect(screen.queryAllByTestId("waiting-row")).toHaveLength(0);

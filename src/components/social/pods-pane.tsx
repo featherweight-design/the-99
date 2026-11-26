@@ -27,6 +27,7 @@ import {
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { PodCard } from "./pod-card";
 import { BAND, PANEL } from "./section-panel";
+import { BandText } from "../decks/deck-box";
 import { PodAddFriends } from "./pod-add-friends";
 import { compareNames, type ThirdPartyName } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "./social-toast";
@@ -229,7 +230,7 @@ export function PodsPane({
   return (
     <section aria-labelledby="pods-head" className={PANEL} data-testid="pods-pane">
       <div className={BAND}>
-        <h2 id="pods-head" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{copy.head(shown.length)}</h2>
+        <h2 id="pods-head" className="m-0 text-[length:inherit] font-[inherit] leading-[inherit]"><BandText text={copy.head(shown.length)} /></h2>
         <button
           ref={newPodRef}
           type="button"

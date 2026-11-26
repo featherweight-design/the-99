@@ -32,7 +32,7 @@ afterEach(cleanup);
 describe("the news section", () => {
   it("draws the Notifications head, the In app column head, one box per available kind in the board's order, and the foot", () => {
     render(<NewsSection kinds={ALL_BUT_SPARES} />);
-    expect(screen.getByRole("heading", { name: C.head }).textContent).toBe("Notifications");
+    expect(screen.getByRole("heading", { name: C.head }).textContent).toBe(`◆${C.head}`);
     const heads = document.querySelector("[data-column-heads]")!;
     expect([...heads.children].map((h) => h.textContent)).toEqual([C.inApp]);
     const names = screen.getAllByRole("checkbox").map((b) => b.getAttribute("aria-label"));

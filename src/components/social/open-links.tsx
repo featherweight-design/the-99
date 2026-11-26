@@ -4,6 +4,7 @@
 // day left` in `--warning`), `Show` (the same dialog on that link) and `Revoke` (at once, no confirm: the row
 // leaves). With none open the section is absent.
 
+import { BandText } from "../decks/deck-box";
 import type { OpenInvite } from "../../lib/social/friends";
 import { socialCopy } from "../../lib/copy/social";
 import { madeWhen, underADay } from "../../lib/social/when";
@@ -27,7 +28,7 @@ export function OpenLinks({
   if (links.length === 0) return null;
   return (
     <section aria-labelledby="links-head" className="mt-[24px] md:mt-[34px]">
-      <h2 id="links-head" className={SECTION_HEAD}>{v.head(links.length)}</h2>
+      <h2 id="links-head" className={SECTION_HEAD}><BandText text={v.head(links.length)} /></h2>
       <ul className="m-0 list-none p-0">
         {links.map((link) => {
           const made = madeWhen(link.createdAt, now, timeZone);

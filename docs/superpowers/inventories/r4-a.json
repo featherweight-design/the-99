@@ -1,0 +1,206 @@
+{
+  "feature": "R4 PR A: Social and Settings bands drawn as the diamond head (handoff design_handoff_the99_deck_details_refresh, R4-Friends and R4-Settings)",
+  "note": "Needs a signed-in account. Pods, Open links and Request history need the reader to have friends, a pod, an open link and a request history; the Store head needs STORE_PREFERENCE_ENABLED on for the reader. Waiting on you and Your requests are drawn bare (sr-only) inside the Requests box on /friends, the only route that draws them, so they have no visible band to photograph; their heads are held by unit tests.",
+  "out": "contact-sheets/r4-a",
+  "shares": [
+    {
+      "binding": "BandText",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "BandTitle",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "friends-list",
+      "label": "Friends: the Friends band, diamond head with its count",
+      "view": "src/components/social/friends-list.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "#friends-head",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#friends-head",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-account",
+      "label": "Settings: Account and News heads",
+      "view": "src/components/settings/account-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-account",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-account",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-news",
+      "label": "Settings: What's new head",
+      "view": "src/components/settings/news-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-news",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-news",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-spares",
+      "label": "Settings: Spares head and Kept back sub-head",
+      "view": "src/components/settings/spares-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-spares",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-spares",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-decks",
+      "label": "Settings: Friend decks head",
+      "view": "src/components/settings/friend-decks-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-decks",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-decks",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "friends-pods",
+      "label": "Friends: the Pods band",
+      "view": "src/components/social/pods-pane.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "#pods-head",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#pods-head",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "friends-links",
+      "label": "Friends: the Open links band",
+      "view": "src/components/social/open-links.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "#links-head",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#links-head",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "requests-history",
+      "label": "Request history: the month bands",
+      "view": "src/components/social/request-history.tsx",
+      "binding": "BandTitle",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/friends/requests",
+          "wait": "[role=tabpanel] section h2",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[role=tabpanel] section h2",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-store",
+      "label": "Settings: the Store head",
+      "view": "src/components/settings/store-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-store-head",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-store-head",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}
