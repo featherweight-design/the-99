@@ -20,6 +20,7 @@ import { BandTitle } from "./deck-box";
 import { OpenHistoryProvider, OpenLandingProvider, OpenRunProvider, ReviewRunProvider, type OpenRun, type ReviewRun } from "./review-run";
 import { historyDate, summaryText, TuningHistory, v2RunningWords } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
+import { ToolPickerSheet, ToolPickerTrigger, type PickerView } from "./tuning-tool-picker";
 import { useTarget } from "../discovery/targets-provider";
 import type { TargetId } from "../../lib/discovery/targets";
 
@@ -162,7 +163,7 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number, hasCuts 
   // never by making the tile pressable. Over 100, a run in flight is the deck's live fact, and
   // otherwise the figure that explains the offer wins over the last run (A1).
   if (spec.over <= 0) {
-    return { tool: "cuts", purpose: t.notOffered(spec.total), cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };
+    return { tool: "cuts", purpose: t.notOffered, cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };
   }
   if (run.running) return { tool: "cuts", purpose: t.purpose, cost: t.cost, ...run, offer: false, inert: false };
   const over = t.over(spec.over);
@@ -491,6 +492,12 @@ export function TuningHub({
   };
   const hasCuts = tools.some((t) => t.tool === "cuts");
   const views = tools.map((spec) => tileOf(spec, tiles, now, hasCuts));
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // A run in flight reads as its tile does (READINESS 4); an inert tool says why; otherwise the last run, else the price.
+  const pickerViews: PickerView[] = views.map((v) => ({
+    tool: v.tool, name: NAMES[v.tool], status: v.statusPhone, running: v.running, inert: v.inert,
+    line: v.running ? v.statusPhone : v.inert ? v.purpose : v.statusPhone || v.cost,
+  }));
   // An inert tile's link: Top off is the shell's (Your deck), Proposed cuts opens here in place, as its own tile would.
   const suggestedSpec = tools.find((t): t is Extract<HubToolSpec, { tool: "suggested" }> => t.tool === "suggested");
   const onTopOff = suggestedSpec?.v2?.onTopOff;
@@ -587,22 +594,24 @@ export function TuningHub({
           ) : null}
           </div>
           {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
-          <div className="anim-gentle-in flex items-center justify-between md:hidden">
-            {/* A reopened v2 run carries its own `‹ History` (History B and C): the phone keeps `‹ Tuning` here. */}
+          <div className="anim-gentle-in flex items-center md:hidden">
+            {/* A reopened v2 run carries its own `‹ History` (History B and C): the phone keeps the picker off here. */}
             {(opened.tool === "history" && past) || (reviewing && !reviewing.v2) ? (
               <button type="button" data-history-back="" onClick={() => (reviewing ? backToHistory() : setPast(null))} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
                 {copy.history.back}
               </button>
             ) : (
-              <button type="button" onClick={() => open(null)} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
-                {copy.back}
-              </button>
+              <ToolPickerTrigger view={pickerViews.find((v) => v.tool === opened.tool) ?? pickerViews[0]} open={pickerOpen} onOpen={() => setPickerOpen(true)} />
             )}
-            <span className="flex items-center gap-[7px] font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>
-              <span style={{ color: "var(--fg-body)" }}><TuningToolMark tool={opened.tool} size={14} /></span>
-              {copy.toolOf(tools.findIndex((t) => t.tool === opened.tool) + 1, tools.length)}
-            </span>
           </div>
+          {pickerOpen ? (
+            <ToolPickerSheet
+              views={pickerViews}
+              openTool={opened.tool}
+              onDismiss={() => setPickerOpen(false)}
+              onPick={(tool) => { setPickerOpen(false); open(tool, { focus: true, scroll: true }); }}
+            />
+          ) : null}
           {/* Keyed on the tool, so a tab press arrives gently too, not only the first open. The tab
               row above is not keyed: it stays put while the panel under it changes. */}
           <div key={opened.tool} ref={toolRef} id="tuning-tool-panel" role="tabpanel" className="anim-gentle-in" aria-labelledby={`tuning-tab-${opened.tool}`} data-tuning-tool={opened.tool}>

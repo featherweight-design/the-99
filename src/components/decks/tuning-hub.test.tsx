@@ -83,7 +83,7 @@ describe("TuningHub landing", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
     expect(tile("cuts").tagName).toBe("DIV");
     expect(tile("cuts").hasAttribute("data-inert")).toBe(true);
-    expect(tile("cuts").textContent).toContain(copy.tools.cuts.notOffered(100));
+    expect(tile("cuts").textContent).toContain(copy.tools.cuts.notOffered);
     expect(tile("cuts").textContent).not.toContain(copy.tools.cuts.cost);
   });
 
@@ -215,7 +215,7 @@ describe("TuningHub opening a tool", () => {
     // The opened tool's chrome arrives with it: the desktop tab row and the phone header.
     // The row holds the tablist and Consider's sort beside it (tool discovery B2), so the motion is on the row.
     expect(screen.getByRole("tablist").parentElement!.className.split(/\s+/)).toContain("anim-gentle-in");
-    const phoneHead = screen.getByRole("button", { name: copy.back }).parentElement!;
+    const phoneHead = document.querySelector("[data-tool-picker]")!.parentElement!;
     expect(phoneHead.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-gentle-in", "md:hidden"]));
     const first = panel();
     fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: copy.tools.suggested.name }));
@@ -345,12 +345,28 @@ describe("TuningHub opening a tool", () => {
     expect(read.mock.calls.length).toBeGreaterThan(before);
   });
 
-  it("gives the phone a way back and says which tool of how many", () => {
+  it("gives the phone a tool picker: the open tool's row, and a sheet that goes to All tools or another tool", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
-    expect(screen.getByText(copy.toolOf(2, 2))).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: copy.back }));
+    const trigger = () => document.querySelector<HTMLElement>("[data-tool-picker]")!;
+    expect(trigger().textContent).toContain(copy.tools.cuts.name);
+    fireEvent.click(trigger());
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: copy.picker.sheetTitle })).toBeTruthy();
+    expect(within(sheet).getByText(copy.picker.allToolsLine)).toBeTruthy();
+    expect(within(sheet).getByRole("button", { name: new RegExp(copy.tools.cuts.name) }).getAttribute("aria-current")).toBe("true");
+    fireEvent.click(within(sheet).getByRole("button", { name: new RegExp(copy.allTools) }));
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(tile("suggested")).not.toBeNull();
+  });
+
+  it("draws an inert tool in the picker as a row that cannot be pressed, with the one line", () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
+    fireEvent.click(tile("suggested"));
+    fireEvent.click(document.querySelector<HTMLElement>("[data-tool-picker]")!);
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).queryByRole("button", { name: new RegExp(copy.tools.cuts.name) })).toBeNull();
+    expect(within(sheet).getByText(copy.tools.cuts.notOffered)).toBeTruthy();
   });
 
   it("moves between tools with the arrow keys, focus staying on the tab row", async () => {
@@ -752,7 +768,6 @@ describe("TuningHub History", () => {
     readPast.mockResolvedValue({ kind: "suggested", at: row.at, outcome: "failed", readVersion: 3, moved: 2, lines: [] });
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6), history]} />);
     fireEvent.click(tile("history"));
-    expect(screen.getByText(copy.toolOf(3, 3))).toBeTruthy();
     await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
     expect(readHistoryPage).toHaveBeenCalledWith("d", null, null);
     // The chips name the hub's other tools only.
@@ -760,10 +775,10 @@ describe("TuningHub History", () => {
     fireEvent.click(document.querySelector("[data-history-row]")!);
     await waitFor(() => expect(document.querySelector("[data-past-run]")).not.toBeNull());
     // Phone: `‹ History` in place of `‹ Tuning`.
-    expect(screen.queryByRole("button", { name: copy.back })).toBeNull();
+    expect(document.querySelector("[data-tool-picker]")).toBeNull();
     fireEvent.click(document.querySelector("[data-history-back]")!);
     await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
-    expect(screen.getByRole("button", { name: copy.back })).toBeTruthy();
+    expect(document.querySelector("[data-tool-picker]")).not.toBeNull();
   });
 });
 

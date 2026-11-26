@@ -1,0 +1,86 @@
+{
+  "feature": "Deck details refresh PR 4: the phone tool picker and Tuning sheet (handoff design_handoff_the99_deck_details_refresh, R1-ToolPicker)",
+  "note": "Needs a signed-in fixture account with a deck of 100 cards or fewer, so Proposed cuts is inert in the sheet. The open rows press the picker row.",
+  "out": "contact-sheets/deck-refresh-4",
+  "shares": [
+    {
+      "binding": "ToolPickerTrigger",
+      "module": "src/components/decks/tuning-tool-picker.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "picker-closed-phone",
+      "label": "Consider open at phone: the picker row with its status",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "binding": "ToolPickerTrigger",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        },
+        {
+          "click": "[data-tool-tile=consider]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "picker-open-phone",
+      "label": "Consider open at phone, picker pressed: the Tuning sheet with the inert Proposed cuts row",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "binding": "ToolPickerTrigger",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        },
+        {
+          "click": "[data-tool-tile=consider]",
+          "settle": 2500
+        },
+        {
+          "click": "[data-tool-picker]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "tool-desktop",
+      "label": "Consider open at desktop: tab row, no picker",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "binding": "ToolPickerTrigger",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        },
+        {
+          "click": "[data-tool-tile=consider]",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}
