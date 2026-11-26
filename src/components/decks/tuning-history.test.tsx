@@ -153,7 +153,7 @@ describe("HistoryList", () => {
     expect(within(rowEls()[1]).getByText(copy.tier.deeper)).toBeTruthy();
     expect(within(rowEls()[2]).getByText(copy.tier.free)).toBeTruthy();
     // A run in flight (History.dc `.hrow.nw`): the accent-shadow edge on the raised fill.
-    expect(rowEls()[0].className).toContain("border-[var(--accent-shadow)]");
+    expect(rowEls()[0].className).toContain("shadow-[inset_0_0_0_1px_var(--accent-shadow)]");
     expect(rowEls()[0].className).toContain("bg-[var(--elevated-hover)]");
     expect(rowEls()[1].className).toContain("md:grid-cols-[24px_150px_minmax(0,1fr)_auto_auto_70px]");
     // Each month is a box: its band names the month, counts its runs and says what they cost; the foot closes the last.

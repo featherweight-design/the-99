@@ -407,7 +407,7 @@ function Row({ row, onOpen }: { row: HistoryRow; onOpen: () => void }) {
       // phone 22 · rest · day, the summary under, and only a run that did not finish ok keeps its outcome pill.
       // A run in flight on the raised fill and accent-shadow edge.
       className={`grid min-h-[64px] grid-cols-[22px_minmax(0,1fr)_auto_auto] items-center gap-x-[10px] gap-y-[4px] px-[14px] py-[10px] text-left [border-top:1px_solid_var(--border)] first:[border-top:0] md:min-h-[52px] md:grid-cols-[24px_150px_minmax(0,1fr)_auto_auto_70px] md:gap-[14px] md:px-[16px] md:py-0 ${
-        running ? "border-[var(--accent-shadow)] bg-[var(--elevated-hover)]" : "bg-transparent"
+        running ? "bg-[var(--elevated-hover)] shadow-[inset_0_0_0_1px_var(--accent-shadow)]" : "bg-transparent"
       }`}
     >
       <span className="col-start-1 row-start-1 flex" style={{ color: "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>

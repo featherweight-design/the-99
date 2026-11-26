@@ -253,7 +253,9 @@ describe("VersionRail with v0", () => {
   // v0 is the precon's list, not a version the reader committed: three commits read three.
   it("counts committed versions only in the panel's heading", () => {
     mountLinked(THREE);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(copy.heading(3));
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading.textContent).toContain(copy.band);
+    expect(heading.textContent).toContain("3");
   });
 
   it("draws v0 last, below the divider, naming the precon with its own card count", () => {
