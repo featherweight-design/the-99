@@ -62,6 +62,12 @@ export function check(row: EditorRow, next: string): Check {
 export const changed = (row: EditorRow, to: string) => to !== row.text;
 
 /** The fill-ins this line may use that the text does not, in the order the line offers them: what an insert control lists. */
+/** The line's own fill-ins its text uses, each once, in the order they appear: one note line each. A name the line does not supply gets none (its refusal says why). */
+export function usedFills(row: EditorRow, text: string): string[] {
+  const fills = new Set(fillsOf(row));
+  return [...new Set([...text.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]))].filter((f) => fills.has(f));
+}
+
 export function unusedFills(row: EditorRow, text: string): string[] {
   const used = new Set([...text.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]));
   return fillsOf(row).filter((f) => !used.has(f));

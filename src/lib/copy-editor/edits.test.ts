@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baseKey, check, unusedFills, variationLabel, variationsOf } from "./edits";
+import { baseKey, check, unusedFills, usedFills, variationLabel, variationsOf } from "./edits";
 import type { EditorRow } from "./rows";
 
 const row = (key: string, text: string, over: Partial<EditorRow> = {}): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "", ...over });
@@ -62,5 +62,15 @@ describe("unusedFills", () => {
   });
   it("falls back to placeholders", () => {
     expect(unusedFills({ ...r, fills: undefined }, "none")).toEqual(["tools"]);
+  });
+});
+
+describe("usedFills", () => {
+  const r = row("a.ts#line", "Step through {tools} of the tools", { placeholders: ["tools"], fills: ["tools", "player"] });
+  it("lists the line's own fill-ins the text uses, once each, in text order", () => {
+    expect(usedFills(r, "{player} and {tools}, {player}")).toEqual(["player", "tools"]);
+  });
+  it("leaves out a name the line does not supply", () => {
+    expect(usedFills(r, "{bogus} and {tools}")).toEqual(["tools"]);
   });
 });

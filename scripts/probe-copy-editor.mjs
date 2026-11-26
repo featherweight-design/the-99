@@ -775,6 +775,7 @@ async function runEditor(browser) {
       await page.waitForTimeout(150);
       const msg = (await page.locator(`${DIALOG} [role=status]`).innerText().catch(() => "")).replace(/\s+/g, " ");
       check(`${L} 3: an unknown fill-in {bogus} is refused (Add disabled, reason shown)`, (await addBtn().isDisabled().catch(() => false)) && /\{bogus\} is not a fill-in/i.test(msg), msg.slice(0, 160));
+      check(`${L} 3: the unknown name gets no fill-in note`, !/bogus (is filled in|reads)/.test(msg), msg.slice(0, 160));
       await closeDialog(page);
     }
 

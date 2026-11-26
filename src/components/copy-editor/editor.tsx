@@ -4,7 +4,7 @@
 // reason instead of a field.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { copyEditorCopy } from "../../lib/copy/copy-editor";
-import { baseKey, check, unusedFills, variationLabel, variationsOf, type Edit } from "../../lib/copy-editor/edits";
+import { baseKey, check, unusedFills, usedFills, variationLabel, variationsOf, type Edit } from "../../lib/copy-editor/edits";
 import { keyLabel } from "../../lib/copy-editor/key-label";
 import { fillValues, type Match } from "../../lib/copy-editor/match";
 import type { EditorRow } from "../../lib/copy-editor/rows";
@@ -228,7 +228,7 @@ function Body({
             <InsertRow names={unusedFills(r, values[r.key])} values={shown[r.key]} onInsert={(name) => fields.current[r.key]?.insertFill(name)} />
             <div role="status" className="mt-1 text-[12px]">
               <div className="text-[color:var(--fg-muted)]">{t.words(c.words, c.cap)}</div>
-              {chipsIn(values[r.key]).map((name) => (
+              {usedFills(r, values[r.key]).map((name) => (
                 <div key={name} className="text-[color:var(--fg-muted)]">
                   {t.fill(name, shown[r.key][name])}
                 </div>
@@ -267,9 +267,6 @@ function Body({
     </>
   );
 }
-
-/** The fill-ins in a field's text, each once, in the order they appear: one note line each. */
-const chipsIn = (text: string) => [...new Set([...text.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]))];
 
 /**
  * The fill-ins this line supplies that its text no longer uses, one button each, under the field. A press keeps the
