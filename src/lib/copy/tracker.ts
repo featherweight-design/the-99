@@ -131,7 +131,7 @@ export const trackerCopy = {
     life: (who: Name, delta: number): PersonParts => personText`${who} ${delta > 0 ? "+" : "−"}${Math.abs(delta)} life`,
     counter: (who: Name, counter: string, delta: number): PersonParts => personText`${who} ${delta > 0 ? "+" : "−"}${Math.abs(delta)} ${counter}`,
     damage: (who: Name, from: Name, delta: number): PersonParts => personText`${who} took ${delta > 0 ? "+" : "−"}${Math.abs(delta)} commander damage from ${from}`,
-    tax: (who: Name, cmdr: string, delta: number): PersonParts => personText`${who} ${delta > 0 ? "+" : "−"}${Math.abs(delta)} ${cmdr} cast`,
+    tax: (who: Name, commanderName: string, delta: number): PersonParts => personText`${who} ${delta > 0 ? "+" : "−"}${Math.abs(delta)} ${commanderName} cast`,
     mana: (who: Name, color: string, delta: number): PersonParts => personText`${who} ${delta > 0 ? "+" : "−"}${Math.abs(delta)} ${color} mana`,
     monarch: (who: Name | null): PersonParts => (who === null ? personText`Monarch cleared` : personText`${who} became the monarch`),
     initiative: (who: Name | null): PersonParts => (who === null ? personText`Initiative cleared` : personText`${who} took the initiative`),
@@ -267,9 +267,9 @@ export const trackerCopy = {
     undid: (line: PersonParts): PersonParts => personText`Undid ${line}`,
     failed: "Undo didn’t go through. The game is still over.",
     retry: "Try again",
-    loggedYou: (closeTime: string) => `You logged this game at ${closeTime}, so this ending stays.`,
+    loggedYou: (loggedTime: string) => `You logged this game at ${loggedTime}, so this ending stays.`,
     loggedBy: (who: Name, at: string): PersonParts => personText`${who} logged this game at ${at}, so this ending stays.`,
-    loggedUnknown: (closeTime: string) => `This game was logged at ${closeTime}, so this ending stays.`,
+    loggedUnknown: (loggedTime: string) => `This game was logged at ${loggedTime}, so this ending stays.`,
   },
   // The table page's tracker (addendum S1 to S6), above the read and at the head of the foot.
   table: {

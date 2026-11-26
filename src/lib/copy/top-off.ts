@@ -49,12 +49,12 @@ export const topOffCopy = {
      *  and it names the pool rather than promising ticks: the seed asks the real fill, which can
      *  spend slots on cards the player does not own. A seed of zero is two opposite facts, owned
      *  none or every copy sleeved elsewhere, and the caller picks between them on the OWNED count. */
-    rowBody: (cand: string, seeded: string) =>
-      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. ${seeded} you can sleeve.`,
-    rowBodyNoneOwned: (cand: string) =>
-      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. You own none of them.`,
-    rowBodyNoneFree: (cand: string) =>
-      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. Every copy you own is in another deck.`,
+    rowBody: (candidateCountText: string, seededCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} ranked by synergy. ${seededCountText} you can sleeve.`,
+    rowBodyNoneOwned: (candidateCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} ranked by synergy. You own none of them.`,
+    rowBodyNoneFree: (candidateCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} ranked by synergy. Every copy you own is in another deck.`,
 
     /** The ran-out row's press. Its name carries the why, so the body does not have to. */
     exhaustedPress: 'Consider',
@@ -82,12 +82,12 @@ export const topOffCopy = {
   list: {
     /** Accessible name for the checkbox group. Carries both counts, because a
      *  reader cannot see the head. */
-    groupAria: (cand: string, slotCountText: string) =>
-      `${plural(cand, 'candidate', 'candidates')} for the last ${plural(slotCountText, 'slot', 'slots')}`,
+    groupAria: (candidateCountText: string, slotCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} for the last ${plural(slotCountText, 'slot', 'slots')}`,
 
-    head: (ticked: string, slotCountText: string, cand: string, untouched: string) =>
-      `${ticked} of ${plural(slotCountText, 'slot', 'slots')} selected · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
-    headMobile: (ticked: string, cardCountText: string) => `${ticked} of ${cardCountText} selected`,
+    head: (tickedCountText: string, slotCountText: string, candidateCountText: string, untouchedCountText: string) =>
+      `${tickedCountText} of ${plural(slotCountText, 'slot', 'slots')} selected · ${plural(candidateCountText, 'candidate', 'candidates')}, ${untouchedCountText} untouched`,
+    headMobile: (tickedCountText: string, slotCountText: string) => `${tickedCountText} of ${slotCountText} selected`,
 
     clearTicks: 'Clear all selections',
 
@@ -117,9 +117,9 @@ export const topOffCopy = {
     rowAria: (
       name: string,
       ownership: string,
-      synergyPoints: string,
-      inclusionPercent: string,
-    ) => `${name}. ${ownership} Synergy plus ${synergyPoints} points. In ${inclusionPercent} of decks.`,
+      synergyPointsText: string,
+      inclusionPercentText: string,
+    ) => `${name}. ${ownership} Synergy plus ${synergyPointsText} points. In ${inclusionPercentText} of decks.`,
     /** Three ownership clauses for the above, matching the three occupancies of
      *  the availability slot. The price is spoken; the collapsed-glyph problem
      *  does not exist here because the tag never collapses on this surface. */
@@ -167,12 +167,12 @@ export const topOffCopy = {
      *  The control renders from one decline, so both strings carry a singular
      *  form: 'all 1' is not English, and 'Show it again' is already the declined
      *  row's own label a few rows down. */
-    restoreAll: (declined: string) =>
-      declined === '1' ? 'Show the one again' : `Show all ${declined} again`,
-    restoreAllAria: (declined: string) =>
-      declined === '1'
+    restoreAll: (declinedCountText: string) =>
+      declinedCountText === '1' ? 'Show the one again' : `Show all ${declinedCountText} again`,
+    restoreAllAria: (declinedCountText: string) =>
+      declinedCountText === '1'
         ? 'Put the declined candidate back on the list'
-        : `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
+        : `Put all ${plural(declinedCountText, 'declined candidate', 'declined candidates')} back on the list`,
   },
 
   // ── The bulk pair ─────────────────────────────────────────────────────
@@ -246,10 +246,10 @@ export const topOffCopy = {
   commit: {
     /** States what it will place. At zero it loses the count rather than
      *  printing 'Add 0 cards', and goes disabled with no error. */
-    add: (ticked: string) => `Add ${plural(ticked, 'card', 'cards')}`,
+    add: (tickedCountText: string) => `Add ${plural(tickedCountText, 'card', 'cards')}`,
     addEmpty: 'Add cards',
-    addAria: (ticked: string, total: string, bodySize: number) =>
-      `Add ${plural(ticked, 'card', 'cards')} to the deck, ${total} of ${bodySize}`,
+    addAria: (tickedCountText: string, total: string, bodySize: number) =>
+      `Add ${plural(tickedCountText, 'card', 'cards')} to the deck, ${total} of ${bodySize}`,
     cancel: 'Cancel',
 
     /** The consequence, before the tap. */
@@ -285,7 +285,7 @@ export const topOffCopy = {
      *  and a second in-flight vocabulary for the same act would be two voices.
      *  The one edit is the plural helper, so a single-card pass no longer
      *  reads 'Sleeving 1 cards…'. The old key had no other reader and is gone. */
-    inFlight: (ticked: string) => `Sleeving ${plural(ticked, 'card', 'cards')}…`,
+    inFlight: (tickedCountText: string) => `Sleeving ${plural(tickedCountText, 'card', 'cards')}…`,
     /** UNCHANGED — synergyCopy.lastSlots.topUpFailed, referenced rather than
      *  transcribed so the two can never drift apart. */
     refused: synergyCopy.lastSlots.topUpFailed,
@@ -421,23 +421,23 @@ export const topOffCopy = {
   // fast taps is one announcement, which is the shipped rule from the
   // selection surface.
   announce: {
-    opened: (cand: string, slotCountText: string, ticked: string) =>
-      `${plural(cand, 'candidate', 'candidates')} for ${plural(slotCountText, 'slot', 'slots')}. ${ticked} already selected.`,
-    ticked: (ticked: string, cardCountText: string, buy: string) =>
-      `${ticked} of ${cardCountText} selected, ${buy} to buy.`,
-    tickedNoBuy: (ticked: string, cardCountText: string) => `${ticked} of ${cardCountText} selected.`,
+    opened: (candidateCountText: string, slotCountText: string, tickedCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} for ${plural(slotCountText, 'slot', 'slots')}. ${tickedCountText} already selected.`,
+    ticked: (tickedCountText: string, slotCountText: string, buyCountText: string) =>
+      `${tickedCountText} of ${slotCountText} selected, ${buyCountText} to buy.`,
+    tickedNoBuy: (tickedCountText: string, slotCountText: string) => `${tickedCountText} of ${slotCountText} selected.`,
     capped: (selectedCountText: string) => `${selectedCountText} of ${plural(selectedCountText, 'slot', 'slots')} selected.`,
     added: (added: string, total: string, buy: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}, ${buy} to buy.`,
     addedNoBuy: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}.`,
-    declined: (name: string, ticked: string, cardCountText: string) =>
-      `${name} set aside. ${ticked} of ${cardCountText} selected.`,
+    declined: (name: string, tickedCountText: string, slotCountText: string) =>
+      `${name} set aside. ${tickedCountText} of ${slotCountText} selected.`,
     /** The bulk restore. It states the tick count after the restore as well as
      *  the number of rows returned, because a restored row comes back unticked
      *  and a reader who is told only 'back on the list' would expect otherwise. */
-    restoredAll: (declined: string, ticked: string, cardCountText: string) =>
-      `${plural(declined, 'candidate', 'candidates')} back on the list. ${ticked} of ${cardCountText} selected.`,
+    restoredAll: (declinedCountText: string, tickedCountText: string, slotCountText: string) =>
+      `${plural(declinedCountText, 'candidate', 'candidates')} back on the list. ${tickedCountText} of ${slotCountText} selected.`,
     undone: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} put back. ${total} of ${bodySize}.`,
   },

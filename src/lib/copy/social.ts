@@ -465,7 +465,7 @@ export const spareCopy = {
     /** The friend row's one sub line: the spare count, then the pods (or the ask's days, or its expiry). */
     count: (spareCount: number) => spares(spareCount),
     pods: (pods: readonly ThirdPartyName[]) => joinNames(pods),
-    daysLeft: (daysLeft: number) => (daysLeft === 1 ? "1 day left" : `${daysLeft} days left`),
+    daysLeft: (dayCount: number) => (dayCount === 1 ? "1 day left" : `${dayCount} days left`),
     noAnswer: (dayCount: number) => `no answer in ${dayCount} days`,
     askAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card}`,
     askInsteadAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card} instead`,
@@ -602,7 +602,7 @@ export const haveItCopy = {
   offerAria: (friend: ThirdPartyName, card: string) => personText`Offer ${friend} ${card}`,
   offered: "Offered",
   accepted: "Accepted",
-  daysLeft: (daysLeft: number) => (daysLeft === 1 ? "1 day left" : `${daysLeft} days left`),
+  daysLeft: (dayCount: number) => (dayCount === 1 ? "1 day left" : `${dayCount} days left`),
   foot: {
     offer: (friend: ThirdPartyName) => personText`Offer, and ${friend} answers yes or no. The trade (or the goat) is between you.`,
     offered: (friend: ThirdPartyName) => personText`${friend} has been told. You’ll hear when they answer.`,

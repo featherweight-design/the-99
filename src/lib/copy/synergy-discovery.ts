@@ -49,18 +49,18 @@ export const synergyCopy = {
     // Signed, always — an unsigned synergy reads as a second percentage. The
     // singular is a real case: +1 pt is the Sol Ring shape and the panel prints
     // it more often than it prints +47.
-    synergy: (pointsText: string) => `${pointsText === '1' ? '+1 pt' : `+${pointsText} pts`}`,
+    synergy: (synergyPointsText: string) => `${synergyPointsText === '1' ? '+1 pt' : `+${synergyPointsText} pts`}`,
     // U+2212 minus, not a hyphen: at mono 11.5px a hyphen beside tabular digits
     // reads as a dash, which is this panel's absence glyph.
-    synergyNegative: (synergyPoints: string) => (synergyPoints === '1' ? '−1 pt' : `−${synergyPoints} pts`),
+    synergyNegative: (synergyPointsText: string) => (synergyPointsText === '1' ? '−1 pt' : `−${synergyPointsText} pts`),
     // Absence, never 0 and never +0 (suggest.ts:31-33). Independent of the
     // inclusion figure: one null never suppresses the other.
     synergyNone: '—',
-    inclusion: (inclusionPercent: string) => `${inclusionPercent}%`,
+    inclusion: (inclusionPercentText: string) => `${inclusionPercentText}%`,
     // Phone prefixes it, desktop does not — the shipped shopping.rowFigure
     // convention: on a meta line detached from the name, '31%' alone is
     // ambiguous.
-    inclusionMobile: (inclusionPercent: string) => `edhrec ${inclusionPercent}%`,
+    inclusionMobile: (inclusionPercentText: string) => `edhrec ${inclusionPercentText}%`,
     inclusionNone: '—',
     // The row's accessible name carries both figures and the ownership, because
     // all three are aria-hidden visual marks. Four branches, because a null in
@@ -80,8 +80,8 @@ export const synergyCopy = {
       (slot ? ` ${slot}.` : ''),
     ariaOwned: 'Owned',
     ariaUnowned: 'Not in your collection',
-    ariaSynergyPlus: (synergyPoints: string) => `plus ${synergyPoints} points`,
-    ariaSynergyMinus: (synergyPoints: string) => `minus ${synergyPoints} points`,
+    ariaSynergyPlus: (synergyPointsText: string) => `plus ${synergyPointsText} points`,
+    ariaSynergyMinus: (synergyPointsText: string) => `minus ${synergyPointsText} points`,
     ariaSynergyNone: 'no EDHREC figure',
     ariaInclusionNone: 'an unknown share',
 
