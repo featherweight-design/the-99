@@ -9,10 +9,6 @@
 const games = (n: number) => (n === 1 ? "1 game" : `${n} games`);
 
 export const gameMatchupsCopy = {
-  history: {
-    vs: "vs",
-    wonAria: "won",
-  },
   matchups: {
     heading: "Matchups",
     recorded: (recorded: number, total: number) => `recorded in ${recorded} of ${total} games`,

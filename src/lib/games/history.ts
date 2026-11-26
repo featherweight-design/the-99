@@ -61,7 +61,8 @@ export type HistoryGame = {
   opponents: HistorySeat[];
 };
 
-export type HistoryMonth = { month: string; games: number };
+/** One month's games and its record, counting the WHOLE month under the filter (the month band draws the record). */
+export type HistoryMonth = { month: string; games: number; wins: number; losses: number; draws: number };
 
 export type HistorySummary = {
   /** Games under the filter. */
@@ -172,7 +173,13 @@ export function historyMonthsQuery(viewerId: string, filter: GameHistoryFilter, 
   // logged at 9pm local on the 31st sits in its own month (the list groups rows by the same zone).
   const month = sql<string>`to_char((${deckGames.playedAt} at time zone 'UTC') at time zone ${zone ?? "UTC"}, 'YYYY-MM')`;
   return q
-    .select({ month, games: sql<number>`count(*)::int` })
+    .select({
+      month,
+      games: sql<number>`count(*)::int`,
+      wins: sql<number>`(count(*) filter (where ${deckGames.result} = 'win'))::int`,
+      losses: sql<number>`(count(*) filter (where ${deckGames.result} = 'loss'))::int`,
+      draws: sql<number>`(count(*) filter (where ${deckGames.result} = 'draw'))::int`,
+    })
     .from(deckGames)
     .innerJoin(decks, eq(decks.id, deckGames.deckId))
     .where(and(ownedGames(viewerId), ...filterConditions(viewerId, filter)))
@@ -271,7 +278,7 @@ async function readAggregates(viewerId: string, filter: GameHistoryFilter, zone:
     total: total?.total ?? 0,
     byDeck: byDeck.map((d) => ({ deckId: d.deckId, games: d.games })),
     byResult: { wins: across.wins, losses: across.losses, draws: across.draws },
-    months: months.map((m) => ({ month: m.month, games: m.games })),
+    months: months.map((m) => ({ month: m.month, games: m.games, wins: m.wins, losses: m.losses, draws: m.draws })),
     summary: {
       games: sum.games,
       wins: sum.wins,

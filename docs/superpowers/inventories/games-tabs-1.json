@@ -1,0 +1,85 @@
+{
+  "feature": "Games tabs PR 1: boxes, summary, month bands, Seats rows (handoff design_handoff_the99_games_tabs)",
+  "note": "Needs the audit account with games on one deck.",
+  "out": "contact-sheets/games-tabs-1",
+  "shares": [
+    {
+      "binding": "MonthBox",
+      "module": "src/components/decks/game-boxes.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "all-phone",
+      "label": "/decks?view=games at phone",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "MonthBox",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-games-summary]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "deck-phone",
+      "label": "deck Games tab at phone",
+      "view": "src/components/decks/games-panel.tsx",
+      "binding": "MonthBox",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/4599e9c9-5ee8-4127-b93b-20d7ce2bec41?tab=games",
+          "wait": "[data-games-summary]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-games-month]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "all-desktop",
+      "label": "/decks?view=games at desktop",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "MonthBox",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-games-summary]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "deck-desktop",
+      "label": "deck Games tab at desktop",
+      "view": "src/components/decks/games-panel.tsx",
+      "binding": "MonthBox",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/4599e9c9-5ee8-4127-b93b-20d7ce2bec41?tab=games",
+          "wait": "[data-games-summary]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-games-month]",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

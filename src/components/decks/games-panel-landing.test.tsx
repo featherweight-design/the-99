@@ -16,7 +16,7 @@ const scroll = vi.fn(function (this: Element, _arg?: ScrollIntoViewOptions) { sc
 
 const mount = (landingGameId: string | null, onLandingSpent = vi.fn()) => ({
   onLandingSpent,
-  ...render(<GamesPanel deckId="deck_1" games={GAMES} summary={summarizeGames(GAMES)} landingGameId={landingGameId} onLandingSpent={onLandingSpent} />),
+  ...render(<GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={GAMES} summary={summarizeGames(GAMES)} landingGameId={landingGameId} onLandingSpent={onLandingSpent} />),
 });
 const row = (id: string) => document.getElementById(gameRowId(id))!;
 

@@ -169,7 +169,7 @@ describe("opened from a table", () => {
 function Holder({ games, shown = true }: { games: DeckGame[]; shown?: boolean }) {
   const [offered, setOffered] = useState<TablePrefill | null>(prefill);
   return shown ? (
-    <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} opponents={{ you }} prefill={offered ?? undefined} onPrefillSpent={() => setOffered(null)} />
+    <GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={games} summary={summarizeGames(games)} opponents={{ you }} prefill={offered ?? undefined} onPrefillSpent={() => setOffered(null)} />
   ) : null;
 }
 const SAVED: DeckGame = { id: "g1", result: "win", podSize: 4, playedAt: new Date("2026-10-17"), versionNumber: null, note: null, worked: [], hurt: [] };

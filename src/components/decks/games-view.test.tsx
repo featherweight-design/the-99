@@ -37,7 +37,7 @@ const payload = (games: HistoryGame[], over: Partial<GamesPayload> = {}, sum = s
   filter: {},
   games, next: null,
   aggregates: {
-    total: sum.games, months: [{ month: "2026-10", games: 6 }, { month: "2026-09", games: 5 }], summary: sum,
+    total: sum.games, months: [{ month: "2026-10", games: 6, wins: 3, losses: 2, draws: 1 }, { month: "2026-09", games: 5, wins: 2, losses: 3, draws: 0 }], summary: sum,
     byResult: { wins: 9, losses: 12, draws: 2 }, byDeck: [{ deckId: "deck-sai", games: 5 }],
     playedAgainst: {
       friends: [{ publicId: "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b", name: named("Colin"), games: 17, commander: null }],
@@ -53,6 +53,8 @@ const draw = (data: GamesPayload, decks: { id: string; name: string; identity: s
 const TWO = [game("g1", "2026-10-30T12:00:00Z"), game("g2", "2026-09-19T12:00:00Z", { result: "loss", versionNumber: null, worked: [], hurt: [] })];
 
 beforeEach(() => { more.load.mockReset(); more.read.mockReset(); onData.mockReset(); });
+
+const entries = () => Array.from(document.querySelectorAll<HTMLElement>("[data-game-entry]"));
 
 describe("GamesView: the list", () => {
   it("groups by month the way the read does (UTC), newest first", () => {
@@ -71,7 +73,7 @@ describe("GamesView: the list", () => {
     // print Nov 1 and Sep 30 under the October head.
     const year = new Date().getUTCFullYear() === 2026 ? "" : ", 2026";
     draw(payload([game("late", "2026-10-31T23:30:00Z"), game("early", "2026-10-01T00:30:00Z")]));
-    const [late, early] = screen.getAllByRole("listitem");
+    const [late, early] = entries();
     expect(late).toHaveTextContent(`Oct 31${year}`);
     expect(early).toHaveTextContent(`Oct 1${year}`);
     expect(screen.getAllByRole("heading", { name: /October 2026/ })).toHaveLength(1);
@@ -86,49 +88,49 @@ describe("GamesView: the list", () => {
 
   it("draws a row per game: deck, result square, pod and date, version stamp or its dash, marks", () => {
     draw(payload(TWO));
-    const [first, second] = screen.getAllByRole("listitem");
-    expect(within(first).getByText("HD - Sai")).toBeInTheDocument();
-    expect(within(first).getByText(gameLogCopy.history.won)).toBeInTheDocument();
+    const [first, second] = entries();
+    expect(within(first).getAllByText("HD - Sai").length).toBeGreaterThan(0);
+    expect(within(first).getAllByText(gameHistoryCopy.row.result.win).length).toBeGreaterThan(0);
     // The year drops inside the current one (the shipped rule), so the expectation is written out rather than formatted.
     const year = new Date().getUTCFullYear() === 2026 ? "" : ", 2026";
-    expect(within(first).getByText(gameLogCopy.history.meta("4", `Oct 30${year}`))).toBeInTheDocument();
+    expect(within(first).getByText(gameHistoryCopy.row.meta(4, `Oct 30${year}`))).toBeInTheDocument();
     expect(within(first).getByText(deckVersioningCopy.stamp.value(3))).toBeInTheDocument();
     expect(within(first).getByText("Speed")).toBeInTheDocument();
     // A game with no version and no marks reads as complete: the dashes, and the loss in the neutral square.
-    expect(within(second).getByText(gameLogCopy.history.lost)).toBeInTheDocument();
-    // The marks row draws its own dash, so the version slot (the fixed 44px cell) is the one asked.
-    const slot = Array.from(second.querySelectorAll("span")).filter((el) => el.className.includes("w-[44px]") && el.textContent === deckVersioningCopy.stamp.absent);
-    expect(slot).toHaveLength(1);
+    expect(within(second).getByText(gameHistoryCopy.row.result.loss)).toBeInTheDocument();
+    // Your tile carries the stamp, or its dash for a game logged before versioning.
+    expect(within(within(second).getByRole("list", { name: gameHistoryCopy.row.seats }).firstElementChild as HTMLElement).getByText(deckVersioningCopy.stamp.absent)).toBeInTheDocument();
     expect(within(second).getAllByText(gameLogCopy.history.noMarks).length).toBeGreaterThan(0);
   });
 
-  // The deck's art is an art_crop and takes ArtWash's top trim (#2890): the 26px box is a size container clipping the
-  // layer's lift of 3% of the crop. The layer keeps its 50% 25%, which places the crop in the grown layer's slack and
+  // The deck's art is an art_crop and takes ArtWash's top trim (#2890): the tile is a size container clipping the
+  // layer's lift of 3% of the crop. The layer keeps its 50% 20%, which places the crop in the grown layer's slack and
   // can only add to the trim (none here: a square box holds a height-bound crop, so exactly 3%).
   it("trims the top of the deck's art_crop", () => {
     draw(payload([game("g1", "2026-10-30T12:00:00Z", { deck: { ...DECK, commanderArtCropUri: "crop.jpg" } })]));
-    const box = document.querySelector("[data-deck-art]") as HTMLElement;
+    // Your seat tile draws the deck's art_crop (the first tile of the Seats list).
+    const box = screen.getByRole("list", { name: gameHistoryCopy.row.seats }).firstElementChild as HTMLElement;
     expect(box).toHaveClass(ART_CROP_TRIM.box);
     const layer = box.firstElementChild as HTMLElement;
     expect(layer.style.backgroundImage).toContain("crop.jpg");
     expect(layer.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
-    expect(layer.style.backgroundPosition).toBe("50% 25%");
+    expect(layer.style.backgroundPosition).toBe("50% 20%");
   });
 
   it("makes the whole row one press: the deck's Games tab at that game", () => {
     draw(payload(TWO));
     const links = screen.getAllByRole("link");
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/decks/deck-sai?tab=games&game=g1", "/decks/deck-sai?tab=games&game=g2"]);
-    expect(within(links[0]).getByText("HD - Sai")).toBeInTheDocument();
+    expect(within(links[0]).getByText(gameHistoryCopy.row.open("HD - Sai"))).toBeInTheDocument();
   });
 
-  it("draws the vs line from the snapshot and the note, and none for a game with no seat", () => {
+  it("draws the seats from the snapshot and the note, and none for a game with no seat", () => {
     const withSeats = game("g1", "2026-10-30T12:00:00Z", {
       note: "Mulled to 5.",
       opponents: [seat({ seat: 1, friend: { key: "f1", name: named("Colin"), publicId: null }, won: true }), seat({ seat: 2, label: named("Dana") })],
     });
     draw(payload([withSeats, game("g2", "2026-10-29T12:00:00Z")]));
-    const [first, second] = screen.getAllByRole("listitem");
+    const [first, second] = entries();
     expect(within(first).getByText("Colin")).toBeInTheDocument();
     expect(within(first).getByText("Dana")).toBeInTheDocument();
     expect(first).toHaveTextContent("“Mulled to 5.”");
@@ -145,9 +147,13 @@ describe("GamesView: the list", () => {
 describe("GamesView: the summary", () => {
   it("reads in the Games tab's voice, with the facts line and the leading deck", () => {
     draw(payload(TWO));
-    expect(screen.getByRole("heading", { level: 2, name: "23 games logged. 9–12–2." })).toBeInTheDocument();
-    expect(document.querySelector("[data-games-summary]")).toHaveTextContent("6 decks · pods of 3–5 · Jul to Oct 2026");
-    expect(document.querySelector("[data-games-summary]")).toHaveTextContent("most played HD - Dina, 8 of 23");
+    expect(screen.getByRole("heading", { level: 2, name: new RegExp(`^${gameHistoryCopy.boxes.band(23, gameHistoryCopy.decks(6))}`) })).toBeInTheDocument();
+    const box = document.querySelector("[data-games-summary]")!;
+    expect(box).toHaveTextContent(gameHistoryCopy.boxes.players(3, 5));
+    expect(box).toHaveTextContent("Jul to Oct 2026");
+    expect(box).toHaveTextContent(gameHistoryCopy.boxes.cell.most);
+    expect(box).toHaveTextContent("HD - Dina");
+    expect(box).toHaveTextContent(gameHistoryCopy.boxes.mostOf(8, 23));
     // From three games of history on the count is the filter chassis's result line.
     expect(document.querySelector('[data-chassis-row="result"]')).toHaveTextContent("23 games");
   });
@@ -155,29 +161,30 @@ describe("GamesView: the summary", () => {
   it("reuses the shipped one-game headline, names the deck, and says where games come from under three", () => {
     const one = payload([TWO[0]], {}, summary({ games: 1, wins: 1, losses: 0, draws: 0, decks: 1, podMin: 4, podMax: 4, mostPlayed: { deckId: "deck-sai", name: "HD - Sai", games: 1 } }));
     draw(one);
-    expect(screen.getByRole("heading", { level: 2, name: gameLogCopy.headline.oneGame })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: new RegExp(`^${gameHistoryCopy.boxes.band(1, "HD - Sai")}`) })).toBeInTheDocument();
     const box = document.querySelector("[data-games-summary]")!;
-    expect(box).toHaveTextContent("HD - Sai · pod of 4");
+    expect(box).toHaveTextContent(gameHistoryCopy.boxes.players(4, 4));
     expect(box).toHaveTextContent(gameHistoryCopy.low);
-    expect(box.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
+    expect(box.textContent).not.toContain(gameHistoryCopy.boxes.cell.most);
     expect(document.querySelector("[data-games-count]")).toHaveTextContent(gameLogCopy.cell.subOneGame);
   });
 
   it("gives two games a record and the same low line, and three the most played line instead", () => {
     const two = payload(TWO, {}, summary({ games: 2, wins: 1, losses: 1, draws: 0, decks: 2, podMin: 4, podMax: 4 }));
     const { unmount } = draw(two);
-    expect(screen.getByRole("heading", { level: 2, name: "2 games logged. 1–1." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: new RegExp(`^${gameHistoryCopy.boxes.band(2, gameHistoryCopy.decks(2))}`) })).toBeInTheDocument();
     expect(document.querySelector("[data-games-summary]")).toHaveTextContent(gameHistoryCopy.low);
-    expect(document.querySelector("[data-games-summary]")).toHaveTextContent("2 decks · pod of 4");
+    expect(document.querySelector("[data-games-summary]")).toHaveTextContent(gameHistoryCopy.boxes.players(4, 4));
     unmount();
     draw(payload(TWO, {}, summary({ games: 3, wins: 1, losses: 2, draws: 0, decks: 2, podMin: 4, podMax: 4, mostPlayed: { deckId: "deck-sai", name: "HD - Sai", games: 2 } })));
-    expect(document.querySelector("[data-games-summary]")).toHaveTextContent("most played HD - Sai, 2 of 3");
+    expect(document.querySelector("[data-games-summary]")).toHaveTextContent(gameHistoryCopy.boxes.cell.most);
+    expect(document.querySelector("[data-games-summary]")).toHaveTextContent(gameHistoryCopy.boxes.mostOf(2, 3));
     expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain(gameHistoryCopy.low);
   });
 
   it("draws no most played line when two decks tie", () => {
     draw(payload(TWO, {}, summary({ mostPlayed: null })));
-    expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
+    expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain(gameHistoryCopy.boxes.cell.most);
   });
 });
 
@@ -228,9 +235,9 @@ describe("GamesView: the window", () => {
     fireEvent.click(busy);
     fireEvent.click(busy);
     expect(more.load).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(entries()).toHaveLength(2);
     await act(async () => resolve({ ok: true, games: [game("g3", "2026-09-12T12:00:00Z")], next: null }));
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(entries()).toHaveLength(3);
     // The last window: it is all of them now, and nothing else asks.
     expect(screen.queryByRole("button", { name: /more/ })).toBeNull();
     expect(screen.queryByText("Showing 2 of 212 games")).toBeNull();
@@ -240,7 +247,7 @@ describe("GamesView: the window", () => {
     more.load.mockResolvedValue({ ok: true, games: [TWO[1], game("g3", "2026-09-12T12:00:00Z")], next: null } satisfies MoreGames);
     draw(first);
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
-    await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(3));
+    await waitFor(() => expect(entries()).toHaveLength(3));
     expect(screen.getAllByRole("heading", { name: /September 2026/ })).toHaveLength(1);
   });
 
@@ -249,12 +256,12 @@ describe("GamesView: the window", () => {
     draw(first);
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
     expect(await screen.findByRole("alert")).toHaveTextContent(gameHistoryCopy.moreFailed);
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(entries()).toHaveLength(2);
     expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).not.toHaveAttribute("aria-disabled");
     // Try again asks for the same cursor.
     more.load.mockResolvedValue({ ok: true, games: [game("g3", "2026-09-12T12:00:00Z")], next: null } satisfies MoreGames);
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.retry }));
-    await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(3));
+    await waitFor(() => expect(entries()).toHaveLength(3));
     expect(more.load).toHaveBeenNthCalledWith(2, first.next, {});
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -263,8 +270,8 @@ describe("GamesView: the window", () => {
     more.load.mockResolvedValue({ ok: true, games: [game("g3", "2026-09-12T12:00:00Z"), game("g4", "2026-09-11T12:00:00Z")], next: null } satisfies MoreGames);
     draw(first);
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
-    await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(4));
-    await waitFor(() => expect(document.activeElement).toBe(within(screen.getAllByRole("listitem")[2]).getByRole("link")));
+    await waitFor(() => expect(entries()).toHaveLength(4));
+    await waitFor(() => expect(document.activeElement).toBe(within(entries()[2]).getByRole("link")));
   });
 
   it("drops a window that comes back after the first one was replaced", async () => {
@@ -274,10 +281,10 @@ describe("GamesView: the window", () => {
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
     const replaced = payload([game("n1", "2026-10-31T12:00:00Z")], { next: "2026-10-31 12:00:00|22222222-2222-4222-8222-222222222222" }, summary({ games: 212 }));
     rerender(<GamesView data={replaced} onData={onData} viewSwitch={<span>switch</span>} decks={[]} />);
-    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(entries()).toHaveLength(1);
     await act(async () => resolve({ ok: true, games: [game("old3", "2026-09-12T12:00:00Z")], next: null }));
     // The old window is not appended onto the new first one, and the new position is untouched.
-    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(entries()).toHaveLength(1);
     expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).toBeInTheDocument();
   });
 });
@@ -349,10 +356,10 @@ describe("GamesView: the filters", () => {
     const sum = summary({ games: 5, wins: 2, losses: 3, draws: 0, decks: 1, podMin: 4, podMax: 4, friendWonLosses: { won: 2, losses: 3 }, mostPlayed: { deckId: "deck-sai", name: "HD - Sai", games: 5 } });
     draw(filtered(TWO, { deckId: "deck-sai", friend: COLIN }, sum));
     const box = document.querySelector("[data-games-summary]")!;
-    expect(box).toHaveTextContent("5 games logged. 2–3.");
-    expect(box).toHaveTextContent("HD - Sai with Colin at the table");
+    expect(box).toHaveTextContent(gameHistoryCopy.boxes.band(5, "HD - Sai"));
+    expect(box).toHaveTextContent("with Colin at the table");
     expect(box).toHaveTextContent("Colin won 2 of the 3 you lost");
-    expect(box.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
+    expect(box.textContent).not.toContain(gameHistoryCopy.boxes.cell.most);
     expect(box.textContent).not.toContain(gameHistoryCopy.low);
   });
 

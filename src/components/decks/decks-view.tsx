@@ -1094,7 +1094,7 @@ export function DecksView({
               hold={{ value: heldMore, set: setHeldMore }}
               onData={onGamesData}
               viewSwitch={viewSwitch}
-              decks={serverDecks.map((d) => ({ id: d.id, name: d.name, identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity) }))}
+              decks={serverDecks.map((d) => ({ id: d.id, name: d.name, identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity), artUri: d.commanderArtCropUri }))}
             />
           ) : (<>
           {wide ? (

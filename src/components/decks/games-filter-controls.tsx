@@ -27,7 +27,7 @@ const copy = gameHistoryCopy.filter;
 const RESULTS: GameResult[] = ["win", "loss", "draw"];
 const PANEL_WIDTH = 300;
 
-export type DeckChoice = { id: string; name: string; identity: string[] };
+export type DeckChoice = { id: string; name: string; identity: string[]; /** The commander's art crop, for the Most played cell. */ artUri?: string | null };
 
 /** One row of the Played against list: a friend (by `public_id`) or a commander (by oracle id). */
 export type AgainstOption = {

@@ -63,6 +63,33 @@ export const gameHistoryCopy = {
     noMatch: "No games match",
     clearFilters: "Clear filters",
   },
+  /** The games tabs' boxes (design handoff `design_handoff_the99_games_tabs`, PR 1). DRAFT: `/copy-review` owns the wording. */
+  boxes: {
+    /** The summary box's band: `7 games logged · 4 decks`, or the deck's own name in the second slot. */
+    band: (total: number, lead: string) => `${games(total)} logged · ${lead}`,
+    /** A month box's band: `November 2026 · 4 games`. */
+    month: (label: string, k: number) => `${label} · ${games(k)}`,
+    /** Spoken for the record mark: `4 wins, 2 losses, 1 draw`. */
+    record: (w: number, l: number, d: number) =>
+      [`${w} ${w === 1 ? "win" : "wins"}`, `${l} ${l === 1 ? "loss" : "losses"}`, ...(d > 0 ? [`${d} ${d === 1 ? "draw" : "draws"}`] : [])].join(", "),
+    cell: { pods: "Pods", played: "Played", last: "Last played", most: "Most played" },
+    players: (min: number, max: number) => (min === max ? `${min} players` : `${min} to ${max} players`),
+    mostOf: (k: number, total: number) => `${n(k)} of ${n(total)}`,
+  },
+  /** One game's row in both tabs. */
+  row: {
+    result: { win: "Won", loss: "Lost", draw: "Drawn" },
+    meta: (pod: number, date: string) => `${pod} ${pod === 1 ? "player" : "players"} · ${date}`,
+    open: (deck: string) => `Open ${deck}`,
+    openShort: "Open deck",
+    seats: "Seats",
+    helped: "Helped",
+    hurt: "Hurt",
+    won: "Won",
+    someone: "Someone",
+    notLogged: "Seat not logged",
+    noCommander: "No commander logged",
+  },
   /** The summary's facts line under a Played against filter: `HD - Sai with Colin at the table`. */
   scoped: { with: "with", atTable: "at the table" },
   /** The trophy line under a friend filter: `Colin won 2 of the 3 you lost`, the name drawn before this. */

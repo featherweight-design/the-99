@@ -384,7 +384,7 @@ export function GameLogForm({
   }
 
   return (
-    <div className="rounded-[12px] p-[16px] md:p-[20px] bg-surface border border-border-strong">
+    <div data-game-log-form className="rounded-[12px] p-[16px] md:p-[20px] bg-surface border border-border-strong">
       <div className="flex items-baseline justify-between gap-[12px] pb-[14px] md:pb-[18px] border-b border-b-border border-border md:border-b-0">
         <h3 className="font-display font-bold md:font-semibold text-[17px] md:text-[19px] text-fg">
           {gameLogCopy.form.heading}

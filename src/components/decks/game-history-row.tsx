@@ -5,7 +5,6 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { deleteGame } from "../../app/decks/actions";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
 import type { DeckGame } from "../../lib/decks/games";
 import { formatPlayed } from "../../lib/decks/format";
@@ -14,8 +13,7 @@ import { noteAppScroll } from "../../lib/ui/reveal";
 import { RING_FADE_CLASS } from "../../lib/ui/ring-timing";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
-import { GameMarks, GameNote } from "./game-row-parts";
-import { GameVsLine } from "./game-vs-line";
+import { GameRowBody, ResultHead } from "./game-row-parts";
 import { useZone } from "../zone-context";
 
 export interface GameHistoryRowProps {
@@ -28,15 +26,11 @@ export interface GameHistoryRowProps {
   opponents?: readonly GameOpponent[];
   /** The cross-deck Games view landed here (`?tab=games&game=<id>`): scroll into view and ring for the panel's two seconds. */
   ringed?: boolean;
+  /** Your tile in the Seats: this deck's name and its commander's art. */
+  you: { deckName: string; artUri: string | null };
 }
 
-const RESULT_GLYPH = {
-  win: gameLogCopy.history.won,
-  loss: gameLogCopy.history.lost,
-  draw: gameLogCopy.history.drawn,
-} as const;
-
-export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, ringed = false }: GameHistoryRowProps) {
+export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, ringed = false, you }: GameHistoryRowProps) {
   const zone = useZone();
   const rowRef = useRef<HTMLLIElement>(null);
   // On arrival only: the ring clearing is not a reason to move the page again.
@@ -108,54 +102,20 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       // The arrival ring (handoff Place W3): a 2px accent border drawn outside the row, a 4px halo beyond it, radius 10.
       // The accent as an outline and a soft halo, never text.
       className={
-        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border scroll-mt-[80px] " + (ringed ? "" : RING_FADE_CLASS + " ") +
+        "list-none scroll-mt-[80px] border-0 border-b border-solid border-b-[color:var(--border)] px-[14px] py-[12px] last:border-b-0 md:px-[16px] " + (ringed ? "" : RING_FADE_CLASS + " ") +
         (ringed
-          ? "border-border rounded-[10px] outline outline-2 outline-offset-0 outline-[color:var(--accent)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
+          ? "rounded-[10px] outline outline-2 -outline-offset-2 outline-[color:var(--accent)] shadow-[inset_0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
           // Unringed keeps a clear outline and halo, so the ring leaving fades (RING_FADE_CLASS) rather than snapping.
-          : "border-border rounded-[9px] outline outline-2 outline-offset-0 outline-transparent shadow-[0_0_0_6px_transparent]")
+          : "rounded-[9px] outline outline-2 -outline-offset-2 outline-transparent shadow-[inset_0_0_0_6px_transparent]")
       }
     >
-      <div className="flex flex-wrap md:flex-nowrap items-center gap-[14px] flex-1">
-      {/* Result square — never --danger. A loss is a result, not an error. */}
-      <span
-        className={
-          "flex-none flex items-center justify-center w-[26px] h-[26px] rounded-[7px] font-mono text-[12px] font-semibold border " +
-          (game.result === "win" ? "border-success text-success" : "border-border-strong text-fg-body")
-        }
-      >
-        {RESULT_GLYPH[game.result]}
-      </span>
-
-      {/* 156 on desktop (Small items 7, addendum 5): the slot holds the longest month-first meta,
-          `4-player · Dec 31, 2025`, on one line at 11px mono. The phone sizes to its text, unchanged. */}
-      <span className="flex-none md:w-[156px] font-mono text-[11px] tabular-nums text-fg-faint">
-        {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt, undefined, zone))}
-      </span>
-
-      {/* The version that was on the table. A fixed slot, drawn even when the
-          game has none: the dash keeps the marks that follow it on one vertical,
-          and an absent stamp is history rather than a gap. On the phone the meta
-          cell to its left sizes to its own text, so the whole sequence shifts
-          with the date's width — that is the log's existing behaviour at that
-          width and the stamp inherits it rather than fixing it. */}
-      <span
-        className={
-          "flex-none w-[44px] font-mono text-[10.5px] tabular-nums " +
-          (game.versionNumber === null ? "text-fg-locked" : "text-fg-faint")
-        }
-      >
-        {game.versionNumber === null
-          ? deckVersioningCopy.stamp.absent
-          : deckVersioningCopy.stamp.value(game.versionNumber)}
-      </span>
-
-      <GameMarks worked={game.worked} hurt={game.hurt} note={note} />
-
+      <div className="flex items-center justify-between gap-[12px]">
+        <ResultHead result={game.result} podSize={game.podSize} date={formatPlayed(game.playedAt, undefined, zone)} />
       {/* The ×, and the deck delete's pane floating under it: one confirm, drawn the way every
           delete in the app is drawn (`DeleteConfirm`), in the panel the deck ⋯ menu floats in. */}
       {/* A div, not a span: it holds the pane's block-level panel, and a span around a div is
           invalid nesting the HTML parser repairs before hydration. */}
-      <div className="relative ml-auto md:ml-0 flex-none">
+      <div className="relative flex-none">
         <button
           ref={triggerRef}
           type="button"
@@ -204,10 +164,15 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
 
       </div>
 
-      {opponents && opponents.length > 0 && <GameVsLine seats={opponents} />}
-
-      {/* The note line — deck-tuning.md §Note line; flush on the phone, indented to the mark column on desktop. */}
-      {note !== null && <GameNote note={note} inset="md:pl-[40px]" />}
+      <GameRowBody
+        you={{ deckName: you.deckName, artUri: you.artUri, versionNumber: game.versionNumber }}
+        seats={opponents ?? []}
+        podSize={game.podSize}
+        result={game.result}
+        worked={game.worked}
+        hurt={game.hurt}
+        note={note}
+      />
     </li>
   );
 }

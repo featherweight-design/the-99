@@ -26,7 +26,7 @@ const AGGREGATES: HistoryAggregates = {
   total: 60,
   byResult: { wins: 30, losses: 20, draws: 10 },
   byDeck: [{ deckId: "11111111-1111-4111-8111-111111111111", games: 60 }],
-  months: [{ month: "2026-09", games: 60 }],
+  months: [{ month: "2026-09", games: 60, wins: 30, losses: 30, draws: 0 }],
   summary: {
     games: 60, wins: 30, losses: 20, draws: 10, decks: 1, podMin: 4, podMax: 4, firstPlayedAt: null, lastPlayedAt: null,
     mostPlayed: null, friendWonLosses: null,

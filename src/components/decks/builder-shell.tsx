@@ -2121,6 +2121,7 @@ export function BuilderShell({
               <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">
                 <GamesPanel
                   deckId={deck.id}
+                  deck={{ name: deck.name, artUri: deck.commander.artCropUri ?? null }}
                   games={games}
                   summary={gameSummary}
                   // Suggested changes is a Tuning tool that reads over a reading, and the header's
