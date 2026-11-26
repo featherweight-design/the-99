@@ -127,7 +127,7 @@ describe("coverage cell arrival", () => {
     );
 
     expect(document.getElementById("panel-analysis")).not.toBeNull();
-    expect(screen.getAllByLabelText(roleStripCopy.mixLabel)).toHaveLength(1);
+    expect(screen.getAllByRole("region", { name: new RegExp(roleStripCopy.mixLabel) })).toHaveLength(1);
     fireEvent.click(
       screen.getByRole("button", {
         name: addPanelCopy.strip.cellLinkAria(

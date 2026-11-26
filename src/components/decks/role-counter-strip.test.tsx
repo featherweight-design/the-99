@@ -310,7 +310,7 @@ describe("role counter strip — unresolved rows", () => {
     const { container } = render(
       <RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />,
     );
-    const cells = within(screen.getByLabelText(roleStripCopy.mixLabel)).getAllByRole(
+    const cells = within(screen.getByRole("region", { name: new RegExp(roleStripCopy.mixLabel) })).getAllByRole(
       "figure",
       { hidden: true },
     ).length;
@@ -590,8 +590,8 @@ describe("role counter strip: cards → on a cell at or over target (small items
 describe("role counter strip: the mix box and N over (R3-Mix)", () => {
   it("is one labelled box headed by the mix label", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
-    const box = screen.getByRole("region", { name: roleStripCopy.mixLabel });
-    expect(box).toContainElement(screen.getByRole("heading", { level: 2, name: roleStripCopy.mixLabel }));
+    const box = screen.getByRole("region", { name: new RegExp(roleStripCopy.mixLabel) });
+    expect(box).toContainElement(screen.getByRole("heading", { level: 2, name: new RegExp(roleStripCopy.mixLabel) }));
   });
 
   it("says N over in the foot of a role over its target, and the recommendation under it", () => {
