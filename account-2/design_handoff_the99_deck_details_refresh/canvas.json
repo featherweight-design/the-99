@@ -15,28 +15,28 @@
    "y": 0,
    "w": 1400,
    "h": 900,
-   "title": "Main · the pattern and what changes"
+   "title": "Main \u00b7 the pattern and what changes"
   },
   "R1-Consider.dc.html": {
    "x": 0,
    "y": 1020,
    "w": 1770,
    "h": 1738,
-   "title": "R1 Consider · desktop + phone"
+   "title": "R1 Consider \u00b7 desktop + phone"
   },
   "R1-Mana.dc.html": {
    "x": 1850,
    "y": 1020,
    "w": 1770,
    "h": 1334,
-   "title": "R1 Mana Balance · desktop + phone"
+   "title": "R1 Mana Balance \u00b7 desktop + phone"
   },
   "R2-Tuning.dc.html": {
    "x": 0,
    "y": 2878,
    "w": 1770,
    "h": 1702,
-   "title": "R2 Tuning landing with The deck’s strategy"
+   "title": "R2 Tuning landing with The deck\u2019s strategy"
   },
   "R2-Focus.dc.html": {
    "x": 1850,
@@ -50,21 +50,21 @@
    "y": 2878,
    "w": 1770,
    "h": 1123,
-   "title": "R2 History · month boxes"
+   "title": "R2 History \u00b7 month boxes"
   },
   "R3-Mix.dc.html": {
    "x": 0,
    "y": 4700,
    "w": 1770,
    "h": 937,
-   "title": "R3 Recommended mix · over state + Why open on phone"
+   "title": "R3 Recommended mix \u00b7 over state + Why open on phone"
   },
   "R3-YourDeck.dc.html": {
    "x": 3700,
    "y": 4700,
    "w": 1770,
    "h": 2250,
-   "title": "R3 Your deck › All and Shopping"
+   "title": "R3 Your deck \u203a All and Shopping"
   },
   "R3-Analysis.dc.html": {
    "x": 5550,
@@ -85,14 +85,84 @@
    "y": 1020,
    "w": 1000,
    "h": 900,
-   "title": "R1 Phone tool picker · replaces ‹ Tuning"
+   "title": "R1 Phone tool picker \u00b7 replaces \u2039 Tuning"
   },
   "R3-MixWhy.dc.html": {
    "x": 1850,
    "y": 4700,
    "w": 1770,
    "h": 929,
-   "title": "R3 Why these numbers? open · desktop"
+   "title": "R3 Why these numbers? open \u00b7 desktop"
+  },
+  "R4-Precons.dc.html": {
+   "x": 0,
+   "y": 7110,
+   "w": 2360,
+   "h": 2348,
+   "title": "R4 Precons \u00b7 Announced box and year boxes"
+  },
+  "R4-PreconPick.dc.html": {
+   "x": 2480,
+   "y": 7110,
+   "w": 1910,
+   "h": 1498,
+   "title": "R4 New deck \u203a From a precon \u00b7 year boxes"
+  },
+  "R4-PreconOpen.dc.html": {
+   "x": 0,
+   "y": 9578,
+   "w": 1910,
+   "h": 1698,
+   "title": "R4 Open precon \u00b7 Overview box"
+  },
+  "R4-Cart.dc.html": {
+   "x": 2030,
+   "y": 9578,
+   "w": 1910,
+   "h": 1298,
+   "title": "R4 Decks \u203a All shopping cart \u00b7 Decks box"
+  },
+  "R4-Export.dc.html": {
+   "x": 0,
+   "y": 11396,
+   "w": 3270,
+   "h": 1058,
+   "title": "R4 Export and Export \u203a Shopping"
+  },
+  "R4-Friends.dc.html": {
+   "x": 3390,
+   "y": 11396,
+   "w": 1910,
+   "h": 1598,
+   "title": "R4 Friends and Pods \u00b7 section bands"
+  },
+  "R4-Home.dc.html": {
+   "x": 0,
+   "y": 13114,
+   "w": 1910,
+   "h": 1498,
+   "title": "R4 Home \u00b7 zero-state heads"
+  },
+  "R4-Analysis.dc.html": {
+   "x": 2030,
+   "y": 13114,
+   "w": 1910,
+   "h": 1042,
+   "title": "R4 Analysis before a read \u00b7 Overview box"
+  },
+  "R4-HelpMeChoose.dc.html": {
+   "x": 0,
+   "y": 14732,
+   "w": 3720,
+   "h": 2198,
+   "title": "R4 Help me choose results \u00b7 heads"
+  },
+  "R4-Settings.dc.html": {
+   "x": 3840,
+   "y": 14732,
+   "w": 1910,
+   "h": 2198,
+   "title": "R4 Settings \u00b7 section heads"
   }
  },
  "order": [
@@ -107,7 +177,17 @@
   "R3-MixWhy.dc.html",
   "R3-YourDeck.dc.html",
   "R3-Analysis.dc.html",
-  "R3-Versions.dc.html"
+  "R3-Versions.dc.html",
+  "R4-Precons.dc.html",
+  "R4-PreconPick.dc.html",
+  "R4-PreconOpen.dc.html",
+  "R4-Cart.dc.html",
+  "R4-Export.dc.html",
+  "R4-Friends.dc.html",
+  "R4-Home.dc.html",
+  "R4-Analysis.dc.html",
+  "R4-HelpMeChoose.dc.html",
+  "R4-Settings.dc.html"
  ],
  "notes": {},
  "designSystems": []

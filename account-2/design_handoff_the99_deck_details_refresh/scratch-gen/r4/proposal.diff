@@ -1,0 +1,919 @@
+diff --git a/src/components/decks/analysis-empty.tsx b/src/components/decks/analysis-empty.tsx
+index efa0d0d..3ec902b 100644
+--- a/src/components/decks/analysis-empty.tsx
++++ b/src/components/decks/analysis-empty.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { DeckBoxBand } from "./deck-box";
++import { PANEL } from "../social/section-panel";
+ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+ 
+ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+@@ -157,11 +159,9 @@ export function AnalysisEmpty({
+     return () => observer.disconnect();
+   }, [phase]);
+   return (
+-    <section ref={sectionRef} className="flex flex-col gap-[7px] md:gap-[8px]" data-testid="analysis-empty" data-phase={phase}>
+-      <h3 className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">
+-        {copy.overview}
+-      </h3>
+-      <div className="flex flex-col items-center text-center px-[4px] pt-[22px] pb-[8px] md:flex-row md:items-start md:justify-center md:gap-[40px] md:text-left md:px-[24px] md:pt-[28px] md:pb-[18px]">
++    <section ref={sectionRef} className={`${PANEL} !mt-0`} data-testid="analysis-empty" data-phase={phase}>
++      <DeckBoxBand as="h3" title={copy.overview} />
++      <div className="flex flex-col items-center text-center px-[14px] pt-[22px] pb-[18px] md:flex-row md:items-start md:justify-center md:gap-[40px] md:text-left md:px-[24px] md:pt-[28px] md:pb-[18px]">
+         <AnalysisRing busy={busy} opacity={phase === "failed" ? 0.3 : undefined} testId="analysis-ring" />
+         <div className="flex flex-col items-center md:min-w-0 md:max-w-[640px] md:flex-1 md:items-start">
+           <h2
+diff --git a/src/components/decks/cart/deck-select.tsx b/src/components/decks/cart/deck-select.tsx
+index a47ee8f..32e2c6e 100644
+--- a/src/components/decks/cart/deck-select.tsx
++++ b/src/components/decks/cart/deck-select.tsx
+@@ -4,6 +4,8 @@
+ // (ruling 1); unselecting is a view for this visit only and writes nothing (lock 8). Desktop always
+ // shows the list; the phone folds it under its head.
+ 
++import { PANEL } from "../../social/section-panel";
++import { BAND_GROUND, BAND_HEIGHT, BAND_RULE, BandTitle } from "../deck-box";
+ import { useId, useState } from "react";
+ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+ import { formatCents } from "../../../lib/decks/price";
+@@ -46,10 +48,9 @@ export function DeckSelect({
+     <section
+       // About's label 2 on the cart's capture is boxed on this (`scripts/lib/about-locators.mjs`).
+       data-cart-decks
+-      className="order-2 flex min-w-0 flex-col rounded-[12px] border border-[color:var(--border)] px-[14px] pt-[2px] pb-[4px] md:order-1 md:min-h-0"
+-      style={{ background: "var(--surface)" }}
++      className={`${PANEL} !mt-0 order-2 flex min-w-0 flex-col md:order-1 md:min-h-0`}
+     >
+-      <div className="flex min-h-[44px] items-center gap-[10px]">
++      <div className={`flex ${BAND_HEIGHT} items-center gap-[10px] py-[4px] pl-[14px] pr-[10px] md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${open ? BAND_RULE : ""} md:[border-bottom:1px_solid_var(--border)]`}>
+         {/* Phone: the head is the fold's toggle, label then `Select all` then the chevron (the
+             canvas order). The two toggles are separate buttons, never nested with `Select all`;
+             the chevron's is a pointer target only, so a keyboard meets one toggle. Desktop never folds. */}
+@@ -61,14 +62,10 @@ export function DeckSelect({
+           aria-label={copy.selections.toggleAria(open)}
+           className="flex min-h-[44px] flex-1 items-center text-left md:hidden"
+         >
+-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
+-            {copy.selections.headPhone(on, decks.length)}
+-          </span>
++          <BandTitle title={copy.selections.title} count={copy.selections.countPhone(on, decks.length)} />
+         </button>
+-        <span className="hidden flex-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:block">
+-          {copy.selections.head(on, decks.length)}
+-        </span>
+-        {bulk ? <span className={open ? "" : "hidden md:inline"}>{bulk}</span> : null}
++        <span className="hidden flex-1 md:block"><BandTitle title={copy.selections.title} count={copy.selections.count(on, decks.length)} /></span>
++        {bulk ? <span className={`font-sans text-[13px] font-medium ${open ? "" : "hidden md:inline"}`}>{bulk}</span> : null}
+         <button
+           type="button"
+           tabIndex={-1}
+@@ -84,12 +81,12 @@ export function DeckSelect({
+           inside it, which keeps a long deck list from pushing the cards a screen down; the desktop column
+           scrolls the decks under its head (the page there is one screen tall, 2026-10-11). */}
+       <div id={listId} className={`max-h-[30dvh] min-h-0 overflow-y-auto overscroll-contain md:max-h-none ${open ? "" : "hidden md:block"}`}>
+-        <ul className="m-0 list-none p-0">
+-          {decks.map((d) => {
++        <ul className="m-0 list-none px-[14px] md:px-[16px]">
++          {decks.map((d, i) => {
+             const isOn = selected.has(d.id);
+             return (
+-              <li key={d.id}>
+-                <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] border-t border-[color:var(--border)] pt-[11px] pb-[10px]">
++              <li key={d.id} className={i ? "border-t border-[color:var(--border)]" : ""}>
++                <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] pt-[11px] pb-[10px]">
+                   <Checkbox checked={isOn} onChange={() => onToggle(d.id)} ariaLabel={copy.selections.aria(d.name, isOn)} className="mt-[1px]" />
+                   <span
+                     className="min-w-0 flex-1 text-[13px] leading-[1.4] [text-wrap:pretty]"
+@@ -110,7 +107,7 @@ export function DeckSelect({
+             );
+           })}
+         </ul>
+-        <p className="m-0 border-t border-[color:var(--border)] py-[9px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)]">
++        <p className="m-0 border-t border-[color:var(--border)] px-[14px] py-[10px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)] md:px-[16px]">
+           {copy.selections.note}
+         </p>
+       </div>
+diff --git a/src/components/decks/export-dialog.tsx b/src/components/decks/export-dialog.tsx
+index 42bf1a3..fdcd452 100644
+--- a/src/components/decks/export-dialog.tsx
++++ b/src/components/decks/export-dialog.tsx
+@@ -2,6 +2,8 @@
+ // ExportDialog — §Export Dialog / Sheet: modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
+ // Task 10. Reuses useDialogA11y for focus trap, Escape, focus-return.
+ 
++import { SegmentedSwitch } from "../ui/segmented-switch";
++import { DecklistRow } from "./decklist-row";
+ import { useCallback, useRef, useState, type RefObject } from "react";
+ import { useDialogA11y } from "../../lib/a11y/dialog";
+ import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
+@@ -297,14 +299,8 @@ function DialogContent({
+           <button
+             type="button"
+             onClick={onClose}
+-            className="flex items-center justify-center bg-[color:var(--surface-raised)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
+-            style={{
+-              width: 32,
+-              height: 32,
+-              borderRadius: 999,
+-              fontSize: 14,
+-              cursor: "pointer",
+-            }}
++            className="flex items-center justify-center bg-transparent border-none text-[color:var(--fg-muted)]"
++            style={{ width: 36, height: 36, fontSize: 15, cursor: "pointer", marginRight: -8 }}
+             aria-label={exportDialogCopy.closeAria}
+           >
+             ✕
+@@ -312,59 +308,17 @@ function DialogContent({
+         )}
+       </div>
+ 
+-      {/* Tab pills */}
+-      <div
+-        className="flex flex-none"
+-        style={{
+-          gap: 8,
+-          padding: isMobile ? "14px 18px 0" : "0 24px 16px",
+-        }}
+-      >
+-        {/* Decklist tab */}
+-        <button
+-          type="button"
+-          onClick={() => setTab("decklist")}
+-          className={[
+-            TOUCH_HIT,
+-            "font-sans text-[13px]",
+-            tab === "decklist"
+-              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)] border-none"
+-              : "font-medium text-[color:var(--fg-muted)] bg-transparent border border-solid border-[color:var(--border-strong)]",
+-          ].join(" ")}
+-          style={{
+-            borderRadius: isMobile ? 999 : 8,
+-            padding: isMobile ? "6px 15px" : "8px 16px",
+-            cursor: "pointer",
+-          }}
+-        >
+-          {exportTabCopy.decklist}
+-        </button>
+-        {/* Shopping list tab */}
+-        <button
+-          type="button"
+-          onClick={() => setTab("shopping")}
+-          className={[
+-            TOUCH_HIT,
+-            "font-sans text-[13px]",
+-            tab === "shopping"
+-              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--warning)] border-none"
+-              : [
+-                  "font-medium bg-transparent border border-solid",
+-                  isMobile
+-                    ? "text-[color:var(--warning)] border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]"
+-                    : "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]",
+-                ].join(" "),
+-          ].join(" ")}
+-          style={{
+-            borderRadius: isMobile ? 999 : 8,
+-            padding: isMobile ? "6px 15px" : "8px 16px",
+-            cursor: "pointer",
+-          }}
+-        >
+-          {exportTabCopy.shopping}
+-        </button>
++      {/* R4: the shipped SegmentedSwitch in place of the two filled pills (Shopping no longer fills --warning, which reads short). */}
++      <div className="flex flex-none" style={{ padding: isMobile ? "14px 18px 0" : "0 24px 16px" }}>
++        <SegmentedSwitch
++          kind="tabs"
++          ariaLabel={exportDialogCopy.title}
++          segments={[{ value: "decklist", label: exportTabCopy.decklist }, { value: "shopping", label: exportTabCopy.shopping }]}
++          value={tab}
++          onChange={setTab}
++          fill={isMobile}
++        />
+       </div>
+-
+       {/* Body. min-h-0 is load-bearing: a flex item's default min-height is its
+           content, so without it the body refuses to shrink and the modal's
+           max-height has nothing to give. */}
+@@ -452,40 +406,6 @@ function DialogContent({
+         ) : (
+           /* Shopping tab body */
+           <div>
+-            {/* Info callout — desktop only */}
+-            {!isMobile && <div
+-              className="flex items-center"
+-              style={{
+-                gap: 9,
+-                margin: "0 24px 10px",
+-                background: "var(--surface-sunken)",
+-                border: "1px solid var(--border)",
+-                borderRadius: 8,
+-                padding: "9px 12px",
+-              }}
+-            >
+-              {/* "i" info icon */}
+-              <div
+-                className="flex items-center justify-center flex-none font-mono"
+-                style={{
+-                  width: 18,
+-                  height: 18,
+-                  borderRadius: 999,
+-                  border: "1.5px solid var(--fg-faint)",
+-                  color: "var(--fg-faint)",
+-                  fontSize: 10,
+-                }}
+-              >
+-                i
+-              </div>
+-              <span
+-                className="font-mono"
+-                style={{ fontSize: 11, color: "var(--fg-faint)" }}
+-              >
+-                {priceCopy.export.pricingNote}
+-              </span>
+-            </div>}
+-
+             {/* Count meta */}
+             <p
+               className="font-mono"
+@@ -501,14 +421,14 @@ function DialogContent({
+               )}
+             </p>
+ 
+-            {/* Mobile "names only" note */}
+-            {isMobile && (
++            {/* R4: the pricing note is one plain line at both widths (the desktop "i" callout box is gone). */}
++            {(
+               <p
+                 className="font-mono"
+                 style={{
+-                  fontSize: 9.5,
++                  fontSize: isMobile ? 9.5 : 11,
+                   color: "var(--fg-locked)",
+-                  padding: "0 20px 2px",
++                  padding: isMobile ? "0 20px 2px" : "0 26px 10px",
+                   margin: 0,
+                 }}
+               >
+@@ -516,68 +436,18 @@ function DialogContent({
+               </p>
+             )}
+ 
+-            {/* Item rows */}
+-            <div>
++            {/* R4: the shipped decklist row, read only (the precon page's), in place of the hand-built row. */}
++            <ul className="m-0 flex list-none flex-col gap-[4px]" style={{ padding: isMobile ? "8px 14px 12px" : "4px 22px 12px" }}>
+               {shoppingCards.map((card) => (
+-                <div
+-                  key={card.name}
+-                  className="flex items-center"
+-                  style={{
+-                    gap: isMobile ? 10 : 12,
+-                    padding: isMobile ? "8px 10px" : "9px 16px",
+-                    borderBottom: `1px solid ${isMobile ? "var(--surface)" : "var(--surface-rail)"}`,
+-                  }}
+-                >
+-                  {/* Quantity — real per-card count (basics can run multiples) */}
+-                  <span
+-                    className="font-mono"
+-                    style={{ fontSize: 12, color: "var(--fg-faint)" }}
+-                  >
+-                    {card.quantity}
+-                  </span>
+-                  {/* Ownership dot (desktop). The list is no longer unowned-only
+-                      — a spoken-for row is a card you own whose copies are all
+-                      claimed elsewhere — so the dot reads the row, as the
+-                      decklist's does, and carries the word the dot alone
+-                      cannot now imply. */}
+-                  {!isMobile && (
+-                    <OwnershipDot
+-                      owned={card.owned}
+-                      className="w-[7px] h-[7px]"
+-                      label={card.owned ? ownedStateCopy.owned : ownedStateCopy.notOwned}
+-                    />
+-                  )}
+-                  {/* Card name */}
+-                  <span
+-                    className="font-sans flex-1"
+-                    style={{
+-                      fontSize: isMobile ? 13 : 14,
+-                      color: "var(--fg)",
+-                      whiteSpace: "nowrap",
+-                      overflow: "hidden",
+-                      textOverflow: "ellipsis",
+-                    }}
+-                  >
+-                    {card.name}
+-                  </span>
+-                  {/* Role chip (desktop) */}
+-                  {!isMobile && card.role && (
+-                    <span
+-                      className="font-mono"
+-                      style={{
+-                        fontSize: 10,
+-                        color: "var(--fg-faint)",
+-                        background: "var(--surface-raised)",
+-                        borderRadius: 5,
+-                        padding: "2px 8px",
+-                      }}
+-                    >
+-                      {card.role}
+-                    </span>
+-                  )}
+-                </div>
++                <li key={card.name}>
++                  <DecklistRow
++                    deckId="export"
++                    readOnly
++                    card={{ oracleId: card.name, name: card.name, typeLine: "", cardTypeGroup: "other", role: (card.role as any) ?? "other", cmc: 0, owned: card.owned, quantity: card.quantity, auto: false } as any}
++                  />
++                </li>
+               ))}
+-            </div>
++            </ul>
+           </div>
+         )}
+       </div>
+@@ -611,8 +481,8 @@ function DialogContent({
+           <span className="hidden md:inline">{exportDialogCopy.download}</span>
+         </GhostButton>
+ 
+-        {/* Desktop: "Moxfield · Archidekt ready" note (inline with footer, ml-auto) */}
+-        {!isMobile && (
++        {/* R4: the footer's "Moxfield · Archidekt ready" repeated the subtitle; it goes. */}
++        {false && (
+           <span
+             className="font-mono"
+             style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: "auto" }}
+diff --git a/src/components/decks/precons/announced-group.tsx b/src/components/decks/precons/announced-group.tsx
+index 132e115..e006798 100644
+--- a/src/components/decks/precons/announced-group.tsx
++++ b/src/components/decks/precons/announced-group.tsx
+@@ -12,6 +12,8 @@
+ // while a filter is on and a set matches it (the reader asked); otherwise this browser's last press holds
+ // (`the99:precons:announced`, mirrored into a cookie so the server draws it).
+ 
++import { PANEL } from "../../social/section-panel";
++import { BAND_GROUND, BAND_HEIGHT, BAND_RULE } from "../deck-box";
+ import { Chevron } from "../../ui/chevron";
+ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+ import { preconDay, preconsCopy } from "../../../lib/copy/precons";
+@@ -186,18 +188,19 @@ export function AnnouncedGroup({
+     // scroll, a dialog nobody can see or leave.
+     <CardDetailProvider viewPrintings={viewPrintings}>
+     <HoverPreviewProvider>
+-    <section id="announced" aria-labelledby="announced-head" className="flex flex-col" data-testid="announced-group">
++    <section id="announced" aria-labelledby="announced-head" className={`${PANEL} !mt-0`} data-testid="announced-group">
+       <h2 id="announced-head" className="m-0 font-normal">
+         <button
+           type="button"
+           aria-expanded={open}
+           aria-controls="announced-sets"
+           onClick={toggle}
+-          className={`flex min-h-[44px] w-full cursor-pointer items-center gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] bg-transparent p-0 text-left font-display text-[17px] font-normal text-[color:var(--fg)] md:min-h-[34px] md:pb-[7px] focus-visible:rounded-[4px] ${FOCUS_RING}`}
++          className={`flex ${BAND_HEIGHT} w-full cursor-pointer items-center gap-[8px] border-0 py-[8px] pl-[14px] pr-[10px] text-left md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${open ? BAND_RULE : ""} ${FOCUS_RING}`}
+         >
++          <span aria-hidden className="text-[color:var(--accent-text)]">◆</span>
+           {copy.heading}
+           {/* R1b-2: "1 set · new", the mark in the count's own line, no box. */}
+-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
++          <span className="ml-[2px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">
+             {count}
+             {hasNew && <NewMark lead={false} />}
+           </span>
+@@ -215,9 +218,9 @@ export function AnnouncedGroup({
+       >
+         {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
+             matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
+-        <div className={`-mx-[4px] min-h-0 overflow-hidden px-[4px] ${open ? "-mb-[4px] pb-[4px]" : ""}`}>
++        <div className="min-h-0 overflow-hidden px-[12px] md:px-[14px]">
+           {view === "tiles" ? (
+-            <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
++            <ul className="m-0 flex list-none flex-col gap-[10px] p-0 py-[12px]">
+               {matches.map((m) => (
+                 <AnnouncedSet
+                   key={m.set.code}
+@@ -232,7 +235,7 @@ export function AnnouncedGroup({
+               ))}
+             </ul>
+           ) : (
+-            <ul className="m-0 flex list-none flex-col gap-[8px] p-0 pt-[10px]">
++            <ul className="m-0 flex list-none flex-col gap-[8px] p-0 py-[12px]">
+               {matches.map((m) => (
+                 <AnnouncedRow key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} identity={matchIdentity(m)} />
+               ))}
+diff --git a/src/components/decks/precons/precon-list-view.tsx b/src/components/decks/precons/precon-list-view.tsx
+index a323950..9fca9a2 100644
+--- a/src/components/decks/precons/precon-list-view.tsx
++++ b/src/components/decks/precons/precon-list-view.tsx
+@@ -5,6 +5,7 @@
+ // order and view are also remembered per browser. Everything here is a view over rows the server
+ // summarised. Tiles are the default view (R4 §1); rows stay one press away.
+ 
++import { DeckBox, DeckBoxBand } from "../deck-box";
+ import Link from "next/link";
+ import { useEffect, useMemo, useState } from "react";
+ import { useTarget } from "../../discovery/targets-provider";
+@@ -316,16 +317,10 @@ export function PreconListView({
+         <ArrivalOrder>
+         <div className="flex flex-col gap-[22px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
+           {groupByYear(shown).map((g) => (
+-            <section key={g.year} aria-labelledby={`precons-${g.year}`} className={`flex flex-col ${view === "tiles" ? "gap-[10px]" : "gap-[8px]"}`}>
+-              <h2
+-                id={`precons-${g.year}`}
+-                className="m-0 flex items-baseline gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px] font-display text-[17px] font-normal text-[color:var(--fg)]"
+-              >
+-                {g.year}
+-                <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.list.year(g.rows.length)}</span>
+-              </h2>
+-              <ul className={listClass}>{g.rows.map(item)}</ul>
+-            </section>
++            <DeckBox key={g.year} aria-labelledby={`precons-${g.year}`} className="!mt-0">
++              <DeckBoxBand id={`precons-${g.year}`} title={g.year} count={copy.list.year(g.rows.length)} />
++              <div className="p-[12px] md:p-[14px]"><ul className={listClass}>{g.rows.map(item)}</ul></div>
++            </DeckBox>
+           ))}
+         </div>
+         </ArrivalOrder>
+diff --git a/src/components/decks/precons/precon-overview.tsx b/src/components/decks/precons/precon-overview.tsx
+index c635a12..b352b50 100644
+--- a/src/components/decks/precons/precon-overview.tsx
++++ b/src/components/decks/precons/precon-overview.tsx
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import { DeckBox, DeckBoxBand, DeckBoxFoot } from "../deck-box";
+ import { useMemo, useState } from "react";
+ import { preconsCopy } from "../../../lib/copy/precons";
+ import { synopsisCopy } from "../../../lib/copy/synopsis";
+@@ -37,26 +38,25 @@ export function PreconOverview({ overview, preconName, commanderId = null, listA
+   // does on the Analysis tab.
+   return (
+     <HoverPreviewProvider>
+-    <section aria-labelledby="precon-overview-label" data-testid="precon-overview" className="flex flex-col gap-[6px]">
+-      <div className="flex flex-wrap items-baseline gap-[10px]">
+-        <h2 id="precon-overview-label" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
+-          {synopsisCopy.label}
+-        </h2>
+-        <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{preconsCopy.open.overview.aside}</small>
+-      </div>
+-      <p className="m-0 mt-[2px] text-[14px] leading-[1.7] text-[color:var(--fg-body)] [text-wrap:pretty] md:max-w-[760px]">
++    <DeckBox aria-labelledby="precon-overview-label" data-testid="precon-overview" className="!mt-0">
++      <DeckBoxBand
++        id="precon-overview-label"
++        title={synopsisCopy.label}
++        aside={<small className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">{preconsCopy.open.overview.aside}</small>}
++      />
++      <p className="m-0 px-[14px] py-[12px] text-[14px] leading-[1.7] text-[color:var(--fg-body)] [text-wrap:pretty] md:px-[16px]">
+         <SynopsisText text={content.overview} cards={content.cards} art={art} />
+       </p>
+-      <div>
++      <DeckBoxFoot className="!py-[4px]">
+         <button
+           type="button"
+           onClick={() => setOpen(true)}
+-          className="inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] text-[13px] font-medium text-[color:var(--accent-text)] transition-colors hover:text-[color:var(--accent-hover)] md:min-h-[32px]"
++          className="inline-flex min-h-[44px] w-fit cursor-pointer items-center gap-[6px] text-[13px] font-medium text-[color:var(--accent-text)] transition-colors hover:text-[color:var(--accent-hover)] md:min-h-[32px]"
+         >
+           {synopsisCopy.entry}
+           <span aria-hidden>→</span>
+         </button>
+-      </div>
++      </DeckBoxFoot>
+       {open ? (
+         <PreconSynopsisModal
+           preconName={preconName}
+@@ -68,7 +68,7 @@ export function PreconOverview({ overview, preconName, commanderId = null, listA
+           onClose={() => setOpen(false)}
+         />
+       ) : null}
+-    </section>
++    </DeckBox>
+     </HoverPreviewProvider>
+   );
+ }
+diff --git a/src/components/decks/precons/precon-pick-view.tsx b/src/components/decks/precons/precon-pick-view.tsx
+index 36f98e0..30b9162 100644
+--- a/src/components/decks/precons/precon-pick-view.tsx
++++ b/src/components/decks/precons/precon-pick-view.tsx
+@@ -5,6 +5,7 @@
+ // once ticked; a sticky foot counts the boxes, their cards and tokens. Each box is added with its own id
+ // (`addPrecons`), so a retry is answered from what committed, and a box that lands unticks with `✓ added just now`.
+ 
++import { DeckBox, DeckBoxBand } from "../deck-box";
+ import Link from "next/link";
+ import { SteadyLabel } from "../../ui/steady-label";
+ import { useRouter } from "next/navigation";
+@@ -272,14 +273,8 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
+         className={`flex flex-1 flex-col gap-[18px] p-[8px_16px_24px] md:mx-auto md:w-full md:max-w-[900px] md:px-0 ${pending ? "opacity-[.55]" : ""}`}
+       >
+         {groupByYear(shown).map((g) => (
+-          <section key={g.year} aria-labelledby={`pick-${g.year}`} className="flex flex-col">
+-            <h2
+-              id={`pick-${g.year}`}
+-              className="m-0 flex items-baseline gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px] font-display text-[17px] font-normal text-[color:var(--fg)]"
+-            >
+-              {g.year}
+-              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{preconsCopy.list.year(g.rows.length)}</span>
+-            </h2>
++          <DeckBox key={g.year} aria-labelledby={`pick-${g.year}`} className="!mt-0">
++            <DeckBoxBand id={`pick-${g.year}`} title={g.year} count={preconsCopy.list.year(g.rows.length)} />
+             <ul className="m-0 list-none p-0">
+               {g.rows.map((r) => (
+                 <PickRow
+@@ -293,7 +288,7 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
+                 />
+               ))}
+             </ul>
+-          </section>
++          </DeckBox>
+         ))}
+       </div>
+ 
+diff --git a/src/components/home/home-decks-zero.tsx b/src/components/home/home-decks-zero.tsx
+index 8fe521e..7ea5378 100644
+--- a/src/components/home/home-decks-zero.tsx
++++ b/src/components/home/home-decks-zero.tsx
+@@ -1,3 +1,4 @@
++import { HomeSectionHead } from "./home-section-head";
+ import { refreshCopy } from "@/lib/copy/refresh";
+ import { DecksZeroActions } from "@/components/decks/decks-zero";
+ 
+@@ -25,9 +26,7 @@ export function HomeDecksZero() {
+   return (
+     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
+       {/* §SectionLabel, with the resume label's own `margin-top: 6`. */}
+-      <h2 className="m-0 mt-[6px] font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+-        {c.decksHeading}
+-      </h2>
++      <HomeSectionHead className="mt-[6px]">{c.decksHeading}</HomeSectionHead>
+       <div className="flex flex-col gap-[14px] rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] p-[16px] sm:p-[16px_18px]">
+         {/* The two paragraphs and their breakpoint swap are DecksZero's, for the same
+             reason: which one shows is a CSS fact. */}
+diff --git a/src/components/home/ready-to-build.tsx b/src/components/home/ready-to-build.tsx
+index 469f111..eda1987 100644
+--- a/src/components/home/ready-to-build.tsx
++++ b/src/components/home/ready-to-build.tsx
+@@ -8,6 +8,7 @@
+ // Placement inside the two-column §HomeBody belongs to the layout task; this
+ // draws the section and nothing around it.
+ 
++import { HomeSectionHead } from "./home-section-head";
+ import { GhostButton } from "@/components/ui/button";
+ import type { ReceiptCounts } from "../../lib/commanders/in-use";
+ import { refreshCopy } from "../../lib/copy/refresh";
+@@ -31,9 +32,7 @@ export function ReadyToBuild({
+   return (
+     <section data-ready-to-build="" className="flex flex-col gap-[11px]">
+       {/* §SectionLabel */}
+-      <h2 className="m-0 flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+-        {c.readyHeading}
+-      </h2>
++      <HomeSectionHead className="flex-none">{c.readyHeading}</HomeSectionHead>
+ 
+       {/* The pair arrives together where it sits side by side: one row, one fade (Hugh, 2026-10-12).
+           Stacked on a phone it is two rows, and the lower follows the upper a stagger behind. */}
+diff --git a/src/components/intake/choose-results-view.tsx b/src/components/intake/choose-results-view.tsx
+index b192094..daa359c 100644
+--- a/src/components/intake/choose-results-view.tsx
++++ b/src/components/intake/choose-results-view.tsx
+@@ -8,6 +8,7 @@
+ // bar (F7). *Show 12 more* asks the server for the next slice, whose rows then count what the
+ // player owns as they mount. No motion anywhere (STATES invariant).
+ 
++import { BandTitle } from "../decks/deck-box";
+ import { useMemo } from "react";
+ 
+ import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
+@@ -166,15 +167,18 @@ export function ChooseResultsView({
+       {gone && !picked ? gone : null}
+       {best.length > 0 && (
+         <section aria-labelledby="best-fits" className="flex flex-col gap-[10px]">
+-          <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent-text)]">
+-            {copy.results.bestFits}
++          <h3 id="best-fits" className="m-0 font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[17px]">
++            <BandTitle title={copy.results.bestFits} />
+           </h3>
+           <ol data-dim={dim || undefined} className={`m-0 p-0 list-none grid grid-cols-1 gap-[10px] md:grid-cols-[repeat(3,minmax(0,1fr))] md:gap-[14px] ${dim ? "opacity-[0.45]" : ""}`}>
+             {best.map((r, i) => row(r, i + 1))}
+           </ol>
+-          <h3 className="m-0 mt-[6px] font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]">
+-            {copy.results.moreCommanders}
++          {/* The rest divider names what follows when it comes first, so the second head is not drawn over it. */}
++          {restAt === 0 ? null : (
++          <h3 className="m-0 font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[17px] mt-[14px]">
++            <BandTitle title={copy.results.moreCommanders} />
+           </h3>
++          )}
+         </section>
+       )}
+ 
+@@ -207,9 +211,8 @@ export function ChooseResultsView({
+ /** Between the read's picks and the rest of the results, in the free order (the read addendum R1). */
+ function RestDivider({ owned }: { owned: boolean }) {
+   return (
+-    <li data-testid="rest-divider" role="presentation" className="flex items-center gap-[12px] mt-[8px]">
+-      <span className="font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)] whitespace-nowrap">{copy.results.restHead}</span>
+-      <span aria-hidden className="flex-1 h-px bg-[color:var(--border)]" />
++    <li data-testid="rest-divider" role="presentation" className="flex items-center justify-between gap-[12px] mt-[14px]">
++      <span className="m-0 font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[17px] whitespace-nowrap"><BandTitle title={copy.results.restHead} /></span>
+       {/* The tail names the owned order, so it is drawn only when that is the rest's order. */}
+       {owned && <span className="hidden md:inline font-mono text-[10.5px] text-[color:var(--fg-faint)] whitespace-nowrap">{copy.results.restTail}</span>}
+     </li>
+diff --git a/src/components/settings/account-section.tsx b/src/components/settings/account-section.tsx
+index 4d8aa39..d0e96bb 100644
+--- a/src/components/settings/account-section.tsx
++++ b/src/components/settings/account-section.tsx
+@@ -12,6 +12,7 @@
+ //
+ // - Delete account, at the foot: its line and an outline press in `--danger` words that opens the delete (`DeleteAccount`).
+ 
++import { BandText } from "../social/section-panel";
+ import { useEffect, useRef, useState } from "react";
+ import { useClerk, useUser } from "@clerk/nextjs";
+ import { leaveDialogsForNavigation } from "../../lib/a11y/dialog";
+@@ -151,7 +152,7 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
+ 
+   return (
+     <section aria-labelledby="settings-account" className="mt-[26px] md:mt-[34px]">
+-      <h2 id="settings-account" className={SECTION_HEAD}>{a.head}</h2>
++      <h2 id="settings-account" className={SECTION_HEAD}><BandText text={a.head} /></h2>
+       <ul className="m-0 mt-[4px] list-none p-0">
+         <li className={LI}>
+           {editing ? (
+diff --git a/src/components/settings/friend-decks-section.tsx b/src/components/settings/friend-decks-section.tsx
+index 12f26c5..737145c 100644
+--- a/src/components/settings/friend-decks-section.tsx
++++ b/src/components/settings/friend-decks-section.tsx
+@@ -5,6 +5,7 @@
+ // it dims, reads unticked and cannot be pressed: there is nothing for it to include. A write that fails puts both back
+ // to what was last saved and says so in the shared social toast, as the news and Spares sections do.
+ 
++import { BandText } from "../social/section-panel";
+ import { useEffect, useRef, useState } from "react";
+ import { setFriendDeckPrefsAction } from "../../app/settings/actions";
+ import { settingsCopy } from "../../lib/copy/settings";
+@@ -63,7 +64,7 @@ export function FriendDecksSection({ prefs }: { prefs: FriendDeckPrefs }) {
+   const unfinishedLive = on.seeDecks;
+   return (
+     <section aria-labelledby="settings-decks" className="mt-[26px] md:mt-[34px]">
+-      <h2 id="settings-decks" className={SECTION_HEAD}>{c.head}</h2>
++      <h2 id="settings-decks" className={SECTION_HEAD}><BandText text={c.head} /></h2>
+       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
+       <ul className="m-0 mt-[4px] list-none p-0">
+         <li className="[&+&]:[border-top:1px_solid_var(--border)]">
+diff --git a/src/components/settings/news-section.tsx b/src/components/settings/news-section.tsx
+index faf21c8..cde68c8 100644
+--- a/src/components/settings/news-section.tsx
++++ b/src/components/settings/news-section.tsx
+@@ -17,6 +17,7 @@
+ // and the column, its head and the foot's push clause leave; In app keeps its head. The band's right padding is 0 at
+ // every state, as the board's `.dv` draws it (its can't line included). Without `push` there is no band.
+ 
++import { BandText } from "../social/section-panel";
+ import { useEffect, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import { saveFeedKinds } from "../../app/settings/feed-actions";
+@@ -332,7 +333,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
+ 
+   return (
+     <section aria-labelledby="settings-news" className="mt-[26px] md:mt-[34px]">
+-      <h2 id="settings-news" className={SECTION_HEAD}>{c.head}</h2>
++      <h2 id="settings-news" className={SECTION_HEAD}><BandText text={c.head} /></h2>
+       {push && (
+         <div
+           data-push-device={device?.state ?? "reading"}
+diff --git a/src/components/settings/spares-section.tsx b/src/components/settings/spares-section.tsx
+index aa06553..8511686 100644
+--- a/src/components/settings/spares-section.tsx
++++ b/src/components/settings/spares-section.tsx
+@@ -7,6 +7,7 @@
+ // The page reads; this holds what a press changed until the server's redraw lands (every write revalidates
+ // `/settings`). A write that fails puts the value back and says so in the shared social toast, as `/friends` does.
+ 
++import { BandText } from "../social/section-panel";
+ import Link from "next/link";
+ import { useCallback, useEffect, useId, useRef, useState } from "react";
+ import type { BrowseListCard } from "../../lib/collection/browse";
+@@ -101,7 +102,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
+ 
+   return (
+     <section aria-labelledby="settings-spares" className="mt-[26px] md:mt-[34px]">
+-      <h2 id="settings-spares" className={SECTION_HEAD}>{c.head}</h2>
++      <h2 id="settings-spares" className={SECTION_HEAD}><BandText text={c.head} /></h2>
+       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
+       <div className="mt-[12px] flex flex-wrap items-center gap-[10px] text-[14px] leading-[1.5] text-[color:var(--fg)]">
+         <span>{c.before}</span>
+@@ -110,7 +111,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
+       </div>
+       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.alsoOffer}</p>
+       <WhoSees pods={pods} />
+-      <h3 className="m-0 mt-[22px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.keptHead(shown.length)}</h3>
++      <h3 className="m-0 mt-[24px] font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)]"><BandText text={c.keptHead(shown.length)} /></h3>
+       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.keptExplain}</p>
+       <KeepSearch keptKey={keptKey} onFail={fail} />
+       {shown.length > 0 && (
+diff --git a/src/components/settings/store-section.tsx b/src/components/settings/store-section.tsx
+index 51f23f3..78370ea 100644
+--- a/src/components/settings/store-section.tsx
++++ b/src/components/settings/store-section.tsx
+@@ -6,6 +6,7 @@
+ // and a write that fails puts the last saved store back and says so in the shared social toast. `#settings-store` is where Change
+ // store lands; arriving on it washes the whole section for two seconds (`useWashFromHash`).
+ 
++import { BandText } from "../social/section-panel";
+ import { storeCopy } from "../../lib/copy/store";
+ import { STORE_INFO, STORE_SETTINGS_ID } from "../../lib/stores/info";
+ import { STORES, type Store } from "../../lib/stores/rows";
+@@ -28,7 +29,7 @@ export function StoreSection({ store }: { store: Store }) {
+       data-store-section=""
+       className={`-mx-[10px] mt-[22px] scroll-mt-[72px] rounded-[10px] px-[10px] py-[2px] md:mt-[30px] ${WASH}`}
+     >
+-      <h2 id="settings-store-head" className={SECTION_HEAD}>{c.head}</h2>
++      <h2 id="settings-store-head" className={SECTION_HEAD}><BandText text={c.head} /></h2>
+       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
+       <div role="radiogroup" aria-label={c.groupLabel} className="m-0 mt-[4px] flex flex-col">
+         {STORES.map((id) => {
+diff --git a/src/components/social/friends-list.tsx b/src/components/social/friends-list.tsx
+index 9eb3b9f..9f8bcaa 100644
+--- a/src/components/social/friends-list.tsx
++++ b/src/components/social/friends-list.tsx
+@@ -19,14 +19,14 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
+ import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
+ import { Face } from "./face";
+ import { SpareChip } from "./spare-key-item";
+-import { BAND, PANEL } from "./section-panel";
++import { BAND, PANEL, BandText } from "./section-panel";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { useMomentHold } from "../../lib/moments/hold";
+ 
+ const f = socialCopy.friends;
+ 
+ export const SECTION_HEAD =
+-  "m-0 flex min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]";
++  "m-0 flex min-h-[44px] items-center font-display text-[17px] font-semibold leading-[1.2] text-[color:var(--fg)] md:min-h-[32px]";
+ 
+ export function FriendsList({
+   friends,
+@@ -69,7 +69,7 @@ export function FriendsList({
+   }, [friends.length]);
+   return (
+     <section aria-labelledby="friends-head" className={PANEL}>
+-      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}>{f.head(friends.length)}</h2>
++      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}><BandText text={f.head(friends.length)} /></h2>
+       {friends.length === 0 ? (
+         <div className="m-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:m-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
+           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
+diff --git a/src/components/social/open-links.tsx b/src/components/social/open-links.tsx
+index a7660d7..348d4a2 100644
+--- a/src/components/social/open-links.tsx
++++ b/src/components/social/open-links.tsx
+@@ -4,6 +4,7 @@
+ // day left` in `--warning`), `Show` (the same dialog on that link) and `Revoke` (at once, no confirm: the row
+ // leaves). With none open the section is absent.
+ 
++import { BandText } from "./section-panel";
+ import type { OpenInvite } from "../../lib/social/friends";
+ import { socialCopy } from "../../lib/copy/social";
+ import { madeWhen, underADay } from "../../lib/social/when";
+@@ -27,7 +28,7 @@ export function OpenLinks({
+   if (links.length === 0) return null;
+   return (
+     <section aria-labelledby="links-head" className="mt-[24px] md:mt-[34px]">
+-      <h2 id="links-head" className={SECTION_HEAD}>{v.head(links.length)}</h2>
++      <h2 id="links-head" className={SECTION_HEAD}><BandText text={v.head(links.length)} /></h2>
+       <ul className="m-0 list-none p-0">
+         {links.map((link) => {
+           const made = madeWhen(link.createdAt, now, timeZone);
+diff --git a/src/components/social/pods-pane.tsx b/src/components/social/pods-pane.tsx
+index 2a4734a..29c2d98 100644
+--- a/src/components/social/pods-pane.tsx
++++ b/src/components/social/pods-pane.tsx
+@@ -26,7 +26,7 @@ import {
+ } from "../../app/friends/actions";
+ import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
+ import { PodCard } from "./pod-card";
+-import { BAND, PANEL } from "./section-panel";
++import { BAND, PANEL, BandText } from "./section-panel";
+ import { PodAddFriends } from "./pod-add-friends";
+ import { compareNames, type ThirdPartyName } from "../../lib/person-name";
+ import { SocialToast, type SocialToastState } from "./social-toast";
+@@ -229,7 +229,7 @@ export function PodsPane({
+   return (
+     <section aria-labelledby="pods-head" className={PANEL} data-testid="pods-pane">
+       <div className={BAND}>
+-        <h2 id="pods-head" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{copy.head(shown.length)}</h2>
++        <h2 id="pods-head" className="m-0 font-normal"><BandText text={copy.head(shown.length)} /></h2>
+         <button
+           ref={newPodRef}
+           type="button"
+diff --git a/src/components/social/request-history.tsx b/src/components/social/request-history.tsx
+index d7cfcc8..84d887e 100644
+--- a/src/components/social/request-history.tsx
++++ b/src/components/social/request-history.tsx
+@@ -3,6 +3,7 @@
+ // every one made or offered to them (To you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
+ // (card at card shape, the friend's face in the corner, kicker, title, line) with no ✕ and no Ask again: the live list keeps
+ // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
++import { BandTitle } from "../decks/deck-box";
+ import Link from "next/link";
+ import { useState, useTransition } from "react";
+ import { PendingReporter } from "../shell/pending-reporter";
+@@ -86,8 +87,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab:
+       {groups.map((g, gi) => (
+         <section key={g.label} className={`${PANEL} ${gi === 0 ? "mt-[18px]!" : "mt-[16px]!"}`}>
+           <h2 className={BAND}>
+-            {g.label}
+-            <span className="pr-[8px] font-sans text-[12.5px] font-medium normal-case tracking-normal">{g.rows.length}</span>
++            <BandTitle title={g.label} count={g.rows.length} />
+           </h2>
+           <ul className="m-0 flex list-none flex-col p-0">
+             {g.rows.map((e) => {
+diff --git a/src/components/social/section-panel.tsx b/src/components/social/section-panel.tsx
+index cc8471d..5140a77 100644
+--- a/src/components/social/section-panel.tsx
++++ b/src/components/social/section-panel.tsx
+@@ -1,6 +1,7 @@
+ // Request history R1b (Hugh 2026-11-17): a section's heading lives INSIDE the box that holds its
+ // rows, as the box's header band, never on a bare hairline above it. One shape, drawn so far by each month of Request history (the Friends page's own sections follow in PR 3). Empty states get a drawn mark, from the CardFan family's tokens.
+ import type { ReactNode } from "react";
++import { BandTitle } from "../decks/deck-box";
+ import { SpareGlyph } from "./spare-key-item";
+ 
+ /** The box: the shipped list well (Your requests' `ul`), now holding its own heading. */
+@@ -9,7 +10,13 @@ export const PANEL =
+ 
+ /** The header band: the shipped section-head type, on the rail ground, a hairline under it, links at its end. */
+ export const BAND =
+-  "m-0 flex min-h-[48px] items-center justify-between gap-[12px] bg-[color:var(--surface-rail)] pl-[14px] pr-[6px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] outline-none [border-bottom:1px_solid_var(--border)] md:min-h-[44px] md:pl-[16px] md:pr-[8px]";
++  "m-0 flex min-h-[48px] items-center justify-between gap-[12px] py-[8px] pl-[14px] pr-[6px] font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] bg-[color:var(--surface-rail)] outline-none [border-bottom:1px_solid_var(--border)] md:min-h-[44px] md:pl-[16px] md:pr-[8px] md:text-[17px]";
++
++/** R4 (deck details refresh sweep): a band's "Title · N" copy drawn as the deck boxes' head, the diamond, the title, the mono count. */
++export function BandText({ text }: { text: string }) {
++  const cut = text.lastIndexOf(" · ");
++  return <BandTitle title={cut < 0 ? text : text.slice(0, cut)} count={cut < 0 ? undefined : text.slice(cut + 3)} />;
++}
+ 
+ /**
+  * The handover mark: two cards, a friend's (dashed, behind) and the one passed (accent edge, tilted forward), with the
+diff --git a/src/components/social/waiting-on-you.tsx b/src/components/social/waiting-on-you.tsx
+index 6d41b5f..4285582 100644
+--- a/src/components/social/waiting-on-you.tsx
++++ b/src/components/social/waiting-on-you.tsx
+@@ -28,7 +28,7 @@ import { PendingReporter } from "../shell/pending-reporter";
+ import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
+ import { DismissButton, useFeedDismiss } from "../feed/dismiss";
+ import { KICKER_AGE } from "../feed/kicker-age";
+-import { BAND, PANEL } from "./section-panel";
++import { BAND, PANEL, BandText } from "./section-panel";
+ import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
+ import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
+ 
+@@ -136,9 +136,9 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
+       <h2
+         id="waiting-on-you"
+         tabIndex={-1}
+-        className={bare ? "sr-only" : `${BAND} text-[color:var(--accent-text)]!`}
++        className={bare ? "sr-only" : BAND}
+       >
+-        {w.head(waiting.length)}
++        <BandText text={w.head(waiting.length)} />
+       </h2>
+       <div ref={root} className="flex flex-col">
+       <ul ref={listRef} className="m-0 flex list-none flex-col p-0">
+diff --git a/src/components/social/your-requests.tsx b/src/components/social/your-requests.tsx
+index ba9a23d..fc841d7 100644
+--- a/src/components/social/your-requests.tsx
++++ b/src/components/social/your-requests.tsx
+@@ -10,7 +10,7 @@
+ // its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
+ // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
+ import { useRouter } from "next/navigation";
+-import { BAND, PANEL } from "./section-panel";
++import { BAND, PANEL, BandText } from "./section-panel";
+ import { useEffect, useRef, useState } from "react";
+ import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
+ import { feedAge } from "../../lib/feed/age";
+@@ -183,7 +183,7 @@ export function YourRequests({ rows, now, bare = false }: { rows: readonly YourR
+         tabIndex={-1}
+         className={bare ? "sr-only" : BAND}
+       >
+-        {m.head(rows.length)}
++        <BandText text={m.head(rows.length)} />
+         <span className="flex items-center gap-[4px]"><span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span></span>
+       </h2>
+       <ul className="m-0 flex list-none flex-col p-0">
+diff --git a/src/lib/copy/all-decks-cart.ts b/src/lib/copy/all-decks-cart.ts
+index 00a3166..4d44a41 100644
+--- a/src/lib/copy/all-decks-cart.ts
++++ b/src/lib/copy/all-decks-cart.ts
+@@ -86,6 +86,9 @@ export const allDecksCartCopy = {
+   },
+ 
+   selections: {
++    title: "Decks",
++    count: (selectedCount: number, totalCount: number) => `${n(selectedCount)} of ${n(totalCount)}`,
++    countPhone: (selectedCount: number, totalCount: number) => `${n(selectedCount)} of ${n(totalCount)} selected`,
+     head: (selectedCount: number, totalCount: number) => `Decks · ${n(selectedCount)} of ${n(totalCount)}`,
+     headPhone: (selectedCount: number, totalCount: number) => `Decks · ${n(selectedCount)} of ${n(totalCount)} selected`,
+     /** The phone fold's toggle, for a reader who cannot see the chevron. */
