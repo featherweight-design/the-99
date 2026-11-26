@@ -151,13 +151,21 @@ describe("VersionRail", () => {
     expect(screen.queryByRole("tablist")).toBeNull();
   });
 
-  // The heading names the panel without drawing ink the canvas does not have,
-  // and at level 2 because the deck's own name is the h1 above it.
-  it("names the panel without drawing a heading", () => {
+  // The Versions box's band is the panel's heading, at level 2 because the deck's own name is the h1 above it (R3).
+  it("names the panel with its band", () => {
     mount(THREE);
     const heading = screen.getByRole("heading", { level: 2 });
-    expect(heading.textContent).toBe(copy.heading(3));
-    expect(heading.className).toContain("sr-only");
+    expect(heading.textContent).toContain(copy.band);
+    expect(heading.textContent).toMatch(/3$/);
+    expect(heading.closest("section")!.getAttribute("aria-labelledby")).toBe(heading.id);
+  });
+
+  it("draws the uncommitted changes in the band's subline, and none at zero", () => {
+    const { unmount } = render(<VersionRail deckId="deck_1" versions={THREE} pending={{ changes: 2, version: 3 }} />);
+    expect(screen.getByText(copy.sinceNote(2, 3))).toBeTruthy();
+    unmount();
+    render(<VersionRail deckId="deck_1" versions={THREE} pending={{ changes: 0, version: 3 }} />);
+    expect(screen.queryByText(copy.sinceNote(0, 3))).toBeNull();
   });
 
   // The row is the control, so its state has to be announced and not merely
@@ -254,7 +262,9 @@ describe("VersionRail with v0", () => {
   // v0 is the precon's list, not a version the reader committed: three commits read three.
   it("counts committed versions only in the panel's heading", () => {
     mountLinked(THREE);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(copy.heading(3));
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading.textContent).toContain(copy.band);
+    expect(heading.textContent).toMatch(/3$/);
   });
 
   it("draws v0 last, below the divider, naming the precon with its own card count", () => {

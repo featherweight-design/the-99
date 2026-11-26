@@ -27,6 +27,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionSummary } from "../../lib/decks/versions";
 import type { DeckOrigin } from "../../lib/precons/origin";
+import { DeckBox, DeckBoxBand } from "./deck-box";
 import { PendingReporter } from "../shell/pending-reporter";
 import { UnlinkDialog } from "./precons/precon-link-dialogs";
 import { diffCacheKey, VersionDiff, type VersionDiffPayload } from "./version-diff";
@@ -182,11 +183,9 @@ function RailRow({
       // relationship for a screen reader. `unresolved-row.tsx` does the same.
       aria-controls={open ? panelId : undefined}
       className={[
-        "w-full text-left rounded-[9px]",
-        "px-[12px] py-[11px] md:px-[14px] md:py-[12px] min-h-[64px] md:min-h-0",
-        version.current
-          ? "bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] [border-left:3px_solid_var(--accent)]"
-          : "bg-[color:var(--surface)] border border-solid border-[color:var(--border)]",
+        // A flat row in the Versions box (R3): the hairline between rows is the wrapper's, the current one is named by its tag.
+        "w-full bg-transparent text-left",
+        "px-[14px] py-[11px] md:px-[16px] md:py-[12px] min-h-[64px] md:min-h-[68px]",
       ].join(" ")}
     >
       {/* Phone */}
@@ -383,6 +382,7 @@ export function VersionRail({
   versions,
   origin = null,
   foot = null,
+  pending = null,
 }: {
   deckId: string;
   /** Named in the unlink confirm v0's panel opens. */
@@ -396,6 +396,8 @@ export function VersionRail({
   /** Drawn after the last row: an unlinked deck's `Built from a precon?` row (precons R3 K5), where
    *  v0 will land once linked. */
   foot?: ReactNode;
+  /** The uncommitted changes and the version they are against: the band's desktop subline (R3 Versions). */
+  pending?: { changes: number; version: number } | null;
 }) {
   const panelPrefix = useId();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -413,12 +415,16 @@ export function VersionRail({
   const apart = startId === null ? origin : null;
 
   return (
-    <div className="w-full">
-      <h2 className="sr-only">{copy.heading(versions.length)}</h2>
-      <div className="flex flex-col gap-[6px] px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
+    <div className="w-full px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
+      <DeckBox aria-labelledby={`${panelPrefix}-band`} className="mt-0! md:mt-0!">
+  <DeckBoxBand as="h2" id={`${panelPrefix}-band`} title={copy.band}
+          count={versions.length}
+          aside={pending && pending.changes > 0 ? <span className="hidden flex-none font-mono text-[11.5px] font-medium text-[color:var(--fg-faint)] md:inline">{copy.sinceNote(pending.changes, pending.version)}</span> : undefined}
+        />
+        <div className="flex flex-col">
         {apart && versions.length === 0 && (
           // K14: a linked brew. Nothing is committed, so nothing is current; v0 stands alone.
-          <p className="m-0 mb-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{historyOriginCopy.brewLine}</p>
+          <p className="m-0 p-[12px_14px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{historyOriginCopy.brewLine}</p>
         )}
         {versions.map((version, i) => {
           const panelId = `${panelPrefix}-${version.id}`;
@@ -430,7 +436,7 @@ export function VersionRail({
           // The start's version reads the precon's note wherever its own is drawn: the row and its panel.
           const shown = isStart && version.note === null ? { ...version, note: historyOriginCopy.originNote(origin.name) } : version;
           return (
-            <div key={version.id} className="flex flex-col gap-[6px]">
+            <div key={version.id} className="flex flex-col gap-[6px] [border-top:1px_solid_var(--border)] first:[border-top:0]">
               <RailRow
                 // Over COMMITTED rows only: v0 is never in `versions` (lock 4).
                 version={{ ...shown, current: i === 0 }}
@@ -456,7 +462,7 @@ export function VersionRail({
           );
         })}
         {apart && (
-          <>
+          <div className={`flex flex-col gap-[6px] p-[12px_14px] md:px-[16px] ${versions.length > 0 ? "" : "[border-top:1px_solid_var(--border)]"}`}>
             {versions.length > 0 && <OriginDivider />}
             <OriginRow
               origin={apart}
@@ -473,10 +479,11 @@ export function VersionRail({
                 panelId={`${panelPrefix}-${ORIGIN}`}
               />
             )}
-          </>
+          </div>
         )}
-        {foot}
       </div>
+      {foot}
+      </DeckBox>
     </div>
   );
 }

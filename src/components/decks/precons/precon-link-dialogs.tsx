@@ -364,7 +364,7 @@ export function LinkPreconRow({ deckId, deckName, picker }: { deckId: string; de
   const c = copy.pickPrecon;
   return (
     <>
-      <div data-precon-link-row="" className="flex flex-col gap-[8px] rounded-[9px] border border-dashed border-[color:var(--border-dashed)] p-[12px_14px] md:flex-row md:items-center md:gap-[14px]">
+      <div data-precon-link-row="" className="flex flex-col gap-[8px] px-[14px] py-[12px] [border-top:1px_solid_var(--border)] md:min-h-[64px] md:flex-row md:items-center md:gap-[14px] md:px-[16px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <span className="text-[13.5px] font-semibold text-[color:var(--fg)]">{v.head}</span>
           <span className="text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{v.body}</span>

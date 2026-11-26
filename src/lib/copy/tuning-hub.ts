@@ -95,6 +95,12 @@ export const tuningHubCopy = {
     tier: { free: "free", credit: "1 credit", credit2: "2 credits", deeper: "proposed cuts", refunded: "refunded" },
     /** `short` (Suggested changes v2, History A): a list came back under the count asked. */
     outcome: { ok: "ok", short: "short", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
+    /** A month's box (deck refresh R2, History): its run count, and what its runs cost, in its band. */
+    month: {
+      runs: (n: number) => `${n} ${n === 1 ? "run" : "runs"}`,
+      credits: (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`,
+      free: "free",
+    },
     more: "Show 20 more",
     foot: "Kept for as long as the deck is. A free count is recorded once per version of the list.",
     empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first. Open one to see it again." },
