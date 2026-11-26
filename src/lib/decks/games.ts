@@ -29,10 +29,15 @@ export type DeckGame = {
   hurt: GameAxisKey[];
 };
 
+/** One game's reading of one axis. */
+export type AxisMark = "worked" | "hurt" | null;
+
 export type AxisTally = {
   key: GameAxisKey;
   worked: number;
   hurt: number;
+  /** This axis in each of the last ten games, oldest first: marked for you, against you, or not marked. */
+  recent: AxisMark[];
   /** Orders and buckets the axes. NEVER rendered — see the plan's constraints. */
   net: number;
 };

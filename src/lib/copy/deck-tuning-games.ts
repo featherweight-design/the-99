@@ -9,8 +9,8 @@ export const deckTuningGamesCopy = {
   // ── The Games tab's pointer to Suggested changes (addendum r1, C1/C2) ────
   // Drawn after the findings, only when the deck has a reading and one game or more.
   gamesLine: {
-    lead: "Suggested changes reads these games.",
-    link: "It is on the Tuning tab \u2192",
+    lead: "Suggested changes uses these games to pick what to cut and add.",
+    link: "Open Tuning \u203a",
   },
 
   // ── The game note (Surface 1, amends #9's form) ────────────────────────
