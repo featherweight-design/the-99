@@ -216,8 +216,7 @@ export function AnnouncedGroup({
         data-settled={settled ? "true" : "false"}
         className={`grid ${settled && !landOn ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
       >
-        {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
-            matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
+        {/* The clip the collapse needs, with padding past the rows so a row's 2px ring at its 2px offset draws whole. */}
         <div className="min-h-0 overflow-hidden px-[12px] md:px-[14px]">
           {view === "tiles" ? (
             <ul className="m-0 flex list-none flex-col gap-[10px] p-0 py-[12px]">
