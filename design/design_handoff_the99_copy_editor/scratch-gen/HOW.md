@@ -8,3 +8,5 @@ Run: node dz/css.mjs; DATABASE_URL=postgres://s:s@localhost/s npx tsx --tsconfig
 node dz/shot.mjs dz/specs.json (each spec appends overlay.js and calls CE(state, 'p'|'d')); PNG -> art/ce-*.webp
 (phone 780w at 2x, desktop resized to 1950w). Boards: python3 gen.py canvas|repo <dir> (blobs.json = uploaded /_blob urls).
 Canvas: https://claude.ai/artifact/L1Txt4qfTYSGciaRkshzoD
+
+Insert addendum (2026-11-25): `gen_ins.py` and `shot-insert.js` built the Insert-* boards. Like the scripts above they take paths outside the repo (a scratch copy of main) and do not run from here.

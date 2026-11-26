@@ -51,3 +51,23 @@ export function matchText(index: RowIndex, visible: string): Match[] {
   const best = Math.max(0, ...hits.map((p) => p.literal));
   return [...exact, ...hits.filter((p) => p.literal === best).map((p) => ({ row: p.row, how: "pattern" as const }))];
 }
+
+/**
+ * What each fill-in reads on this page: the text the row's pattern captured from the visible line, by name. Empty when
+ * the line is not this row's template (an exact match, a different variation, or no visible text), and a fill-in the
+ * line does not show today has no entry: the editor then names it without a value.
+ */
+export function fillValues(row: EditorRow, visible: string | undefined): Record<string, string> {
+  const text = squash(row.text);
+  if (!visible || !/\{[^{}]+\}/.test(text)) return {};
+  const names = [...text.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]);
+  const seen = squash(visible);
+  if (seen.length > MAX_PATTERN_TEXT) return {};
+  const m = new RegExp(`^${text.split(/\{[^{}]+\}/).map(escape).join("(.+?)")}$`).exec(seen);
+  if (!m) return {};
+  const out: Record<string, string> = {};
+  names.forEach((n, i) => {
+    if (!(n in out)) out[n] = m[i + 1];
+  });
+  return out;
+}

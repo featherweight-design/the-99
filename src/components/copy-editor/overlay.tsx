@@ -270,7 +270,7 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
           {copyEditorCopy.bar.done}
         </button>
       </div>
-      {opened && rows && <Editor rows={rows} matches={opened.entry.matches} box={opened.box} edits={edits} onSave={saveEdits} onClose={() => setEditing(null)} />}
+      {opened && rows && <Editor rows={rows} matches={opened.entry.matches} visible={opened.entry.range.toString()} box={opened.box} edits={edits} onSave={saveEdits} onClose={() => setEditing(null)} />}
       {editRow && rows && (
         <Editor rows={rows} matches={[{ row: editRow, how: "exact" }]} box={{ x: 8, y: window.innerHeight, w: 0, h: 0 }} edits={edits} onSave={saveEdits} onClose={() => setEditRow(null)} />
       )}

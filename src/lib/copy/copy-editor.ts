@@ -34,10 +34,18 @@ export const copyEditorCopy = {
     close: "Close",
     words: (n: number, cap: number | undefined) => (cap === undefined ? `${n} ${n === 1 ? "word" : "words"}` : `${n} of ${cap} words`),
     preview: (text: string) => `Preview: ${text}`,
-    /** Under a line with fill-ins (the chips in the field). */
-    fill: "Fill-ins come from the app: drag one to move it, ✕ to remove it.",
+    /** One note per fill-in in the field: what it reads on this page when the editor can tell, and how to move or remove it. */
+    fill: (name: string, value: string | undefined) =>
+      value === undefined ? `${name} is filled in by the app. Drag it to move it, or select ✕ to take it out.` : `${name} reads “${value}” here. Drag it to move it, or select ✕ to take it out.`,
     /** The chip's ✕, read by a screen reader. */
     removeFill: (name: string) => `Remove ${name}`,
+    /** The label over the fill-ins a line supplies and its text no longer uses. */
+    insert: "Insert at cursor",
+    /** An insert button, read by a screen reader. */
+    insertLabel: (name: string) => `Insert ${name} at the cursor`,
+    /** Announced (polite) when a fill-in leaves or enters the field. */
+    removed: (name: string) => `${name} removed`,
+    inserted: (name: string) => `${name} inserted`,
     whichKey: "These words are used in two places. Which one is this?",
     /** The kind line under the key: the name of the leaf, its word cap when it has one, or how many variations. */
     kind: (leaf: string, cap: number | undefined) => (cap === undefined ? leaf : `${leaf} · up to ${cap} words`),

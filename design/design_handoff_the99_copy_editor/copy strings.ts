@@ -8,7 +8,8 @@ export const copyEditorCopy = {
     now: "Now", new: "New", cancel: "Cancel", add: "Add to edits", update: "Update edit", remove: "Remove edit",
     words: (n: number, cap: number) => `${n} of ${cap} words`,
     preview: (text: string) => `Preview: ${text}`,
-    fill: (name: string, value: string) => `{${name}} is filled in by the app (here: ${value}). Drag it to move it; it can’t be deleted.`,
+    fill: (name: string, value?: string) =>
+      value === undefined ? `${name} is filled in by the app. Drag it to move it, or select ✕ to take it out.` : `${name} reads “${value}” here. Drag it to move it, or select ✕ to take it out.`,
     whenOne: "When n is 1", otherwise: "Otherwise",
     whichKey: "These words are used in two places. Which one is this?",
   },

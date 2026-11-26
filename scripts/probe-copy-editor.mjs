@@ -14,7 +14,7 @@
 // VERCEL_PROJECT_PRODUCTION_URL=staging.the-99.dev; the last is the gate's project leg, which Vercel sets on staging):
 //   PROBE_BASE=http://localhost:3107 E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app node scripts/probe-copy-editor.mjs
 //   7+ the editor (PR 4): press a line open, the dialog (popover 420px / bottom sheet), word count, em dash refusal,
-//     chips removed by ✕ and Backspace, an unknown fill-in refused, a dropped one saved, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
+//     chips removed by ✕ (16px, 24/36px hit box, Tab + Enter) and Backspace, announced, offered back under Insert at cursor and put back, an unknown fill-in refused, a dropped one saved, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
 //     wrap, read-only panel, the which-key picker. PROBE_ONLY=editor runs just this part (use it under --webpack).
 //     Every assertion needs the dialog, so each FAILS on main (no editor): the door and outlines exist there, a click
 //     on a line opens nothing, and `[role=dialog]` never appears.
@@ -686,12 +686,56 @@ async function runEditor(browser) {
       const x = page.locator(`${DIALOG} [data-fill] [data-fill-remove]`).first();
       const hasX = (await x.count()) > 0;
       const label = hasX ? await x.getAttribute("aria-label") : null;
+      // The ✕ draws 16px and takes a press over a wider box: 36px on a phone, 24px on desktop (addendum I2).
+      const hit = vp.touch ? 36 : 24;
+      const box = hasX
+        ? await x.evaluate((b, h) => {
+            const r = b.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const edge = document.elementFromPoint(cx + h / 2 - 1, cy)?.closest("[data-fill-remove]") === b;
+            const out = document.elementFromPoint(cx + h / 2 + 2, cy)?.closest("[data-fill-remove]") === b;
+            return { w: Math.round(r.width), edge, out };
+          }, hit)
+        : null;
+      check(`${L} 3: the ✕ draws 16px and takes a press ${hit}px wide`, box?.w === 16 && box.edge && !box.out, JSON.stringify(box));
       if (hasX && vp.touch) await x.tap();
       else if (hasX) await x.click();
       await page.waitForTimeout(200);
       check(`${L} 3: pressing a chip's ✕ ("${label}") removes that chip (${n0} -> ${await chips()})`, n0 > 0 && (await chips()) === n0 - 1 && /^Remove /.test(label ?? ""));
       const focused = await page.evaluate(() => document.activeElement?.getAttribute("role"));
       check(`${L} 3: focus stays in the field after ✕`, focused === "textbox", String(focused));
+      const live = () => page.locator(`${DIALOG} [aria-live=polite]`).innerText().catch(() => "");
+      check(`${L} 3: the removal is announced`, / removed$/.test(await live()), await live());
+      // Insert at cursor (addendum I1): the removed fill-in is offered back, with what it reads here when the page shows it.
+      const ins = page.locator(`${DIALOG} button[aria-label^="Insert "]`);
+      const nIns = await ins.count();
+      const insText = nIns ? (await ins.first().innerText()).replace(/\s+/g, " ") : "";
+      check(`${L} 3: the removed fill-in is offered under "Insert at cursor"`, nIns === 1 && /insert at cursor/i.test(await page.locator(DIALOG).innerText()), insText);
+      const insH = nIns ? Math.round((await ins.first().boundingBox())?.height ?? 0) : 0;
+      check(`${L} 3: the insert button is ${vp.touch ? 40 : 32}px tall`, insH === (vp.touch ? 40 : 32), String(insH));
+      await field().focus();
+      await toEnd();
+      if (nIns && vp.touch) await ins.first().tap();
+      else if (nIns) await ins.first().click();
+      await page.waitForTimeout(200);
+      const focusedIns = await page.evaluate(() => document.activeElement?.getAttribute("role"));
+      check(`${L} 3: pressing it puts the chip back and the row goes (${await chips()} chips, ${await ins.count()} buttons)`, (await chips()) === n0 && (await ins.count()) === 0);
+      check(`${L} 3: the field keeps focus after an insert, and it is announced`, focusedIns === "textbox" && / inserted$/.test(await live()), `${focusedIns} ${await live()}`);
+      // Keyboard: the ✕ is a Tab stop from the field, and Enter on it removes the chip with focus back in the field.
+      if (!vp.touch) {
+        await field().focus();
+        let onX = false;
+        for (let i = 0; i < 4 && !onX; i++) {
+          await page.keyboard.press("Tab");
+          onX = await page.evaluate(() => document.activeElement?.hasAttribute("data-fill-remove") ?? false);
+        }
+        check(`${L} 3: Tab reaches a chip's ✕`, onX);
+        if (onX) await page.keyboard.press("Enter");
+        await page.waitForTimeout(150);
+        const role = await page.evaluate(() => document.activeElement?.getAttribute("role"));
+        check(`${L} 3: Enter on the ✕ removes the chip, focus back in the field`, (await chips()) === n0 - 1 && role === "textbox", `${await chips()} ${role}`);
+      }
       await closeDialog(page);
 
       pt = await openClass(page, vp, found, "chip");
@@ -731,6 +775,7 @@ async function runEditor(browser) {
       await page.waitForTimeout(150);
       const msg = (await page.locator(`${DIALOG} [role=status]`).innerText().catch(() => "")).replace(/\s+/g, " ");
       check(`${L} 3: an unknown fill-in {bogus} is refused (Add disabled, reason shown)`, (await addBtn().isDisabled().catch(() => false)) && /\{bogus\} is not a fill-in/i.test(msg), msg.slice(0, 160));
+      check(`${L} 3: the unknown name gets no fill-in note`, !/bogus (is filled in|reads)/.test(msg), msg.slice(0, 160));
       await closeDialog(page);
     }
 
