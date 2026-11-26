@@ -45,8 +45,8 @@ export const changeCommanderCopy = {
     figure: (cardCount: number, cardTotal: number, pair: boolean) => `${cardCount} of ${cardTotal} are in ${pair ? "their" : "its"} decks`,
     figureAria: (cardCount: number, cardTotal: number, name: string) => `${cardCount} of ${cardTotal} cards in this deck are in ${name}’s decks. Show them.`,
     // Hugh, 2026-09-25: the cost is drawn as CostPips; this is the comparison beside it. A pair sums its halves.
-    manaValueRel: (mv: number, current: number, currentName: string) => {
-      const d = mv - current;
+    manaValueRel: (manaValue: number, current: number, currentName: string) => {
+      const d = manaValue - current;
       return `(${d === 0 ? "same as" : d < 0 ? `${-d} less than` : `${d} more than`} ${currentName})`;
     },
     free: "free",

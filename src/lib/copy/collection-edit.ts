@@ -73,21 +73,21 @@ export const collectionEditCopy = {
     addTitle: "Add these cards",
     addBody: "The file’s quantities are added to yours. Nothing is removed, and your art picks stay.",
     after: (from: number, to: number) => `${n(from)} → ${cards(to)}`,
-    overwriteCount: (k: number, since: string) =>
-      `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
+    overwriteCount: (changeCount: number, since: string) =>
+      `${n(changeCount)} ${changeCount === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
     choiceOverwriteUnknown: (last: string) =>
       `Changes you made in the app may be overwritten. Your last upload was ${last}, further back than the 90 days of history we keep, so we can’t count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
-    choiceOverwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
+    choiceOverwriteNoUpload: (changeCount: number) => `${n(changeCount)} ${changeCount === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
     /**
      * S14 (no-collection entry, behind its switch): the never-uploaded warning for a collection built in the app,
      * in place of the count above when the Replace would take any copy. Names where the copies came from.
      */
-    replaceBuilt: (c: number, precons: number, byHand: boolean) => {
+    replaceBuilt: (cardCount: number, precons: number, byHand: boolean) => {
       const from = [precons > 0 ? (precons === 1 ? "1 precon" : `${n(precons)} precons`) : null, byHand ? "by hand" : null]
         .filter(Boolean)
         .join(" and ");
-      return `${cards(c)} you added ${precons > 0 ? "from " : ""}${from} ${c === 1 ? "isn’t" : "aren’t"} in this file and would leave. Revert can bring them back.`;
+      return `${cards(cardCount)} you added ${precons > 0 ? "from " : ""}${from} ${cardCount === 1 ? "isn’t" : "aren’t"} in this file and would leave. Revert can bring them back.`;
     },
     overlapNote: (ownedPercent: number) => `You already own ${ownedPercent}% of these cards. Adding the file raises those counts.`,
     continueReplace: "Review the replace →",
@@ -104,10 +104,10 @@ export const collectionEditCopy = {
     choiceTitleSync: "What’s this file for?",
     syncTitle: "Sync my collection",
     syncBody: "Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.",
-    syncKeeps: (k: number, since: string) => `Keeps the ${cards(k)} you changed in the app since your ${since} upload.`,
+    syncKeeps: (cardCount: number, since: string) => `Keeps the ${cards(cardCount)} you changed in the app since your ${since} upload.`,
     syncKeepsNone: (since: string) => `You haven’t changed anything in the app since your ${since} upload, so this does what Replace does.`,
     /** (reworded, for /copy-review) `t`: the tokens the pick changes by count, either way. */
-    syncTokensOnly: (t: number) => `Your cards stay as they are. ${tokensChange(t)}.`,
+    syncTokensOnly: (tokenCount: number) => `Your cards stay as they are. ${tokensChange(tokenCount)}.`,
     /**
      * (new, for /copy-review) Nothing would change, on the choice's Sync card and as the review's nothing-to-sync
      * state. It claims nothing about what the file holds: no planned write can also mean Sync keeps an app change
@@ -130,25 +130,25 @@ export const collectionEditCopy = {
     /** (reworded, for /copy-review) */
     nextSyncTokens: "Next: the tokens this sync changes. Your cards don’t move.",
     /** (reworded, for /copy-review) `t` is the tokens this pick changes by count. */
-    nextSyncAdds: (c: number, t: number) => `Next: the ${cards(c)} this sync takes${t ? `, and ${tokenChanges(t)}` : ""}. Nothing leaves.`,
+    nextSyncAdds: (cardCount: number, tokenCount: number) => `Next: the ${cards(cardCount)} this sync takes${tokenCount ? `, and ${tokenChanges(tokenCount)}` : ""}. Nothing leaves.`,
     staleOlderTitle: (since: string) => `This file looks older than your ${since} upload.`,
-    staleOlderBody: (k: number) =>
-      `It’s missing ${cards(k)} that upload added, which usually means an earlier export. If it’s older, taking everything from it would undo them.`,
+    staleOlderBody: (cardCount: number) =>
+      `It’s missing ${cards(cardCount)} that upload added, which usually means an earlier export. If it’s older, taking everything from it would undo them.`,
     staleSameTitle: (since: string) => `This file looks no newer than your ${since} upload.`,
     /** (reworded, for /copy-review) `t` is the tokens the plain Sync changes by count; the second sentence goes at 0. */
-    staleSameBody: (t: number) => `Its cards match that upload exactly.${t ? ` Syncing it changes ${t === 1 ? "1 token" : `${n(t)} tokens`}.` : ""}`,
+    staleSameBody: (tokenCount: number) => `Its cards match that upload exactly.${tokenCount ? ` Syncing it changes ${tokenCount === 1 ? "1 token" : `${n(tokenCount)} tokens`}.` : ""}`,
     staleQuestion: "What should Sync take from this file?",
     staleAddsTitle: "Only what it adds",
     /** `c` counts raises as well as new holdings, so it reads as the review's own `going up or new`. */
     // `t` in these three is the tokens that pick changes by count, from its own dry run; with none, the clause
     // goes. All three (reworded, for /copy-review).
-    staleAddsBody: (c: number, t: number) =>
-      `${cards(c)} going up or new${t ? `, and ${tokenChanges(t)}` : ""}. Nothing leaves or goes down.`,
+    staleAddsBody: (cardCount: number, tokenCount: number) =>
+      `${cards(cardCount)} going up or new${tokenCount ? `, and ${tokenChanges(tokenCount)}` : ""}. Nothing leaves or goes down.`,
     staleTokensTitle: "Only its tokens",
-    staleTokensBody: (t: number) => `${t ? tokensChange(t) : "No tokens change"}. Your cards stay as they are.`,
+    staleTokensBody: (tokenCount: number) => `${tokenCount ? tokensChange(tokenCount) : "No tokens change"}. Your cards stay as they are.`,
     staleAllTitle: "Everything, removals too",
-    staleAllBody: (up: number, leaving: number, down: number, t: number) =>
-      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down${t ? `, and ${tokenChanges(t)}` : ""}.`,
+    staleAllBody: (up: number, leaving: number, down: number, tokenCount: number) =>
+      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down${tokenCount ? `, and ${tokenChanges(tokenCount)}` : ""}.`,
     /** (new) The comparison could not be read. */
     /** (new) A confirm failed and so did the read that would say whether it landed. */
     unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it didn’t.",
@@ -156,7 +156,7 @@ export const collectionEditCopy = {
     /** (new) The upload entry's note once the file can be added instead: the count sits between the two. */
     entryNote: { before: "Your file can replace your current ", after: " or be added to them. You’ll see every match before anything changes." },
     reviewAdd: "Review before you add",
-    listAdded: (k: number) => `What gets added · ${n(k)}`,
+    listAdded: (cardCount: number) => `What gets added · ${n(cardCount)}`,
     /** (new) The Add review's matched banner: the number, then its label. */
     addedFigure: (copies: number) => `+${n(copies)}`,
     addedLabel: (copies: number, cards: number) => `${copies === 1 ? "copy" : "copies"} across ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
@@ -170,18 +170,18 @@ export const collectionEditCopy = {
     pendingAdd: "Adding…",
     tiles: { unchanged: "unchanged", up: "going up or new", down: "going down", leaving: "leaving" },
     edited: "edited",
-    overwriteBanner: (k: number, since: string) =>
-      `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload.`,
+    overwriteBanner: (changeCount: number, since: string) =>
+      `This overwrites ${n(changeCount)} ${changeCount === 1 ? "change" : "changes"} you made in the app since your ${since} upload.`,
     /** (new) History does not reach the last upload, so no number is quoted. */
     overwriteUnknown: (last: string) =>
       `This may overwrite changes you made in the app. Your last upload was ${last}, further back than the 90 days of history we keep, so we can’t count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
-    overwriteNoUpload: (k: number) => `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app.`,
-    decksShortHeading: (k: number) => `Decks that will read short · ${n(k)}`,
-    listLeaving: (k: number) => `Leaving your collection · ${n(k)}`,
-    listDown: (k: number) => `Going down · ${n(k)}`,
-    listUp: (k: number) => `Going up or new · ${n(k)}`,
-    showAll: (k: number) => `Show all ${n(k)}`,
+    overwriteNoUpload: (changeCount: number) => `This overwrites ${n(changeCount)} ${changeCount === 1 ? "change" : "changes"} you made in the app.`,
+    decksShortHeading: (deckCount: number) => `Decks that will read short · ${n(deckCount)}`,
+    listLeaving: (cardCount: number) => `Leaving your collection · ${n(cardCount)}`,
+    listDown: (cardCount: number) => `Going down · ${n(cardCount)}`,
+    listUp: (cardCount: number) => `Going up or new · ${n(cardCount)}`,
+    showAll: (cardCount: number) => `Show all ${n(cardCount)}`,
     /** (new) A list longer than the 500 rows the preview ships. */
     capNote: (shown: number, total: number) => `Showing the first ${n(shown)} of ${n(total)}.`,
     /** (new) The new-holding stand-in for a ×0 before figure. */
@@ -207,15 +207,15 @@ export const collectionEditCopy = {
       matchedLabel: "matched to the Oracle database: ready to sync",
       tiles: { decide: "to decide", file: "from the file", kept: "kept from The 99", nothing: "nothing to do" },
       /** (reworded, for /copy-review) `t` is the tokens this pick changes by count, either way: never "records". */
-      tokensLine: (t: number) => `${tokensChange(t)} to match the file, as an upload sets them. Tokens you marked by hand stay.`,
+      tokensLine: (tokenCount: number) => `${tokensChange(tokenCount)} to match the file, as an upload sets them. Tokens you marked by hand stay.`,
       /** The file's own token read, on desktop: how many tokens and copies it holds. */
-      tokensFigure: (t: number, c: number) => `${t === 1 ? "1 token" : `${n(t)} tokens`} · ${copies(c)}`,
+      tokensFigure: (tokenCount: number, copyCount: number) => `${tokenCount === 1 ? "1 token" : `${n(tokenCount)} tokens`} · ${copies(copyCount)}`,
       /** The issues panel's third line on a Sync (README G4). */
-      emblemsSkipped: (k: number) => `emblem ${k === 1 ? "row" : "rows"} skipped`,
-      listKept: (k: number) => `Kept from The 99 · ${n(k)}`,
-      listDecide: (k: number) => `To decide · ${n(k)}`,
+      emblemsSkipped: (rowCount: number) => `emblem ${rowCount === 1 ? "row" : "rows"} skipped`,
+      listKept: (cardCount: number) => `Kept from The 99 · ${n(cardCount)}`,
+      listDecide: (cardCount: number) => `To decide · ${n(cardCount)}`,
       decideLede: (since: string) => `You and the file both changed these since your ${since} upload. Pick which count to keep.`,
-      decideLeft: (k: number) => (k === 0 ? "All answered." : `${n(k)} left.`),
+      decideLeft: (cardCount: number) => (cardCount === 0 ? "All answered." : `${n(cardCount)} left.`),
       colAt: (since: string) => `AT ${since.toUpperCase()}`,
       colApp: "IN THE APP",
       colFile: "IN THE FILE",
@@ -227,17 +227,17 @@ export const collectionEditCopy = {
         `${card}, printing ${printing}, at ${since} ${baselineQuantityText}, app ${appQuantityText}, file ${fileQuantityText}`,
       rowPrinting: (set: string, number: string, finish: string) => `${set} ${number}, ${finish}`,
       rowWas: (since: string, baselineQuantityText: string) => `at ${since} ${baselineQuantityText}`,
-      bulkApp: (k: number) => `Keep the app’s for all ${n(k)}`,
-      bulkFile: (k: number) => `Take the file’s for all ${n(k)}`,
-      bulkDoneApp: (k: number) => `Kept the app’s count for all ${n(k)}. You can still change any one.`,
-      bulkDoneFile: (k: number) => `Took the file’s count for all ${n(k)}. You can still change any one.`,
+      bulkApp: (cardCount: number) => `Keep the app’s for all ${n(cardCount)}`,
+      bulkFile: (cardCount: number) => `Take the file’s for all ${n(cardCount)}`,
+      bulkDoneApp: (cardCount: number) => `Kept the app’s count for all ${n(cardCount)}. You can still change any one.`,
+      bulkDoneFile: (cardCount: number) => `Took the file’s count for all ${n(cardCount)}. You can still change any one.`,
       bulkCapNote: (shown: number, total: number) => `Showing the first ${n(shown)} of ${n(total)}. The buttons above apply to all ${n(total)}.`,
-      overwrite: (k: number, since: string) =>
-        `Taking the file’s count overwrites ${cards(k)} you changed in the app since your ${since} upload.`,
+      overwrite: (cardCount: number, since: string) =>
+        `Taking the file’s count overwrites ${cards(cardCount)} you changed in the app since your ${since} upload.`,
       /** The review's head under a stale pick (E5). */
       /** (reworded, for /copy-review) `t` is the tokens this pick changes by count, from its own read. */
-      pickedAdds: (since: string, c: number, t: number) =>
-        `This file looks older than your ${since} upload, so this sync takes only what it adds: ${cards(c)}${t ? `, and ${tokenChanges(t)}` : ""}.`,
+      pickedAdds: (since: string, cardCount: number, tokenCount: number) =>
+        `This file looks older than your ${since} upload, so this sync takes only what it adds: ${cards(cardCount)}${tokenCount ? `, and ${tokenChanges(tokenCount)}` : ""}.`,
       pickedTokens: (since: string) => `This file looks no newer than your ${since} upload, so this sync takes only its tokens.`,
       /** (new) An older-looking file synced for its tokens alone: the handoff draws only the no-newer form. */
       pickedOlderTokens: (since: string) => `This file looks older than your ${since} upload, so this sync takes only its tokens.`,
@@ -249,19 +249,19 @@ export const collectionEditCopy = {
             decided ? `You decided ${n(decided)}.` : "",
             short ? `${short === 1 ? "1 deck" : `${n(short)} decks`} will read short.` : "",
           ].filter(Boolean).join(" "),
-        noneKept: (take: number, t: number) => `Taking ${cards(take)} from the file${t ? `, with ${tokenChanges(t)}` : ""}. Nothing of yours to keep.`,
+        noneKept: (take: number, tokenCount: number) => `Taking ${cards(take)} from the file${tokenCount ? `, with ${tokenChanges(tokenCount)}` : ""}. Nothing of yours to keep.`,
         /** (reworded, for /copy-review) The kept clause goes at 0: there is nothing of yours it could name. */
-        tokensOnly: (keep: number, t: number, decided = 0) =>
-          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.` +
+        tokensOnly: (keep: number, tokenCount: number, decided = 0) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(tokenCount)}.` +
           (decided ? ` You decided ${n(decided)}.` : ""),
         /** (new, for /copy-review) No card moves and no token COUNT changes, yet the write still records the file's
          * tokens (a read marker, a printing, an ownership source): the plain confirm, never `Sync 0 token changes`. */
         tokensRecorded: (keep: number, decided = 0) =>
           `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.` +
           (decided ? ` You decided ${n(decided)}.` : ""),
-        undecided: (k: number) => `${cards(k)} still to decide.`,
+        undecided: (cardCount: number) => `${cards(cardCount)} still to decide.`,
         confirm: "Sync collection",
-        confirmTokens: (t: number) => `Sync ${t === 1 ? "1 token change" : `${n(t)} token changes`}`,
+        confirmTokens: (tokenCount: number) => `Sync ${tokenCount === 1 ? "1 token change" : `${n(tokenCount)} token changes`}`,
         pending: "Syncing…",
         back: "Back to Collection",
       },
@@ -270,27 +270,27 @@ export const collectionEditCopy = {
   // §E, the short-deck warning. Replace and Revert are drawn so far; Save and Remove join with the
   // PRs that draw them. Every string is a placeholder for /copy-review.
   shortWarning: {
-    titleReplace: (k: number) => `Replacing leaves ${decks(k)} short`,
-    titleRevert: (k: number) => `Reverting leaves ${decks(k)} short`,
+    titleReplace: (deckCount: number) => `Replacing leaves ${decks(deckCount)} short`,
+    titleRevert: (deckCount: number) => `Reverting leaves ${decks(deckCount)} short`,
     /** (new) The warning's confirm when it is a revert's. */
     confirmRevert: "Revert anyway",
     // Edit copies (§C/§D): the handoff's strings for a save and a removal.
-    titleRemove: (card: string, k: number) => `Removing ${card} leaves ${decks(k)} short`,
-    titleSave: (k: number) => `Saving leaves ${decks(k)} short`,
+    titleRemove: (card: string, deckCount: number) => `Removing ${card} leaves ${decks(deckCount)} short`,
+    titleSave: (deckCount: number) => `Saving leaves ${decks(deckCount)} short`,
     confirmRemove: "Remove anyway",
     confirmSave: "Save anyway",
     /** (new) The body for one card, as the R2 D2 specimen draws it. */
     bodyCard: (card: string) =>
       `Nothing about these decks changes. Each will show ${card} as short and put it on its shopping list.`,
     body: "Nothing about these decks changes. Each will show what it’s short of and put it on its shopping list.",
-    figureOne: (k: number) => `short ${n(k)}`,
-    figureMany: (k: number) => (k === 1 ? "1 card short" : `${n(k)} cards short`),
-    more: (k: number) => `and ${n(k)} more ${k === 1 ? "deck" : "decks"}`,
+    figureOne: (cardCount: number) => `short ${n(cardCount)}`,
+    figureMany: (cardCount: number) => (cardCount === 1 ? "1 card short" : `${n(cardCount)} cards short`),
+    more: (deckCount: number) => `and ${n(deckCount)} more ${deckCount === 1 ? "deck" : "decks"}`,
     namedCount: 3,
     cancel: "Cancel",
     confirmReplace: "Replace anyway",
     /** Collection Sync's title and confirm (handoff `collection-sync · copy strings.ts`, `shortWarning`). */
-    titleSync: (k: number) => `Syncing leaves ${decks(k)} short`,
+    titleSync: (deckCount: number) => `Syncing leaves ${decks(deckCount)} short`,
     confirmSync: "Sync anyway",
     checking: "Checking decks…",
     saving: "Saving…",
@@ -347,10 +347,10 @@ export const collectionEditCopy = {
      * A Sync's revert, under the lede: token writes are not in the ledger, so a revert leaves them
      * (G3). Drawn only when the Sync changed any.
      */
-    syncTokensStay: (t: number) => `The ${tokenChanges(t)} it made ${t === 1 ? "stays" : "stay"}.`,
+    syncTokensStay: (tokenCount: number) => `The ${tokenChanges(tokenCount)} it made ${tokenCount === 1 ? "stays" : "stay"}.`,
     // Direction-neutral: a revert can move copies either way, so the lede names what moved without
     // claiming a direction. The Then and Now rows say what changes.
-    lede: (when: string, c: number) => `From ${when}. Reverting this changes ${c === 1 ? "1 copy" : `${n(c)} copies`}.`,
+    lede: (when: string, copyCount: number) => `From ${when}. Reverting this changes ${copyCount === 1 ? "1 copy" : `${n(copyCount)} copies`}.`,
     differs: "This does less than the original. Some of these cards have changed since, and a revert never takes you below zero.",
     then: "Then",
     now: "Now",
@@ -360,7 +360,7 @@ export const collectionEditCopy = {
     /** (new) The reason beside a row whose copies stay the same but whose printing or condition is restored. */
     reasonDetails: "Printing or condition",
     /** (new) The lede when the revert moves no copies and only restores printings or conditions. */
-    ledeDetails: (when: string, k: number) => `From ${when}. Reverting this restores the printing or condition of ${k === 1 ? "1 card" : `${n(k)} cards`}.`,
+    ledeDetails: (when: string, cardCount: number) => `From ${when}. Reverting this restores the printing or condition of ${cardCount === 1 ? "1 card" : `${n(cardCount)} cards`}.`,
     /** (new) The reason beside a row whose count moved since the original. */
     reasonSince: "Changed since",
     /** (new) The reason beside a row the revert has nothing to do on. */
@@ -393,7 +393,7 @@ export const collectionEditCopy = {
       revert: "Revert",
     },
     /** (new) A multi-card add, edit or removal, titled by its first card. */
-    andMore: (first: string, k: number) => `${first} and ${n(k)} more`,
+    andMore: (first: string, moreCount: number) => `${first} and ${n(moreCount)} more`,
     /** (new) An entry's title when the ledger holds no filename or card name for it. */
     untitled: "Untitled change",
     addedFromPrecon: (name: string) => `Added from ${name}`,
@@ -437,7 +437,7 @@ export const collectionEditCopy = {
     groups: { left: "Left", down: "Went down", up: "Went up", new: "New", details: "Details" },
     /** (new) The delta slot of a row whose copies did not move. */
     rowDetails: "details changed",
-    showMore: (k: number, of: number) => `Show ${n(k)} more of ${n(of)}`,
+    showMore: (moreCount: number, of: number) => `Show ${n(moreCount)} more of ${n(of)}`,
     /** (new) The pager for entries past the first page. */
     olderEntries: "Show older changes",
     /** (new) Opening an entry, or paging, failed. */
@@ -452,7 +452,7 @@ export const collectionEditCopy = {
     revert: "Revert",
     reverting: "Reverting…",
     /** (new) The expanded row's per-row quantity change. */
-    rowDelta: (d: number) => (d > 0 ? `+${n(d)}` : `−${n(-d)}`),
+    rowDelta: (deltaCount: number) => (deltaCount > 0 ? `+${n(deltaCount)}` : `−${n(-deltaCount)}`),
   },
   add: {
     title: "Add cards",
@@ -476,7 +476,7 @@ export const collectionEditCopy = {
     noResultsBody: "Check the spelling, or try part of the name. Tokens and emblems aren’t in the catalog.",
     searchFailed: "We couldn’t search just now. Check your connection and try again.",
     resultAdd: "↵ add",
-    listHeading: (k: number) => `On the list · ${n(k)}`,
+    listHeading: (cardCount: number) => `On the list · ${n(cardCount)}`,
     newestFirst: "newest first",
     choosePrinting: "Choose a printing",
     needsPrinting: (card: string) => `Choose ${card}’s printing first`,
@@ -492,17 +492,17 @@ export const collectionEditCopy = {
     owned: (have: number, after: number) => `you own ×${n(have)} → ×${n(after)}`,
     ownedElsewhere: (have: number) => `you own ×${n(have)} in other printings`,
     newToYou: "new to you",
-    combined: (card: string, q: number) => `${card} was already on the list · now ×${n(q)}`,
-    summary: (lines: number, c: number) => `${n(lines)} ${lines === 1 ? "line" : "lines"} · ${copies(c)}`,
-    save: (c: number) => `Save ${copies(c)}`,
+    combined: (card: string, copyCount: number) => `${card} was already on the list · now ×${n(copyCount)}`,
+    summary: (lines: number, copyCount: number) => `${n(lines)} ${lines === 1 ? "line" : "lines"} · ${copies(copyCount)}`,
+    save: (copyCount: number) => `Save ${copies(copyCount)}`,
     saving: "Saving…",
     retry: "Try again",
-    discardTitle: (k: number) => `Discard ${n(k)} ${k === 1 ? "card" : "cards"}?`,
+    discardTitle: (cardCount: number) => `Discard ${n(cardCount)} ${cardCount === 1 ? "card" : "cards"}?`,
     discardBody: "They’re not saved yet. Close now and the list is gone.",
     discard: "Discard",
     keep: "Keep adding",
-    savedTitle: (c: number) => `${copies(c)} added`,
-    savedBody: (k: number) => `${n(k)} ${k === 1 ? "card is" : "cards are"} in your collection now.`,
+    savedTitle: (copyCount: number) => `${copies(copyCount)} added`,
+    savedBody: (cardCount: number) => `${n(cardCount)} ${cardCount === 1 ? "card is" : "cards are"} in your collection now.`,
     countsAfter: (from: number, to: number) => `${n(from)} → ${cards(to)}`,
     addMore: "Add more",
     done: "Done",
@@ -510,18 +510,18 @@ export const collectionEditCopy = {
     seeInHistory: "See it in History",
     failed: "We couldn’t confirm those were added. Check your collection before you try again.",
     printingsFailed: "We couldn’t load that card’s printings. Try picking it again.",
-    announceChoose: (card: string, k: number) => `${card}: choose a printing. ${n(k)} printings.`,
+    announceChoose: (card: string, printingCount: number) => `${card}: choose a printing. ${n(printingCount)} printings.`,
     announceAdded: (card: string) => `${card} added to the list`,
-    announceSaved: (c: number) => `${copies(c)} added to your collection`,
+    announceSaved: (copyCount: number) => `${copies(copyCount)} added to your collection`,
     /** The required printing step (B4a/B4m). */
     choose: {
-      intro: (k: number) => `Which printing are you adding? ${n(k)} printings.`,
-      introPhone: (k: number) => `Which printing? ${n(k)} printings.`,
+      intro: (printingCount: number) => `Which printing are you adding? ${n(printingCount)} printings.`,
+      introPhone: (printingCount: number) => `Which printing? ${n(printingCount)} printings.`,
       regionLabel: "Printings",
       searchPlaceholder: "Set, code or number",
       searchAria: "Search this card’s printings by set, code or number",
       emptyBody: (setSearch: string, card: string) => `No printing of ${card} comes from a set matching “${setSearch}”.`,
-      tileOwned: (q: number) => `you own ×${n(q)}`,
+      tileOwned: (copyCount: number) => `you own ×${n(copyCount)}`,
       /** The scanner's short list leads; this press adds every other printing after it (new, for /copy-review). */
       showAll: "Show all printings",
     },
@@ -533,22 +533,22 @@ export const collectionEditCopy = {
     addToCollection: "Add to collection",
     none: "none",
     sheetTitle: "Edit copies",
-    sheetSub: (card: string, q: number, p: number) =>
-      `${card} · you own ×${n(q)} in ${n(p)} ${p === 1 ? "printing" : "printings"}`,
+    sheetSub: (card: string, copyCount: number, printingCount: number) =>
+      `${card} · you own ×${n(copyCount)} in ${n(printingCount)} ${printingCount === 1 ? "printing" : "printings"}`,
     /** (new) The sub line for a card the player does not own yet. */
     sheetSubNone: (card: string) => `${card} · you own none`,
     addPrinting: "Add another printing",
     newPrinting: "New printing",
     newPrintingFirst: "Choose the new printing first",
-    fixIntro: (k: number) => `Which printing is this copy? ${n(k)} printings.`,
+    fixIntro: (printingCount: number) => `Which printing is this copy? ${n(printingCount)} printings.`,
     was: (from: string) => `was ${from}`,
-    goesWith: (k: number) => (k === 1 ? "your 1 copy goes with it" : `your ${n(k)} copies go with it`),
-    printingChanged: (k: number) => (k === 1 ? "1 printing changed" : `${n(k)} printings changed`),
+    goesWith: (copyCount: number) => (copyCount === 1 ? "your 1 copy goes with it" : `your ${n(copyCount)} copies go with it`),
+    printingChanged: (printingCount: number) => (printingCount === 1 ? "1 printing changed" : `${n(printingCount)} printings changed`),
     lastCopy: (card: string) => `That’s your last copy. Saving takes ${card} out of your collection.`,
     save: "Save",
     saving: "Saving…",
     retry: "Try again",
-    saved: (card: string, q: number) => `Saved. ${card} ×${n(q)}.`,
+    saved: (card: string, copyCount: number) => `Saved. ${card} ×${n(copyCount)}.`,
     undo: "Undo",
     failed: "We couldn’t confirm that saved. Check your collection before you try again.",
     /** (new) A holding with no catalog printing behind it (a bare Name,Qty import). */
@@ -573,10 +573,10 @@ export const collectionEditCopy = {
   remove: {
     action: "Remove from collection",
     leaves: (card: string) => `${card} leaves your collection.`,
-    confirm: (q: number) => `Remove ${copies(q)}`,
+    confirm: (copyCount: number) => `Remove ${copies(copyCount)}`,
     /** Keeps what the confirm names: `Remove 1 copy` pairs with `Keep it`. */
-    keep: (q: number) => (q === 1 ? "Keep it" : "Keep them"),
-    toast: (card: string, q: number) => `${card} removed · ${copies(q)}`,
+    keep: (copyCount: number) => (copyCount === 1 ? "Keep it" : "Keep them"),
+    toast: (card: string, copyCount: number) => `${card} removed · ${copies(copyCount)}`,
     undo: "Undo",
   },
   /**
@@ -663,16 +663,16 @@ export const collectionEditCopy = {
       removed: (name: string) => `${name} came off the list: we couldn’t load its printings. Show it again to retry.`,
       next: "Next card.",
       /** The tray's count, the figure bold as drawn. */
-      onList: (x: number): CopyPart[] => [{ text: n(x), strong: true }, { text: " on the list" }],
+      onList: (cardCount: number): CopyPart[] => [{ text: n(cardCount), strong: true }, { text: " on the list" }],
       emptyList: "Nothing on the list yet",
-      review: (x: number) => `Review ${n(x)}`,
+      review: (cardCount: number) => `Review ${n(cardCount)}`,
       /** Review with nothing on the list: held, so it names no count. */
       reviewEmpty: "Review",
     },
     again: {
-      stillOn: (x: number) => `✓ On the list · ×${n(x)}`,
+      stillOn: (copyCount: number) => `✓ On the list · ×${n(copyCount)}`,
       addAnother: "Add another copy",
-      already: (x: number) => `×${n(x)} on the list already`,
+      already: (copyCount: number) => `×${n(copyCount)} on the list already`,
       addSecond: "Add a second copy",
     },
     fix: {
@@ -684,12 +684,12 @@ export const collectionEditCopy = {
       search: "Search for it instead",
     },
     photos: {
-      read: (x: number) => (x === 1 ? "1 photo read" : `${n(x)} photos read`),
+      read: (photoCount: number) => (photoCount === 1 ? "1 photo read" : `${n(photoCount)} photos read`),
       sure: "Sure",
       notSure: "Not sure",
       pick: "Pick below",
       photoOf: (photoNumber: number, photoTotal: number) => `photo ${photoNumber} of ${photoTotal}`,
-      addSure: (x: number) => (x === 1 ? "Add the sure one" : `Add the ${n(x)} sure ones`),
+      addSure: (cardCount: number) => (cardCount === 1 ? "Add the sure one" : `Add the ${n(cardCount)} sure ones`),
       more: "Choose more photos",
       /** The photo's own thumbnail, beside what it was read as. */
       yourPhoto: "Your photo",

@@ -105,7 +105,7 @@ export const askCopy = {
   },
   /** The cost pill on a tool that spends nothing (a paid one carries its own credit line). */
   free: "free",
-  yours: { spares: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck` },
+  yours: { spares: (cardCount: number) => `${cardCount.toLocaleString("en-US")} of your cards are in no deck` },
   noTool: { title: "Nothing here answers that yet", body: "Try one of these, or search a card by name.", about: "Every tool, in About" },
   /** A tool answer's accessible name: the tool, what it does, what it costs, where it lands. */
   rowAria: (name: string, line: string, cost: string | null, where: string) => [name, line, cost, where].filter(Boolean).join(", "),

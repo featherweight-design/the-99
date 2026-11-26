@@ -31,7 +31,7 @@ export const feedbackAdminCopy = {
   sub: "What players told us: problem reports and check-ins, newest first.",
   pills: { all: "All", problems: "Problems", checkIns: "Check-ins" },
   kinds: { problem: "Problem", checkIn: "Check-in" },
-  summary: (fresh: number, avg: string) => `${fresh} new · check-ins average ${avg} of 5`,
+  summary: (fresh: number, averageText: string) => `${fresh} new · check-ins average ${averageText} of 5`,
   fields: { what: "What happened", doing: "What I was doing", rating: "Working for you", uses: "Uses most", pod: "Tell the pod", more: "Anything else" },
   notGiven: "not given",
   /** The admin's preview of the check-in: it opens the form and records nothing. */
@@ -68,7 +68,7 @@ export const adminCopy = {
     sub: "What players paid, by UTC month, beside what the model features cost. Grant credits gives an account a gift that never expires.",
     tiles: { gross: "Paid", tax: "Tax", net: "Net", spend: "Model spend" },
     tileSub: {
-      payments: (n: number) => plural(n, "payment", "payments"),
+      payments: (paymentCount: number) => plural(paymentCount, "payment", "payments"),
       unattributed: (paymentCount: number) => `${paymentCount} unattributed`,
       refunded: (amount: string) => `${amount} refunded`,
       tax: "collected by Stripe Tax",
@@ -157,7 +157,7 @@ export const adminCopy = {
       ofCeiling: (ceilingPercent: number, cap: string) => `${ceilingPercent}% of the ${cap} ceiling`,
       ofCeilingAtLeast: (ceilingPercent: number, cap: string) => `at least ${ceilingPercent}% of the ${cap} ceiling`,
       system: "labels, rewrites and prose",
-      accounts: (n: number) => (n === 0 ? "no accounts with runs" : `${plural(n, "account", "accounts")} with runs`),
+      accounts: (accountCount: number) => (accountCount === 0 ? "no accounts with runs" : `${plural(accountCount, "account", "accounts")} with runs`),
     },
     caps: "Against the caps",
     capsMeta: "set in code and read only, except the rows recorded here",
@@ -226,8 +226,8 @@ export const adminCopy = {
     byModel: "By model",
     byModelMeta: "model calls and card labels",
     modelSub: {
-      calls: (n: number, featureNames: string) => `${plural(n, "call", "calls")} · ${featureNames}`,
-      batches: (n: number) => `card labels, Batch API · ${plural(n, "batch", "batches")}`,
+      calls: (callCount: number, featureNames: string) => `${plural(callCount, "call", "calls")} · ${featureNames}`,
+      batches: (batchCount: number) => `card labels, Batch API · ${plural(batchCount, "batch", "batches")}`,
       composite: "a composite run from before the parts table, not split",
     },
     split: "Player against system",
@@ -236,8 +236,8 @@ export const adminCopy = {
     series: { player: "Player runs", labels: "Card labels", rewrites: "Free rewrites and prose" },
     evalsApart: {
       title: "Evals (all environments, from the repo)",
-      sub: (n: number) =>
-        `${plural(n, "ledger", "ledgers")}. Every deployment reads the same files, so none of this counts toward System or a cap here.`,
+      sub: (ledgerCount: number) =>
+        `${plural(ledgerCount, "ledger", "ledgers")}. Every deployment reads the same files, so none of this counts toward System or a cap here.`,
     },
     byFeature: "By feature and model",
     byFeatureMeta: "per run is the month’s mean of its priced runs",
@@ -258,14 +258,14 @@ export const adminCopy = {
     featureTitle: (name: string, step: string | null, free: boolean) => `${name}${free ? " rewrite, free" : ""}${step && step !== "call" ? `, ${step}` : ""}`,
     effortUnknown: "not recorded",
     callsRow: "Model calls",
-    runsCell: (n: number) => plural(n, "run", "runs"),
+    runsCell: (runCount: number) => plural(runCount, "run", "runs"),
     featureMeta: (model: string, effort: string, runs: number, perRun: string, p90Spend: string) =>
       `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run, p90 ${p90Spend}`,
     byFeatureNote: "Effort is recorded per call from the parts table on. An earlier run reads not recorded rather than a guess.",
     refunds: "Refunds",
     refundsMeta: (refundedSpend: string, refundedPercent: number) => `${refundedSpend} · ${refundedPercent}% of model calls`,
     refundLine: "the player got the credit back, and the cost still counts",
-    refundsBody: (n: number, line: string) => `${n === 1 ? "One run was" : `${n} runs were`} refunded: ${line}.`,
+    refundsBody: (runCount: number, line: string) => `${runCount === 1 ? "One run was" : `${runCount} runs were`} refunded: ${line}.`,
     refundFeature: (name: string, runs: number, refundedSpend: string) => `${name} ${plural(runs, "run", "runs")}, ${refundedSpend}.`,
     noRefunds: "No runs were refunded.",
     reserved: "Reserved against spent",
@@ -275,7 +275,7 @@ export const adminCopy = {
     noPress: "no run yet",
     noCostYet: (runs: number) => `${plural(runs, "run", "runs")}, none priced yet`,
     perAccount: "Per account",
-    perAccountMeta: (n: number) => `${plural(n, "account", "accounts")} with runs`,
+    perAccountMeta: (accountCount: number) => `${plural(accountCount, "account", "accounts")} with runs`,
     accountHead: { account: "Account", presses: "Runs", credits: "Credits used", spent: "Spent" },
     playersRow: "Players",
     accountMeta: (presses: number, credits: number) => `${plural(presses, "run", "runs")} · ${plural(credits, "credit", "credits")} used`,
@@ -324,8 +324,8 @@ export const adminCopy = {
   groups: {
     title: "Groups",
     sub: "Named sets of accounts that share overrides. One group per account.",
-    headMeta: (n: number, none: number) => `${plural(n, "account", "accounts")} · ${none} in no group`,
-    count: (n: number) => plural(n, "group", "groups"),
+    headMeta: (accountCount: number, none: number) => `${plural(accountCount, "account", "accounts")} · ${none} in no group`,
+    count: (groupCount: number) => plural(groupCount, "group", "groups"),
     back: "‹ Groups",
     newTitle: "New group",
     movesFrom: (groupName: string) => `moves from ${groupName}`,
@@ -337,7 +337,7 @@ export const adminCopy = {
     create: "Create",
     save: "Save",
     undo: "Undo",
-    members: (n: number) => plural(n, "member", "members"),
+    members: (memberCount: number) => plural(memberCount, "member", "members"),
     noMembers: "No members.",
     name: "Name",
     nameHint: "lowercase, no spaces",
@@ -405,31 +405,31 @@ export const adminCopy = {
     delete: {
       action: "Delete this group",
       hint: "Only an empty group can go: no members, no live flyer codes.",
-      refusedMembers: (n: number) =>
-        `It still has ${plural(n, "member", "members")}. Unselect ${n === 1 ? "that member" : "them"} above and save, then delete it.`,
+      refusedMembers: (memberCount: number) =>
+        `It still has ${plural(memberCount, "member", "members")}. Unselect ${memberCount === 1 ? "that member" : "them"} above and save, then delete it.`,
       // Only a live code blocks (READINESS, closed with the approval, 4): a revoked code loses its group instead.
       refusedCode: (code: string) => `It has the live flyer code ${code}. Revoke it on Invites first.`,
-      refusedBoth: (n: number, code: string) =>
-        `It still has ${plural(n, "member", "members")} and the live flyer code ${code}. Only an empty group can go: no members, no live flyer codes.`,
+      refusedBoth: (memberCount: number, code: string) =>
+        `It still has ${plural(memberCount, "member", "members")} and the live flyer code ${code}. Only an empty group can go: no members, no live flyer codes.`,
       codesLink: "Flyer codes ›",
       title: (groupName: string) => `Delete ${groupName}?`,
-      lead: (n: number) =>
+      lead: (settingCount: number) =>
         `It’s empty, so deleting it changes nothing for any account. ${
-          n === 0
+          settingCount === 0
             ? "It has no feature-flag settings"
-            : n === 1
+            : settingCount === 1
               ? "Its one feature-flag setting is removed with it"
-              : `Its ${numberWord(n)} feature-flag settings are removed with it`
+              : `Its ${numberWord(settingCount)} feature-flag settings are removed with it`
         }, and the name is free to use again.`,
       facts: { members: "Members", codes: "Flyer codes", overrides: "Overrides", history: "History" },
       none: "None.",
       /** The group's revoked codes, already joined (`MOXB7K and K2P9QX`): they stay on Invites with no group. */
-      codesRevoked: (list: string, n: number) => `${list}, revoked. ${n === 1 ? "It stays" : "They stay"} on Invites with no group.`,
+      codesRevoked: (list: string, codeCount: number) => `${list}, revoked. ${codeCount === 1 ? "It stays" : "They stay"} on Invites with no group.`,
       /** The group's codes the flyer trial being off ended, already joined: the group goes blank on them. */
-      codesEnded: (list: string, n: number) =>
-        `${list}, ended with the flyer trial. ${n === 1 ? "It loses its group, so if the trial comes back on, people who join with it land in no group." : "They lose their group, so if the trial comes back on, people who join with them land in no group."}`,
+      codesEnded: (list: string, codeCount: number) =>
+        `${list}, ended with the flyer trial. ${codeCount === 1 ? "It loses its group, so if the trial comes back on, people who join with it land in no group." : "They lose their group, so if the trial comes back on, people who join with them land in no group."}`,
       /** The overrides, already joined, each a flag's label and value (`Overview v2 on and Suggested changes v2 on`). */
-      overridesGo: (list: string, n: number) => (n === 1 ? `${list} goes with it. It reaches nobody now.` : `${list} go with it. They reach nobody now.`),
+      overridesGo: (list: string, overrideCount: number) => (overrideCount === 1 ? `${list} goes with it. It reaches nobody now.` : `${list} go with it. They reach nobody now.`),
       historyFact: "Kept in the admin log, under the group’s name.",
       keep: "Keep it",
       confirm: "Delete the group",
@@ -448,7 +448,7 @@ export const adminCopy = {
   // the Switches list says when the account list is the stored ids (STATES A3).
   accounts: {
     title: "Accounts",
-    sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails are masked; Show reveals one account and logs it.`,
+    sub: (accountCount: number, env: string) => `${plural(accountCount, "account", "accounts")} on ${env}. Names and emails are masked; Show reveals one account and logs it.`,
     search: FIND_BY_NAME,
     noMatch: (searchText: string) => `No account matches ${searchText}.`,
     clerkDown: "Names didn’t load from Clerk.",
@@ -482,7 +482,7 @@ export const adminCopy = {
     spendMeta: (spendText: string) => `${spendText} so far`,
     featureCols: { feature: "Feature", presses: "Runs", spent: "Spent" },
     total: "Total",
-    pressesCell: (n: number) => plural(n, "run", "runs"),
+    pressesCell: (runCount: number) => plural(runCount, "run", "runs"),
     errors: {
       account: "This account isn’t on this environment. Reload the page.",
     },
@@ -627,8 +627,8 @@ export const adminCopy = {
     app: { notSet: "Not set", on: "On", off: "Off", killed: "Killed" },
     overrides: {
       none: "None",
-      groups: (n: number) => plural(n, "group", "groups"),
-      accounts: (n: number) => plural(n, "account", "accounts"),
+      groups: (groupCount: number) => plural(groupCount, "group", "groups"),
+      accounts: (accountCount: number) => plural(accountCount, "account", "accounts"),
       refused: "refused",
       ignored: "ignored",
     },
@@ -664,9 +664,9 @@ export const adminCopy = {
     fallback: { on: "on", off: "off" },
     fallbackIdle: "only with no row",
     // The All features rung's value: how many accounts it decides for (`Flags-Kill` K3 to K7).
-    allValue: (n: number) => plural(n, "account", "accounts"),
+    allValue: (accountCount: number) => plural(accountCount, "account", "accounts"),
     // The Account rung's value, one part per value its rows hold (`Flags-Kill`: `2 accounts: On`).
-    accountValue: (n: number, value: string) => `${plural(n, "account", "accounts")}: ${value}`,
+    accountValue: (accountCount: number, value: string) => `${plural(accountCount, "account", "accounts")}: ${value}`,
     allows: (accountTotal: number) => `allows all ${accountTotal}`,
     refused: "refused",
     none: "None",
@@ -687,13 +687,13 @@ export const adminCopy = {
     groupsHead: "Groups",
     accountsHead: "Accounts",
     sectionNone: "none",
-    members: (n: number) => plural(n, "member", "members"),
+    members: (memberCount: number) => plural(memberCount, "member", "members"),
     noGroup: "No group override.",
     noAccount: "No account override.",
     check: "Check an account",
     checkPick: "Pick an account",
     historyHead: "History",
-    historyCount: (n: number) => plural(n, "change", "changes"),
+    historyCount: (changeCount: number) => plural(changeCount, "change", "changes"),
     historyLatest: (changeCount: number) => `latest ${changeCount}`,
     historyFoot: "Times are UTC.",
     noHistory: "No overrides yet.",
@@ -786,7 +786,7 @@ export const adminCopy = {
     facts: { who: "Who", overrides: "Overrides", when: "When" },
     whoAll: (accountTotal: number) => `All ${accountTotal} accounts`,
     whoGroup: (accountCount: number, group: string) => `the ${accountCount} held on by ${group}`,
-    whoAccounts: (n: number) => `${numberWord(n)} account override${n === 1 ? "" : "s"}`,
+    whoAccounts: (accountCount: number) => `${numberWord(accountCount)} account override${accountCount === 1 ? "" : "s"}`,
     whoAllFeatures: "All features too",
     overrides: "Kept, and refused while killed. Lifting the kill brings them back.",
     when: WHEN,
@@ -928,7 +928,7 @@ export const emailPreviewAdminCopy = {
   failed: "The rest didn't go through.",
   capped: "Today's mail cap is reached, so the rest weren't sent.",
   limited: "Your address hit its hourly mail limit, so the rest weren't sent.",
-  cooldown: (sec: number) => `Sent a moment ago. Try again in ${sec < 90 ? `${sec} seconds` : `${Math.ceil(sec / 60)} minutes`}.`,
+  cooldown: (secondCount: number) => `Sent a moment ago. Try again in ${secondCount < 90 ? `${secondCount} seconds` : `${Math.ceil(secondCount / 60)} minutes`}.`,
   refused: {
     unconfigured: "Email isn't configured on this deployment.",
     "no-address": "Your account has no email address to send to.",
