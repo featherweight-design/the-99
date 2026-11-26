@@ -5,7 +5,7 @@
  */
 export const cardCarouselCopy = {
   /** The visible counter in the desktop footer (and, from the phone round, its top-left plate). */
-  position: (n: number, total: number) => `${n.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`,
+  position: (cardNumber: number, total: number) => `${cardNumber.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`,
   prevAria: "Previous card",
   nextAria: "Next card",
   /**
@@ -13,7 +13,7 @@ export const cardCarouselCopy = {
    * verbatim): "Name, then position." Never spoken on the first open — the visible counter
    * covers that — only on Prev/Next landing.
    */
-  arrived: (name: string, n: number, total: number) => `${name}, ${cardCarouselCopy.position(n, total)}`,
+  arrived: (name: string, cardNumber: number, total: number) => `${name}, ${cardCarouselCopy.position(cardNumber, total)}`,
   /** An arrow key pressed at the start of the list (decision 8, quoted verbatim). */
   firstCard: "First card in this list",
   /** An arrow key pressed at the end of the list (decision 8, quoted verbatim). */

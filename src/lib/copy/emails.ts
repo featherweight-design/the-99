@@ -24,7 +24,7 @@ export const codeEmailCopy = {
 
 export const inviteEmailCopy = {
   subject: (name: string) => `${name} invited you to The 99`,
-  preheader: (name: string, days: number) => `Join as ${name}’s friend. Your invite works for ${days} days.`,
+  preheader: (name: string, dayCount: number) => `Join as ${name}’s friend. Your invite works for ${dayCount} days.`,
   heroAlt: (name: string, commander: string) => `${name}’s invitation card, with ${commander} art`,
   heroPlainAlt: "An invitation to The 99",
   kicker: "You’re invited",
@@ -40,14 +40,14 @@ export const inviteEmailCopy = {
   button: "Join The 99",
   rawLinkLabel: "Button not working? Paste this link into your browser:",
   textLinkLabel: "Join The 99:",
-  fine: (days: number, nameOrWho: string) => `This link works for ${days} days. Don’t know ${nameOrWho}? You can ignore this email.`,
+  fine: (dayCount: number, nameOrWho: string) => `This link works for ${dayCount} days. Don’t know ${nameOrWho}? You can ignore this email.`,
   reason: (name: string) => `You’re getting this because ${name} invited this address to The 99.`,
   /** No sender name (the sender has no profile name): the words that stand in for it. */
   anon: {
     name: "A friend",
     who: "who sent it",
     reason: "You’re getting this because someone on The 99 invited this address.",
-    preheader: (days: number) => `A friend invited you. Your invite works for ${days} days.`,
+    preheader: (dayCount: number) => `A friend invited you. Your invite works for ${dayCount} days.`,
     lead: "The 99 reads the cards you already own and builds Commander decks from them. Join as their friend. Your decks and your collection stay yours.",
   },
 } as const;

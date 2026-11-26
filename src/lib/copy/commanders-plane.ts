@@ -36,7 +36,7 @@
 //      strings do not change; the VALUE they interpolate does.
 // All seven take the threshold and print it, from one source, and the seven must agree.
 //
-// NAMING. `floorPct` in this module means THE THRESHOLD. A row's own support percentage is `pct`
+// NAMING. `floorPct` in this module means THE THRESHOLD. A row's own support percentage is `ownedPercent`
 // here and `supportPct` on `DiscoveryItem`.
 //
 // WHICH POPULATION EACH SURFACE PRINTS. Each surface prints the population that answers ITS
@@ -185,8 +185,8 @@ export const planeCopy = {
     hiddenCta: "Open its page",
     /** With several hidden matches the CTA opens one of them, so it says which. */
     hiddenCtaNamed: (name: string) => `Open ${name}`,
-    heldFloor: (pct: number, floorPct: number) =>
-      `It matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
+    heldFloor: (ownedPercent: number, floorPct: number) =>
+      `It matches, but Something new only shows commanders you could build, and you own ${ownedPercent}% of the cards decks with it play, against the ${floorPct}% floor.`,
 
     scope: (name: string) => `${name} matches, but you have already built a deck around it.`,
     scopeAlso: (name: string) =>
@@ -217,10 +217,10 @@ export const planeCopy = {
       )} excludes it: its identity is ${identity(own)}.`,
     joinCta: "Switch to Contains",
 
-    floor: (name: string, pct: number, floorPct: number) =>
-      `${name} matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
-    floorAlso: (name: string, pct: number, floorPct: number) =>
-      `${name} also matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
+    floor: (name: string, ownedPercent: number, floorPct: number) =>
+      `${name} matches, but Something new only shows commanders you could build, and you own ${ownedPercent}% of the cards decks with it play, against the ${floorPct}% floor.`,
+    floorAlso: (name: string, ownedPercent: number, floorPct: number) =>
+      `${name} also matches, but Something new only shows commanders you could build, and you own ${ownedPercent}% of the cards decks with it play, against the ${floorPct}% floor.`,
     floorCta: "Rank by best fit instead",
 
     // The floor tier's OTHER population, in the vocabulary the exclusion line already
@@ -302,7 +302,7 @@ export const planeCopy = {
         unmeasured,
       )} have no data to measure. The closest is at ${bestPct}%.`,
 
-    join2: (a: string, b: string) => `${a} · ${b}`,
+    join2: (firstFilter: string, secondFilter: string) => `${firstFilter} · ${secondFilter}`,
   },
 
   // ── The floor, when the pool is the cause ─────────────────────────────

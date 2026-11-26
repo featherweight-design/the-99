@@ -91,9 +91,9 @@ export const gameLogCopy = {
     // The count beside the label is aria-hidden, so the tab's whole accessible
     // name is composed here. At zero it says so in words rather than reading a
     // number the sighted tab deliberately does not draw.
-    aria: (n: string) => `Games, ${n} logged`,
+    aria: (gameCountText: string) => `Games, ${gameCountText} logged`,
     ariaNone: 'Games, none logged',
-    labelWithCount: (n: string) => `Games \u00b7 ${n}`,
+    labelWithCount: (gameCountText: string) => `Games \u00b7 ${gameCountText}`,
   },
 
   // ── The empty state · carries the whole pitch (§8.4) ──────────────────
@@ -155,19 +155,19 @@ export const gameLogCopy = {
     // Fallback when every marked axis nets to zero.
     findingNone: 'Nothing has pointed one way yet.',
     // Fallback when games exist but no axis was ever marked. The record alone.
-    recordOnly: (games: string, record: string) => `${games} games logged. ${record}.`,
+    recordOnly: (gameCountText: string, record: string) => `${gameCountText} games logged. ${record}.`,
 
     // The denominator is in the SENTENCE, not beside it. 'every one you have
-    // logged' only prints when marked === count.
-    sub: (marked: string, count: string, record: string) =>
-      `Marked in ${marked} of ${count} games. Record ${record}.`,
-    subAll: (count: string, record: string) =>
-      `Marked in ${count} of ${count} games: every one you have logged. Record ${record}.`,
+    // logged' only prints when markedCountText === gameCountText.
+    sub: (markedCountText: string, gameCountText: string, record: string) =>
+      `Marked in ${markedCountText} of ${gameCountText} games. Record ${record}.`,
+    subAll: (gameCountText: string, record: string) =>
+      `Marked in ${gameCountText} of ${gameCountText} games: every one you have logged. Record ${record}.`,
 
     // The record itself. An en dash between the figures, never a hyphen.
-    record: (w: string, l: string) => `${w}\u2013${l}`,
-    recordWithDraws: (w: string, l: string, d: string) => `${w}\u2013${l}\u2013${d}`,
-    recordLong: (record: string, games: string) => `${record} across ${games} games`,
+    record: (winCountText: string, lossCountText: string) => `${winCountText}\u2013${lossCountText}`,
+    recordWithDraws: (winCountText: string, lossCountText: string, drawCountText: string) => `${winCountText}\u2013${lossCountText}\u2013${drawCountText}`,
+    recordLong: (record: string, gameCountText: string) => `${record} across ${gameCountText} games`,
     recordLongOne: (record: string) => `${record} across 1 game`,
   },
 
@@ -175,19 +175,19 @@ export const gameLogCopy = {
   tiles: {
     title: "How it\u2019s playing",
     // The lead's second line. The denominator is in the sentence.
-    leadHurt: (hurt: string, count: string) => `Marked against you in ${hurt} of ${count} games.`,
-    leadHurtRecent: (hurt: string, count: string, recent: string, last: string) =>
-      `Marked against you in ${hurt} of ${count} games, and in ${recent} of the last ${last}.`,
-    leadHelp: (worked: string, count: string) => `Marked for you in ${worked} of ${count} games.`,
-    leadHelpRecent: (worked: string, count: string, recent: string, last: string) =>
-      `Marked for you in ${worked} of ${count} games, and in ${recent} of the last ${last}.`,
+    leadHurt: (hurt: string, gameCountText: string) => `Marked against you in ${hurt} of ${gameCountText} games.`,
+    leadHurtRecent: (hurt: string, gameCountText: string, recent: string, last: string) =>
+      `Marked against you in ${hurt} of ${gameCountText} games, and in ${recent} of the last ${last}.`,
+    leadHelp: (worked: string, gameCountText: string) => `Marked for you in ${worked} of ${gameCountText} games.`,
+    leadHelpRecent: (worked: string, gameCountText: string, recent: string, last: string) =>
+      `Marked for you in ${worked} of ${gameCountText} games, and in ${recent} of the last ${last}.`,
     hurting: "Hurting",
     helping: "Helping",
     both: "Both ways",
     // The count under a tile's dots. A both-ways tile reads `cell.sub`.
-    down: (n: string, count: string) => `down ${n} of ${count}`,
-    up: (n: string, count: string) => `up ${n} of ${count}`,
-    showMore: (n: string) => `Show ${n} more`,
+    down: (positionText: string, totalText: string) => `down ${positionText} of ${totalText}`,
+    up: (positionText: string, totalText: string) => `up ${positionText} of ${totalText}`,
+    showMore: (hiddenCountText: string) => `Show ${hiddenCountText} more`,
     showFewer: "Show fewer",
     keyHelped: "helped",
     keyHurt: "hurt",
@@ -199,12 +199,12 @@ export const gameLogCopy = {
   cell: {
     // The figure. ALWAYS carries its denominator. Never a percentage, never a
     // net, never a bare count.
-    figure: (marked: string, count: string) => `${marked} of ${count}`,
+    figure: (markedCountText: string, gameCountText: string) => `${markedCountText} of ${gameCountText}`,
     // N = 1: a direction and a count, not a ratio. '1 of 1' inside a bucket
     // called Fix reads as certainty.
     figureOneUp: '1 up',
     figureOneDown: '1 down',
-    sub: (up: string, down: string) => `${up} up \u00b7 ${down} down`,
+    sub: (upCountText: string, downCountText: string) => `${upCountText} up \u00b7 ${downCountText} down`,
     subOneGame: '1 game',
   },
 
@@ -230,7 +230,7 @@ export const gameLogCopy = {
     workedLabel: 'What worked',
     hurtLabel: 'What let me down',
     // Absent at zero — a counter reading '0 marked' is a column complaining.
-    marked: (n: string) => `${n} marked`,
+    marked: (markedCountText: string) => `${markedCountText} marked`,
 
     // The move, §6 in STATES-log-form.md. Replaces the gloss for one beat.
     movedToHurt: 'moved to what let me down',
