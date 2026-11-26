@@ -80,10 +80,12 @@ const PhonePeek = React.forwardRef<
     covered: boolean;
     /** The card just left, on a page: it shrinks into this peek from where it stood (`--enter-*`). */
     enter: React.CSSProperties | null;
+    /** The page was a swipe's release: the shrink starts at once, with no beat (`anim-release-enter`). */
+    released: boolean;
     /** The face it was showing as the card, kept until the shrink lands. */
     enterFace: string | null;
   }
->(function PhonePeek({ sibling, direction, onPress, covered, enter, enterFace }, ref) {
+>(function PhonePeek({ sibling, direction, onPress, covered, enter, released, enterFace }, ref) {
   const [landed, setLanded] = React.useState(false);
   const left = direction === "previous"
     ? "calc(50% - var(--card-w) / 2 - 12px - var(--card-w) * 0.7375)"
@@ -102,7 +104,7 @@ const PhonePeek = React.forwardRef<
       // `phone-peek` holds its .5 opacity; `swipe-in-*` grows and lights it as a swipe brings it in.
       className={"card-grow phone-peek absolute overflow-hidden rounded-[11px] cursor-pointer border-0 p-0 "
         + (direction === "previous" ? "swipe-in-prev" : "swipe-in-next")
-        + (enter ? " anim-phone-peek-enter" : "")}
+        + (enter ? " anim-phone-peek-enter" + (released ? " anim-release-enter" : "") : "")}
       style={{
         ...enter,
         // The stacking is explicit, never DOM order (the previous peek sits under the card and the next peek over it, so a swipe
@@ -209,6 +211,9 @@ export function CardModalArtSide({
   const leftPeek = enteredFrom === "next" || enteredFrom === "nextPeek" ? "prev"
     : enteredFrom === "prev" || enteredFrom === "prevPeek" ? "next"
     : null;
+  // A swipe's release goes straight into the glide (`anim-release-enter`): the finger has already moved the card, so the
+  // transition's beat would be a hold with nothing under the finger. A press or a key (a swipe of 0) keeps its beat.
+  const released = enteredOffset !== 0;
   const phoneEnterVars = phoneEnterX === null ? null : ({
     "--enter-x": phoneEnterX,
     "--enter-scale": String(0.7375 + 0.2625 * enteredProgress),
@@ -274,7 +279,7 @@ export function CardModalArtSide({
         } as React.CSSProperties}
       >
         {narrow && prevSibling && onPrevPeek ? (
-          <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek(leftFace)} covered={full} enter={leftPeek === "prev" ? leftPeekVars : null} enterFace={enteredLeftFace} />
+          <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek(leftFace)} covered={full} enter={leftPeek === "prev" ? leftPeekVars : null} released={released} enterFace={enteredLeftFace} />
         ) : null}
         <div
           // Under the full sheet the card and its turn plate are covered, and paging is
@@ -282,7 +287,7 @@ export function CardModalArtSide({
           // cannot see. The band itself stays live for the tap that returns to the teaser.
           inert={full}
           data-testid="modal-art-mobile"
-          className={"card-grow swipe-out absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
+          className={"card-grow swipe-out absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" + (released ? " anim-release-enter" : "") : "")}
           style={{
             top: "var(--card-top)",
             // Above both peeks (0): see `PhonePeek`.
@@ -317,7 +322,7 @@ export function CardModalArtSide({
           )}
         </div>
         {narrow && nextSibling && onNextPeek ? (
-          <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek(leftFace)} covered={full} enter={leftPeek === "next" ? leftPeekVars : null} enterFace={enteredLeftFace} />
+          <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek(leftFace)} covered={full} enter={leftPeek === "next" ? leftPeekVars : null} released={released} enterFace={enteredLeftFace} />
         ) : null}
       </div>
     </div>

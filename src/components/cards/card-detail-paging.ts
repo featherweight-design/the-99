@@ -8,7 +8,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type BrowseCard, type FoilFinish, type PreferredPrinting } from "../../lib/collection/browse";
+import { cardArt, faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type BrowseCard, type FoilFinish, type PreferredPrinting } from "../../lib/collection/browse";
 import type { SiblingCard, ViewPrinting } from "./card-detail-context";
 
 /** Which carousel control paged to the card: null on a fresh open and on any card change that is not a page. */
@@ -153,13 +153,15 @@ export type PlateSource = {
   read?: BrowseCard;
   /** The deck's pick for the card, applied to the read card. */
   pick?: PreferredPrinting | null;
+  /** The printing the list wants the card at (a wishlist line's), where the list reads cards that way: it wins over the card's own default. */
+  wanted?: string | null;
 };
 
 /**
  * A neighbor plate as it draws: the printing its own details will show when paged onto, never the opener's art, which is
  * often the oracle-level printing. The sibling itself when nothing changes, so an unchanged plate keeps its identity.
  */
-export function plateFor(s: SiblingCard, { viewed, read: readCard, pick }: PlateSource): SiblingCard {
+export function plateFor(s: SiblingCard, { viewed, read: readCard, pick, wanted }: PlateSource): SiblingCard {
   // A card viewed at one printing (`viewPrintings`) shows it on its plate too, as it will when
   // paged onto: the plate never draws the reader's own copy of a card the list stands at another.
   // Its film is the viewed printing's finish, the box's on a precon, never the reader's own copy's.
@@ -170,8 +172,12 @@ export function plateFor(s: SiblingCard, { viewed, read: readCard, pick }: Plate
   // A finish with no printing: the reader's own printing, drawn in the list's finish, never the reader's own copy's.
   const filmOf = (reader: FoilFinish | undefined) => (viewed && viewed.setCode === undefined ? (viewed.finish === "nonfoil" ? undefined : viewed.finish) : reader);
   if (!readCard) return s.foil !== filmOf(s.foil) ? { ...s, foil: filmOf(s.foil) } : s;
-  const shown = withDeckPick(readCard, pick);
-  const printing = resolvedPrinting(shown);
+  const deckShown = withDeckPick(readCard, pick);
+  // A wanted printing (a wishlist line's) is the face card details opens at, so the plate draws it too; a deck's pick, which
+  // the modal reads first, still wins.
+  const wantedPrinting = !pick && wanted ? [...deckShown.printings, ...(deckShown.otherPrintings ?? [])].find((p) => p.scryfallId === wanted) : undefined;
+  const shown = wantedPrinting ? { ...deckShown, ...cardArt(deckShown.name, wantedPrinting) } : deckShown;
+  const printing = wantedPrinting ?? resolvedPrinting(shown);
   // The film follows the printing the plate draws, as the details face's does (foil handoff R2, G9).
   const read = { art: printing?.imageUri ?? null, name: printedNameOf(shown), foil: filmOf(faceFilm(printing)) };
   return read.art !== (s.imageUri ?? null) || read.name !== s.name || read.foil !== s.foil

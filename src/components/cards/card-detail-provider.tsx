@@ -1388,6 +1388,7 @@ export function CardDetailProvider({
       viewed: viewPrintings?.[s.oracleId],
       read: readCard,
       pick: readCard ? deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId) : null,
+      wanted: browsePrintings ? readCard?.wishlist?.printingId : null,
     });
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
