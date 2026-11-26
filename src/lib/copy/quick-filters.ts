@@ -14,8 +14,8 @@ export const quickFilterCopy = {
   },
   announceOn: (label: string, shown: number) => `${label} on. ${shown} ${shown === 1 ? "card" : "cards"} shown.`,
   announceOff: (shown: number) => `Quick filter off. ${shown} ${shown === 1 ? "card" : "cards"} shown.`,
-  chipAria: (label: string, n: number, on: boolean) =>
-    `${label}, ${n}. ${on ? "On. Press to turn off." : "Press to show only these."}`,
+  chipAria: (label: string, cardCount: number, on: boolean) =>
+    `${label}, ${cardCount}. ${on ? "On. Press to turn off." : "Press to show only these."}`,
   combos: {
     ownBoth: "You own both",
     ownOne: "You own one",
@@ -33,14 +33,14 @@ export const quickFilterCopy = {
     wishlisted: "On your wishlist",
     howItWorks: "How it works",
     // A side past the server's ceiling reads as a floor ("5,000+"), never an exact number.
-    count: (n: number, floor = false) => `${n.toLocaleString()}${floor ? "+" : ""}`,
-    result: (n: number, floor = false) => `${n.toLocaleString()}${floor ? "+" : ""} ${n === 1 && !floor ? "combo" : "combos"}`,
+    count: (comboCount: number, floor = false) => `${comboCount.toLocaleString()}${floor ? "+" : ""}`,
+    result: (comboCount: number, floor = false) => `${comboCount.toLocaleString()}${floor ? "+" : ""} ${comboCount === 1 && !floor ? "combo" : "combos"}`,
     emptyBoth: "No two-card combos with both cards in your collection yet.",
     emptyOne: "No combos one card away.",
     noMatch: "No combos match these filters.",
     loadFailed: "We couldn’t load your combos.",
     tryAgain: "Try again",
-    pairLabel: (a: string, b: string) => `${a} and ${b}`,
+    pairLabel: (firstCardName: string, secondCardName: string) => `${firstCardName} and ${secondCardName}`,
     toggleLabel: "Combos you own",
   },
 };

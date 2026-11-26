@@ -19,7 +19,7 @@ export const refreshCopy = {
     // It is a greeting, not a claim — the claim is the kicker above it.
     greeting: 'Welcome back',
     // Kicker: collection size and freshness. Both figures, always both.
-    kicker: (cards: string, when: string) => `${cards} cards · read ${when}`,
+    kicker: (cardCountText: string, when: string) => `${cardCountText} cards · read ${when}`,
     updateCollection: 'Update collection',
     newDeck: 'New deck',
     // Home with decks and no cards (no-collection entry S12): the kicker counts the
@@ -36,10 +36,10 @@ export const refreshCopy = {
     // 32 out of 40 must never be rescaled to read as 80 — see the anti-
     // comparability rule in commander-explained.ts §4.3 and rec-card.tsx:83-88.
     fit: (score: number, outOf: number) => `${score} /${outOf} fit`,
-    fitLine: (n: number) => `${n} of your cards fit`,
+    fitLine: (cardCount: number) => `${cardCount} of your cards fit`,
     // Availability clause on a hero card. Absent when inUse === 0 — free says
     // nothing, per availability.ts.
-    inUse: (n: number) => `${n} in use`,
+    inUse: (cardCount: number) => `${cardCount} in use`,
     startDeck: 'Start this deck',
     seePool: 'See the pool',
     // Threshold is the lowest score in the READY SET, never a rounder number —
@@ -47,7 +47,7 @@ export const refreshCopy = {
     // `readySlice` truncated to fewer. Not the lowest of the two CARDS: those
     // rotate daily within the set and routinely exclude the commander this
     // figure comes from.
-    moreAbove: (n: number, floor: number) => `${n} more scored ${floor} or better`,
+    moreAbove: (cardCount: number, floor: number) => `${cardCount} more scored ${floor} or better`,
     allCommanders: 'All commanders',
 
     resumeHeading: 'Pick up where you left off',
@@ -65,20 +65,20 @@ export const refreshCopy = {
      * that cannot be derived would be a guess. Handoff errata E5.
      */
     touched: {
-      edited: (t: string) => `edited ${t}`,
-      committed: (t: string) => `committed ${t}`,
-      played: (t: string) => `played ${t}`,
+      edited: (timeAgo: string) => `edited ${timeAgo}`,
+      committed: (timeAgo: string) => `committed ${timeAgo}`,
+      played: (timeAgo: string) => `played ${timeAgo}`,
     },
     // Lower case. A deck's touched stamp has no "just now" (a stamp of 0 is not news, so under an hour reads `0h ago`);
     // the feed and Waiting on you do (`justNow`, Design's prompt 13 carry-over, ratified in the friend-decks handoff):
     // something that arrived in the last hour is the news.
     elapsed: {
       justNow: 'just now',
-      hours: (h: number) => `${h}h ago`,
+      hours: (hours: number) => `${hours}h ago`,
       yesterday: 'yesterday',
-      days: (d: number) => `${d}d ago`,
-      weeks: (w: number) => `${w}w ago`,
-      months: (m: number) => `${m}mo ago`,
+      days: (days: number) => `${days}d ago`,
+      weeks: (weeks: number) => `${weeks}w ago`,
+      months: (months: number) => `${months}mo ago`,
     },
 
     // The resume block's footer. It carries the total the deleted `Your decks`
@@ -93,11 +93,11 @@ export const refreshCopy = {
 
     commitmentsHeading: 'Commitments',
     inUseRow: 'Cards in use',
-    inUseValue: (n: string, total: string) => `${n} of ${total}`,
+    inUseValue: (cardCountText: string, totalCountText: string) => `${cardCountText} of ${totalCountText}`,
     overCommittedRow: 'Spoken for twice',
-    overCommittedValue: (n: number) => (n === 1 ? '1 card' : `${n} cards`),
+    overCommittedValue: (cardCount: number) => (cardCount === 1 ? '1 card' : `${cardCount} cards`),
     toBuyRow: 'To buy, all decks',
-    toBuyValue: (n: number, cost: string) => `${n} · ${cost}`,
+    toBuyValue: (cardCount: number, cost: string) => `${cardCount} · ${cost}`,
     reviewCommitments: 'Review commitments',
     shopAllDecks: 'Shop all decks',
   },
@@ -114,7 +114,7 @@ export const refreshCopy = {
     // under the header row, New deck first.
     importShort: 'Import',
     importLong: 'Import a deck',
-    sort: (by: string) => `Sort · ${by}`,
+    sort: (sortLabel: string) => `Sort · ${sortLabel}`,
     // The default order's name in the sort menu and on the trigger. Its own leaf, apart from the filter sheet's `lastPlayedHeading`, so rewording one never moves the other.
     sortLastPlayed: 'Last played',
 
@@ -125,10 +125,10 @@ export const refreshCopy = {
     // already taken is one of them while being a card the player owns. The pill
     // BESIDE it says "To buy" and means the same thing — it sits on the progress
     // row now rather than on the art above this figure.
-    detailToBuy: (n: number, cost: string) => `${n} to buy · ${cost}`,
+    detailToBuy: (cardCount: number, cost: string) => `${cardCount} to buy · ${cost}`,
     // The same clause when nothing on the list carries a price. No price row is
     // not a price of zero, so the copies print and the cost does not.
-    detailToBuyNoPrice: (n: number) => `${n} to buy`,
+    detailToBuyNoPrice: (cardCount: number) => `${cardCount} to buy`,
     // Price-free clause. Not in the handoff's copy file: Home's resume rows and
     // the phone deck rail draw `99 / 99 · 3 cards` with no cost, and
     // detailToBuy always carries one. Added under plan ruling 5.
@@ -137,12 +137,12 @@ export const refreshCopy = {
     // the status word on the same line, so `3 to buy` beside a `To buy` pill
     // would say the same thing twice; the tile, whose pill sits up in the art,
     // keeps the fuller clause above.
-    detailCopies: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
-    detailUnresolved: (n: number) => (n === 1 ? '1 line unresolved' : `${n} lines unresolved`),
-    detailOver: (n: number) => `${n} over`,
+    detailCopies: (cardCount: number) => (cardCount === 1 ? "1 card" : `${cardCount} cards`),
+    detailUnresolved: (lineCount: number) => (lineCount === 1 ? '1 line unresolved' : `${lineCount} lines unresolved`),
+    detailOver: (cardCount: number) => `${cardCount} over`,
     detailDraft: 'created today',
     // Availability clause, reused verbatim from availability.ts vocabulary.
-    detailInUseElsewhere: (n: number) => `${n} in use elsewhere`,
+    detailInUseElsewhere: (cardCount: number) => `${cardCount} in use elsewhere`,
     // NOTE: decks.commander_oracle_id is NOT NULL — a deck always has a
     // commander, so there is no "no commander yet" string and no placeholder
     // art. A Draft deck is a named commander with 0 / 99 built.
@@ -241,13 +241,13 @@ export const refreshCopy = {
     importDeck: 'Import a deck',
     // The figure that justifies Browse commanders being the primary. Omit the
     // whole line when buildable === 0.
-    buildableFrom: (buildable: number, cards: string) =>
-      `${buildable} commanders buildable from ${cards} cards`,
+    buildableFrom: (buildable: number, cardCountText: string) =>
+      `${buildable} commanders buildable from ${cardCountText} cards`,
   },
 
   // ── First run — collection unread, no decks, rail locked ──────────────
   firstRun: {
-    step: (n: number, of: number) => `Step ${n} of ${of}`,
+    step: (stepNumber: number, stepTotal: number) => `Step ${stepNumber} of ${stepTotal}`,
     heading: 'Welcome to The 99',
     step1Title: 'Add your collection',
     step1Body:
@@ -315,15 +315,15 @@ export const refreshCopy = {
 
     // Desktop column footer. States what is on, never what to do about it.
     allOn: 'all statuses on',
-    someOn: (n: number) => (n === 1 ? '1 status on' : `${n} statuses on`),
+    someOn: (statusCount: number) => (statusCount === 1 ? '1 status on' : `${statusCount} statuses on`),
     clear: 'Clear',
 
     // Phone sheet. The button dismisses; filtering already happened.
     sheetTitle: 'Filter decks',
     sheetMatch: (shown: number, total: number) => `${shown} of ${total} match`,
-    sheetDismiss: (n: number) => (n === 1 ? 'Show 1 deck' : `Show ${n} decks`),
+    sheetDismiss: (deckCount: number) => (deckCount === 1 ? 'Show 1 deck' : `Show ${deckCount} decks`),
     // Trigger badge counts ACTIVE filters, not matching decks.
-    triggerBadge: (n: number) => String(n),
+    triggerBadge: (filterCount: number) => String(filterCount),
     chipRemoveAria: (label: string) => `Remove filter: ${label.toLowerCase()}`,
 
     // Empty grid. No apology, no illustration, one route out.

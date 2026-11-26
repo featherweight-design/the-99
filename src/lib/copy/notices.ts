@@ -16,15 +16,15 @@ export const deckNoticesCopy = {
   tag: {
     notLegal: "Not legal",
     spoken: {
-      unread: (n: number) => `${notices(n)} since this deck was analyzed`,
-      notLegal: (n: number) => `${cards(n)} not legal in this deck`,
+      unread: (noticeCount: number) => `${notices(noticeCount)} since this deck was analyzed`,
+      notLegal: (cardCount: number) => `${cards(cardCount)} not legal in this deck`,
     },
     /** The header's full face (`● 3 notices`). The tile draws one `!` mark instead (the tile marker addendum). */
     count: notices,
     aria: {
-      unread: (n: number) => `${notices(n)} since this deck was analyzed. Open notices`,
-      read: (n: number) => `${notices(n)}, read. Open notices`,
-      notLegal: (n: number) => `${cards(n)} not legal in this deck. Open notices`,
+      unread: (noticeCount: number) => `${notices(noticeCount)} since this deck was analyzed. Open notices`,
+      read: (noticeCount: number) => `${notices(noticeCount)}, read. Open notices`,
+      notLegal: (cardCount: number) => `${cards(cardCount)} not legal in this deck. Open notices`,
     },
   },
   /**
@@ -34,8 +34,8 @@ export const deckNoticesCopy = {
   mark: {
     /** FactTooltip `sentence`, desktop only. */
     tooltip: {
-      notLegal: (n: number) => `${cards(n)} not legal in this deck. Open the deck to see which.`,
-      unread: (n: number) => `${notices(n)} since this deck was analyzed. Open the deck to read them.`,
+      notLegal: (cardCount: number) => `${cards(cardCount)} not legal in this deck. Open the deck to see which.`,
+      unread: (noticeCount: number) => `${notices(noticeCount)} since this deck was analyzed. Open the deck to read them.`,
       both: (legal: number, data: number) =>
         `${cards(legal)} not legal in this deck, and ${notices(data)} since it was analyzed. Open the deck to see them.`,
     },
@@ -60,8 +60,8 @@ export const deckNoticesCopy = {
     combo: (result: string) => `Spellbook: ${result}.`,
     legal: {
       notLegal: "Not legal in Commander.",
-      outside: (colors: string, commander: string, identity: string) =>
-        `${colors}, outside ${commander}’s colors (${identity}).`,
+      outside: (cardColors: string, commander: string, identity: string) =>
+        `${cardColors}, outside ${commander}’s colors (${identity}).`,
       foot: "These stay until the cards leave the deck. Reading them does not clear them.",
     },
     foot: {

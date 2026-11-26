@@ -17,7 +17,7 @@ export const hiddenListCopy = {
   title: "Hidden",
   subtitle: "commanders you hid",
   /** The count line over the list. Pinned to en-US as the other count lines are. */
-  count: (n: number) => `${n.toLocaleString("en-US")} hidden · newest first`,
+  count: (hiddenCount: number) => `${hiddenCount.toLocaleString("en-US")} hidden · newest first`,
   /** The line under the name: the day it was hidden, never the year (READINESS Y11). */
   hiddenOn: (day: string) => `Hidden ${day}`,
   /** A built commander's row opens its deck, not its page (READINESS Y3), and says so to a screen reader. DRAFT. */

@@ -11,29 +11,29 @@ export const historyCopy = {
   kind: { open: "Requested", yes: "Accepted", no: "Declined", expired: "No answer", withdrawn: "Withdrawn" },
   ofYouOpen: "Waiting on you",
   mine: {
-    open: (f: ThirdPartyName, c: string) => personText`You asked ${f} for ${c}`,
-    yes: (f: ThirdPartyName, c: string) => personText`${f} can spare ${c}`,
-    no: (f: ThirdPartyName, c: string) => personText`${f} is keeping ${c}`,
-    expired: (f: ThirdPartyName, c: string) => personText`${f} didn’t answer about ${c}`,
-    withdrawn: (f: ThirdPartyName, c: string) => personText`You withdrew your request to ${f} for ${c}`,
+    open: (friendName: ThirdPartyName, cardName: string) => personText`You asked ${friendName} for ${cardName}`,
+    yes: (friendName: ThirdPartyName, cardName: string) => personText`${friendName} can spare ${cardName}`,
+    no: (friendName: ThirdPartyName, cardName: string) => personText`${friendName} is keeping ${cardName}`,
+    expired: (friendName: ThirdPartyName, cardName: string) => personText`${friendName} didn’t answer about ${cardName}`,
+    withdrawn: (friendName: ThirdPartyName, cardName: string) => personText`You withdrew your request to ${friendName} for ${cardName}`,
   },
-  theirs: (f: ThirdPartyName, c: string, n: number) => (n > 1 ? personText`${f} asked you for ${n} ${c}` : personText`${f} asked you for ${c}`),
-  asked: (deck: string | null, on: string) => (deck ? `For ${deck} · asked ${on}` : `Asked ${on}`),
-  openMine: (deck: string | null, days: number) => `${deck ? `For ${deck} · ` : ""}still open, ${days} ${days === 1 ? "day" : "days"} left`,
-  openTheirs: (days: number) => `${days} ${days === 1 ? "day" : "days"} left. Answer it under Waiting on you.`,
+  theirs: (friendName: ThirdPartyName, cardName: string, copyCount: number) => (copyCount > 1 ? personText`${friendName} asked you for ${copyCount} ${cardName}` : personText`${friendName} asked you for ${cardName}`),
+  asked: (deck: string | null, date: string) => (deck ? `For ${deck} · asked ${date}` : `Asked ${date}`),
+  openMine: (deck: string | null, daysLeft: number) => `${deck ? `For ${deck} · ` : ""}still open, ${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`,
+  openTheirs: (daysLeft: number) => `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left. Answer it under Waiting on you.`,
   /** You have it R2: an OFFER's row. The kicker words are the ask's but for open (`Offered`); the title and the line say it is an offer. */
   offer: {
     open: "Offered",
     mine: {
-      open: (f: ThirdPartyName, c: string, n: number) => (n > 1 ? personText`You offered ${n} ${c} to ${f}` : personText`You offered ${c} to ${f}`),
-      yes: (f: ThirdPartyName, c: string) => personText`${f} said yes to ${c}`, // = spareCopy.request.offer.answered.yes
-      no: (f: ThirdPartyName, c: string) => personText`${f} passed on ${c}`, // = spareCopy.request.offer.answered.no
-      expired: (f: ThirdPartyName, c: string) => personText`${f} didn’t answer about ${c}`, // = historyCopy.mine.expired
-      withdrawn: (f: ThirdPartyName, c: string) => personText`You withdrew your offer of ${c} to ${f}`,
+      open: (friendName: ThirdPartyName, cardName: string, copyCount: number) => (copyCount > 1 ? personText`You offered ${copyCount} ${cardName} to ${friendName}` : personText`You offered ${cardName} to ${friendName}`),
+      yes: (friendName: ThirdPartyName, cardName: string) => personText`${friendName} said yes to ${cardName}`, // = spareCopy.request.offer.answered.yes
+      no: (friendName: ThirdPartyName, cardName: string) => personText`${friendName} passed on ${cardName}`, // = spareCopy.request.offer.answered.no
+      expired: (friendName: ThirdPartyName, cardName: string) => personText`${friendName} didn’t answer about ${cardName}`, // = historyCopy.mine.expired
+      withdrawn: (friendName: ThirdPartyName, cardName: string) => personText`You withdrew your offer of ${cardName} to ${friendName}`,
     },
-    openMine: (f: ThirdPartyName, days: number) => personText`${days} ${days === 1 ? "day" : "days"} left. Withdraw it from ${f}’s Wishlist tab.`,
-    offered: (on: string) => `Offered ${on}`,
-    theirs: (f: ThirdPartyName, c: string, n: number) => (n > 1 ? personText`${f} offered you ${n} ${c}` : personText`${f} offered you ${c}`),
+    openMine: (friendName: ThirdPartyName, days: number) => personText`${days} ${days === 1 ? "day" : "days"} left. Withdraw it from ${friendName}’s Wishlist tab.`,
+    offered: (date: string) => `Offered ${date}`,
+    theirs: (friendName: ThirdPartyName, cardName: string, copyCount: number) => (copyCount > 1 ? personText`${friendName} offered you ${copyCount} ${cardName}` : personText`${friendName} offered you ${cardName}`),
   },
   theirsYes: "You said yes. The handover is between you.",
   theirsNo: "You said no.",

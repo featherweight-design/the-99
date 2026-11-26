@@ -41,7 +41,7 @@ export const publicPagesCopy = {
     morePrintings: "More on Scryfall",
     /** Read aloud after the link's label; the leading space keeps the two apart. */
     opensInNewTab: " (opens in a new tab)",
-    showAll: (n: number) => `Show all ${n}`,
+    showAll: (itemCount: number) => `Show all ${itemCount}`,
     showAllCapped: "Show all 40 here",
     asCommander: (short: string) => `${short} as a commander`,
     asCommanderSub: "Rank, themes and the cards its decks run",
@@ -63,7 +63,7 @@ export const publicPagesCopy = {
     themes: "Themes",
     themesSub: "Decks tagged with each theme",
     brackets: "Brackets",
-    bracketsSub: (n: string) => `${n} of these decks say which bracket they’re built for`,
+    bracketsSub: (deckCountText: string) => `${deckCountText} of these decks say which bracket they’re built for`,
     mostPlayed: (short: string) => `Most played with ${short}`,
     mostPlayedSub: (short: string) => `Share of ${short} decks running each card`,
     similar: "Similar commanders",
@@ -81,8 +81,8 @@ export const publicPagesCopy = {
     cardTitle: (name: string) => `${name} · The 99`,
     commanderTitle: (name: string) => `${name} · Commander · The 99`,
     /** The commander's description with no prose sentence. The handoff's form, its themes part left off when there are none. */
-    commanderFallback: (rank: string, deckCount: string, themes: string | null) =>
-      `#${rank} on EDHREC across ${deckCount} decks.${themes ? ` ${themes}.` : ""}`,
+    commanderFallback: (rank: string, deckCountText: string, themes: string | null) =>
+      `#${rank} on EDHREC across ${deckCountText} decks.${themes ? ` ${themes}.` : ""}`,
     /** The commander image's figures line, as C2 draws it (`#203 on EDHREC · 11,687 decks`); a blank figure is left off. */
     ogCommanderFigures: (rank: string | null, deckCount: string | null) =>
       [rank !== null ? `#${rank} on EDHREC` : null, deckCount !== null ? `${deckCount} decks` : null].filter(Boolean).join(" · "),

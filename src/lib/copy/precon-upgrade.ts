@@ -15,9 +15,9 @@ export const preconUpgradeDeckCopy = {
   },
   /** The intro's last line, in place of `intro.lines[4]`: the deck exists, so the swaps land on it. `next` is the version its commit makes. */
   introVersions: (next: number) => ({ head: "Nothing changes until you apply the swaps.", body: `They land as changes since v0, and you commit them as v${next}.` }),
-  apply: (n: number) => `Apply these ${n} swaps`,
+  apply: (swapCount: number) => `Apply these ${swapCount} swaps`,
   applying: "Applying…",
-  applied: (n: number, leads: string | null) => (leads ? `Applied ${n} swaps. ${leads} leads.` : `Applied ${n} swaps.`),
+  applied: (swapCount: number, leads: string | null) => (leads ? `Applied ${swapCount} swaps. ${leads} leads.` : `Applied ${swapCount} swaps.`),
   undo: "Undo",
   applyFailed: "Those swaps didn’t apply. Your deck hasn’t changed.",
   undoFailed: "We couldn’t undo those swaps. The deck is unchanged.",
@@ -32,7 +32,7 @@ export const preconUpgradeDeckCopy = {
 export const preconUpgradeCopy = {
   entry: {
     press: "Upgrade this precon",
-    running: (s: string, clock: string) => `Upgrading toward ${s} · ${clock}`,
+    running: (strategyName: string, clock: string) => `Upgrading toward ${strategyName} · ${clock}`,
   },
   flow: {
     title: (precon: string) => `Upgrade ${precon}`,
@@ -55,7 +55,7 @@ export const preconUpgradeCopy = {
       { icon: "credit", head: "2 credits a run.", body: "If it doesn’t come through, or finds fewer than 12, both come back." },
       { icon: "versions", head: "Nothing changes until you start a deck from it.", body: "That makes a new draft; the box stays its v0." },
     ],
-    standing: (lot: string) => `${lot} · this run uses 2`,
+    standing: (balanceText: string) => `${balanceText} · this run uses 2`,
     // Under `2 credits a run.` when only more credits can fund a run (addendum credits, call 1), in --warning. `standing`
     // steps aside then, so the shortfall is said once on the intro.
     shortMore: "A free credit covers 1, so you’ll need more credits to run one.",
@@ -64,8 +64,8 @@ export const preconUpgradeCopy = {
   commander: {
     q: "Who leads the deck?",
     sub: "Both come in the box. Each one leads toward different strategies, so this comes first.",
-    manaValue: (n: number) => `mana value ${n}`,
-    backing: (n: number) => `${n} of its cards back it`,
+    manaValue: (manaValue: number) => `mana value ${manaValue}`,
+    backing: (cardCount: number) => `${cardCount} of its cards back it`,
     directions: (list: string) => `directions: ${list}`,
     boxOwn: "the box’s commander",
     alternateSource: "a foil in the box · in its 99",
@@ -73,7 +73,7 @@ export const preconUpgradeCopy = {
   },
   bracket: {
     q: "How strong should it play?",
-    sub: (n: number) => `The box plays at bracket ${n}. Stay there and tighten it, or move up.`,
+    sub: (bracket: number) => `The box plays at bracket ${bracket}. Stay there and tighten it, or move up.`,
     boxOwn: "where the box plays",
     blurbs: {
       2: "Stay where the box plays. The swaps make it smoother and more focused, with no Game Changers and no fast combos.",
@@ -84,24 +84,24 @@ export const preconUpgradeCopy = {
   },
   strategy: {
     q: "Where should it go?",
-    sub: (c: string, b: number) => `Worked out for ${c} at bracket ${b}, from the deck’s own cards.`,
-    count: (n: number) => `${n} of its cards`,
-    more: (n: number) => `and ${n} more`,
+    sub: (commanderName: string, bracket: number) => `Worked out for ${commanderName} at bracket ${bracket}, from the deck’s own cards.`,
+    count: (cardCount: number) => `${cardCount} of its cards`,
+    more: (moreCount: number) => `and ${moreCount} more`,
     none: "Choose a strategy.",
-    press: (s: string) => `Upgrade toward ${s}`,
+    press: (strategyName: string) => `Upgrade toward ${strategyName}`,
     // One line at any credit standing (Hugh, 2026-11-12: it wrapped at 100 credits). The swap range is the intro's and the
     // bracket the tracker's, so this says only what the press costs and what is left (copy-review: TIGHTEN, rule 7).
-    line: (lot: string) => `uses 2 · ${lot}`,
+    line: (balanceText: string) => `uses 2 · ${balanceText}`,
     freeOnly: "An upgrade uses 2 credits, and a free credit covers 1.",
   },
   same: {
-    body: (s: string, c: string, b: number, date: string) =>
-      `You ran ${s} with ${c} at bracket ${b} on ${date}, on this same list. Another run uses 2 credits and will likely name many of the same swaps.`,
+    body: (strategyName: string, commanderName: string, bracket: number, date: string) =>
+      `You ran ${strategyName} with ${commanderName} at bracket ${bracket} on ${date}, on this same list. Another run uses 2 credits and will likely name many of the same swaps.`,
     run: "Run it again",
     open: (date: string) => `Open ${date}’s`,
   },
   wait: {
-    finding: (s: string) => `Finding swaps toward ${s}`,
+    finding: (strategyName: string) => `Finding swaps toward ${strategyName}`,
     usual: "usually about 6 seconds",
     leave: "Leave whenever you like: the upgrade keeps going and shows here when it’s done.",
     held: "Running · 2 credits held",
@@ -110,52 +110,52 @@ export const preconUpgradeCopy = {
   },
   failed: { line: "That upgrade didn’t come through. Both credits are back.", retry: "Try again", retryLine: "2 credits · same picks" },
   results: {
-    title: (n: number, s: string) => `${n} swaps toward ${s}`,
-    led: (c: string) => `led by ${c}`,
+    title: (swapCount: number, strategyName: string) => `${swapCount} swaps toward ${strategyName}`,
+    led: (commanderName: string) => `led by ${commanderName}`,
     asChosen: "as chosen", // appended to suggestedChangesV2Copy.bar's bracket line
-    buy: (n: number, total: string) => `${n} to buy · ${total}`,
+    buy: (cardCount: number, totalPrice: string) => `${cardCount} to buy · ${totalPrice}`,
     cap: "each under $12",
-    owned: (n: number) => `${n} you own`,
+    owned: (cardCount: number) => `${cardCount} you own`,
     commanderGroup: "Commander",
     commanderAside: "your pick · not one of the swaps",
     toThe99: "to the 99",
     leads: "leads",
-    commanderWhy: (alt: string, box: string) => `${box} takes ${alt}’s place in the 99.`,
+    commanderWhy: (newCommanderName: string, boxCommanderName: string) => `${boxCommanderName} takes ${newCommanderName}’s place in the 99.`,
     facts: { ledBy: "Led by", bracket: "Bracket", toBuy: "To buy", yours: "Already yours" },
     listChanged: "The precon’s list changed after this upgrade, so it can’t start a deck.",
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
     cutsFromRest: "Cuts from the rest of the deck", // not in the handoff: a cut no strategy claims has no theme to name (extrapolated, orchestrator-approved)
-    start: (n: number) => `Start the deck with these ${n} swaps`,
+    start: (swapCount: number) => `Start the deck with these ${swapCount} swaps`,
     another: "Try another strategy",
     anotherCost: "2 credits", // drawn inside the Try another strategy button
-    short: (b: number, n: number) => `Fewer than 12 fit at bracket ${b}, so both credits are back. You can still start with these ${n}.`,
+    short: (bracket: number, swapCount: number) => `Fewer than 12 fit at bracket ${bracket}, so both credits are back. You can still start with these ${swapCount}.`,
   },
   start: {
-    with: (c: string, n: number, s: string) => `Led by ${c}, with the ${n} ${n === 1 ? "swap" : "swaps"} toward ${s}. The precon as it came stays your deck’s v0, so you can always see what changed.`,
+    with: (commanderName: string, swapCount: number, strategyName: string) => `Led by ${commanderName}, with the ${swapCount} ${swapCount === 1 ? "swap" : "swaps"} toward ${strategyName}. The precon as it came stays your deck’s v0, so you can always see what changed.`,
     /** The commander row's second line when the alternate leads: its colors, then where the box's own commander went. */
-    commanderSub: (ident: string, box: string) => `${ident} · ${box} in the 99`,
+    commanderSub: (ident: string, boxCommanderName: string) => `${ident} · ${boxCommanderName} in the 99`,
     /** The Bracket fact: the box's reading to the run's, in the player's own words (`as chosen`). The same bracket reads once. */
     bracketFact: (before: number | null, after: number, name: string) => `${before !== null && before !== after ? `${before} → ${after}` : after} · ${name}, as chosen`,
     /** A refusal: the run no longer fits the precon (its list moved, the run is gone, or the switch is off). */
     unavailable: "This upgrade no longer fits the precon’s list. Run a new one to start from it.",
-    commanderFact: (c: string, box: string) => `${c} · ${box} moves into the 99`,
+    commanderFact: (commanderName: string, boxCommanderName: string) => `${commanderName} · ${boxCommanderName} moves into the 99`,
     facts: { commander: "Commander", bracket: "Bracket" },
-    cardsValue: (n: number) => `all 100 · ${n} swapped`,
-    printingsValue: (n: number) => `this precon’s copies; yours for the ${n} added`,
+    cardsValue: (swapCount: number) => `all 100 · ${swapCount} swapped`,
+    printingsValue: (addedCount: number) => `this precon’s copies; yours for the ${addedCount} added`,
   },
   history: {
     link: "History",
     title: "History",
     sub: "your past upgrades of this precon · newest first",
-    row: (s: string, c: string, b: number | null) => `${s} · led by ${c}${b === null ? "" : ` · bracket ${b}`}`,
-    swaps: (n: number) => `${n} swaps`,
-    short: (n: number) => `${n} swaps · credits back`,
+    row: (strategyName: string, commanderName: string, bracketNumber: number | null) => `${strategyName} · led by ${commanderName}${bracketNumber === null ? "" : ` · bracket ${bracketNumber}`}`,
+    swaps: (swapCount: number) => `${swapCount} swaps`,
+    short: (swapCount: number) => `${swapCount} swaps · credits back`,
     foot: "Kept on your account. Opening an upgrade uses no credit.",
     empty: { head: "No upgrades yet", body: "Each upgrade you run on this precon is kept here." },
     back: "‹ History",
     backLink: "‹ Back",
     newUpgrade: "New upgrade",
-    cost: (lot: string) => `2 credits a run · ${lot}`,
+    cost: (balanceText: string) => `2 credits a run · ${balanceText}`,
     /** The start screen's kicker over the newest kept run, in the month heads' style (addendum fresh start, call 2). */
     kicker: "Your last upgrade",
     /** The row's second line, after the swaps: where the run went (call 4). */
@@ -164,6 +164,6 @@ export const preconUpgradeCopy = {
     /** The dashed note over a run already in a deck, opened from the start screen or History (call 5). */
     usedNote: (deck: string) => `Already in ${deck}. Opening it again uses no credit.`,
   },
-  ownNote: (n: number) => (n === 0 ? "Only what came in the box." : `Only what came in the box. The ${n} ${n === 1 ? "card to buy isn’t" : "cards to buy aren’t"} added.`),
-  arrival: { body: (n: number, s: string) => `Started with ${n} swaps toward ${s}. Versions shows the box as v0.` },
+  ownNote: (addedCount: number) => (addedCount === 0 ? "Only what came in the box." : `Only what came in the box. The ${addedCount} ${addedCount === 1 ? "card to buy isn’t" : "cards to buy aren’t"} added.`),
+  arrival: { body: (swapCount: number, strategyName: string) => `Started with ${swapCount} swaps toward ${strategyName}. Versions shows the box as v0.` },
 } as const;

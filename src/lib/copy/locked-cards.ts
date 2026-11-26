@@ -16,7 +16,7 @@ export const lockedCardsCopy = {
     /** Stands in the key line's place while the mode is on, followed by `count`. */
     line: "Locked cards are never suggested as cuts.",
     /** Counts locked CARDS, one per oracle id (T3), never copies. */
-    count: (n: number) => (n === 1 ? "1 locked" : `${n} locked`),
+    count: (lockedCount: number) => (lockedCount === 1 ? "1 locked" : `${lockedCount} locked`),
     /** The per-card toggle's name. `aria-pressed` carries the state; the label names the card. */
     toggleAria: (card: string) => `Lock ${card}`,
     announceLocked: (card: string) => `${card} is locked.`,
@@ -73,9 +73,9 @@ export const lockedCardsCopy = {
      * The handoff's F11(a) grammar fixed (orchestrator, 2026-09-25): a single lock reads "is" and
      * "it", and an item of one is "It", never "All 1".
      */
-    unreachable: (n: number, total: number, bracket: string) => {
-      const lead = n === total ? (total === 1 ? "It is locked." : `All ${total} are locked.`) : n === 1 ? "1 of these is locked." : `${n} of these are locked.`;
-      return `${lead} ${bracket} can\u2019t be reached while ${n === 1 ? "it is" : "they are"}.`;
+    unreachable: (lockedCount: number, total: number, bracket: string) => {
+      const lead = lockedCount === total ? (total === 1 ? "It is locked." : `All ${total} are locked.`) : lockedCount === 1 ? "1 of these is locked." : `${lockedCount} of these are locked.`;
+      return `${lead} ${bracket} can\u2019t be reached while ${lockedCount === 1 ? "it is" : "they are"}.`;
     },
   },
 } as const;

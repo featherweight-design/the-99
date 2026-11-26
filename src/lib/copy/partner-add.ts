@@ -55,14 +55,14 @@ export const partnerAddCopy = {
       `${partner} joins ${commander} in the command zone. The deck has room, so nothing leaves: ${after} of 100.`,
     // The identity block: only when the pair's colors are wider than the deck's.
     widens: (name: string) => `The deck becomes ${name}.`,
-    opens: (n: number, colors: string) => `${n} of your ${colors} cards are in their decks`,
-    opensAria: (n: number, colors: string) => `${n} of your ${colors} cards are in this pair’s decks. Show them.`,
-    opensCaption: (colors: string) => `Your ${colors} cards their decks run`,
+    opens: (cardCount: number, colorNames: string) => `${cardCount} of your ${colorNames} cards are in their decks`,
+    opensAria: (cardCount: number, colorNames: string) => `${cardCount} of your ${colorNames} cards are in this pair’s decks. Show them.`,
+    opensCaption: (colorNames: string) => `Your ${colorNames} cards their decks run`,
     opensLoading: "Looking through your cards.",
-    opensNone: (colors: string) => `You own no ${colors} cards their decks run.`,
+    opensNone: (colorNames: string) => `You own no ${colorNames} cards their decks run.`,
     cutHeading: "The card that leaves",
     cutNote: "suggested first",
-    reasonLands: (lands: number, ceiling: number) => `The deck runs ${lands} lands. With two commanders it keeps at most ${ceiling}.`,
+    reasonLands: (landCount: number, ceiling: number) => `The deck runs ${landCount} lands. With two commanders it keeps at most ${ceiling}.`,
     // Said only for a pair EDHREC holds a list for; any other pair reads the two commanders' own lists.
     reasonUnplayed: (pair: string) => `None of the ${pair} decks we read run it.`,
     reasonUnplayedEither: (commander: string, partner: string) =>
@@ -70,7 +70,7 @@ export const partnerAddCopy = {
     reasonPicked: "Your pick.",
     another: "Cut another card",
     anotherPlaceholder: "Search the 99",
-    anotherNone: (q: string) => `No card in the 99 matches “${q}”.`,
+    anotherNone: (query: string) => `No card in the 99 matches “${query}”.`,
     lands: (cut: string, commander: string) =>
       `Lands in your pending changes, not yet a version. Discard puts ${cut} back, and ${commander} leads alone again.`,
     landsRoom: (partner: string, commander: string) =>

@@ -53,11 +53,11 @@ export const recommendationsCopy = {
     // The chip. The figure lives inside the accessible name rather than on a
     // nested span — BuyTag already learned that a label on a bare span is
     // discarded. The em dash itself is aria-hidden.
-    chipAria: (name: string, pct: string) =>
-      `View details for ${name}. In ${pct}% of decks.`,
+    chipAria: (name: string, percent: string) =>
+      `View details for ${name}. In ${percent}% of decks.`,
     chipAriaNoFigure: (name: string) =>
       `View details for ${name}. No EDHREC figure.`,
-    chipFigure: (pct: string) => `${pct}%`,
+    chipFigure: (percent: string) => `${percent}%`,
     // Absence, never 0%. Drawn only where neighbouring chips carry figures.
     chipNoFigure: '—',
     chipNoFigureLegend: '— = no EDHREC figure for this card',
@@ -67,22 +67,22 @@ export const recommendationsCopy = {
 
     // Disclosure. Desktop rests on the count; the phone names the action,
     // because a 44px row with "+22 more" in it does not read as a control.
-    moreChips: (n: string) => `+${n} more`,
-    showAll: (n: string) => `Show all ${n}`,
-    showAllAria: (n: string, role: string) => `Show all ${n} ${role} cards`,
+    moreChips: (moreCountText: string) => `+${moreCountText} more`,
+    showAll: (cardCountText: string) => `Show all ${cardCountText}`,
+    showAllAria: (cardCountText: string, role: string) => `Show all ${cardCountText} ${role} cards`,
     // Expansion stops at 40, so a role holding more than that cannot show all
     // of them however the visible label reads. A sighted reader sees the
     // "+N more not shown" line the moment the panel opens; a screen reader
     // would only hear the promise, so it hears the real number instead.
-    showCappedAria: (shown: string, total: string, role: string) =>
-      `Show ${shown} of ${total} ${role} cards`,
+    showCappedAria: (shownCountText: string, totalCountText: string, role: string) =>
+      `Show ${shownCountText} of ${totalCountText} ${role} cards`,
     showFewer: 'Show fewer',
     // Four role panels each carry this control, and a screen reader lists them
     // together — four buttons all named "Show fewer" name nothing. The visible
     // label stays short because its panel is right there on screen.
     showFewerAria: (role: string) => `Show fewer ${role} cards`,
     // Past the expansion cap of 40 — a count, not a control.
-    beyondCap: (n: string) => `+${n} more not shown`,
+    beyondCap: (cardCountText: string) => `+${cardCountText} more not shown`,
 
     // Said once at the top of the section, never per chip. Two strings, because
     // FitHero's distinction is load-bearing: absent is permanent, degraded is
@@ -106,28 +106,28 @@ export const recommendationsCopy = {
     keep: 'keep ✓',
     keepAria: (name: string) => `Keep ${name} in this deck`,
     // Group heading clause, beside the shipped "{n}" count.
-    groupCount: (n: string) => `${n} auto`,
+    groupCount: (cardCountText: string) => `${cardCountText} auto`,
     // Toolbar sweep. Absent at zero — never rendered disabled.
-    clearAll: (n: string) => `Clear all auto · ${n}`,
-    clearAllMobile: (n: string) => `Clear auto · ${n}`,
-    clearAllAria: (n: string) => `Clear all ${n} untouched auto cards`,
+    clearAll: (cardCountText: string) => `Clear all auto · ${cardCountText}`,
+    clearAllMobile: (cardCountText: string) => `Clear auto · ${cardCountText}`,
+    clearAllAria: (cardCountText: string) => `Clear all ${cardCountText} untouched auto cards`,
     // Locked (L3): `clearAll(n)` counts only the copies a sweep can take, auto less locked auto,
     // and this is the name when some stay. Both figures count COPIES (audit T3).
-    clearAllAriaLocked: (n: string, locked: string) =>
-      `Clear all ${n} untouched auto cards. ${plural(locked, 'locked one stays', 'locked ones stay')}.`,
+    clearAllAriaLocked: (cardCountText: string, locked: string) =>
+      `Clear all ${cardCountText} untouched auto cards. ${plural(locked, 'locked one stays', 'locked ones stay')}.`,
     // The bulk keep, left of the sweep so the cluster reads from the safe
     // answer to the destructive one. Same words as the re-import diff's own
     // `keepAll` and a deliberately separate key: there it rescues removals,
     // here it accepts the fill's picks.
-    keepAll: (n: string) => `Keep all ${n}`,
+    keepAll: (cardCountText: string) => `Keep all ${cardCountText}`,
     // The phone drops "all" — the 390px toolbar already carries four pills and
     // the sweep. `clearAllMobile` is not reworded to match.
-    keepAllMobile: (n: string) => `Keep ${n}`,
+    keepAllMobile: (cardCountText: string) => `Keep ${cardCountText}`,
     // Says "auto cards" out loud, the way clearAllAria does: the visible
     // label's noun is carried by the tags on screen, and a reader has none.
     // Not pluralised: the aria-label has to open with the visible label, which
     // reads "Keep all 1", or voice control cannot match the control by name.
-    keepAllAria: (n: string) => `Keep all ${n} auto cards in this deck`,
+    keepAllAria: (cardCountText: string) => `Keep all ${cardCountText} auto cards in this deck`,
     // One message per settle, into the live region that carries sweptAnnounce.
     // Its second clause is keptNote's sentence, so the spoken receipt and the
     // written one agree word for word. Deck size did not change, so it is not
@@ -144,27 +144,27 @@ export const recommendationsCopy = {
     // receipt where there is. It names what is actually lost in the words the
     // ledger's own header uses, never "the ledger", which appears nowhere on
     // screen.
-    keepAllConfirm: (count: string) =>
-      `Keep all ${count}? You’ll lose the record of where they came from.`,
+    keepAllConfirm: (cardCountText: string) =>
+      `Keep all ${cardCountText}? You’ll lose the record of where they came from.`,
     // Phone shortens rather than wrapping to three lines in a toolbar. "The
     // record" alone, because the full phrase has just been established by the
     // ledger sitting a few rows up the same page.
-    keepAllConfirmMobile: (count: string) => `Keep all ${count}? The record goes too.`,
+    keepAllConfirmMobile: (cardCountText: string) => `Keep all ${cardCountText}? The record goes too.`,
     // "Keep them" rather than repeating "Keep all N": the count is in the
     // question one element away, and an answer that restates the question reads
     // as a second trigger rather than a confirmation.
     keepAllConfirmYes: 'Keep them',
     keepAllConfirmNo: 'Cancel',
     // Beside the sweep once some cards have been kept.
-    keptNote: (n: string) => `${plural(n, 'card is', 'cards are')} yours now`,
+    keptNote: (cardCountText: string) => `${plural(cardCountText, 'card is', 'cards are')} yours now`,
     // One receipt for the whole sweep — not one per row. Lifetime is decklist
     // state, per PR #204.
-    swept: (n: string) => `${plural(n, 'auto card', 'auto cards')} removed`,
+    swept: (cardCountText: string) => `${plural(cardCountText, 'auto card', 'auto cards')} removed`,
     // The receipt's second clause when locked auto cards stayed (L3), in copies (T3). No clause
     // at zero.
-    sweptLeftLocked: (n: string) => plural(n, 'locked card stayed', 'locked cards stayed'),
+    sweptLeftLocked: (cardCountText: string) => plural(cardCountText, 'locked card stayed', 'locked cards stayed'),
     sweptUndo: 'Undo',
-    sweptUndoAria: (n: string) => `Put all ${n} auto cards back`,
+    sweptUndoAria: (cardCountText: string) => `Put all ${cardCountText} auto cards back`,
     // The single live-region message. One, never one per row. `built` arrives
     // pre-formatted from `builtFragment`, which past the limit reads "104
     // cards, 5 over the 99" rather than the range "104 of 99", which a screen
@@ -197,7 +197,7 @@ export const recommendationsCopy = {
   // it states per-pass counts and never hands back a remainder.
   fill: {
     // In-flight (state 14). One announcement on settle, never per row.
-    filling: (n: string) => `Filling ${n} of 99…`,
+    filling: (cardCountText: string) => `Filling ${cardCountText} of 99…`,
     filledAnnounce: (filled: string, bought: string) =>
       `Deck filled. ${filled} of 99, ${bought} to buy.`,
     // State 15 — the deck exists, the fill did not land.
@@ -211,28 +211,28 @@ export const recommendationsCopy = {
 
   // ── Surface B · Shopping filled by the fill ───────────────────────────
   shopping: {
-    intro: (n: string) =>
-      `${n} cards we reached past your collection for, to get each role to its baseline.`,
+    intro: (cardCountText: string) =>
+      `${cardCountText} cards we reached past your collection for, to get each role to its baseline.`,
     // This surface was drawn for a list the fill produced, and the intro above
     // says so. A deck built by hand, or one the player has added unowned cards
     // to on top of the fill, holds rows nobody reached past the collection for
     // — so the list states its size and claims nothing about where the cards
     // came from. The group headings keep their gap clause either way: "closes
     // 7→10" is arithmetic about the deck, true whoever put the card on the list.
-    introUnfilled: (n: string) =>
-      `${n} cards this deck wants that your collection does not have.`,
+    introUnfilled: (cardCountText: string) =>
+      `${cardCountText} cards this deck wants that your collection does not have.`,
     // Role group heading clause. The arithmetic the group closes, stated once.
-    groupGap: (n: string, from: string, to: string) =>
-      `${n} · closes ${from}→${to}`,
+    groupGap: (cardCountText: string, fromCountText: string, targetCountText: string) =>
+      `${cardCountText} · closes ${fromCountText}→${targetCountText}`,
     // The phone Shopping row carries the figure on a meta line under the name,
     // out of the pill that used to give it context — so it is prefixed.
     // Addendum A2. The All view's row keeps 44px and prints no figure.
-    rowFigure: (pct: string) => `edhrec ${pct}%`,
+    rowFigure: (inclusionPercent: string) => `edhrec ${inclusionPercent}%`,
     // Desktop inline figure: no prefix because the percentage sits on the same
     // line as the name — its position gives it context. Phone needs the prefix
     // because the meta line is detached from the name, so "24%" alone would be
     // ambiguous. Two keys because the two widths have different needs.
-    rowFigureDesktop: (pct: string) => `${pct}%`,
+    rowFigureDesktop: (inclusionPercent: string) => `${inclusionPercent}%`,
     // Absence on its own line, with no column of figures beside it to give an
     // em dash meaning: a sentence, exactly as suggestion-tile.tsx ships it.
     rowNoFigure: 'no EDHREC figure',
@@ -242,7 +242,7 @@ export const recommendationsCopy = {
     // The trip, and not where the cards came from. The auto clause went with the Shopping row's
     // auto tag (Hugh, 2026-09-28): nothing on this list marks a card auto any more, so a count of
     // them would name a mark the reader cannot find.
-    footer: (n: string) => `${plural(n, 'card', 'cards')} to buy`,
+    footer: (cardCountText: string) => `${plural(cardCountText, 'card', 'cards')} to buy`,
     // Expressive moment 2 — a covered collection is a win, and says so.
     // Shown only when the deck was actually filled (deck.filled === true); an
     // unfilled deck that happens to own everything it lists gets emptyUncovered
@@ -278,33 +278,33 @@ export const recommendationsCopy = {
     spokenForGroupLabel: 'Spoken for',
     // The group an unowned or spoken-for commander heads the list in (H28), above every role or
     // type section. It carries no clause: a commander closes no role's gap.
-    commanderGroupLabel: (n: number) => (n > 1 ? 'Commanders' : 'Commander'),
-    spokenForGroupClause: (n: string) => `${n} · already in the deck`,
+    commanderGroupLabel: (commanderCount: number) => (commanderCount > 1 ? 'Commanders' : 'Commander'),
+    spokenForGroupClause: (cardCountText: string) => `${cardCountText} · already in the deck`,
 
     // "can’t cover" rather than "does not have": the collection does have these
     // cards. What it cannot do is cover two lists with one copy.
-    introSplit: (n: string, missing: string, spokenFor: string) =>
-      `${n} cards this deck wants that your collection can’t cover: ${missing} you don’t own, and ${
+    introSplit: (cardCountText: string, missing: string, spokenFor: string) =>
+      `${cardCountText} cards this deck wants that your collection can’t cover: ${missing} you don’t own, and ${
         spokenFor === '1' ? '1 you own but can’t spare' : `${spokenFor} you own but can’t spare`
       }.`,
     // Nothing unowned, something contested. A sentence of its own rather than
     // the split one with a zero in it: "0 you don't own" is a clause about
     // nothing.
-    introOnlySpokenFor: (n: string) =>
-      n === '1'
+    introOnlySpokenFor: (cardCountText: string) =>
+      cardCountText === '1'
         ? 'One card here is already yours, and already sleeved into a committed deck. A second copy is the only way to have both.'
-        : `${n} cards here are already yours, and already sleeved into committed decks. A second copy of each is the only way to have both.`,
+        : `${cardCountText} cards here are already yours, and already sleeved into committed decks. A second copy of each is the only way to have both.`,
 
     // The leading figure stops being "cards to buy" the moment the list holds
     // two kinds of purchase, so it becomes the plain size of the list.
     // The middle clause agrees with its own count — `2 a 2nd copy` is not a
     // phrase — and borrows `footerOnlySpokenFor`'s spelled-out noun rather than
     // the plate's `2nd`, which cannot take a plural without reading as a date.
-    footerSplit: (n: string, missing: string, spokenFor: string) =>
-      `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)}`,
+    footerSplit: (cardCountText: string, missing: string, spokenFor: string) =>
+      `${cardCountText} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)}`,
     // Nothing unowned. `{n} cards to buy` would be wrong about all of them.
-    footerOnlySpokenFor: (n: string) =>
-      `${n} ${secondCopies(n)} · already in the deck`,
+    footerOnlySpokenFor: (cardCountText: string) =>
+      `${cardCountText} ${secondCopies(cardCountText)} · already in the deck`,
   },
 
   // ── Surface B · swept back to the commander (expressive moment 3) ─────

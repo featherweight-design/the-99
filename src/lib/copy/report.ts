@@ -48,7 +48,7 @@ export const checkInCopy = {
   rating: "How’s it working for you?",
   /** One word per card of the hand, by index; the stored rating stays 1 to 5. */
   ratingWords: ["Rough", "Meh", "Okay", "Good", "Love it"],
-  ratingAria: (n: number, word: string) => `${n} of 5, ${word}`,
+  ratingAria: (rating: number, word: string) => `${rating} of 5, ${word}`,
   uses: "What do you use most?",
   pickAny: "pick any",
   useOptions: ["Collection", "Commanders", "Decks", "Shopping", "Friends", "Precons"],

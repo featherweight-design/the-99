@@ -37,7 +37,7 @@ export const pushCopy = {
       yes: { title: spareCopy.request.mine.canSpare, body: "The handover is between you." },
       no: { title: spareCopy.request.mine.keeping, body: "Your requests are in Friends." },
     },
-    combo: { title: "You can make a combo", body: (a: string, b: string, added: string) => `${a} + ${b}. ${feedCopy.home.line.combo(added)}` },
+    combo: { title: "You can make a combo", body: (firstCardName: string, secondCardName: string, added: string) => `${firstCardName} + ${secondCardName}. ${feedCopy.home.line.combo(added)}` },
     // Copy-reviewed (seat push). The board's words (Rule 0 revisions, Notice board, item 6), kept verbatim: the toast's sentence
     // is the title; the body is the deck the seat holds, or the nudge to pick one. Host and pod are the readers' own words.
     // The push title has no trailing period, as the board's lock-screen and banner drawings show (the in-app toast keeps its own).
@@ -62,8 +62,8 @@ export const pushCopy = {
       body: (deck: string) => `Log your game: ${deck} and every seat are filled in.`,
       splitBody: (pod: string, deck: string) => `From ${pod}\u2019s table. ${deck} and every seat are filled in.`,
       many: {
-        title: (n: number, pod: string) => `${n} games at ${pod}\u2019s table`,
-        splitTitle: (n: number) => `${n} games to log`,
+        title: (gameCount: number, pod: string) => `${gameCount} games at ${pod}\u2019s table`,
+        splitTitle: (gameCount: number) => `${gameCount} games to log`,
         /** Two games whose winners are both drawn: `You won, then Sam did.` Otherwise, and for three or more, no names. */
         body: (first: LogResult, second: LogResult | null) => (second && first.kind !== "draw" && first.kind !== "unknown" && second.kind !== "draw" && second.kind !== "unknown"
           ? `${first.winner} won, then ${second.kind === "you" ? "you" : second.winner} did. Log both: every seat is filled in.`
@@ -77,8 +77,8 @@ export const pushCopy = {
     // times arrive as phrases (`sale-words.ts`): `at 11 a.m.`, `Tue at 12 a.m.` (a time on another day than the push), or in the
     // store's zone with its label, `at 8 a.m. PT`.
     sale: {
-      queueTitle: (at: string) => `Pre-queue opens ${at}`,
-      saleTitle: (at: string) => `On sale ${at}`,
+      queueTitle: (queueOpensAt: string) => `Pre-queue opens ${queueOpensAt}`,
+      saleTitle: (saleStartsAt: string) => `On sale ${saleStartsAt}`,
       /** A push that lands after the sale began (a late tick): no hour to name. */
       liveTitle: "On sale now",
       queueBody: (post: string, sale: string) => `${post}. On sale ${sale} on the US store.`,
@@ -87,14 +87,14 @@ export const pushCopy = {
   },
   /** Several of one kind from one job, or what waited the night, as one notification. */
   many: {
-    newSet: { title: (n: number) => `${n} new sets are out`, body: (names: string) => `${names}.` },
-    newPrecon: { title: (n: number) => `${n} new precons are out`, body: (names: string) => `${names}.` },
-    priceDrop: { title: (n: number) => `${n} cards on your wishlist got cheaper`, body: (names: string) => `${names}.` },
-    tradeMatchOne: { title: (friend: string, n: number) => `${friend} has ${n} spares you want`, body: feedCopy.home.line.tradeMatch },
-    tradeMatchMany: { title: (n: number) => `${n} spares you want`, body: (friends: string) => `From ${friends}.` },
-    combo: { title: (n: number) => `You can make ${n} new combos`, body: "From the cards you just added." },
+    newSet: { title: (setCount: number) => `${setCount} new sets are out`, body: (setNames: string) => `${setNames}.` },
+    newPrecon: { title: (preconCount: number) => `${preconCount} new precons are out`, body: (preconNames: string) => `${preconNames}.` },
+    priceDrop: { title: (cardCount: number) => `${cardCount} cards on your wishlist got cheaper`, body: (cardNames: string) => `${cardNames}.` },
+    tradeMatchOne: { title: (friend: string, spareCount: number) => `${friend} has ${spareCount} spares you want`, body: feedCopy.home.line.tradeMatch },
+    tradeMatchMany: { title: (spareCount: number) => `${spareCount} spares you want`, body: (friendNames: string) => `From ${friendNames}.` },
+    combo: { title: (comboCount: number) => `You can make ${comboCount} new combos`, body: "From the cards you just added." },
     /** Several Wizards posts of one kind: the kind by its kicker, then the posts' titles. */
-    post: { title: (kind: AnnouncementFeedKind, n: number) => `${feedCopy.home.kicker[kind]}: ${n} new posts`, body: (titles: string) => `${titles}.` },
+    post: { title: (kind: AnnouncementFeedKind, postCount: number) => `${feedCopy.home.kicker[kind]}: ${postCount} new posts`, body: (postTitles: string) => `${postTitles}.` },
   },
   /** `Jace, Dina and 1 more`: the first two names, then the rest by count. No full stop; a body adds its own. */
   names: (names: readonly string[]): string => {
