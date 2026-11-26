@@ -6,7 +6,7 @@
 import type { ReactNode } from "react";
 import { gameHistoryCopy as copy } from "../../lib/copy/game-history";
 import { wall } from "../../lib/time/zoned";
-import { PANEL } from "../social/section-panel";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 
 const MONTH = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
@@ -58,19 +58,13 @@ export function RecordMark({ record }: { record: Record3 }) {
   );
 }
 
-/** A box: Home's heading type in the band (a diamond, then the title), the record at the end. */
+/** A games box: the shared deck box with the record at the band's end. */
 export function GameBox({ title, record, children, className = "" }: { title: string; record?: Record3; children: ReactNode; className?: string }) {
   return (
-    <section className={`${PANEL} ${className}`}>
-      <h2 className="m-0 flex min-h-[48px] items-center justify-between gap-[12px] bg-[color:var(--surface-rail)] py-[8px] pl-[14px] pr-[10px] font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:min-h-[44px] md:pl-[16px] md:pr-[14px] md:text-[17px]">
-        <span className="min-w-0">
-          <span aria-hidden className="mr-[8px] text-[color:var(--accent-text)]">◆</span>
-          {title}
-        </span>
-        {record ? <RecordMark record={record} /> : null}
-      </h2>
+    <DeckBox className={className}>
+      <DeckBoxBand title={title} aside={record ? <RecordMark record={record} /> : null} />
       {children}
-    </section>
+    </DeckBox>
   );
 }
 
@@ -117,7 +111,7 @@ export function SummaryBox({ title, record, cells, action, foot }: {
             </div>
           ) : null}
         </div>
-        {foot ? <div className="flex flex-col gap-[7px] px-[14px] py-[12px] md:px-[16px] [border-top:1px_solid_var(--border)]">{foot}</div> : null}
+        {foot ? <DeckBoxFoot>{foot}</DeckBoxFoot> : null}
       </GameBox>
     </div>
   );

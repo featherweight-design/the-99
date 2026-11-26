@@ -26,6 +26,8 @@ import { SHELF_CAP } from "../../lib/decks/shelf-cap";
 import { useFoldedShelves, useStoredKeys } from "./use-folded-shelves";
 import { shelfOpenedKey } from "../../lib/decks/shelf-fold";
 import { Chevron } from "../ui/chevron";
+import { useMinWidth } from "../ui/use-min-width";
+import { BAND_GROUND, BAND_HEIGHT, BAND_RULE, DeckBox, DeckBoxFoot } from "./deck-box";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 
 // Named once, in its own module, so the cap, the `Show all N` count, the server's
@@ -307,44 +309,50 @@ function ShelfSection({
     [shelf.suggestions],
   );
 
-  const clause = shelf.key === "unowned" ? (
-    // Two colours, so two spans — but one run, like every other shelf's. As
-    // two separate paragraphs the separator led a block of its own and a
-    // screen reader read "dot, 1 to consider" as its own sentence; inline
-    // it is punctuation between two clauses.
-    <span className={META}>
-      <span style={{ color: "var(--warning)" }}>{addPanelCopy.unowned.shelfCoverage}</span>{" "}
-      <span style={{ color: "var(--fg-muted)" }}>
-        {`· ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
-      </span>
-    </span>
-  ) : isSynergyShelf ? (
-    <span className={META} style={{ color: "var(--fg-muted)" }}>
-      {synergyCopy.shelf.meta(String(shelf.suggestions.length))}
-    </span>
-  ) : (
-    <span className={META} style={{ color: "var(--fg-muted)" }}>
-      {shelf.coverage
-        ? `${standing === "over"
+  // The coverage clause; the band carries the count ("N to consider") on its own.
+  const clauseText = shelf.key === "unowned"
+    ? addPanelCopy.unowned.shelfCoverage
+    : isSynergyShelf
+      ? synergyCopy.shelf.clause
+      : shelf.coverage
+        ? standing === "over"
           ? addPanelCopy.shelf.coverageOver(shelf.coverage.have, shelf.coverage.have - shelf.coverage.target)
-          : addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
-        : `${addPanelCopy.shelf.noTarget} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
+          : addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)
+        : addPanelCopy.shelf.noTarget;
+  const clause = (
+    <span className={META} style={{ color: shelf.key === "unowned" ? "var(--warning)" : "var(--fg-faint)" }}>
+      {clauseText}
     </span>
   );
+  const desktop = useMinWidth("(min-width: 768px)");
+  const showAllButton = !folded && overflowing ? (
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      aria-label={
+        expanded
+          ? addPanelCopy.consider.collapse
+          : addPanelCopy.consider.showAllAria(label.toLowerCase(), shelf.suggestions.length)
+      }
+      className="flex-none p-0 px-[2px] font-mono text-[11.5px] font-medium text-accent-text cursor-pointer border-none bg-transparent min-h-[44px] inline-flex items-center whitespace-nowrap"
+    >
+      {expanded ? addPanelCopy.consider.collapse : `${addPanelCopy.consider.showAll(shelf.suggestions.length)} ›`}
+    </button>
+  ) : null;
 
   return (
-    <section
+    <DeckBox
       data-testid="consider-shelf"
       data-shelf-key={shelf.key}
       aria-labelledby={labelId}
-      className={`md:mt-0 md:mb-[20px] border-t border-border-strong ${first ? "" : "mt-[16px]"}`}
+      className={first ? "!mt-0" : "!mt-[16px] md:!mt-[20px]"}
     >
-      <div className="flex items-baseline gap-[8px] md:gap-[10px] mb-[9px] md:mb-[11px] md:min-h-[44px]">
+      <div className={`flex ${BAND_HEIGHT} items-center gap-[12px] py-[4px] pl-[14px] pr-[6px] md:pl-[16px] md:pr-[10px] ${BAND_GROUND} ${folded ? "" : BAND_RULE}`}>
         {/* tabIndex -1: the coverage cell that sends the user here moves focus
             onto this heading, not just the scroll position. Never in the tab
             order — a programmatic focus target only. The disclosure button
             lives INSIDE it and carries the normal tab stop. */}
-        <h3 id={headingId} tabIndex={-1} className="m-0 flex-1">
+        <h3 id={headingId} tabIndex={-1} className="m-0 min-w-0 flex-1 font-[inherit] text-[length:inherit] leading-[inherit]">
           <button
             type="button"
             aria-expanded={!folded}
@@ -355,25 +363,16 @@ function ShelfSection({
             // already apply to their own disclosures (pre-open review).
             aria-controls={folded ? undefined : bodyId}
             onClick={() => { setPressed(true); onToggleFold(); }}
-            className="flex items-baseline gap-x-[8px] md:gap-x-[10px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
+            className="flex min-h-[44px] w-full min-w-0 items-center gap-x-[10px] p-0 border-none bg-transparent cursor-pointer text-left font-[inherit] text-[length:inherit] text-[color:inherit]"
           >
-            <Chevron kind="disclosure" open={!folded} style={{ color: "var(--fg-muted)" }} />
-            {/* Label and clause share ONE group, not two flex-wrap siblings of the
-                button: a flex-wrap item that wraps starts at the CONTAINER's edge,
-                under the chevron, not under the preceding sibling — which is not
-                what "the clause wraps under the label" means (Copilot round 2,
-                medium "previously missed"). Column on phone, row from `md`. */}
-            <span className="flex flex-col md:flex-row md:items-baseline gap-x-[10px] gap-y-[2px]">
-              <span
-                id={labelId}
-                data-testid="shelf-label"
-                className="font-sans font-semibold text-[16px] md:text-[17px] leading-[1.2]"
-                style={{ color: "var(--fg)" }}
-              >
-                {label}
+            <span className="min-w-0">
+              <span aria-hidden className="mr-[8px] text-[color:var(--accent-text)]">◆</span>
+              <span id={labelId} data-testid="shelf-label">{label}</span>
+              <span className="ml-[10px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">
+                {addPanelCopy.shelf.count(shelf.suggestions.length)}
               </span>
-              {clause}
             </span>
+            {desktop ? clause : null}
           </button>
         </h3>
         {showYours && (
@@ -382,30 +381,29 @@ function ShelfSection({
             type="button"
             onClick={() => onSeeCards!(shelf.key as MixRole)}
             aria-label={addPanelCopy.shelf.yoursAria(shelf.coverage!.have, label.toLowerCase())}
-            className="flex-none p-0 px-[2px] font-mono text-[11.5px] text-accent-text cursor-pointer border-none bg-transparent min-h-[44px] inline-flex items-center"
+            className="flex-none p-0 px-[2px] font-mono text-[11.5px] font-medium text-accent-text cursor-pointer border-none bg-transparent min-h-[44px] inline-flex items-center whitespace-nowrap"
           >
             {addPanelCopy.shelf.yours(shelf.coverage!.have)}
           </button>
         )}
-        {!folded && overflowing && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            aria-label={
-              expanded
-                ? addPanelCopy.consider.collapse
-                : addPanelCopy.consider.showAllAria(label.toLowerCase(), shelf.suggestions.length)
-            }
-            className="ml-auto p-0 font-mono text-[11.5px] text-fg-body cursor-pointer border-none bg-transparent min-h-[44px] inline-flex items-center"
-          >
-            {expanded
-              ? addPanelCopy.consider.collapse
-              : `${addPanelCopy.consider.showAll(shelf.suggestions.length)} →`}
-          </button>
-        )}
+        {desktop ? showAllButton : null}
+        {/* The chevron at the band's far end is a second, mouse-only target for the same fold: the named
+            disclosure button above stays the one tab stop. */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden
+          onClick={() => { setPressed(true); onToggleFold(); }}
+          className="flex-none inline-flex min-h-[44px] min-w-[32px] items-center justify-center p-0 border-none bg-transparent cursor-pointer"
+        >
+          <Chevron kind="disclosure" open={!folded} style={{ color: "var(--fg-muted)" }} />
+        </button>
       </div>
+      {!desktop && !folded ? (
+        <p className="m-0 px-[14px] pt-[8px] md:px-[16px]">{clause}</p>
+      ) : null}
       {folded ? null : (
-      <ul id={bodyId} className={`${pressed ? "anim-gentle-in " : ""}grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]`}>
+      <ul id={bodyId} className={`${pressed ? "anim-gentle-in " : ""}grid grid-cols-2 gap-[12px] p-[12px] md:grid-cols-6 md:gap-[14px] md:p-[14px]`}>
         {shown.map((s) => (
           <SuggestionTile
             key={s.oracleId}
@@ -424,7 +422,10 @@ function ShelfSection({
         ))}
       </ul>
       )}
-    </section>
+      {!desktop && showAllButton ? (
+        <DeckBoxFoot className="!min-h-[44px] !flex-row !items-center !py-0 bg-[color:var(--surface-rail)]">{showAllButton}</DeckBoxFoot>
+      ) : null}
+    </DeckBox>
   );
 }
 
@@ -604,8 +605,6 @@ export function ConsiderPanel({
               Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
               behind a `Show all`, so "no Game Changer on this screen" is not "none among the
               candidates". See `AddSurfaceMarkKey`. */}
-          <AddSurfaceMarkKey className="mb-[14px]" />
-
           {shelves.map((shelf, i) => (
             <ShelfSection
               // Keyed on deckId too, not just the shelf key: `BuilderShell` is
@@ -645,6 +644,13 @@ export function ConsiderPanel({
               onSeeCards={onSeeCards}
             />
           ))}
+          <DeckBox className="!mt-[16px] md:!mt-[20px]">
+            <div className="flex flex-col gap-[8px] px-[14px] py-[12px] md:px-[16px]">
+              <AddSurfaceMarkKey />
+              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyAdd}</p>
+              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyFolded}</p>
+            </div>
+          </DeckBox>
         </>
       )}
     </section>

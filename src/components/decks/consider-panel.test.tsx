@@ -178,7 +178,8 @@ describe("ConsiderPanel — shelves", () => {
       suggestions: [suggestion({ name: "Cultivate", role: "ramp" })],
       deckCards: [deckCard("ramp", 4)],
     });
-    expect(screen.getByText(/you have 4 of 10 · 1 to consider/)).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.shelf.coverage(4, 10))).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.shelf.count(1))).toBeInTheDocument();
   });
 
   it("anchors each shelf so a coverage cell can link to it", () => {
@@ -486,8 +487,8 @@ describe("ConsiderPanel — a role at or over target (small items 11, item 2)", 
 
   it("says how far over, and keeps the shipped clause at target", () => {
     mount(mixed());
-    expect(screen.getByText("you have 5 · 2 over · 1 to consider")).toBeInTheDocument();
-    expect(screen.getByText(`you have ${TEST_MIX.cells.removal.target} of ${TEST_MIX.cells.removal.target} · 1 to consider`)).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.shelf.coverageOver(5, 2))).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.shelf.coverage(TEST_MIX.cells.removal.target, TEST_MIX.cells.removal.target))).toBeInTheDocument();
   });
 
   it("offers your N on met and over shelves only, and it opens the list without folding", () => {
@@ -725,7 +726,8 @@ describe("ConsiderPanel — unowned staples", () => {
 
     const ramp = screen.getByRole("region", { name: "Ramp" });
     expect(within(ramp).queryByText("Mana Drain")).toBeNull();
-    expect(within(ramp).getByText(/you have 4 of 10 · 1 to consider/)).toBeInTheDocument();
+    expect(within(ramp).getByText(addPanelCopy.shelf.coverage(4, 10))).toBeInTheDocument();
+    expect(within(ramp).getByText(addPanelCopy.shelf.count(1))).toBeInTheDocument();
   });
 
   it("shelves them last, under the existing EDHREC heading", () => {
@@ -743,7 +745,7 @@ describe("ConsiderPanel — unowned staples", () => {
     expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
       .toEqual(["Ramp", synergyCopy.shelf.label("Korvold"), addPanelCopy.shelf.labels.other, "Top picks for Korvold"]);
     expect(screen.getByText(addPanelCopy.unowned.shelfCoverage)).toBeInTheDocument();
-    expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Top picks for Korvold" })).getByText(addPanelCopy.shelf.count(1))).toBeInTheDocument();
   });
 
   it("draws no such shelf when the append produced nothing", () => {

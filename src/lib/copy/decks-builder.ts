@@ -76,6 +76,9 @@ export const addPanelCopy = {
     showAllAria: (role: string, n: number) =>
       `Show all ${n} ${role} ${n === 1 ? "suggestion" : "suggestions"}`,
     collapse: "Show fewer",
+    // The key row at the foot of the shelves (deck details refresh, PR 1; DRAFT, copy-review).
+    keyAdd: "Add puts the card in the deck · Add · to buy also puts it on Shopping",
+    keyFolded: "folded shelves stay folded on this deck",
   },
 
   // ── Coverage strip — the cell is the link (#184) ──────────────────────
