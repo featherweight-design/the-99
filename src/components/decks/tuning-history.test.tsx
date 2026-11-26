@@ -155,7 +155,14 @@ describe("HistoryList", () => {
     // A run in flight (History.dc `.hrow.nw`): the accent-shadow edge on the raised fill.
     expect(rowEls()[0].className).toContain("border-[var(--accent-shadow)]");
     expect(rowEls()[0].className).toContain("bg-[var(--elevated-hover)]");
-    expect(rowEls()[1].className).toContain("md:grid-cols-[114px_128px_minmax(0,1fr)_92px_76px]");
+    expect(rowEls()[1].className).toContain("md:grid-cols-[24px_150px_minmax(0,1fr)_auto_auto_70px]");
+    // Each month is a box: its band names the month, counts its runs and says what they cost; the foot closes the last.
+    const boxes = [...document.querySelectorAll("[data-history] section")];
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0].querySelector("h4")!.textContent).toContain(copy.month.runs(boxes[0].querySelectorAll("[data-history-row]").length));
+    expect(boxes[0].getAttribute("aria-labelledby")).toBe(boxes[0].querySelector("h4")!.id);
+    expect(boxes[0].textContent).not.toContain(copy.foot);
+    expect(boxes[1].textContent).toContain(copy.foot);
     // The failed row carries the failure mark before its word.
     expect(rowEls()[4].querySelector("svg path[fill-rule='evenodd']")).not.toBeNull();
     expect(screen.getByText(copy.foot)).toBeTruthy();

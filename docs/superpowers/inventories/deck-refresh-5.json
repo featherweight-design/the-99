@@ -1,0 +1,57 @@
+{
+  "feature": "Deck details refresh PR 5: History month boxes, the Versions head and precon foot (handoff design_handoff_the99_deck_details_refresh, R2-History, R3-Versions)",
+  "note": "Needs the HD - Brago fixture deck with past runs. The precon foot shows on an unlinked deck.",
+  "out": "contact-sheets/deck-refresh-5",
+  "shares": [
+    {
+      "binding": "DeckBoxBand",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "history",
+      "label": "History open: a box per month, the foot closing the last",
+      "view": "src/components/decks/tuning-history.tsx",
+      "binding": "DeckBoxBand",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        },
+        {
+          "click": "[data-tool-tile=history]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "versions",
+      "label": "Versions tab: the box, its band and the precon foot",
+      "view": "src/components/decks/version-history.tsx",
+      "binding": "DeckBoxBand",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Versions\")",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

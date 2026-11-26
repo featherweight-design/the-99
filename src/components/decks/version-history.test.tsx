@@ -151,13 +151,12 @@ describe("VersionRail", () => {
     expect(screen.queryByRole("tablist")).toBeNull();
   });
 
-  // The heading names the panel without drawing ink the canvas does not have,
-  // and at level 2 because the deck's own name is the h1 above it.
-  it("names the panel without drawing a heading", () => {
+  // The Versions box's band is the panel's heading, at level 2 because the deck's own name is the h1 above it (R3).
+  it("names the panel with its band", () => {
     mount(THREE);
     const heading = screen.getByRole("heading", { level: 2 });
-    expect(heading.textContent).toBe(copy.heading(3));
-    expect(heading.className).toContain("sr-only");
+    expect(heading.textContent).toContain(copy.band);
+    expect(heading.textContent).toContain("3");
   });
 
   // The row is the control, so its state has to be announced and not merely

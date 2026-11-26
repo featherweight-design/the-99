@@ -19,6 +19,7 @@ import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTo
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { colorWord } from "../../lib/tuning/mana-view";
 import { SegmentedSwitch } from "../ui/segmented-switch";
+import { DeckBox, DeckBoxBand } from "./deck-box";
 import { TuningToolMark } from "./tuning-tool-mark";
 
 const copy = tuningHubCopy.history;
@@ -237,8 +238,28 @@ export function TuningHistory({
   // up while a chip's page loads, All included, so the pressed chip keeps focus.
   const showChips = state.kind !== "failed" && (filter !== null || (state.kind === "loading" && state.chips === true) || (state.kind === "ok" && !empty));
 
+  const months = state.kind === "ok" ? byMonth(state.rows) : [];
+  const note = (
+    <>
+      <span className="min-w-0">{copy.foot}</span>
+      {state.kind === "ok" && state.nextCursor ? (
+        <button
+          type="button"
+          data-history-more=""
+          aria-busy={state.more === "loading" || undefined}
+          onClick={showMore}
+          className="ml-auto flex min-h-[44px] flex-none items-center whitespace-nowrap font-medium text-[var(--accent-text)] md:min-h-[30px]"
+        >
+          {copy.more}
+        </button>
+      ) : null}
+    </>
+  );
+  // The foot closes the last month's box (R2 History): the keep-for line, and Show 20 more at its end.
+  const FOOT = "flex min-h-[44px] flex-wrap items-center gap-x-[12px] bg-[color:var(--surface-rail)] px-[14px] py-[8px] text-[12.5px] text-[color:var(--fg-body)] [border-top:1px_solid_var(--border)] md:px-[16px]";
+
   return (
-    <div ref={listRef} data-history="" className="flex flex-col gap-[14px] rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
+    <div ref={listRef} data-history="" className="flex flex-col gap-[14px]">
       <div className="flex flex-wrap items-baseline gap-[10px]">
         <h3 id="history-heading" tabIndex={-1} className="font-display text-[17px] font-normal outline-none md:text-[19px]" style={{ color: "var(--fg)" }}>{tuningHubCopy.tools.history.name}</h3>
         <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{empty && filter === null ? copy.subEmpty : copy.sub}</span>
@@ -258,45 +279,36 @@ export function TuningHistory({
           ) : null}
         </div>
       ) : (
-        <>
-          <div
-            role="region"
-            aria-label={copy.regionLabel}
-            tabIndex={0}
-            className="relative -mx-[4px] flex max-h-[460px] flex-col gap-[10px] overflow-y-auto overscroll-contain border-t border-b border-t-[color:var(--border)] border-b-[color:var(--border)] px-[4px] pb-[18px] md:max-h-[420px]"
-            style={{
-              maskImage: "linear-gradient(to bottom, #000 calc(100% - 28px), transparent)",
-              WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 28px), transparent)",
-            }}
-          >
-            {byMonth(state.rows).map(([month, rows]) => (
-              <div key={month} className="flex flex-col gap-[6px]">
-                <div className="sticky top-0 z-[1] px-[2px] pt-[8px] pb-[6px] font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)", background: "var(--surface-sunken)" }}>
-                  {month}
+        <div role="region" aria-label={copy.regionLabel} className="flex flex-col gap-[14px]">
+          {months.map(([month, rows], i) => {
+            const credits = rows.reduce((n, r) => n + TIER_CREDITS[r.tier], 0);
+            const last = i === months.length - 1;
+            return (
+              <DeckBox key={month} aria-labelledby={`history-month-${i}`}>
+                <DeckBoxBand
+                  as="h4"
+                  id={`history-month-${i}`}
+                  title={month}
+                  count={copy.month.runs(rows.length)}
+                  aside={<span className="flex-none font-mono text-[11.5px] font-medium text-[color:var(--fg-faint)]">{credits > 0 ? copy.month.credits(credits) : copy.month.free}</span>}
+                />
+                <div className="flex flex-col">
+                  {rows.map((row) => (
+                    <Row key={row.id} row={row} onOpen={() => { lastOpened.current = row.id; onOpenPast(row); }} />
+                  ))}
                 </div>
-                {rows.map((row) => (
-                  <Row key={row.id} row={row} onOpen={() => { lastOpened.current = row.id; onOpenPast(row); }} />
-                ))}
-              </div>
-            ))}
-            {state.nextCursor ? (
-              <button
-                type="button"
-                data-history-more=""
-                aria-busy={state.more === "loading" || undefined}
-                onClick={showMore}
-                className="flex min-h-[44px] items-center justify-center text-[12.5px] font-medium text-[var(--accent-text)] md:min-h-[30px]"
-              >
-                {copy.more}
-              </button>
-            ) : null}
-          </div>
-          <p className="border-t border-t-[color:var(--border)] pt-[10px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{copy.foot}</p>
-        </>
+                {last ? <div className={FOOT}>{note}</div> : null}
+              </DeckBox>
+            );
+          })}
+        </div>
       )}
     </div>
   );
 }
+
+/** What a row's tier pill cost, for its month's band (`deeper` is Proposed cuts' named look, 1 credit). */
+const TIER_CREDITS: Record<HistoryTier, number> = { free: 0, credit: 1, credit2: 2, deeper: 1, refunded: 0 };
 
 function byMonth(rows: HistoryRow[]): [string, HistoryRow[]][] {
   const out: [string, HistoryRow[]][] = [];
@@ -391,19 +403,18 @@ function Row({ row, onOpen }: { row: HistoryRow; onOpen: () => void }) {
       data-outcome={row.outcome}
       onClick={onOpen}
       aria-label={`${NAME[row.tool]}, ${date}, ${copy.tier[row.tier]}, ${copy.outcome[row.outcome]}: ${request ? `${request}, ` : ""}${summary}`}
-      // History.dc `.hrow`: 114 · 128 · rest · 92 · 76 on desktop; a run in flight on `.nw`'s raised fill and accent-shadow edge.
-      className={`grid min-h-[60px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-[10px] gap-y-[6px] rounded-[9px] border px-[12px] py-[9px] text-left md:min-h-[44px] md:grid-cols-[114px_128px_minmax(0,1fr)_92px_76px] md:gap-[10px] ${
-        running ? "border-[var(--accent-shadow)] bg-[var(--elevated-hover)]" : "border-[var(--border)] bg-[var(--surface)]"
+      // R2 History `.hrow`: a flat row in its month's box, a hairline between rows. Desktop 24 · 150 · rest · tier · outcome · 70;
+      // phone 22 · rest · day, the summary under, and only a run that did not finish ok keeps its outcome pill.
+      // A run in flight on the raised fill and accent-shadow edge.
+      className={`grid min-h-[64px] grid-cols-[22px_minmax(0,1fr)_auto_auto] items-center gap-x-[10px] gap-y-[4px] px-[14px] py-[10px] text-left [border-top:1px_solid_var(--border)] first:[border-top:0] md:min-h-[52px] md:grid-cols-[24px_150px_minmax(0,1fr)_auto_auto_70px] md:gap-[14px] md:px-[16px] md:py-0 ${
+        running ? "border-[var(--accent-shadow)] bg-[var(--elevated-hover)]" : "bg-transparent"
       }`}
     >
-      <span className="col-start-2 row-start-1 whitespace-nowrap font-mono text-[11px] md:col-start-1" style={{ color: "var(--fg-faint)" }}>{date}</span>
-      <span className="col-start-1 row-start-1 flex w-[110px] items-center gap-[7px] text-[12px] font-medium md:col-start-2 md:w-auto" style={{ color: "var(--fg-body)" }}>
-        <span style={{ color: "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>
-        {copy.tool[row.tool]}
-      </span>
+      <span className="col-start-1 row-start-1 flex" style={{ color: "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>
+      <span className="col-start-2 row-start-1 min-w-0 truncate text-[13px] font-semibold md:col-start-2" style={{ color: "var(--fg)" }}>{NAME[row.tool]}</span>
       {ask ? (
         // A v2 run (History A): its request quoted and cut to one line, then asked · found · applied under it.
-        <span data-history-ask="" className="col-span-full row-start-2 flex min-w-0 flex-col text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>
+        <span data-history-ask="" className="col-start-2 col-end-5 row-start-2 flex min-w-0 flex-col text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>
           {ask.request ? (
             <span data-history-request="" className="flex min-w-0" style={{ color: "var(--fg)" }}>
               <span aria-hidden="true">“</span>
@@ -416,16 +427,17 @@ function Row({ row, onOpen }: { row: HistoryRow; onOpen: () => void }) {
           <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{summary}</span>
         </span>
       ) : (
-        <span className="col-span-full row-start-2 min-w-0 text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>{summary}</span>
+        <span className="col-start-2 col-end-5 row-start-2 min-w-0 text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1 md:truncate" style={{ color: "var(--fg-body)" }}>{summary}</span>
       )}
-      <span className="col-span-full row-start-3 justify-self-start md:col-span-1 md:col-start-4 md:row-start-1"><TierPill tier={row.tier} /></span>
+      <span className="hidden md:col-start-4 md:row-start-1 md:block"><TierPill tier={row.tier} /></span>
       <span
         data-history-outcome={row.outcome}
-        className={`col-start-3 row-start-1 flex items-center gap-[5px] justify-self-end rounded-full border px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.12em] md:col-start-5 ${outcomeClass(row.outcome, row.tier)}`}
+        className={`col-start-3 row-start-1 flex items-center gap-[5px] justify-self-end rounded-full border px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.12em] md:col-start-5 ${row.outcome === "ok" ? "max-md:hidden " : ""}${outcomeClass(row.outcome, row.tier)}`}
       >
         {row.outcome === "failed" ? <FailureMark size={13} /> : null}
         {copy.outcome[row.outcome]}
       </span>
+      <span className="col-start-4 row-start-1 whitespace-nowrap text-right font-mono text-[11px] md:col-start-6" style={{ color: "var(--fg-faint)" }}>{historyDay(row.at)}</span>
     </button>
   );
 }
