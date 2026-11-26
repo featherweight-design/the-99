@@ -34,7 +34,7 @@ export function ToolPickerTrigger({ view, open, onOpen }: { view: PickerView; op
       data-tool-picker=""
       className="flex min-h-[48px] w-full cursor-pointer items-center gap-[10px] rounded-[10px] border border-[var(--border-strong)] bg-[var(--elevated)] py-0 pl-[14px] pr-[12px] text-left font-sans"
     >
-      <span style={{ color: "var(--accent)" }}><TuningToolMark tool={view.tool} size={16} /></span>
+      <span style={{ color: "var(--accent-text)" }}><TuningToolMark tool={view.tool} size={16} /></span>
       <span className="text-[14px] font-semibold text-[var(--fg)]">{view.name}</span>
       <Chevron className="text-[11px] text-[var(--fg-muted)]" />
       {view.status ? (
@@ -93,7 +93,7 @@ function PickerRow({ mark, name, line, on = false, inert = false, running = fals
         <span className="text-[14px] font-semibold" style={{ color: inert ? "var(--fg-faint)" : "var(--fg)" }}>{name}</span>
         <span className="text-[12px] leading-[1.4]" style={{ color: running ? "var(--accent-text)" : inert ? "var(--fg-faint)" : "var(--fg-muted)" }}>{line}</span>
       </span>
-      {on ? <span aria-hidden="true" className="w-[16px] flex-none font-mono text-[14px]" style={{ color: "var(--accent)" }}>✓</span> : null}
+      {on ? <span aria-hidden="true" className="w-[16px] flex-none font-mono text-[14px]" style={{ color: "var(--accent-text)" }}>✓</span> : null}
     </>
   );
   if (inert) {
