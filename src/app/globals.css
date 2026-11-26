@@ -1179,13 +1179,16 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: var(--enter-opacity, 0.5); transform: translateX(var(--enter-x, 0)) scale(var(--enter-scale, 0.7375)); }
   to { opacity: 1; transform: none; }
 }
-.anim-phone-card-enter { animation: phone-card-enter var(--motion-duration) var(--motion-ease-out) var(--enter-delay, var(--motion-delay)) backwards; }
+.anim-phone-card-enter { animation: phone-card-enter var(--motion-duration) var(--motion-ease-out) var(--motion-delay) backwards; }
 /* The card just left shrinks into its peek from where the swipe let it go, on the same glide (Hugh, 2026-10-28). No
    `to`: it settles at the peek's own .5. */
 @keyframes phone-peek-enter {
   from { opacity: var(--enter-opacity, 1); transform: translateX(var(--enter-x, 0)) scale(var(--enter-scale, 1)); }
 }
-.anim-phone-peek-enter { animation: phone-peek-enter var(--motion-duration) var(--motion-ease-out) var(--enter-delay, var(--motion-delay)) backwards; }
+.anim-phone-peek-enter { animation: phone-peek-enter var(--motion-duration) var(--motion-ease-out) var(--motion-delay) backwards; }
+/* A swipe's release goes straight into the glide (Hugh, 2026-11-26): the finger has already moved the card, so the beat the two
+   classes above carry would be a hold with nothing under the finger. Rides with them on a swipe's arrival only. */
+.anim-release-enter { animation-delay: 0s; }
 
 /* THE SWIPE IS ONE MOTION (Hugh, 2026-10-28). As a horizontal drag carries the band, the gesture writes how far the swap
    has got on the stage (`--swipe-out` 0 to 1; `--swipe-next`, `--swipe-prev` for the side coming in): the card shrinks

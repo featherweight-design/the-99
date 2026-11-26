@@ -63,6 +63,13 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     expect(rule(selector)).toBe(`animation: ${animation};`);
   });
 
+  it("lets a swipe's release skip the arrival's beat with its own class, leaving the ratified two as they are", () => {
+    expect(rule(".anim-release-enter")).toBe("animation-delay: 0s;");
+    // After both, so it wins on equal specificity.
+    expect(CSS.indexOf(".anim-release-enter {")).toBeGreaterThan(CSS.indexOf(".anim-phone-peek-enter {"));
+    expect(CSS.indexOf(".anim-phone-peek-enter {")).toBeGreaterThan(CSS.indexOf(".anim-phone-card-enter {"));
+  });
+
   it("turns the landing tip's entrance off from 48rem (768px, Tailwind's md), where the tip floats as shipped (public landing A4, call 2)", () => {
     expect(CSS).toMatch(/@media \(min-width: 48rem\) \{\s*\.anim-tip-in \{ animation: none; \}\s*\}/);
   });
