@@ -156,9 +156,9 @@ export function PriceStrip({
           <div className={cellClass}>
             <span className={labelClass} style={{ color: "var(--fg-faint)" }}>{box.over(limitFigure)}</span>
             <span className="text-[17px] font-semibold" style={{ color: "var(--fg)" }}>{box.overValue(overCount)}</span>
-            <span className={noteClass} style={{ color: "var(--fg-faint)" }}>
-              {[box.overNote(limitFigure), ...(tools.storedLimitCents === null ? [swapToolsCopy.limit.defaultChip] : [])].join(" · ")}
-            </span>
+            {tools.storedLimitCents === null ? (
+              <span className={noteClass} style={{ color: "var(--fg-faint)" }}>{swapToolsCopy.limit.defaultChip}</span>
+            ) : null}
           </div>
         ) : null}
         <div className={`${cellClass} ${tools ? "col-span-2 md:col-span-1 max-md:[border-left:0] max-md:[border-top:1px_solid_var(--border)]" : ""}`}>

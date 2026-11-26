@@ -75,7 +75,6 @@ export const priceCopy = {
       /** The Over cell's label, naming the deck's limit (`$10` by default). */
       over: (figure: string) => `Over ${figure}`,
       overValue: (n: number) => (n === 0 ? "none" : n === 1 ? "1 card" : `${n} cards`),
-      overNote: (figure: string) => `marked over ${figure}`,
     },
   },
 
