@@ -19,7 +19,7 @@ import { useGotIt } from "./got-it";
 import { ShoppingKeyOver } from "./shopping-key";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
-export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: number; overCount: number }) {
+export function StandInLimit({ shoppingCount, overCount, countInBox = false }: { shoppingCount: number; overCount: number; countInBox?: boolean }) {
   const tools = useSwapTools();
   const gotIt = useGotIt();
   const [editing, setEditing] = useState(false);
@@ -135,10 +135,12 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
         )}
         {/* The separator travels with the count in one item, so a wrap never leaves it dangling
             at the end of the first line (the phone's editing state wraps here). */}
-        <span className="inline-flex items-center gap-[8px] font-mono text-[11px] whitespace-nowrap" style={{ color: "var(--fg-muted)" }}>
-          <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
-          {overCount > 0 ? copy.limit.overCount(overCount) : copy.limit.noneOver(figure)}
-        </span>
+        {countInBox ? null : (
+          <span className="inline-flex items-center gap-[8px] font-mono text-[11px] whitespace-nowrap" style={{ color: "var(--fg-muted)" }}>
+            <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
+            {overCount > 0 ? copy.limit.overCount(overCount) : copy.limit.noneOver(figure)}
+          </span>
+        )}
       </form>
       {invalid ? (
         <p id={errorId} role="alert" className="m-0 font-mono text-[10px]" style={{ color: "var(--warning)" }}>

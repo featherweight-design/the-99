@@ -28,6 +28,9 @@ import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/groupi
 
 // Moved to `mark-key-entries.tsx` so the landing demo can draw the same key; re-exported for the callers and tests that import it here.
 export { buildMarkKeyEntries };
+
+/** The keys' box at the foot of a list (R3-YourDeck): a hairline box that vanishes when no key draws. */
+const KEYS_FOOT = "mt-[14px] flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
 import { printedNameOf } from "../../lib/collection/browse";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
@@ -65,6 +68,7 @@ import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
 import { MarkKey } from "./mark-key";
+import { ShoppingKey } from "./shopping-key";
 import { buildMarkKeyEntries } from "./mark-key-entries";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -1005,9 +1009,6 @@ export function Decklist({
           />
           <DeckBarPanel value={filter}>
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-            {keyLine}
-          </div>
-          <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
           </div>
           {filled ? (
@@ -1042,6 +1043,7 @@ export function Decklist({
           <div className="px-[16px] pb-[4px] md:px-[26px]">
             <TokensShoppingGroup />
           </div>
+          <div data-keys-foot="" className={`${KEYS_FOOT} mx-[16px] md:mx-[26px] mb-[14px]`}>{keyLine}</div>
           </DeckBarPanel>
         </div>
       );
@@ -1108,10 +1110,6 @@ export function Decklist({
         />
         <DeckBarPanel value={filter}>
 
-        <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-          {keyLine}
-        </div>
-
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
           {autoBanner}
 
@@ -1159,6 +1157,7 @@ export function Decklist({
                 label={label}
                 count={cardCopies(groupCards.filter(notSpent))}
                 gapClause={gapClause}
+                diamond
               />
               <div
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
@@ -1202,6 +1201,12 @@ export function Decklist({
 
           {/* The tokens joined to this deck: last, and not the deck's (they move none of the figures above). */}
           <TokensShoppingGroup />
+
+          {/* The keys close the list (R3-YourDeck): the buy and over marks, then the marks the rows draw. */}
+          <div data-keys-foot="" className={KEYS_FOOT}>
+            <ShoppingKey shoppingCount={shoppingCount} />
+            {keyLine}
+          </div>
 
           {/* Footer — above a 1px --border rule */}
           <div
@@ -1262,10 +1267,6 @@ export function Decklist({
       {/* The decoder, on the PRIMARY view. It was in the Shopping branch alone,
           which is the one view a printed card is never in — so the surface that
           actually draws `P` had nothing to decode it. */}
-      <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-        {keyLine}
-      </div>
-
       {/* Grouped card rows */}
       <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
         {/* A refused sweep, keep-all or undo. Each message names its own write:
@@ -1361,6 +1362,9 @@ export function Decklist({
         {/* The tokens these cards make: not the deck, after every group of it. Draws nothing without the
             provider, so the list is exactly itself wherever the switch is off. */}
         <TokensGroup />
+
+        {/* The key closes the list (R3-YourDeck), in its own box. */}
+        <div data-keys-foot="" className={KEYS_FOOT}>{keyLine}</div>
       </HoverPreviewProvider>
       </DeckBarPanel>
     </div>

@@ -11,7 +11,12 @@
 // the buy link on the left — easily missed, and a second arrangement someone
 // could drift from the phone's. It now reuses the phone's column exactly.
 
+import { useId } from "react";
 import { priceCopy } from "../../lib/copy/price";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { formatLimit } from "../../lib/swaps/limit";
+import { useSwapTools } from "../../lib/swaps/context";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 import { tokensCopy } from "../../lib/copy/tokens";
 import type { TokenShopping } from "../../lib/tokens/shopping";
 import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
@@ -30,6 +35,7 @@ export function PriceStrip({
   tokens = null,
   tokenProvenance = null,
   tokenOwnProvenance = null,
+  overCount = 0,
 }: {
   summary: PriceSummary;
   /** Null when the table is empty or the read failed — the strip renders nothing. */
@@ -50,8 +56,12 @@ export function PriceStrip({
   tokenProvenance?: ProvenanceForm | null;
   /** The tokens' own price date: what dates a figure the cards contribute no priced copy to. */
   tokenOwnProvenance?: ProvenanceForm | null;
+  /** Shopping rows over the deck's limit: the Over cell's figure. The cell is drawn with the swap tools alone. */
+  overCount?: number;
 }) {
   const store = useStoreInfo();
+  const tools = useSwapTools();
+  const headingId = useId();
   // The figure includes priced tokens, so it is as old as the oldest price in it. A deck whose card prices are
   // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
   // Which feeds the figure draws on: the rows that carry a price when any does, else the rows themselves.
@@ -94,102 +104,91 @@ export function PriceStrip({
   // its paste page reads names and a token's name can be a card's.
   const buyHref = store.cart ? manapoolAddDeckUrl([...shoppingCards, ...(tokens?.lines ?? [])]) : null;
 
+  const box = priceCopy.strip.box;
+  const noteClass = "m-0 font-mono text-[11px] leading-[1.5]";
+  const cellClass = "flex min-w-0 flex-col gap-[5px] px-[14px] py-[14px] md:px-[16px] [border-left:1px_solid_var(--border)] first:[border-left:0]";
+  const labelClass = "font-mono text-[10px] font-medium uppercase tracking-[.12em]";
+  const limitFigure = tools ? formatLimit(tools.limitCents) : null;
+  const behindNotes = [
+    ...(dated.behind ? [priceCopy.strip.behind] : []),
+    // Only beside a figure: why the cart the link builds can cost more than it.
+    ...(showFigure && store.cart ? [priceCopy.strip.cartNote] : []),
+  ].join(" · ");
+
   return (
-    // ONE LAYOUT, both widths (Hugh's ruling, #1222 follow-up): the figure
-    // tops the column, the provenance line and the buy link follow under it,
-    // left-aligned — the phone's own arrangement, which desktop used to
-    // reverse into a row that put the total at the far top-right and the
-    // provenance/link on the left, easily missed. No `md:` override changes
-    // this order; the only `md:` classes left are comfort padding.
-    <div
-      data-price-strip=""
-      // The bottom padding is zero: the 44px link row below supplies it, and
-      // 10px on top of a 44px target would read as a gap rather than as the
-      // row's own height.
-      className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[10px] pb-0 md:px-[15px]"
-      style={{ background: "var(--surface-sunken)" }}
-    >
-      {/* The clause cannot outlive the figure — it is a fraction OF it — so the
-          figure's own condition governs the whole line. */}
-      {showFigure ? (
-        <p className="m-0 flex items-baseline gap-[7px] font-mono">
-          <span className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
-            {formatCents(totalCents)}
+    // The To buy box (R3-YourDeck): the band's total, then Total / Over / Last checked, then the buy link in the foot.
+    // One layout for both widths still (Hugh's ruling, #1222 follow-up): the cells only reflow, two then one on a phone.
+    <DeckBox data-price-strip="" aria-labelledby={headingId} className="!mt-[10px] md:!mt-[10px]">
+      <DeckBoxBand
+        id={headingId}
+        title={box.title}
+        count={box.count(summary.totalCopies + tokenN)}
+      />
+      <div className={`grid grid-cols-2 ${tools ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        <div className={cellClass}>
+          <span className={labelClass} style={{ color: "var(--fg-faint)" }}>{box.total}</span>
+          <span className="text-[17px] font-semibold" style={{ color: "var(--fg)" }}>
+            {showFigure ? formatCents(totalCents) : box.unpriced}
           </span>
           {showClause ? (
-            <span className="text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
-              <span aria-hidden="true">{"· "}</span>
-              {priceCopy.strip.pricedClause(pricedCopies, totalCopies)}
-            </span>
+            <span className={noteClass} style={{ color: "var(--fg-faint)" }}>{priceCopy.strip.pricedClause(pricedCopies, totalCopies)}</span>
           ) : null}
-        </p>
-      ) : null}
-      {/* Where tokens are joined: the deck's own cost and the tokens' apart, under the figure that sums both. */}
-      {tokens ? (
-        <p className="m-0 font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
-          {tokensCopy.strip.split(
-            summary.totalCopies,
-            summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
-            tokenN,
-            tokens.priced > 0 ? formatCents(tokens.cents) : null,
-          )}
-        </p>
-      ) : null}
-      {/* The provenance line and the buy link stay one flex child rather than
-          two siblings of the figure — a third top-level child would be a third
-          row in the column rather than the link sitting under its own line. */}
-      <div>
-        {/* --fg-locked in both forms. Old prices are our operational problem, not
-            the player's error, and amber would spend the surface's loudest ink
-            on something nothing here can act on. */}
-        <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
-          {[
-            showFigure ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store),
-            // A market figure is an average of sales, said beside the figure it qualifies (call 4).
-            ...(showFigure && store.figure === "market" ? [storeCopy.marketNote] : []),
-            priceCopy.strip.lastChecked(dated.when),
-            ...(dated.behind ? [priceCopy.strip.behind] : []),
-            ...(showFigure && store.cart ? [priceCopy.strip.cartNote] : []),
-          ].join(" · ")}
-          <StoreDoor />
-        </p>
-        {/* The 44px is the ROW's height, never the link's box — the link stays
-            inline text, so the words get a full-height target vertically while
-            the focus ring still traces them rather than a plate. Held at both
-            widths now: a pointer loses nothing from the extra height, and it
-            is what keeps the layout one definition rather than two.
-
-            The 9px gap holds at both breakpoints. `outline` takes no layout
-            space, so the ring at 2px offset overlaps the gap rather than pushing
-            the provenance line up.
-
-            `buyHref` is null on an empty `shoppingCards`, which is not the same
-            object the totalCopies guard above reads — the invariant that ties
-            them lives in the caller, which sums the summary over the very list
-            it passes here. So this is type narrowing rather than a second
-            condition on the link, but only as long as that holds: a caller
-            passing a summary from one list and rows from another would render a
-            strip with nothing to buy from. */}
-        {!store.cart && shoppingCards.length > 0 ? (
-          <>
-            <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] ${store.paste ? "" : "pb-[11px]"}`} style={{ color: "var(--fg-muted)" }}>
-              {storeCopy.noCart(store)}
+          {tokens ? (
+            <p className={noteClass} style={{ color: "var(--fg-muted)" }}>
+              {tokensCopy.strip.split(
+                summary.totalCopies,
+                summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
+                tokenN,
+                tokens.priced > 0 ? formatCents(tokens.cents) : null,
+              )}
             </p>
-            <StorePasteRow store={store} lines={shoppingCards} />
-          </>
-        ) : null}
-        {buyHref ? (
-          <div className="mt-[9px] flex min-h-[44px] items-center">
-            <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
+          ) : null}
+          <p className={noteClass} style={{ color: "var(--fg-locked)" }}>
+            {[
+              showFigure ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store),
+              // A market figure is an average of sales, said beside the figure it qualifies (call 4).
+              ...(showFigure && store.figure === "market" ? [storeCopy.marketNote] : []),
+            ].join(" · ")}
+            <StoreDoor />
+          </p>
+        </div>
+        {tools && limitFigure ? (
+          <div className={cellClass}>
+            <span className={labelClass} style={{ color: "var(--fg-faint)" }}>{box.over(limitFigure)}</span>
+            <span className="text-[17px] font-semibold" style={{ color: "var(--fg)" }}>{box.overValue(overCount)}</span>
+            <span className={noteClass} style={{ color: "var(--fg-faint)" }}>
+              {[box.overNote(limitFigure), ...(tools.storedLimitCents === null ? [swapToolsCopy.limit.defaultChip] : [])].join(" · ")}
+            </span>
           </div>
         ) : null}
-        {/* What the link sends, said once: cards by name and quantity, tokens by set and number. */}
-        {buyHref && tokens ? (
-          <p className="m-0 pb-[10px] font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
-            {tokensCopy.strip.sends(shoppingCards.length, tokens.lines.length)}
-          </p>
-        ) : null}
+        <div className={`${cellClass} ${tools ? "col-span-2 md:col-span-1 max-md:[border-left:0] max-md:[border-top:1px_solid_var(--border)]" : ""}`}>
+          <span className={labelClass} style={{ color: "var(--fg-faint)" }}>{box.lastChecked}</span>
+          <span className="text-[15px] font-semibold" style={{ color: "var(--fg)" }}>{dated.when}</span>
+          {behindNotes ? <span className={noteClass} style={{ color: "var(--fg-locked)" }}>{behindNotes}</span> : null}
+        </div>
       </div>
-    </div>
+      {/* The 44px is the ROW's height, never the link's box: the link stays inline text with a full-height target. */}
+      {!store.cart && shoppingCards.length > 0 ? (
+        <DeckBoxFoot>
+          <p data-no-cart="" className="m-0 text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
+            {storeCopy.noCart(store)}
+          </p>
+          <StorePasteRow store={store} lines={shoppingCards} />
+        </DeckBoxFoot>
+      ) : null}
+      {buyHref ? (
+        <DeckBoxFoot className="!gap-0 !py-0">
+          <div className="flex min-h-[44px] items-center">
+            <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
+          </div>
+          {/* What the link sends, said once: cards by name and quantity, tokens by set and number. */}
+          {tokens ? (
+            <p className="m-0 pb-[10px] font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+              {tokensCopy.strip.sends(shoppingCards.length, tokens.lines.length)}
+            </p>
+          ) : null}
+        </DeckBoxFoot>
+      ) : null}
+    </DeckBox>
   );
 }

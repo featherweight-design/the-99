@@ -50,6 +50,13 @@ interface DecklistGroupHeaderProps {
    * for a group that never folds, which is every other.
    */
   toggle?: { open: boolean; onToggle: () => void; panelId: string };
+  /**
+   * The deck refresh's bare head (R3-YourDeck, the All and Shopping lists): a diamond, the display face and the
+   * mono count, 18px above and 10px below, with no hairline under it. A Shopping group keeps its gap clause where
+   * the count sits (it carries the count itself). Off for the pass sheet and the review page, which keep the
+   * shipped head.
+   */
+  diamond?: boolean;
 }
 
 export function DecklistGroupHeader({
@@ -64,19 +71,25 @@ export function DecklistGroupHeader({
   gapClause,
   autoCount = 0,
   toggle,
+  diamond = false,
 }: DecklistGroupHeaderProps) {
   // The mobile gap was absent, not zero by intent: "Lands 1" rendered as
   // "Lands1". 6px matches the tab's own label/count pairing.
   // Shopping groups use mono 10px --accent-text for the label; normal groups use the
   // standard sans/display weight.
-  const labelClass = gapClause
+  const labelClass = diamond
+    ? "font-display font-semibold text-[15px] md:text-[16px] leading-[1.2] m-0"
+    : gapClause
     ? "font-mono text-[10px] m-0 uppercase tracking-[.14em]"
     : "font-sans md:font-display font-semibold text-[12.5px] md:text-[15px] m-0";
-  const labelColor = gapClause ? "var(--accent-text)" : "var(--fg)";
+  const labelColor = gapClause && !diamond ? "var(--accent-text)" : "var(--fg)";
 
   return (
-    <div className={`flex items-baseline ${note && noteEveryWidth ? "justify-start md:justify-between" : "justify-between"} mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-b-[color:var(--border)] md:border-[color:var(--border)]`}>
-      <div className="flex items-baseline gap-[6px] md:gap-[10px]">
+    <div
+      className={`flex ${diamond ? "items-center pt-[18px] pb-[10px]" : "items-baseline mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-b-[color:var(--border)] md:border-[color:var(--border)]"} ${note && noteEveryWidth ? "justify-start md:justify-between" : "justify-between"}`}
+    >
+      <div className={`flex ${diamond ? "items-center gap-[9px]" : "items-baseline gap-[6px] md:gap-[10px]"}`}>
+        {diamond ? <span aria-hidden className="text-[8px] leading-none text-[color:var(--accent-text)]">◆</span> : null}
         {headingId ? (
           // Labelled rather than left to its text content, so the count is part
           // of the one announcement — "Couldn't identify · 2" — instead of
@@ -111,15 +124,15 @@ export function DecklistGroupHeader({
         {/* Shopping: gap clause (e.g. "1 · closes 2→10") in --fg-faint beside label. */}
         {gapClause ? (
           <span
-            className="font-mono text-[10px]"
-            style={{ color: "var(--fg-faint)" }}
+            className={diamond ? "font-mono text-[10.5px] md:text-[11px]" : "font-mono text-[10px]"}
+            style={{ color: diamond ? "var(--accent-text)" : "var(--fg-faint)" }}
           >
             {gapClause}
           </span>
         ) : count === null ? null : (
           <span
             className="font-mono text-[10px] md:text-[11px]"
-            style={{ color: countColor }}
+            style={{ color: diamond ? "var(--accent-text)" : countColor }}
             aria-hidden={headingId ? true : undefined}
           >
             {autoCount > 0

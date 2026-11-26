@@ -25,24 +25,23 @@ describe("PriceStrip provenance line", () => {
         shoppingCards={list}
       />,
     );
-    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(
-      `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("Monday")} · ${priceCopy.strip.cartNote}`,
-    );
+    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(priceCopy.strip.provenance);
+    expect(container.textContent).toContain(`${priceCopy.strip.box.lastChecked}Monday${priceCopy.strip.cartNote}`);
     // A substring, not a `RegExp` built from the copy: the clause carries
     // punctuation, which a regex would read as syntax.
     expect(container.textContent).not.toContain(priceCopy.strip.behind);
   });
 
   it("adds the behind clause when the table is behind", () => {
-    render(
+    const { container } = render(
       <PriceStrip
         summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
         provenance={behind}
         shoppingCards={list}
       />,
     );
-    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(
-      `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("12 August")} · ${priceCopy.strip.behind} · ${priceCopy.strip.cartNote}`,
+    expect(container.textContent).toContain(
+      `${priceCopy.strip.box.lastChecked}12 August${priceCopy.strip.behind} · ${priceCopy.strip.cartNote}`,
     );
   });
 
@@ -65,7 +64,7 @@ describe("PriceStrip provenance line", () => {
 // it, the provenance line and the buy link follow under it. Desktop used to
 // `flex-row-reverse` this into a row with the figure at the far end — a
 // second arrangement that put the total where it was easily missed.
-describe("PriceStrip responsive arrangement", () => {
+describe("PriceStrip arrangement", () => {
   it("renders each fact exactly once, reordering rather than duplicating", () => {
     render(
       <PriceStrip
@@ -79,23 +78,18 @@ describe("PriceStrip responsive arrangement", () => {
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
-  it("stacks the figure over the provenance and the buy link, with no row reversal at any width", () => {
-    const { container } = render(
+  it("draws one To buy box with the total, the date and the buy link in its foot", () => {
+    render(
       <PriceStrip
         summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
         provenance={fresh}
         shoppingCards={list}
       />,
     );
-    const plate = container.firstElementChild!;
-    expect(plate).toHaveClass("flex-col");
-    expect(plate.className).not.toMatch(/row-reverse|md:justify-between|md:items-baseline/);
-    // DOM order is figure then provenance, which is the reading order at every width now.
-    expect(plate.firstElementChild).toHaveTextContent("$12.40");
-
-    // The link row's own 44px target holds at both widths too — restoring its old
-    // `md:block md:min-h-0` would collapse it to the inline link's own box at desktop
-    // and pass every assertion above, since those only inspect the outer container.
+    const box = screen.getByRole("region", { name: new RegExp(priceCopy.strip.box.title) });
+    expect(box).toHaveTextContent(priceCopy.strip.box.total);
+    expect(box).toHaveTextContent(priceCopy.strip.box.lastChecked);
+    // The link row's own 44px target holds at both widths: the link stays inline text.
     const linkRow = screen.getByRole("link").parentElement!;
     expect(linkRow).toHaveClass("flex", "items-center", "min-h-[44px]");
     expect(linkRow.className).not.toMatch(/md:block|md:min-h-0/);
@@ -141,9 +135,7 @@ describe("PriceStrip figure line", () => {
     );
     expect(screen.queryByText("$0.00")).toBeNull();
     expect(screen.queryByText(priceCopy.strip.pricedClause(0, 8))).toBeNull();
-    expect(screen.getByText(/no prices from Mana Pool/)).toHaveTextContent(
-      `${priceCopy.strip.provenanceUnpriced} · ${priceCopy.strip.lastChecked("Monday")}`,
-    );
+    expect(screen.getByText(/no prices from Mana Pool/)).toHaveTextContent(priceCopy.strip.provenanceUnpriced);
     // No figure, nothing for a cart to cost more than.
     expect(screen.queryByText(new RegExp(priceCopy.strip.cartNote))).toBeNull();
   });
@@ -254,7 +246,8 @@ describe("PriceStrip by store (store choice)", () => {
 
   it("names TCGplayer's market prices with the accuracy note, and offers the list to paste instead of a cart link", () => {
     const { container } = strip("tcgplayer");
-    expect(container.textContent).toContain(`${storeCopy.provenance(STORE_INFO.tcgplayer)} · ${storeCopy.marketNote} · ${priceCopy.strip.lastChecked("Monday")}`);
+    expect(container.textContent).toContain(`${storeCopy.provenance(STORE_INFO.tcgplayer)} · ${storeCopy.marketNote}`);
+    expect(container.textContent).toContain(`${priceCopy.strip.box.lastChecked}Monday`);
     expect(container.textContent).not.toContain(priceCopy.strip.cartNote);
     expect(container.querySelector("[data-no-cart]")).toHaveTextContent(storeCopy.noCart(STORE_INFO.tcgplayer));
     expect(screen.getByRole("button", { name: storeCopy.copyAria(3) })).toBeTruthy();
@@ -263,7 +256,8 @@ describe("PriceStrip by store (store choice)", () => {
 
   it("names Card Kingdom's listings without the market note", () => {
     const { container } = strip("cardkingdom");
-    expect(container.textContent).toContain(`${storeCopy.provenance(STORE_INFO.cardkingdom)} · ${priceCopy.strip.lastChecked("Monday")}`);
+    expect(container.textContent).toContain(storeCopy.provenance(STORE_INFO.cardkingdom));
+    expect(container.textContent).toContain(`${priceCopy.strip.box.lastChecked}Monday`);
     expect(container.textContent).not.toContain(storeCopy.marketNote);
     expect(container.querySelector('[data-store-paste="cardkingdom"]')).toBeTruthy();
   });

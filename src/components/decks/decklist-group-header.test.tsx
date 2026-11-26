@@ -26,3 +26,15 @@ describe("DecklistGroupHeader's note", () => {
     expect(note.parentElement!.classList.contains("justify-between")).toBe(true);
   });
 });
+
+// The deck refresh's bare head (R3-YourDeck): a diamond and the count in the accent, no hairline under it.
+describe("DecklistGroupHeader's diamond form", () => {
+  it("draws the diamond and drops the hairline, and the shipped head keeps both rules", () => {
+    const { container, rerender } = render(<DecklistGroupHeader label="Lands" count={36} diamond />);
+    expect(container.textContent).toContain("◆");
+    expect(container.firstElementChild!.className).not.toMatch(/border-b/);
+    rerender(<DecklistGroupHeader label="Lands" count={36} />);
+    expect(container.textContent).not.toContain("◆");
+    expect(container.firstElementChild!.className).toMatch(/md:border-b/);
+  });
+});
