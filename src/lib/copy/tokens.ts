@@ -22,7 +22,7 @@ export const tokensCopy = {
   },
 
   row: {
-    type: (type: string, pt: string | null) => (pt ? `${type} · ${pt}` : type),
+    type: (type: string, powerToughness: string | null) => (powerToughness ? `${type} · ${powerToughness}` : type),
     from: (first: string, count: number) => (count === 1 ? `from ${first}` : `from ${first} and ${n(count - 1)} more`),
     /** Ownership fact, on upload-read tokens only. Never a verdict word, never --warning. */
     owned: "in your collection",

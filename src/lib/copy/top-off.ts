@@ -23,8 +23,8 @@ import type { CompositionTargets } from "../profile/types";
 // unconditionally, and flagged to Design for ratification — the same call, and
 // the same helper shape, as `plural` in decks-builder.ts. A deck one card short
 // of full otherwise reads "Add 1 cards" and "1 slots stay open".
-const plural = (n: string, one: string, many: string) =>
-  `${n} ${n === '1' ? one : many}`;
+const plural = (countText: string, one: string, many: string) =>
+  `${countText} ${countText === '1' ? one : many}`;
 
 export const topOffCopy = {
   // ── The strip, closed ─────────────────────────────────────────────────
@@ -32,9 +32,9 @@ export const topOffCopy = {
     /** The door. A verb that opens something, not a verb that does something —
      *  the whole of #360 scope 1 is in the difference. `Choose` also names the
      *  player as the one choosing, which the two shipped CTAs did not. */
-    open: (n: string) => `Choose the last ${n}`,
-    openAria: (n: string) =>
-      `Choose the cards for the last ${plural(n, 'slot', 'slots')}`,
+    open: (slotCountText: string) => `Choose the last ${slotCountText}`,
+    openAria: (slotCountText: string) =>
+      `Choose the cards for the last ${plural(slotCountText, 'slot', 'slots')}`,
     close: 'Close the list',
     /** ENG-ADDED. The canvas truncates the label to one word at 390px, where
      *  the strip head has a single line to give. A visual truncation, not a
@@ -49,12 +49,12 @@ export const topOffCopy = {
      *  and it names the pool rather than promising ticks: the seed asks the real fill, which can
      *  spend slots on cards the player does not own. A seed of zero is two opposite facts, owned
      *  none or every copy sleeved elsewhere, and the caller picks between them on the OWNED count. */
-    rowBody: (cand: string, seeded: string) =>
-      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. ${seeded} you can sleeve.`,
-    rowBodyNoneOwned: (cand: string) =>
-      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. You own none of them.`,
-    rowBodyNoneFree: (cand: string) =>
-      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. Every copy you own is in another deck.`,
+    rowBody: (candidateCountText: string, seededCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} ranked by synergy. ${seededCountText} you can sleeve.`,
+    rowBodyNoneOwned: (candidateCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} ranked by synergy. You own none of them.`,
+    rowBodyNoneFree: (candidateCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} ranked by synergy. Every copy you own is in another deck.`,
 
     /** The ran-out row's press. Its name carries the why, so the body does not have to. */
     exhaustedPress: 'Consider',
@@ -82,12 +82,12 @@ export const topOffCopy = {
   list: {
     /** Accessible name for the checkbox group. Carries both counts, because a
      *  reader cannot see the head. */
-    groupAria: (cand: string, n: string) =>
-      `${plural(cand, 'candidate', 'candidates')} for the last ${plural(n, 'slot', 'slots')}`,
+    groupAria: (candidateCountText: string, slotCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} for the last ${plural(slotCountText, 'slot', 'slots')}`,
 
-    head: (ticked: string, n: string, cand: string, untouched: string) =>
-      `${ticked} of ${plural(n, 'slot', 'slots')} selected · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
-    headMobile: (ticked: string, n: string) => `${ticked} of ${n} selected`,
+    head: (tickedCountText: string, slotCountText: string, candidateCountText: string, untouchedCountText: string) =>
+      `${tickedCountText} of ${plural(slotCountText, 'slot', 'slots')} selected · ${plural(candidateCountText, 'candidate', 'candidates')}, ${untouchedCountText} untouched`,
+    headMobile: (tickedCountText: string, slotCountText: string) => `${tickedCountText} of ${slotCountText} selected`,
 
     clearTicks: 'Clear all selections',
 
@@ -117,16 +117,16 @@ export const topOffCopy = {
     rowAria: (
       name: string,
       ownership: string,
-      syn: string,
-      inc: string,
-    ) => `${name}. ${ownership} Synergy plus ${syn} points. In ${inc} of decks.`,
+      synergyPointsText: string,
+      inclusionPercentText: string,
+    ) => `${name}. ${ownership} Synergy plus ${synergyPointsText} points. In ${inclusionPercentText} of decks.`,
     /** Three ownership clauses for the above, matching the three occupancies of
      *  the availability slot. The price is spoken; the collapsed-glyph problem
      *  does not exist here because the tag never collapses on this surface. */
-    ownedClause: (qty: string) => `×${qty} in your collection.`,
+    ownedClause: (copyCountText: string) => `×${copyCountText} in your collection.`,
     /** Own it, every copy sleeved elsewhere — the marker's count-only state.
      *  Spoken as a fact, never as a warning: it does not gate the tick. */
-    committedClause: (qty: string) => `×${qty} in your collection, none free.`,
+    committedClause: (copyCountText: string) => `×${copyCountText} in your collection, none free.`,
     /** The price is dropped rather than placeholdered when the feed has never
      *  stocked the card or the read failed. src/lib/copy/price.ts owns that
      *  rule: silence is the state, and there is no string for "—" or "$0.00".
@@ -167,12 +167,12 @@ export const topOffCopy = {
      *  The control renders from one decline, so both strings carry a singular
      *  form: 'all 1' is not English, and 'Show it again' is already the declined
      *  row's own label a few rows down. */
-    restoreAll: (declined: string) =>
-      declined === '1' ? 'Show the one again' : `Show all ${declined} again`,
-    restoreAllAria: (declined: string) =>
-      declined === '1'
+    restoreAll: (declinedCountText: string) =>
+      declinedCountText === '1' ? 'Show the one again' : `Show all ${declinedCountText} again`,
+    restoreAllAria: (declinedCountText: string) =>
+      declinedCountText === '1'
         ? 'Put the declined candidate back on the list'
-        : `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
+        : `Put all ${plural(declinedCountText, 'declined candidate', 'declined candidates')} back on the list`,
   },
 
   // ── The bulk pair ─────────────────────────────────────────────────────
@@ -202,39 +202,39 @@ export const topOffCopy = {
      * rows its own press ticks, from its plan: a figure counted from the list read `Select 6
      * from my collection` over a press that ticked nothing (2026-09-28). Errata 4 on the handoff.
      */
-    collection: (n: string) => `Select ${n} from my collection`,
-    best: (n: string) => `Select the ${n} this deck needs`,
+    collection: (cardCountText: string) => `Select ${cardCountText} from my collection`,
+    best: (cardCountText: string) => `Select the ${cardCountText} this deck needs`,
 
     /** Label AND concession. The visible note is `aria-hidden`, so this is the only place the
      *  figure is spoken, and it is spoken before the press. */
-    collectionAria: (n: string, concession: string) =>
-      `Select ${n} cards from your collection: ${concession}`,
-    bestAria: (n: string, concession: string) =>
-      `Select the ${n} cards this deck needs: ${concession}`,
+    collectionAria: (cardCountText: string, concession: string) =>
+      `Select ${cardCountText} cards from your collection: ${concession}`,
+    bestAria: (cardCountText: string, concession: string) =>
+      `Select the ${cardCountText} cards this deck needs: ${concession}`,
 
     /** Nil, and still a sentence. The player came to find out whether the cheap option costs
      *  anything; 'no' is the answer, not the absence of one. */
     gapNone: 'matches every recommendation',
-    gapOne: (n: string, type: string) => `${n} ${type} short of recommendations`,
-    gapTwo: (n: string, type: string, m: string, other: string) =>
-      `${n} ${type} and ${m} ${other} short of recommendations`,
+    gapOne: (cardCountText: string, type: string) => `${cardCountText} ${type} short of recommendations`,
+    gapTwo: (cardCountText: string, type: string, otherCardCountText: string, other: string) =>
+      `${cardCountText} ${type} and ${otherCardCountText} ${other} short of recommendations`,
     /** Three or more axes. A line naming five types is a table with no headings, and the worst
      *  gap is what decides whether the concession is acceptable. */
-    gapMany: (types: string, worst: string, worstType: string) =>
-      `short on ${types} types · ${worstType} worst at ${worst}`,
+    gapMany: (typeList: string, worst: string, worstType: string) =>
+      `short on ${typeList} types · ${worstType} worst at ${worst}`,
     /** `SkeletonFit.basis === 'none'`, or no composition at all. '0 short' would be the
      *  strongest possible claim made from no data. */
     gapUnmeasured: 'no recommendation for this commander',
 
     /** b3: the two pools produced the same rows, so the buy control is absent and this clause
      *  says why. Appended to whichever gap string applies. */
-    andNothingToBuy: (gap: string) => `${gap} · nothing to buy`,
+    andNothingToBuy: (gapText: string) => `${gapText} · nothing to buy`,
 
     /** Identical in shape to the shipped `commit.toBuy`, deliberately: the bar restates this
      *  pair of figures against the selected set a moment later, and two spellings of one fact
      *  would read as two facts. */
-    buy: (n: string, money: string | null) =>
-      money === null ? `${n} to buy` : `${n} to buy · ${money}`,
+    buy: (cardCountText: string, money: string | null) =>
+      money === null ? `${cardCountText} to buy` : `${cardCountText} to buy · ${money}`,
 
     /** b11. While a hand-made selection fills the slots, replacing it is the whole of what a
      *  press does, and that outranks the figure. Both notes take it. */
@@ -246,10 +246,10 @@ export const topOffCopy = {
   commit: {
     /** States what it will place. At zero it loses the count rather than
      *  printing 'Add 0 cards', and goes disabled with no error. */
-    add: (ticked: string) => `Add ${plural(ticked, 'card', 'cards')}`,
+    add: (tickedCountText: string) => `Add ${plural(tickedCountText, 'card', 'cards')}`,
     addEmpty: 'Add cards',
-    addAria: (ticked: string, total: string, bodySize: number) =>
-      `Add ${plural(ticked, 'card', 'cards')} to the deck, ${total} of ${bodySize}`,
+    addAria: (tickedCountText: string, total: string, bodySize: number) =>
+      `Add ${plural(tickedCountText, 'card', 'cards')} to the deck, ${total} of ${bodySize}`,
     cancel: 'Cancel',
 
     /** The consequence, before the tap. */
@@ -261,31 +261,31 @@ export const topOffCopy = {
      *  reason it leaves the ownership clause: a total of zero priced copies is
      *  not a total of $0.00. The count still stands, because how many there are
      *  to buy is known either way. */
-    toBuy: (b: string, money: string | null) =>
-      money === null ? `${b} to buy` : `${b} to buy · ${money}`,
+    toBuy: (cardCountText: string, money: string | null) =>
+      money === null ? `${cardCountText} to buy` : `${cardCountText} to buy · ${money}`,
     /** Printed when the selection leaves slots open. Not a warning and not a
      *  nudge — an assurance that stopping short is a choice with a way back. */
-    slotsStayOpen: (n: string) =>
-      n === '1'
+    slotsStayOpen: (slotCountText: string) =>
+      slotCountText === '1'
         ? '1 slot stays open: you can come back to it'
-        : `${n} slots stay open: you can come back to them`,
+        : `${slotCountText} slots stay open: you can come back to them`,
 
     /** Zero ticks, and the zero-owned case, which is the same state. */
     nothingTicked: 'nothing selected: the list arrives with what you own already selected',
-    nothingTickedUnowned: (cand: string) =>
-      `nothing selected: you own none of these ${cand}, so every card you select is one to buy`,
+    nothingTickedUnowned: (candidateNoun: string) =>
+      `nothing selected: you own none of these ${candidateNoun}, so every card you select is one to buy`,
     /** Zero ticks because every candidate was declined. The other two variants
      *  both explain a list that is there to be ticked; this one is the only
      *  state where the rows are gone, so it names the way back instead. */
-    nothingTickedAllDeclined: (cand: string) =>
-      `you’ve set all ${cand} aside: show any of them again to pick it up`,
+    nothingTickedAllDeclined: (candidateNoun: string) =>
+      `you’ve set all ${candidateNoun} aside: show any of them again to pick it up`,
 
     /** ADOPTED from recommendationsCopy.fill.fillingRows, which this key
      *  replaces: a 27-row write is exactly what that sentence was written for,
      *  and a second in-flight vocabulary for the same act would be two voices.
      *  The one edit is the plural helper, so a single-card pass no longer
      *  reads 'Sleeving 1 cards…'. The old key had no other reader and is gone. */
-    inFlight: (ticked: string) => `Sleeving ${plural(ticked, 'card', 'cards')}…`,
+    inFlight: (tickedCountText: string) => `Sleeving ${plural(tickedCountText, 'card', 'cards')}…`,
     /** UNCHANGED — synergyCopy.lastSlots.topUpFailed, referenced rather than
      *  transcribed so the two can never drift apart. */
     refused: synergyCopy.lastSlots.topUpFailed,
@@ -321,7 +321,7 @@ export const topOffCopy = {
      *  '50 cards you chose…' and read as a count of one (Hugh, 2026-09-28). */
     seedLabel: 'the seed',
     // The app's one ordinal formatter (`deck-analysis.ts`), not a second one to drift from it.
-    passLabel: (i: string) => `${ordinal(Number(i))} top-off`,
+    passLabel: (passNumberText: string) => `${ordinal(Number(passNumberText))} top-off`,
 
     /** The two figures every line leads with (#477): what the pass placed, then what of it is
      *  still here. The still-here figures sum to the header. Equal reads `all {n}`; zero `none`. */
@@ -342,9 +342,9 @@ export const topOffCopy = {
      *  control the reader could not go and find. */
     seedReversal: 'Clear all auto reverses it',
 
-    passLine: (slots: string, buy: string) =>
-      `you chose them from the last ${slots}, ${buy} to buy.`,
-    passLineNoBuy: (slots: string) => `you chose them from the last ${slots}.`,
+    passLine: (slotCountText: string, buy: string) =>
+      `you chose them from the last ${slotCountText}, ${buy} to buy.`,
+    passLineNoBuy: (slotCountText: string) => `you chose them from the last ${slotCountText}.`,
     /** A pass is a SET OF ROWS, not a transaction. A row leaves it two ways and
      *  the line NAMES WHICH, because they mean opposite things: 'removed' is a
      *  rejection, 'now yours' is an endorsement — the shipped keep control
@@ -361,7 +361,7 @@ export const topOffCopy = {
     /** A pass with nothing still here, which keeps a quiet line: undone from its own control, or
      *  every card kept. */
     passUndone: 'undone',
-    passAllKept: (n: string) => `all ${n} now yours`,
+    passAllKept: (cardCountText: string) => `all ${cardCountText} now yours`,
     /** A deck that predates the ledger. NO seed line is synthesised: keeping has
      *  already eaten some of its auto rows, and decks.filled stays true forever,
      *  so a count inferred from either would be a lie in a table whose whole job
@@ -373,29 +373,29 @@ export const topOffCopy = {
 
     /** #359's 'before deciding'. Opens the pass sheet (deck messages PR 3): the pass's live cards as
      *  the list's own rows. It hides nothing in the list, so the word is 'show', not 'only'. */
-    mark: (n: string) => `Show these ${n}`,
+    mark: (cardCountText: string) => `Show these ${cardCountText}`,
     /** ENG-ADDED, mirroring Design's own `undoOne` one line down: the same
      *  demonstrative has to agree at a count of one, and the toggle beside the
      *  undo would otherwise read 'Show these 1'. */
     markOne: 'Show this 1',
-    markAria: (n: string, pass: string) => `Show the ${plural(n, 'card', 'cards')} from ${pass}`,
+    markAria: (cardCountText: string, pass: string) => `Show the ${plural(cardCountText, 'card', 'cards')} from ${pass}`,
 
     /** The pass sheet (deck messages PR 3, copy-review rows 28 to 30). Its eyebrow, and the way back
      *  from a card stacked on it (`← 1st top-off`): the seed's label capitalized, because the shipped
      *  `seedLabel` is lowercase for mid-sentence use and `← the seed` would be wrong as a head. */
     sheetLabel: (pass: { kind: 'seed' | 'top_off'; ordinal: number }) =>
       pass.kind === 'seed' ? 'The seed' : `${ordinal(pass.ordinal)} top-off`,
-    sheetTitle: (n: number) => (n === 1 ? '1 card' : `${n} cards`),
+    sheetTitle: (cardCount: number) => (cardCount === 1 ? '1 card' : `${cardCount} cards`),
     sheetDone: 'Done',
     sheetCloseAria: (label: string) => `Close ${label}`,
 
     /** 'these' because the line is the antecedent; the aria name says which
      *  pass, because three ledger lines mean three of these buttons. */
-    undo: (n: string) => `Undo these ${n}`,
+    undo: (cardCountText: string) => `Undo these ${cardCountText}`,
     undoOne: 'Undo this 1',
-    undoAria: (n: string, pass: string) =>
-      `Undo the ${plural(n, 'card', 'cards')} from ${pass}, and put back what they cost`,
-    undoInFlight: (n: string) => `Putting ${n} back…`,
+    undoAria: (cardCountText: string, pass: string) =>
+      `Undo the ${plural(cardCountText, 'card', 'cards')} from ${pass}, and put back what they cost`,
+    undoInFlight: (cardCountText: string) => `Putting ${cardCountText} back…`,
     undoFailed: 'We couldn’t put those back. The deck is unchanged.',
   },
 
@@ -421,23 +421,23 @@ export const topOffCopy = {
   // fast taps is one announcement, which is the shipped rule from the
   // selection surface.
   announce: {
-    opened: (cand: string, n: string, ticked: string) =>
-      `${plural(cand, 'candidate', 'candidates')} for ${plural(n, 'slot', 'slots')}. ${ticked} already selected.`,
-    ticked: (ticked: string, n: string, buy: string) =>
-      `${ticked} of ${n} selected, ${buy} to buy.`,
-    tickedNoBuy: (ticked: string, n: string) => `${ticked} of ${n} selected.`,
-    capped: (n: string) => `${n} of ${plural(n, 'slot', 'slots')} selected.`,
+    opened: (candidateCountText: string, slotCountText: string, tickedCountText: string) =>
+      `${plural(candidateCountText, 'candidate', 'candidates')} for ${plural(slotCountText, 'slot', 'slots')}. ${tickedCountText} already selected.`,
+    ticked: (tickedCountText: string, slotCountText: string, buyCountText: string) =>
+      `${tickedCountText} of ${slotCountText} selected, ${buyCountText} to buy.`,
+    tickedNoBuy: (tickedCountText: string, slotCountText: string) => `${tickedCountText} of ${slotCountText} selected.`,
+    capped: (selectedCountText: string) => `${selectedCountText} of ${plural(selectedCountText, 'slot', 'slots')} selected.`,
     added: (added: string, total: string, buy: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}, ${buy} to buy.`,
     addedNoBuy: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}.`,
-    declined: (name: string, ticked: string, n: string) =>
-      `${name} set aside. ${ticked} of ${n} selected.`,
+    declined: (name: string, tickedCountText: string, slotCountText: string) =>
+      `${name} set aside. ${tickedCountText} of ${slotCountText} selected.`,
     /** The bulk restore. It states the tick count after the restore as well as
      *  the number of rows returned, because a restored row comes back unticked
      *  and a reader who is told only 'back on the list' would expect otherwise. */
-    restoredAll: (declined: string, ticked: string, n: string) =>
-      `${plural(declined, 'candidate', 'candidates')} back on the list. ${ticked} of ${n} selected.`,
+    restoredAll: (declinedCountText: string, tickedCountText: string, slotCountText: string) =>
+      `${plural(declinedCountText, 'candidate', 'candidates')} back on the list. ${tickedCountText} of ${slotCountText} selected.`,
     undone: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} put back. ${total} of ${bodySize}.`,
   },

@@ -23,10 +23,10 @@ export const gameMatchupsCopy = {
     allOne: "Every row so far is a single game.",
     games,
     /** Past ten games the squares give way to counts. */
-    counts: (w: number, l: number, d: number, other: number) =>
-      [`W ${w}`, `L ${l}`, d > 0 && `D ${d}`, other > 0 && `– ${other}`].filter(Boolean).join(" · "),
-    squareAria: (w: number, l: number, d: number, other: number) =>
-      [w && `${w} won`, d && `${d} drawn`, l && `${l} lost to them`, other && `${other} won by someone else`].filter(Boolean).join(", "),
+    counts: (winCount: number, lossCount: number, drawCount: number, otherWinCount: number) =>
+      [`W ${winCount}`, `L ${lossCount}`, drawCount > 0 && `D ${drawCount}`, otherWinCount > 0 && `– ${otherWinCount}`].filter(Boolean).join(" · "),
+    squareAria: (winCount: number, lossCount: number, drawCount: number, otherWinCount: number) =>
+      [winCount && `${winCount} won`, drawCount && `${drawCount} drawn`, lossCount && `${lossCount} lost to them`, otherWinCount && `${otherWinCount} won by someone else`].filter(Boolean).join(", "),
     /** The key under the rows: one entry per square. */
     keyWon: "you won",
     keyLost: "they won",

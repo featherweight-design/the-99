@@ -21,11 +21,11 @@ export const issueInspectorCopy = {
     ariaLabel: "Issue type",
   },
   filter: {
-    placeholderUnmatched: (n: number) => `Filter ${n.toLocaleString()} names not in the card catalog…`,
-    placeholderErrors: (n: number) => `Filter ${n.toLocaleString()} errors by line or reason…`,
+    placeholderUnmatched: (nameCount: number) => `Filter ${nameCount.toLocaleString()} names not in the card catalog…`,
+    placeholderErrors: (errorCount: number) => `Filter ${errorCount.toLocaleString()} errors by line or reason…`,
     clearAriaLabel: "Clear filter",
-    count: (n: number, total: number) =>
-      `Showing ${n.toLocaleString()} of ${total.toLocaleString()}`,
+    count: (shownCount: number, total: number) =>
+      `Showing ${shownCount.toLocaleString()} of ${total.toLocaleString()}`,
   },
   unmatchedRow: {
     metaLong: (line: number, setCode: string) =>

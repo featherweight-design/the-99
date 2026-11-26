@@ -122,8 +122,8 @@ export const shellCopy = {
     friends: "Friends",
     // The badge's count for a screen reader: the pill itself is drawn, not read.
     badge: {
-      home: (n: number) => `${n} new`,
-      friends: (n: number) => `${n} waiting on you`,
+      home: (newCount: number) => `${newCount} new`,
+      friends: (waitingCount: number) => `${waitingCount} waiting on you`,
     },
   },
 } as const;

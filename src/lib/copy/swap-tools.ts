@@ -21,7 +21,7 @@ export const swapToolsCopy = {
     cancel: "cancel",
     fieldAria: "Limit per card, in dollars",
     invalid: "Use a whole dollar figure from 1 to 100,000.",
-    overCount: (n: number) => `${n} over`,
+    overCount: (cardCount: number) => `${cardCount} over`,
     noneOver: (figure: string) => `none over ${figure}`,
   },
 
@@ -64,33 +64,33 @@ export const swapToolsCopy = {
     backLabel: "Cheaper stand-ins",
     replacing: (deck: string) => `replacing, in ${deck}`,
     // The job line under the original.
-    jobColors: (colors: string) => `makes ${colors}`,
+    jobColors: (colorNames: string) => `makes ${colorNames}`,
     /** `types` carries its own article: `an Island`, `a Mountain or Forest`. */
-    jobFinds: (types: string) => `finds ${types} card`,
+    jobFinds: (landTypes: string) => `finds ${landTypes} card`,
     /** Stand-in row addendum (E2): a spell's job line, its type and mana value, then its jobs for this deck. Owed to /copy-review. */
-    jobSpell: (type: string, mv: number, jobs: string) => `${type} · mana value ${mv} · ${jobs}`,
+    jobSpell: (type: string, manaValue: number, jobList: string) => `${type} · mana value ${manaValue} · ${jobList}`,
     jobNoRole: "no role we can name",
     /** E1: every job the card does is limited to cards this deck does not play. Owed to /copy-review. */
     jobNotHere: "no job this deck uses",
     givesUpNothing: "loses nothing",
     // v2 D1 (ranking-rebuild addendum): ownership is on the row, so no lead says free copies come first; a
     // free copy wins only a tie (the addendum audit's ruling 2). Every lead below is owed to /copy-review.
-    leadLands: (colors: string) =>
-      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each says what it loses.`,
+    leadLands: (colorNames: string) =>
+      `Every land here makes ${colorNames}. Untapped lands come first, then tapped ones, then utility lands, and each says what it loses.`,
     /** Hugh, 2026-09-24: every stand-in gives up the same thing, so the lead says it once. */
-    leadLandsGivesUp: (colors: string, ability: string) =>
-      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each loses ${ability}.`,
-    leadFetchGivesUp: (types: string, ability: string) =>
-      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each loses ${ability}.`,
-    leadFetch: (types: string) =>
-      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each says what it loses.`,
+    leadLandsGivesUp: (colorNames: string, ability: string) =>
+      `Every land here makes ${colorNames}. Untapped lands come first, then tapped ones, then utility lands, and each loses ${ability}.`,
+    leadFetchGivesUp: (landTypes: string, ability: string) =>
+      `Every land here finds ${landTypes}. Untapped lands come first, then tapped ones, then utility lands, and each loses ${ability}.`,
+    leadFetch: (landTypes: string) =>
+      `Every land here finds ${landTypes}. Untapped lands come first, then tapped ones, then utility lands, and each says what it loses.`,
     /** The spells lead is three sentences, joined: what every card does, then the groups, then their order. */
     /**
      * E2: the jobs are the original's for this deck (ramp by its kind), `or`-joined: a row keeps at least one.
      * /copy-review, ratified by d9 (2026-09-26): the addendum's `, and each row says what it keeps, gains and
      * loses against it` is cut, since the row's own tags say exactly that.
      */
-    leadSpellsJob: (card: string, jobs: string) => `Every card here keeps at least one of ${card}’s jobs (${jobs}).`,
+    leadSpellsJob: (card: string, jobList: string) => `Every card here keeps at least one of ${card}’s jobs (${jobList}).`,
     /** Drawn only when both groups are. */
     leadSpellsTypes: (plural: string) => `${plural[0].toUpperCase()}${plural.slice(1)} come first, then other types.`,
     leadSpellsOrder: (card: string, commander: string) =>
@@ -111,12 +111,12 @@ export const swapToolsCopy = {
     orderBestMana: "best mana first",
     orderMostShared: "most in common first",
     /** Addendum §1b: the toggle under a group longer than it shows. */
-    showAll: (n: number, noun: string) => `Show all ${n} ${noun}`,
+    showAll: (cardCount: number, noun: string) => `Show all ${cardCount} ${noun}`,
     showFewer: "Show fewer",
     free: "free",
     // v2 D2 (addendum §1a): a land row's mana line, in --fg-body, then its costs in --fg-muted.
     mana: {
-      line: (colors: string, state: string) => `makes ${colors}, ${state}`,
+      line: (colorNames: string, state: string) => `makes ${colorNames}, ${state}`,
       untapped: "untapped",
       tapped: "tapped",
       /** A condition that is a price (a shock's 2 life) is the condition: no separate cost segment. */
@@ -136,7 +136,7 @@ export const swapToolsCopy = {
      */
     compare: { keeps: "keeps", gains: "gains", loses: "loses", staple: "staple" },
     /** E2: a lower mana value, written as the last gain so the budget drops it first. */
-    mvGain: (mv: number) => `mana value ${mv}`,
+    mvGain: (manaValue: number) => `mana value ${manaValue}`,
     /** Each theme and role as a row names it. Owed to /copy-review with the rest of D2. */
     job: {
       ramp: "ramp", draw: "draw", removal: "removal", wipes: "wipes",
@@ -164,16 +164,16 @@ export const swapToolsCopy = {
      */
     givesUp: (ability: string) => `loses ${ability}`,
     /** Close-out ruling 6: a row never quotes; the abilities no pattern names are counted instead. Owed to /copy-review. */
-    otherAbilities: (n: number, afterNamed: boolean) =>
-      afterNamed ? (n === 1 ? "one more" : `${n} more`) : n === 1 ? "an ability" : `${n} abilities`,
+    otherAbilities: (abilityCount: number, afterNamed: boolean) =>
+      afterNamed ? (abilityCount === 1 ? "one more" : `${abilityCount} more`) : abilityCount === 1 ? "an ability" : `${abilityCount} abilities`,
     drawback: {
       entersTapped: "it enters tapped",
       entersTappedUnless: (cond: string) => `enters tapped unless ${cond}`,
-      damage: (n: number, colors: string) => `deals ${n} damage to you for ${colors}`,
-      life: (n: number, colors: string) => `costs ${n} life for ${colors}`,
-      lifeFetch: (n: number) => `costs ${n} life`,
+      damage: (damageAmount: number, colorNames: string) => `deals ${damageAmount} damage to you for ${colorNames}`,
+      life: (lifeAmount: number, colorNames: string) => `costs ${lifeAmount} life for ${colorNames}`,
+      lifeFetch: (lifeAmount: number) => `costs ${lifeAmount} life`,
       /** Close-out ruling 6: damage paid for every color the row's mana line names, which it need not repeat. */
-      damageAny: (n: number) => `deals ${n} damage to you`,
+      damageAny: (damageAmount: number) => `deals ${damageAmount} damage to you`,
       basicOnly: "finds only a basic",
     },
     take: "Take",
@@ -217,10 +217,10 @@ export const swapToolsCopy = {
     noRoleLand: (name: string) =>
       `${name}’s job is its own text, not a color it makes or a land it finds, so there are no stand-ins for it. We won’t guess at one.`,
     /** E1: `jobs` are the original's jobs as a stand-in must keep them (ramp by its kind), `or`-joined. Owed to /copy-review. */
-    nothingCheaper: (jobs: string, mv: number, commander: string, price: string) =>
-      `Nothing cheaper does this job (${jobs}) at mana value ${mv} or less in ${commander}’s colors. Every card that does costs more than ${price}, and you have no free copy of one.`,
-    nothingCheaperLand: (colors: string, price: string) =>
-      `Nothing cheaper makes ${colors}. Every land that does costs more than ${price}, and you have no free copy of one.`,
+    nothingCheaper: (jobList: string, manaValue: number, commander: string, price: string) =>
+      `Nothing cheaper does this job (${jobList}) at mana value ${manaValue} or less in ${commander}’s colors. Every card that does costs more than ${price}, and you have no free copy of one.`,
+    nothingCheaperLand: (colorNames: string, price: string) =>
+      `Nothing cheaper makes ${colorNames}. Every land that does costs more than ${price}, and you have no free copy of one.`,
     /** F5: a sold-out original with no free stand-in. The nothingCheaper sentences cite a price it has not got. Owed to /copy-review. */
     soldOutNone: (name: string) =>
       `${name} is sold out everywhere we check, and you have no free copy of anything that does its job.`,
@@ -238,7 +238,7 @@ export const swapToolsCopy = {
     pickerTitle: "Find a deck for it",
     backLabel: (card: string) => card,
     /** The plate's identity line, as the canvas draws it. */
-    identity: (colors: string) => `${colors} · legal in Commander`,
+    identity: (colorNames: string) => `${colorNames} · legal in Commander`,
     loadingHeading: "Checking your decks",
     loadingStatus: "reading each commander’s colors…",
     groupJoin: "could take it",
@@ -254,7 +254,7 @@ export const swapToolsCopy = {
     addedToBuy: "It joins as a card to buy.",
     openDeck: "Open the deck →",
     addRefused: "We couldn’t add that. The deck is unchanged.",
-    holds: (n: number) => `holds ${n}`,
+    holds: (copyCount: number) => `holds ${copyCount}`,
     deckLinkAria: (deck: string) => `Open ${deck}`,
     /** The addendum's staple form: a universal staple quotes no one commander's figure. */
     cmdrStaple: "staple · any commander",
@@ -263,7 +263,7 @@ export const swapToolsCopy = {
     orderReasons: "combos first, then themes",
     /** Followed by the other piece's name, dotted: it opens that card. */
     reasonCombo: "Completes a combo with",
-    reasonTheme: (n: number, word: string) => `Joins ${n} other ${word} ${n === 1 ? "card" : "cards"}`,
+    reasonTheme: (cardCount: number, word: string) => `Joins ${cardCount} other ${word} ${cardCount === 1 ? "card" : "cards"}`,
     needLabel: "this deck",
     /** Each theme as the reason line names it: `Joins 9 other mill cards`. Owed to /copy-review. */
     themeWord: {
@@ -276,8 +276,8 @@ export const swapToolsCopy = {
     need: (role: string, count: number, target: number) => `${role} ${count} of ${target}`,
     /** "They’re listed above." is not carried: the holding decks are listed BELOW this sentence. */
     allHold: (card: string) => `Every deck that can play ${card} already holds it.`,
-    noneByColors: (card: string, colors: string, n: number) =>
-      `None of your decks can play ${card}. It’s ${colors}, and none of your commanders has ${n === 2 ? "both" : "all of them"}.`,
+    noneByColors: (card: string, colorNames: string, colorCount: number) =>
+      `None of your decks can play ${card}. It’s ${colorNames}, and none of your commanders has ${colorCount === 2 ? "both" : "all of them"}.`,
     noneByColorsOne: (card: string, color: string) =>
       `None of your decks can play ${card}. It’s ${color}, and none of your commanders is.`,
     stapleLabel: "staple",
@@ -303,11 +303,11 @@ export const swapToolsCopy = {
       pressAriaSpent: "Which deck needs it most? No credits left.",
       /** The press's segment, after the drawn ◆. */
       credit: "1 credit",
-      offerLead: (n: number, card: string) =>
-        `A closer read of the ${n} decks that can take ${card}: the few it really helps, how it helps each one in that deck’s own cards, and what it would replace.`,
+      offerLead: (deckCount: number, card: string) =>
+        `A closer read of the ${deckCount} decks that can take ${card}: the few it really helps, how it helps each one in that deck’s own cards, and what it would replace.`,
       offerLeadOne: (deck: string, card: string) =>
         `A closer read of ${deck}, the one deck that can take ${card}: how it would help, in that deck’s own cards, and what it would replace.`,
-      running: (n: number, card: string) => (n === 1 ? `Reading one deck for ${card}` : `Reading ${n} decks for ${card}`),
+      running: (deckCount: number, card: string) => (deckCount === 1 ? `Reading one deck for ${card}` : `Reading ${deckCount} decks for ${card}`),
       /** Followed by ` · {elapsed}`. */
       runningSub: "each deck’s plan and list, against the card’s text",
       runningKeep: "The list below stays as it is. You can leave this view; the run keeps going and waits here.",
@@ -315,10 +315,10 @@ export const swapToolsCopy = {
       /** Under the door in card details while a read for this card runs. */
       doorReading: "reading your decks…",
       resultHead: "Where it helps most",
-      resultSubNow: (shown: number, n: number) => `read just now · ${shown} of ${n} decks`,
+      resultSubNow: (shown: number, deckCount: number) => `read just now · ${shown} of ${deckCount} decks`,
       resultSubNowOne: "read just now · the one deck",
       /** `when` is `Oct 11, 9:42 PM` in the reader's clock. */
-      resultSubStored: (when: string, shown: number, n: number) => `read ${when} · ${shown} of ${n} decks`,
+      resultSubStored: (when: string, shown: number, deckCount: number) => `read ${when} · ${shown} of ${deckCount} decks`,
       /** Followed by ` · ` and the standing line. */
       resultFootSpent: "Used a credit",
       resultFootStored: "Free to reopen while your decks stay as they are.",
@@ -343,7 +343,7 @@ export const swapToolsCopy = {
       cutNoteAdded: "still in · cut it or anything else",
       swapRefused: "We couldn’t make that swap. The deck is unchanged.",
       undoRefused: "We couldn’t undo that. The deck is unchanged.",
-      announceReady: (n: number) => (n === 1 ? "The run found one deck." : `The run found ${n} decks.`),
+      announceReady: (deckCount: number) => (deckCount === 1 ? "The run found one deck." : `The run found ${deckCount} decks.`),
       announceSwapped: (card: string, cut: string) => `Swapped. ${card} is in the draft and ${cut} is out.`,
       announceUndone: (card: string, cut: string) => `Swap undone. ${cut} is back and ${card} is out.`,
       announceAdded: (card: string, deck: string) => `Added. ${card} is in the ${deck} draft.`,
@@ -353,11 +353,11 @@ export const swapToolsCopy = {
       /** Followed by ` · ` and the standing line (READINESS-audit F10: says they didn’t check out, not against what). */
       thinSub: "The other decks it named didn’t check out",
       noFitHead: "None of these decks is a real fit",
-      noFitBody: (n: number, card: string) =>
-        `The run went through the ${n} decks that can take ${card} and found none whose plan it really helps. The credit came back.`,
+      noFitBody: (deckCount: number, card: string) =>
+        `The run went through the ${deckCount} decks that can take ${card} and found none whose plan it really helps. The credit came back.`,
       noFitBodyOne: (deck: string, card: string) =>
         `The run went through ${deck}, the one deck that can take ${card}, and found it isn’t a real fit. The credit came back.`,
-      noFitBodyStored: (n: number, card: string) => `The run went through the ${n} decks that can take ${card} and found none whose plan it really helps.`,
+      noFitBodyStored: (deckCount: number, card: string) => `The run went through the ${deckCount} decks that can take ${card} and found none whose plan it really helps.`,
       noFitFootNow: "read just now · kept until your decks change",
       noFitFootStored: (when: string) => `read ${when} · kept until your decks change`,
       announceNoFit: "No real fit. The credit came back.",
@@ -374,7 +374,7 @@ export const swapToolsCopy = {
       // ── Stored, out of date (lock 6; handoff P10, P3g, P6c) ─────────────
       resultSubStale: (when: string) => `read ${when} · out of date`,
       staleOne: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so the read may not hold any more.`,
-      staleMany: (n: number, when: string) => `${n} of your decks have changed since this read on ${when}, so the read may not hold any more.`,
+      staleMany: (deckCount: number, when: string) => `${deckCount} of your decks have changed since this read on ${when}, so the read may not hold any more.`,
       staleSet: (when: string) => `Your decks that can take this card aren’t the same ones as at this read on ${when}, so the read may not hold any more.`,
       staleOverview: (deck: string, when: string) => `${deck} has a new overview since this read on ${when}. Run again to use it.`,
       noFitChanged: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so it’s worth asking again.`,
@@ -394,7 +394,7 @@ export const swapToolsCopy = {
       srcNoteNone: (commander: string) => `No overview yet, so this read went on ${commander} and the deck’s top themes.`,
       srcLinkNone: "Write one on the deck page →",
       fold: "Every deck that could take it",
-      foldAria: (n: number, open: boolean) => `${open ? "Hide" : "Show"} every deck that could take it, ${n}`,
+      foldAria: (deckCount: number, open: boolean) => `${open ? "Hide" : "Show"} every deck that could take it, ${deckCount}`,
     },
   },
 

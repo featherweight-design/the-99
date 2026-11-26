@@ -13,7 +13,7 @@ export const suggestedChangesV2Copy = {
   tile: {
     purpose: "Say what you want changed. You get more cards to add and to cut than you need, and pick.",
     under: (total: number) => `Swaps cards in and out of a deck at 99. This one is at ${total}: top it off first.`,
-    over: (n: number) => `Swaps cards in and out of a deck at 99. This one is ${n} over: cut it to 99 first.`,
+    over: (cardCount: number) => `Swaps cards in and out of a deck at 99. This one is ${cardCount} over: cut it to 99 first.`,
     topOff: "Top off on Your deck →",
     proposedCuts: "Proposed cuts →",
   },
@@ -22,7 +22,7 @@ export const suggestedChangesV2Copy = {
     count: {
       title: "How many cards?",
       sub: "cards in · the same number come out",
-      line: (n: number, pool: number) => `${n} in, ${n} out. You’ll pick from about ${pool} of each.`,
+      line: (swapCount: number, pool: number) => `${swapCount} in, ${swapCount} out. You’ll pick from about ${pool} of each.`,
       range: "1 to 20",
       atMax: "20 at most",
       // Small items 7, SC-Cost A: the tag the line carries above 10 (`unitsFor`), in the tiles' cost-tag shape.
@@ -56,17 +56,17 @@ export const suggestedChangesV2Copy = {
     },
     bracket: {
       head: "Bracket",
-      now: (b: number, name: string) => `now ${b} · ${name}`,
-      keep: (b: number, name: string) => `Keep at ${b} · ${name}`,
-      down: (b: number, name: string) => `Down to ${b} · ${name}`,
-      up: (b: number, name: string) => `Up to ${b} · ${name}`,
-      noteKeep: (b: number, name: string) => `Nothing it suggests moves the deck out of ${b} · ${name}. A card that would is left out.`,
-      noteDown: (b: number, name: string) => `Cuts lead with what holds the deck above ${b} · ${name}. Additions stay inside it.`,
-      noteUp: (b: number, name: string) => `Additions lean toward what takes the deck to ${b} · ${name}, and each one that does says so.`,
+      now: (bracketNumber: number, name: string) => `now ${bracketNumber} · ${name}`,
+      keep: (bracketNumber: number, name: string) => `Keep at ${bracketNumber} · ${name}`,
+      down: (bracketNumber: number, name: string) => `Down to ${bracketNumber} · ${name}`,
+      up: (bracketNumber: number, name: string) => `Up to ${bracketNumber} · ${name}`,
+      noteKeep: (bracketNumber: number, name: string) => `Nothing it suggests moves the deck out of ${bracketNumber} · ${name}. A card that would is left out.`,
+      noteDown: (bracketNumber: number, name: string) => `Cuts lead with what holds the deck above ${bracketNumber} · ${name}. Additions stay inside it.`,
+      noteUp: (bracketNumber: number, name: string) => `Additions lean toward what takes the deck to ${bracketNumber} · ${name}, and each one that does says so.`,
       // PLACEHOLDER for /copy-review: a deck read as a range ("Exhibition or Core"). The board draws a single bracket only.
-      nowRange: (low: number, high: number, face: string) => `now ${low} or ${high} · ${face}`,
-      keepRange: (low: number, high: number, face: string) => `Keep at ${low} or ${high} · ${face}`,
-      noteKeepRange: (low: number, high: number, face: string) => `Nothing it suggests moves the deck out of ${low} or ${high} · ${face}. A card that would is left out.`,
+      nowRange: (lowBracketNumber: number, highBracketNumber: number, face: string) => `now ${lowBracketNumber} or ${highBracketNumber} · ${face}`,
+      keepRange: (lowBracketNumber: number, highBracketNumber: number, face: string) => `Keep at ${lowBracketNumber} or ${highBracketNumber} · ${face}`,
+      noteKeepRange: (lowBracketNumber: number, highBracketNumber: number, face: string) => `Nothing it suggests moves the deck out of ${lowBracketNumber} or ${highBracketNumber} · ${face}. A card that would is left out.`,
     },
     restrictions: { title: "Any restrictions?", sub: "kept for this deck, so the next run starts with them" },
     send: "Suggest changes",
@@ -87,15 +87,15 @@ export const suggestedChangesV2Copy = {
     drift: (total: number) => `The deck is at ${total} now. Suggested changes keeps a deck at 99, so it waits until you’re back there.`,
   },
   wait: {
-    soFar: (a: number, c: number) => `${a} to add and ${c} to cut so far`,
-    done: (a: number, c: number) => `${a} to add and ${c} to cut · done`,
+    soFar: (addCount: number, cutCount: number) => `${addCount} to add and ${cutCount} to cut so far`,
+    done: (addCount: number, cutCount: number) => `${addCount} to add and ${cutCount} to cut · done`,
     leave: "Pick while it works. Leave whenever you like: the run keeps going, its tile shows it, and it lands in History.",
     stillFinding: "Still finding more",
-    soFarAsked: (n: number, asked: number) => `${n} so far · asked for ${asked}`,
+    soFarAsked: (foundCount: number, askedCount: number) => `${foundCount} so far · asked for ${askedCount}`,
     // An all-in side's end line (Wait D, E: "asked for 15").
-    askedFor: (asked: number) => `asked for ${asked}`,
+    askedFor: (askedCount: number) => `asked for ${askedCount}`,
     cutsNext: "Cuts start once the first additions are in.",
-    allIn: (n: number) => `All ${n} in`,
+    allIn: (swapCount: number) => `All ${swapCount} in`,
     groupedNow: " · grouped by type now",
     newMark: "new",
     applyWaits: "Apply opens when both lists are in. Your picks are kept.",
@@ -104,18 +104,18 @@ export const suggestedChangesV2Copy = {
     slow: "This is taking a while. Some cards didn’t pass the checks, so it’s looking further. Keep picking, or leave: it keeps going and lands in History.",
     // About 2 minutes.
     slower: "Still going, about 2 minutes in. Runs this size can take up to about two and a half. It won’t stop early, and your picks are kept.",
-    finishedShort: (a: number, c: number, side: string, short: number, asked: number, reason: string) =>
-      `Found ${a} to add and ${c} to cut. ${side} came up ${short} short of ${asked}: ${reason}.`,
+    finishedShort: (addCount: number, cutCount: number, side: string, shortCount: number, askedCount: number, reason: string) =>
+      `Found ${addCount} to add and ${cutCount} to cut. ${side} came up ${shortCount} short of ${askedCount}: ${reason}.`,
   },
   results: {
-    lead: (a: number, c: number, n: number) => `${a} to add and ${c} to cut. Pick any ${n} of each. Nothing moves until you apply.`,
-    aimed: (b: number, name: string) => `aimed at ${b} · ${name}`,
+    lead: (addCount: number, cutCount: number, pickLimit: number) => `${addCount} to add and ${cutCount} to cut. Pick any ${pickLimit} of each. Nothing moves until you apply.`,
+    aimed: (bracketNumber: number, name: string) => `aimed at ${bracketNumber} · ${name}`,
     youAsked: "You asked",
     noRequest: "No request. The run worked from the deck’s own gaps.",
     additions: "Additions",
     cuts: "Cuts",
-    chosen: (k: number, n: number) => `${k} of ${n} chosen`,
-    applied: (k: number) => `${k} applied`,
+    chosen: (chosenCount: number, totalCount: number) => `${chosenCount} of ${totalCount} chosen`,
+    applied: (appliedCount: number) => `${appliedCount} applied`,
     pick: "Pick",
     picked: "✓ Picked",
     added: "Added",
@@ -124,20 +124,20 @@ export const suggestedChangesV2Copy = {
     group: "Group",
     typeHead: (inDeck: number) => `${inDeck} in the deck`,
     roleHead: (have: number, target: number) => `you have ${have} of ${target}`,
-    withPicks: (n: number) => `${n} with your picks`,
+    withPicks: (cardCount: number) => `${cardCount} with your picks`,
     flagAsked: "the bracket you asked for",
     shortCap: (found: number, cap: string) => `Found ${found} ${found === 1 ? "addition" : "additions"} under your ${cap} cap`,
   },
   bar: {
-    none: (n: number) => `Pick up to ${n} of each. The two counts must match, so the deck stays at 99.`,
-    unequal: (a: number, c: number, more: number, side: string) => `${a} in, ${c} out. Pick ${more} more ${side} to apply, so the deck stays at 99.`,
+    none: (pickLimit: number) => `Pick up to ${pickLimit} of each. The two counts must match, so the deck stays at 99.`,
+    unequal: (addCount: number, cutCount: number, moreCount: number, side: string) => `${addCount} in, ${cutCount} out. Pick ${moreCount} more ${side} to apply, so the deck stays at 99.`,
     wouldGo: (total: number) => `the deck would go to ${total}`,
     stays: "stays at 99",
     equal: "Nothing moves until you apply.",
-    bracketStays: (b: number, name: string) => `bracket stays ${b} · ${name}`,
-    bracketReached: (from: number, to: number, name: string) => `bracket ${from} → ${to} · ${name}, as asked`,
-    bracketMissed: (b: number, name: string, from: number) =>
-      `You asked for ${b} · ${name}. None of your picks moves it: pick a flagged addition to get there, or apply these and stay at ${from}.`,
+    bracketStays: (bracketNumber: number, name: string) => `bracket stays ${bracketNumber} · ${name}`,
+    bracketReached: (fromBracket: number, toBracket: number, name: string) => `bracket ${fromBracket} → ${toBracket} · ${name}, as asked`,
+    bracketMissed: (askedBracket: number, name: string, fromBracket: number) =>
+      `You asked for ${askedBracket} · ${name}. None of your picks moves it: pick a flagged addition to get there, or apply these and stay at ${fromBracket}.`,
     apply: (changes: number) => `Apply ${changes} changes`,
     applied: "back at 99",
     appliedLine: "Applied as one change. The rest stay here: pick another equal set to take more.",
@@ -145,10 +145,10 @@ export const suggestedChangesV2Copy = {
   },
   confirm: {
     eyebrow: "Suggested changes",
-    title: (n: number) => `Apply ${n} in, ${n} out`,
+    title: (swapCount: number) => `Apply ${swapCount} in, ${swapCount} out`,
     lead: (bracket: string) => `The deck stays at 99. ${bracket}`,
-    comingIn: (n: number) => `Coming in · ${n}`,
-    goingOut: (n: number) => `Going out · ${n}`,
+    comingIn: (cardCount: number) => `Coming in · ${cardCount}`,
+    goingOut: (cardCount: number) => `Going out · ${cardCount}`,
     apply: (changes: number) => `Apply ${changes} changes`,
     // Small items 4, item 2 (Other-Decks board, the confirmation): a held addition's staged pull, the Undo that takes the
     // choice back, and the foot line drawn only while a held card is coming in. `in {deck}`, `in N decks`, `Pull it` and
@@ -167,18 +167,18 @@ export const suggestedChangesV2Copy = {
   // lacks. Each names the board it is read off. Passed /copy-review 2026-10-28.
   run: {
     /** The live tally's two figures; the minus is U+2212. */
-    tallyIn: (n: number) => `+${n} in`,
-    tallyOut: (n: number) => `−${n} out`,
+    tallyIn: (cardCount: number) => `+${cardCount} in`,
+    tallyOut: (cardCount: number) => `−${cardCount} out`,
     // The results head's `New run` (Results boards): a fresh intake, the request box empty as always.
     newRun: "New run",
     // You asked's quieter line (Results boards: "3 in, 3 out · keep 2 · Core · no cap · any set · any card").
-    askedCount: (n: number) => `${n} in, ${n} out`,
-    askedKeep: (b: number, name: string) => `keep ${b} · ${name}`,
+    askedCount: (swapCount: number) => `${swapCount} in, ${swapCount} out`,
+    askedKeep: (bracketNumber: number, name: string) => `keep ${bracketNumber} · ${name}`,
     // Keep on a deck read as a range, as the intake offered it ("Keep at 1 or 2 · Exhibition or Core").
-    askedKeepRange: (low: number, high: number, face: string) => `keep ${low} or ${high} · ${face}`,
+    askedKeepRange: (lowBracketNumber: number, highBracketNumber: number, face: string) => `keep ${lowBracketNumber} or ${highBracketNumber} · ${face}`,
     askedCap: (dollars: string) => `most ${dollars} a card`,
     askedNoCap: "no cap",
-    askedSets: (sets: string) => `from ${sets}`,
+    askedSets: (setNames: string) => `from ${setNames}`,
     askedAnySet: "any set",
     askedOwned: "cards you own",
     // Bold after `askedOwned` when the run also offered copies held in other decks (Small items 4, item 2).
@@ -187,20 +187,20 @@ export const suggestedChangesV2Copy = {
     // The phone halves' accessible name (the board draws only the two segments).
     halves: "Additions or cuts",
     // A side's count chip once its picks are in (Results-3 D: "3 applied"); the halves carry `n of N`.
-    ofN: (k: number, n: number) => `${k} of ${n}`,
+    ofN: (chosenCount: number, totalCount: number) => `${chosenCount} of ${totalCount}`,
     // The wait's phone segment for a side not started yet (Wait A: "Cuts next").
     next: "next",
     // A side's head while it is arriving (Wait A: "Additions 4 so far").
-    soFar: (n: number) => `${n} so far`,
+    soFar: (foundCount: number) => `${foundCount} so far`,
     // Apply while it is off (Results-3 A, B and the wait: the board draws the bare word).
     applyOff: "Apply",
     // The bar with nothing picked (Results-3 A: the quiet count alone).
     nonePicked: "0 in · 0 out",
     // The lead once a set is applied (Results-3 D).
-    appliedLead: (n: number, rest: number) => `Applied ${n} in, ${n} out. The deck is back at 99.${
+    appliedLead: (swapCount: number, rest: number) => `Applied ${swapCount} in, ${swapCount} out. The deck is back at 99.${
       rest === 0 ? "" : rest === 1 ? " The other one stays here." : ` The other ${rest} stay here.`}`,
     // The lead when a list came back under N (Short-Run: "14 to add and 21 to cut. Pick up to 14 of each.").
-    shortLead: (a: number, c: number, n: number) => `${a} to add and ${c} to cut. Pick up to ${n} of each.`,
+    shortLead: (addCount: number, cutCount: number, pickLimit: number) => `${addCount} to add and ${cutCount} to cut. Pick up to ${pickLimit} of each.`,
     // A pick refused (the line was taken, or the run retired): the row rolls back and says so.
     pickRefused: "Couldn’t save that pick. Try again.",
   },
@@ -209,30 +209,30 @@ export const suggestedChangesV2Copy = {
   // than 10 changes once 2 credits applied (Hugh 2026-10-30), else 1.
   short: {
     // Short-Run A, the cap (charged): `results.shortCap` is the head.
-    capBody: (asked: number, dropped: number, cap: string, n: number) =>
-      `You asked for ${asked}. The run named ${dropped} more that cost over ${cap} a card, so you can apply up to ${n} of each.`,
+    capBody: (askedCount: number, dropped: number, cap: string, pickLimit: number) =>
+      `You asked for ${askedCount}. The run named ${dropped} more that cost over ${cap} a card, so you can apply up to ${pickLimit} of each.`,
     capCredit: (units: number) => `${units === 2 ? "2 credits" : "1 credit"} used: your cap set the count`,
     capLink: "Raise the cap in a new run ›",
     // The other restrictions that can bind a list (spec §5.5), charged as the cap is.
     setHead: (found: number, side: string) => `Found ${found} ${side} in the sets you chose.`,
     ownedHead: (found: number, side: string) => `Found ${found} ${side} you own.`,
     aimHead: (found: number, side: string) => `Found ${found} ${side} that ${found === 1 ? "fits" : "fit"} the bracket you chose.`,
-    bodyBound: (asked: number, n: number) => `You asked for ${asked}. Your limits held the run short, so you can apply up to ${n} of each.`,
+    bodyBound: (askedCount: number, pickLimit: number) => `You asked for ${askedCount}. Your limits held the run short, so you can apply up to ${pickLimit} of each.`,
     // Owned only, and every owned card that fits was used: the pool ran out, not the run.
-    ownedExhaustedBody: (asked: number, n: number) => `You asked for ${asked}. That’s every card you own that fits, so you can apply up to ${n} of each.`,
+    ownedExhaustedBody: (askedCount: number, pickLimit: number) => `You asked for ${askedCount}. That’s every card you own that fits, so you can apply up to ${pickLimit} of each.`,
     boundCredit: (units: number) => `${units === 2 ? "2 credits" : "1 credit"} used: your limits set the count`,
     boundLink: "Change them in a new run ›",
     // Short-Run B, no restriction explains it (refunded).
     refundHead: (found: number, side: string) => `Found ${found} ${side}.`,
-    refundBody: (asked: number, units: number) =>
-      `You asked for ${asked}. Nothing you set explains the gap: the run fell short on its own, so ${units === 2 ? "both credits are" : "the credit is"} back.`,
+    refundBody: (askedCount: number, units: number) =>
+      `You asked for ${askedCount}. Nothing you set explains the gap: the run fell short on its own, so ${units === 2 ? "both credits are" : "the credit is"} back.`,
     refundCredit: (units: number) => (units === 2 ? "2 credits returned" : "Credit returned"),
     // Short-Run B with the allowance's standing: "Credit returned · 5 of 5 left".
     refundCreditLeft: (units: number, left: number, total: number) =>
       `${units === 2 ? "2 credits returned" : "Credit returned"} · ${left} of ${total} left`,
     // A head's side, by the count it follows ("Found 1 addition you own.").
-    additions: (n: number) => (n === 1 ? "addition" : "additions"),
-    cuts: (n: number) => (n === 1 ? "cut" : "cuts"),
+    additions: (additionCount: number) => (additionCount === 1 ? "addition" : "additions"),
+    cuts: (cutCount: number) => (cutCount === 1 ? "cut" : "cuts"),
     // Wait E's reason, after "Cuts came up 3 short of 15: ".
     reasons: {
       overCap: "the rest cost over your cap",
@@ -249,10 +249,10 @@ export const suggestedChangesV2Copy = {
       `The cuts didn’t come through this time, so nothing here can be applied and ${units === 2 ? "both credits are" : "the credit is"} back. Your additions stay here to read.`,
   },
   // Down's missed aim (the handoff words only Up's: "pick a flagged addition").
-  barMissedDown: (b: number, name: string, from: number) =>
-    `You asked for ${b} · ${name}. None of your picks moves it: pick a cut that lowers it to get there, or apply these and stay at ${from}.`,
+  barMissedDown: (askedBracket: number, name: string, fromBracket: number) =>
+    `You asked for ${askedBracket} · ${name}. None of your picks moves it: pick a cut that lowers it to get there, or apply these and stay at ${fromBracket}.`,
   // The bar's sides, as `bar.unequal` names them ("Pick 1 more cut").
-  barSide: { add: (n: number) => (n === 1 ? "addition" : "additions"), cut: (n: number) => (n === 1 ? "cut" : "cuts") },
+  barSide: { add: (additionCount: number) => (additionCount === 1 ? "addition" : "additions"), cut: (cutCount: number) => (cutCount === 1 ? "cut" : "cuts") },
   // The confirmation's close and its press while it applies.
   confirmClose: "Close",
   applying: "Applying…",
@@ -262,21 +262,21 @@ export const suggestedChangesV2Copy = {
   // PR 7b: History (History A, B and C). `summary` and `oldRunLead` verbatim from the handoff's copy file; the rest are
   // read off the boards and are PLACEHOLDERS for /copy-review. The past-run note and the dates are tuningHubCopy's.
   history: {
-    summary: (asked: number, found: string, applied: string) => `${asked} asked · ${found} found · ${applied} applied`,
-    oldRunLead: (n: number, date: string) => `Applied ${n} in, ${n} out on ${date}.`,
+    summary: (askedCount: number, found: string, applied: string) => `${askedCount} asked · ${found} found · ${applied} applied`,
+    oldRunLead: (swapCount: number, date: string) => `Applied ${swapCount} in, ${swapCount} out on ${date}.`,
     // History A: the two lists' counts, as `found` and `applied` quote them ("14 + 21", "3 + 3").
-    pair: (a: number, c: number) => `${a} + ${c}`,
+    pair: (addCount: number, cutCount: number) => `${addCount} + ${cutCount}`,
     // History A: an ok run leads with its count as You asked writes it ("3 in, 3 out · 5 + 5 found · 3 + 3 applied").
     summaryOk: (count: string, found: string, applied: string) => `${count} · ${found} found · ${applied} applied`,
     // History A: `summary` for a short run that read a price cap ("20 asked · 14 + 21 found under $2 · 14 + 14 applied").
-    summaryCapped: (asked: number, found: string, cap: string, applied: string) =>
-      `${asked} asked · ${found} found under ${cap} · ${applied} applied`,
+    summaryCapped: (askedCount: number, found: string, cap: string, applied: string) =>
+      `${askedCount} asked · ${found} found under ${cap} · ${applied} applied`,
     // History A: a run nothing was applied from ("nothing applied").
     appliedNone: "nothing",
     // History A: a run asked with the box left empty.
     noRequest: "No request",
     // History A: a run being made ("10 in, 10 out · choosing cuts"), with the tile's words.
-    running: (n: number, words: string) => `${n} in, ${n} out · ${words}`,
+    running: (swapCount: number, statusText: string) => `${swapCount} in, ${swapCount} out · ${statusText}`,
     // Wait A's tile and History A: the run is choosing its cuts. Before that it is `tuningHubCopy.runningWords.suggested`.
     choosingCuts: "choosing cuts",
     // History B: after `oldRunLead`, the unpicked rows ("The other 4 are still pickable.").
@@ -287,10 +287,10 @@ export const suggestedChangesV2Copy = {
       : rest === 1 ? `The other one is still pickable while the deck is on version ${version}.`
         : `The other ${rest} are still pickable while the deck is on version ${version}.`),
     // History C: the lists and what was applied from them ("5 to add and 5 to cut · 2 + 2 applied on Oct 19.").
-    staleLists: (a: number, c: number) => `${a} to add and ${c} to cut`,
+    staleLists: (addCount: number, cutCount: number) => `${addCount} to add and ${cutCount} to cut`,
     staleApplied: (applied: string, date: string) => ` · ${applied} applied on ${date}.`,
     // History C with nothing applied from the run (the board draws only a run with some applied).
-    staleListsOnly: (a: number, c: number) => `${a} to add and ${c} to cut.`,
+    staleListsOnly: (addCount: number, cutCount: number) => `${addCount} to add and ${cutCount} to cut.`,
   },
   // Why these cards (handoff design_handoff_the99_overview_stages §2, PR 2a): the words the APP writes into a side's line
   // around the model's group phrases ("Five are answers at one or two mana, like Swords to Plowshares; three keep cards

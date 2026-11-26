@@ -8,7 +8,7 @@ import { GAME_HISTORY_WINDOW } from "../games/history-rules";
 import { gameLogCopy } from "./game-log";
 
 const n = (x: number) => x.toLocaleString("en-US");
-const games = (k: number) => `${n(k)} ${k === 1 ? "game" : "games"}`;
+const games = (gameCount: number) => `${n(gameCount)} ${gameCount === 1 ? "game" : "games"}`;
 
 export const gameHistoryCopy = {
   /** The line under the view row: what the list holds. */
@@ -22,10 +22,10 @@ export const gameHistoryCopy = {
     return gameLogCopy.headline.recordOnly(n(total), record);
   },
   /** The first facts line. `6 decks`, or the deck's own name when every game is on one deck. */
-  decks: (k: number) => `${n(k)} ${k === 1 ? "deck" : "decks"}`,
+  decks: (deckCount: number) => `${n(deckCount)} ${deckCount === 1 ? "deck" : "decks"}`,
   pods: (min: number, max: number) => (min === max ? `pod of ${min}` : `pods of ${min}–${max}`),
   /** `most played <deck>, 8 of 23`: lead, then the deck in bold, then the tail. From PATTERN_MIN games, when one deck leads outright. */
-  mostPlayed: { lead: "most played", tail: (k: number, total: number) => `, ${n(k)} of ${n(total)}` },
+  mostPlayed: { lead: "most played", tail: (gameCount: number, total: number) => `, ${n(gameCount)} of ${n(total)}` },
   /** Copy-reviewed (game history). Under PATTERN_MIN games the headline is a count and this says where games come from. */
   low: "Games from every deck land here, newest first.",
   /** The window's foot: what is shown of the whole, and the press for more. */
@@ -61,7 +61,7 @@ export const gameHistoryCopy = {
     /** DRAFT: the Deck panel's search field. */
     deckSearch: "Find a deck",
     /** DRAFT: the Deck panel's foot, for decks with no game under the other filters (so "match", not "logged"). */
-    deckLeftOut: (k: number) => `${k} ${k === 1 ? "deck" : "decks"} left out: no games match`,
+    deckLeftOut: (deckCount: number) => `${deckCount} ${deckCount === 1 ? "deck" : "decks"} left out: no games match`,
     /** DRAFT: the Deck list when the search matches nothing. */
     noDeck: "No deck matches.",
     /** DRAFT: the ✕ on the Played against trigger. */
@@ -79,13 +79,13 @@ export const gameHistoryCopy = {
     /** The summary box's band: `7 games logged · 4 decks`, or the deck's own name in the second slot. */
     band: (total: number, lead: string) => `${games(total)} logged · ${lead}`,
     /** A month box's band: `November 2026 · 4 games`. */
-    month: (label: string, k: number) => `${label} · ${games(k)}`,
+    month: (label: string, gameCount: number) => `${label} · ${games(gameCount)}`,
     /** Spoken for the record mark: `4 wins, 2 losses, 1 draw`. */
-    record: (w: number, l: number, d: number) =>
-      [`${w} ${w === 1 ? "win" : "wins"}`, `${l} ${l === 1 ? "loss" : "losses"}`, ...(d > 0 ? [`${d} ${d === 1 ? "draw" : "draws"}`] : [])].join(", "),
+    record: (winCount: number, lossCount: number, drawCount: number) =>
+      [`${winCount} ${winCount === 1 ? "win" : "wins"}`, `${lossCount} ${lossCount === 1 ? "loss" : "losses"}`, ...(drawCount > 0 ? [`${drawCount} ${drawCount === 1 ? "draw" : "draws"}`] : [])].join(", "),
     cell: { pods: "Pods", played: "Played", last: "Last played", most: "Most played" },
     players: (min: number, max: number) => (min === max ? `${min} players` : `${min} to ${max} players`),
-    mostOf: (k: number, total: number) => `${n(k)} of ${n(total)}`,
+    mostOf: (gameCount: number, total: number) => `${n(gameCount)} of ${n(total)}`,
   },
   /** One game's row in both tabs. */
   row: {
@@ -104,7 +104,7 @@ export const gameHistoryCopy = {
   /** The summary's facts line under a Played against filter: `HD - Sai with Colin at the table`. */
   scoped: { with: "with", atTable: "at the table" },
   /** The trophy line under a friend filter: `Colin won 2 of the 3 you lost`, the name drawn before this. */
-  beatMe: (won: number, losses: number) => ` won ${n(won)} of the ${n(losses)} you lost`,
+  beatMe: (winCount: number, losses: number) => ` won ${n(winCount)} of the ${n(losses)} you lost`,
   empty: {
     title: "No games logged yet.",
     // Copy-reviewed (game history).
