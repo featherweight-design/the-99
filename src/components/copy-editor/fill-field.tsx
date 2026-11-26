@@ -18,13 +18,26 @@ function chip(name: string, removeLabel: (name: string) => string): HTMLSpanElem
   el.textContent = `⠿ ${name}`;
   el.className =
     "mx-[1px] inline-flex items-center gap-[2px] cursor-grab rounded-[6px] border border-[color:color-mix(in_srgb,var(--accent)_55%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] pl-[6px] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--accent-text)]";
+  // The drawn ✕ is a 16px circle; an invisible box around it takes the press (36px on a phone, so a tap there never starts
+  // a drag; 24px on desktop, the WCAG 2.2 minimum). It is a Tab stop: Enter or Space removes the chip.
   const x = document.createElement("button");
   x.type = "button";
   x.setAttribute(REMOVE, "");
   x.setAttribute("aria-label", removeLabel(name));
-  x.tabIndex = -1;
-  x.textContent = "✕";
-  x.className = "flex h-[20px] min-w-[20px] items-center justify-center rounded-[6px] px-[3px] text-[10px] leading-none text-[color:var(--accent-text)]";
+  x.className =
+    "relative mx-[3px] flex h-[16px] w-[16px] flex-none items-center justify-center rounded-full text-[color:var(--accent-text)] before:absolute before:-inset-[10px] before:content-[''] md:before:-inset-[4px] md:hover:bg-[color:color-mix(in_srgb,var(--accent)_55%,transparent)]";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "10");
+  svg.setAttribute("height", "10");
+  svg.setAttribute("viewBox", "0 0 10 10");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M2 2l6 6M8 2l-6 6");
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "1.5");
+  path.setAttribute("stroke-linecap", "round");
+  svg.append(path);
+  x.append(svg);
   el.append(x);
   return el;
 }
@@ -89,6 +102,7 @@ export function FillField({
   removeLabel,
   autoFocus,
   handle,
+  onFillChange,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -97,14 +111,35 @@ export function FillField({
   removeLabel: (name: string) => string;
   autoFocus?: boolean;
   handle?: Ref<FillFieldHandle>;
+  /** A fill-in left or entered the field, for the editor's polite announcement. */
+  onFillChange?: (name: string, how: "removed" | "inserted") => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  // Where the caret last sat in the field, so an insert button reached by Tab still puts the chip there.
+  const caret = useRef<Range | null>(null);
+
+  useEffect(() => {
+    const save = () => {
+      const sel = window.getSelection();
+      if (host.current && sel && sel.rangeCount > 0 && host.current.contains(sel.getRangeAt(0).startContainer)) caret.current = sel.getRangeAt(0).cloneRange();
+    };
+    document.addEventListener("selectionchange", save);
+    return () => document.removeEventListener("selectionchange", save);
+  }, []);
 
   useEffect(() => {
     const el = host.current;
     if (!el) return;
     build(el, value, removeLabel);
-    if (autoFocus) el.focus();
+    if (autoFocus) {
+      el.focus();
+      // The caret starts at the end, so an insert before the editor places it lands there.
+      const end = document.createRange();
+      end.selectNodeContents(el);
+      end.collapse(false);
+      window.getSelection()?.removeAllRanges();
+      window.getSelection()?.addRange(end);
+    }
     // Mounted once per field: the parent keys it by row, and later values come from this field.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -120,26 +155,38 @@ export function FillField({
       const range = document.createRange();
       range.setStartBefore(c);
       range.collapse(true);
+      const name = c.getAttribute(CHIP) ?? "";
       c.remove();
       el.focus();
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
       commit();
+      onFillChange?.(name, "removed");
     },
-    [commit],
+    [commit, onFillChange],
   );
 
   useImperativeHandle(
     handle,
     () => ({
       insertFill: (name: string) => {
-        if (!host.current) return;
-        insertChip(host.current, name, removeLabel);
+        const el = host.current;
+        if (!el) return;
+        // Back into the field (the phone keyboard stays up), at the caret it last had, then the chip goes there.
+        el.focus();
+        const sel = window.getSelection();
+        const at = caret.current;
+        if (sel && at && el.contains(at.startContainer)) {
+          sel.removeAllRanges();
+          sel.addRange(at);
+        }
+        insertChip(el, name, removeLabel);
         commit();
+        onFillChange?.(name, "inserted");
       },
     }),
-    [commit, removeLabel],
+    [commit, removeLabel, onFillChange],
   );
 
   return (

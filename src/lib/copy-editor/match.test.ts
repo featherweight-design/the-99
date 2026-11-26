@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { landingCopy } from "../copy/landing";
-import { indexRows, matchText } from "./match";
+import { fillValues, indexRows, matchText } from "./match";
 import type { EditorRow } from "./rows";
 
 const step = landingCopy.bring.firstTimer.steps[0];
@@ -74,5 +74,19 @@ describe("matchText", () => {
 
   it("matches nothing for empty text", () => {
     expect(keys("   ")).toEqual([]);
+  });
+});
+
+describe("fillValues", () => {
+  it("reads each fill-in's text off the visible line, by name", () => {
+    expect(fillValues(row("x", "Fixture {who} has {n} picks", ["who", "n"]), "Fixture  Wren has nine picks")).toEqual({ who: "Wren", n: "nine" });
+  });
+  it("keeps the first capture of a repeated fill-in", () => {
+    expect(fillValues(row("x", "Fixture {n} of {n} picks", ["n", "n"]), "Fixture 2 of 3 picks")).toEqual({ n: "2" });
+  });
+  it("has nothing when the line is plain, does not fit, or there is no visible text", () => {
+    expect(fillValues(row("x", "Fixture plain"), "Fixture plain")).toEqual({});
+    expect(fillValues(row("x", "Fixture {n} picks", ["n"]), "Something else")).toEqual({});
+    expect(fillValues(row("x", "Fixture {n} picks", ["n"]), undefined)).toEqual({});
   });
 });

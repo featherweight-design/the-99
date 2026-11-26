@@ -37,8 +37,8 @@ Art: `art/ce-<p|d>-ed-fill-<state>.webp` (phone 390 at 2x, desktop 1300 at 1.5x)
 
 ### I2. The chip's ✕
 - Always visible, after the name, on both widths. Chip otherwise unchanged (grip, mono 12, 16% fill, 55% border, radius 6).
-- 10px stroke ✕ in a 16px round target, accent colour; desktop hover fills it 55% accent. Phone: 36px hit box
-  centred on the ✕ (invisible), so a tap there never starts a drag. Grip and name still drag.
+- 10px stroke ✕ in a 16px round target, accent color; desktop hover fills it 55% accent. Phone: 36px hit box
+  centered on the ✕ (invisible), so a tap there never starts a drag. Grip and name still drag.
 - Backspace or Delete beside a chip removes it too.
 - `Now` keeps today's chip with no ✕ (Now isn't editable).
 
@@ -62,5 +62,5 @@ Art: `art/ce-<p|d>-ed-fill-<state>.webp` (phone 390 at 2x, desktop 1300 at 1.5x)
 - New strings for `src/lib/copy/copy-editor.ts`: `editor.insert` "Insert at cursor",
   `editor.insertLabel(name)` "Insert {name} at the cursor", `editor.removeFill(name)` "Remove {name}",
   `editor.fill(name, value?)` per I5.
-- `scratch-gen-insert/gen_ins.py` builds the boards; `art/ce-d-ed-fill-base.webp` is the R1 page with the old
+- `scratch-gen/gen_ins.py` builds the boards; `art/ce-d-ed-fill-base.webp` is the R1 page with the old
   popover cleared (patched from `ce-d-target`).

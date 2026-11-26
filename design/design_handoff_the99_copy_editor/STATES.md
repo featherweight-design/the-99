@@ -9,6 +9,9 @@ Art: `art/ce-<p|d>-<state>.webp` (phone 390 at 2x, desktop 1300 at 1.5x).
 | 3 | Text targeted | `target` | Solid outline and the file · key tag. |
 | 4 | Editor, plain | `ed-plain` | Now / New, word count against the cap. |
 | 5 | Editor, fill-ins | `ed-fill` | `{names}` chip, fill-in note, preview. |
+| 5a | Fill-in removed, offered back | `ed-fill-removed` | Chip taken out (✕ or Backspace); `Insert at cursor` row offers it back with its value. ADDENDUM-insert-fill.md. |
+| 5b | Insert open, placing | `ed-fill-insert` | Caret placed; insert button hovered or pressed; the chip lands at the caret. |
+| 5c | None left to insert | `ed-fill-none` | Chip back with its ✕; no insert row; the value note. |
 | 6 | Editor, variations | `ed-var` | Two labelled fields, one preview. Phone target is the History list. |
 | 7 | Editor, rule error | `ed-err` | Em dash, exclamation mark, 9 of 8 words; Add disabled. |
 | 8 | Editor, read-only | `ed-ro` | Lock, reason, Copy key / Close. |

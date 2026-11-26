@@ -18,7 +18,7 @@ No brief file: Hugh's design prompt (2026-11-24) is the brief. Its five locked p
 | 1 | Admins only, staging only | Door and mode render only when the viewer is an admin and `adminEnvironment()` reads `staging`. Players and production get nothing, not even the script. The bar says `staging`. |
 | 2 | Visible text only | Only on-screen text is outlined and clickable. No search and no hidden-string list; screen-reader labels, alt text and placeholders are left to the review after submit. |
 | 3 | Tray, one Submit, one PR; staging unchanged until merge | Edits collect in the tray across pages. Open pull request makes one branch and one PR. Submitted says staging changes on merge, and the page returns to today's staging text. |
-| 4 | Current wording, locked fill-in chips, variations together, live rule errors | Every editor shows Now above New. `{fill-ins}` are chips that drag but can't be deleted. A line's variations edit together, labelled by when each shows. The copy sheet's refusals run as you type. |
+| 4 | Current wording, locked fill-in chips, variations together, live rule errors | Every editor shows Now above New. `{fill-ins}` are chips that drag, and can be removed and inserted (see ADDENDUM-insert-fill.md). A line's variations edit together, labelled by when each shows. The copy sheet's refusals run as you type. |
 | 5 | Read-only text visibly not editable, with a reason | Dotted grey outline, a lock in the editor, one-line reason: data not copy (theme names, card names in demo decks), or `edit in code` naming the helper that builds it. |
 
 ## States delivered (phone 390 and desktop 1300)
@@ -51,7 +51,7 @@ tray with edits; submitting, submitted, failed.
 - Head: `file · key` (mono 12px) and a kind line (mono 10.5px caps): `title · up to 8 words`, `caption`,
   `2 variations · chip`, `🔒 read only`. Close ✕.
 - `Now`: today's text with chips, `--fg-muted`. `New`: the field (focus ring accent; error ring danger).
-- Chip: mono 12px, accent text on 16% accent, 1px 55% accent border, radius 6px, grip `⠿`. Moves, never deletes.
+- Chip: mono 12px, accent text on 16% accent, 1px 55% accent border, radius 6px, grip `⠿`. Moves, removes (✕) and inserts per ADDENDUM-insert-fill.md.
 - Variations: one field per variation, labelled `When n is 1 · now "{n} pick"` / `Otherwise · now "{n} picks"`.
 - Rule line under the field, live: count against the cap (`3 of 8 words`), a fill-in note, a `Preview:` line;
   errors in `--danger`, each its own line, the offending characters marked in the field. `Add to edits` is

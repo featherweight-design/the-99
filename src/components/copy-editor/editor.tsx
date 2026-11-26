@@ -4,11 +4,11 @@
 // reason instead of a field.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { copyEditorCopy } from "../../lib/copy/copy-editor";
-import { baseKey, check, variationLabel, variationsOf, type Edit } from "../../lib/copy-editor/edits";
+import { baseKey, check, unusedFills, variationLabel, variationsOf, type Edit } from "../../lib/copy-editor/edits";
 import { keyLabel } from "../../lib/copy-editor/key-label";
-import type { Match } from "../../lib/copy-editor/match";
+import { fillValues, type Match } from "../../lib/copy-editor/match";
 import type { EditorRow } from "../../lib/copy-editor/rows";
-import { FillField } from "./fill-field";
+import { FillField, type FillFieldHandle } from "./fill-field";
 import { OVERLAY_ATTR, type Box } from "./scan";
 
 const t = copyEditorCopy.editor;
@@ -18,13 +18,15 @@ const leafOf = (key: string) => keyLabel(key).path.split(/[.\[#]/).filter(Boolea
 export type EditorProps = {
   rows: readonly EditorRow[];
   matches: Match[];
+  /** The line's text as the page shows it, which says what each fill-in reads here. */
+  visible?: string;
   box: Box;
   edits: readonly Edit[];
   onSave: (upsert: Edit[], drop: string[]) => void;
   onClose: () => void;
 };
 
-export function Editor({ rows, matches, box, edits, onSave, onClose }: EditorProps) {
+export function Editor({ rows, matches, visible, box, edits, onSave, onClose }: EditorProps) {
   const choices = useMemo(() => {
     const seen = new Map<string, EditorRow>();
     for (const m of matches) if (!seen.has(baseKey(m.row.key))) seen.set(baseKey(m.row.key), m.row);
@@ -82,7 +84,7 @@ export function Editor({ rows, matches, box, edits, onSave, onClose }: EditorPro
         style={{ "--pop-top": `${top}px`, "--pop-left": `${left}px` } as React.CSSProperties}
         className="fixed inset-x-0 bottom-0 z-[71] max-h-[85dvh] overflow-y-auto rounded-t-[20px] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-4 shadow-[var(--modal-shadow)] md:inset-x-auto md:bottom-auto md:left-[var(--pop-left)] md:top-[var(--pop-top)] md:max-h-[70dvh] md:w-[420px] md:rounded-[14px]"
       >
-        {row === null ? <Which choices={choices} onPick={setRow} onClose={onClose} /> : <Body key={row.key} rows={rows} row={row} edits={edits} onSave={onSave} onClose={onClose} />}
+        {row === null ? <Which choices={choices} onPick={setRow} onClose={onClose} /> : <Body key={row.key} rows={rows} row={row} visible={visible} edits={edits} onSave={onSave} onClose={onClose} />}
       </div>
     </div>
   );
@@ -128,8 +130,27 @@ function Which({ choices, onPick, onClose }: { choices: EditorRow[]; onPick: (r:
   );
 }
 
-function Body({ rows, row, edits, onSave, onClose }: { rows: readonly EditorRow[]; row: EditorRow; edits: readonly Edit[]; onSave: EditorProps["onSave"]; onClose: () => void }) {
+function Body({
+  rows,
+  row,
+  visible,
+  edits,
+  onSave,
+  onClose,
+}: {
+  rows: readonly EditorRow[];
+  row: EditorRow;
+  visible: string | undefined;
+  edits: readonly Edit[];
+  onSave: EditorProps["onSave"];
+  onClose: () => void;
+}) {
   const set = useMemo(() => variationsOf(rows, row), [rows, row]);
+  // What each fill-in reads on this page, per variation: only the variation the page shows fits the visible text.
+  const shown = useMemo(() => Object.fromEntries(set.map((r) => [r.key, fillValues(r, visible)])), [set, visible]);
+  const fields = useRef<Record<string, FillFieldHandle | null>>({});
+  const [said, setSaid] = useState("");
+  const announce = useCallback((name: string, how: "removed" | "inserted") => setSaid(how === "removed" ? t.removed(name) : t.inserted(name)), []);
   const made = (key: string) => edits.find((e) => e.key === key);
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(set.map((r) => [r.key, made(r.key)?.to ?? r.text])));
   const [copied, setCopied] = useState(false);
@@ -192,10 +213,26 @@ function Body({ rows, row, edits, onSave, onClose }: { rows: readonly EditorRow[
                 <div className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase text-[color:var(--fg-faint)]">{t.new}</div>
               </>
             )}
-            <FillField label={t.fieldLabel} removeLabel={t.removeFill} value={values[r.key]} invalid={c.problems.length > 0} autoFocus={i === 0} onChange={(next) => setValues((v) => ({ ...v, [r.key]: next }))} />
+            <FillField
+              label={t.fieldLabel}
+              removeLabel={t.removeFill}
+              value={values[r.key]}
+              invalid={c.problems.length > 0}
+              autoFocus={i === 0}
+              handle={(h) => {
+                fields.current[r.key] = h;
+              }}
+              onFillChange={announce}
+              onChange={(next) => setValues((v) => ({ ...v, [r.key]: next }))}
+            />
+            <InsertRow names={unusedFills(r, values[r.key])} values={shown[r.key]} onInsert={(name) => fields.current[r.key]?.insertFill(name)} />
             <div role="status" className="mt-1 text-[12px]">
               <div className="text-[color:var(--fg-muted)]">{t.words(c.words, c.cap)}</div>
-              {/\{[^{}]+\}/.test(values[r.key] ?? "") && <div className="text-[color:var(--fg-muted)]">{t.fill}</div>}
+              {chipsIn(values[r.key]).map((name) => (
+                <div key={name} className="text-[color:var(--fg-muted)]">
+                  {t.fill(name, shown[r.key][name])}
+                </div>
+              ))}
               {c.problems.map((p) => (
                 <div key={p} className="text-[color:var(--danger)]">
                   {sentence(p)}.
@@ -206,6 +243,9 @@ function Body({ rows, row, edits, onSave, onClose }: { rows: readonly EditorRow[
           </div>
         );
       })}
+      <div aria-live="polite" className="sr-only">
+        {said}
+      </div>
       <div className="mt-4 flex items-center justify-end gap-2">
         {reopened && (
           <button type="button" onClick={() => onSave([], set.filter((r) => made(r.key)).map((r) => r.key))} className="mr-auto text-[13px] text-[color:var(--danger)] underline">
@@ -225,5 +265,40 @@ function Body({ rows, row, edits, onSave, onClose }: { rows: readonly EditorRow[
         </button>
       </div>
     </>
+  );
+}
+
+/** The fill-ins in a field's text, each once, in the order they appear: one note line each. */
+const chipsIn = (text: string) => [...new Set([...text.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]))];
+
+/**
+ * The fill-ins this line supplies that its text no longer uses, one button each, under the field. A press keeps the
+ * field's focus and caret, and the chip lands there (or at the end when no caret was placed). No row when none is left.
+ */
+function InsertRow({ names, values, onInsert }: { names: string[]; values: Record<string, string>; onInsert: (name: string) => void }) {
+  if (names.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <div className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase text-[color:var(--fg-faint)]">{t.insert}</div>
+      <div className="mt-1 flex flex-wrap gap-2">
+        {names.map((name) => (
+          <button
+            key={name}
+            type="button"
+            aria-label={t.insertLabel(name)}
+            onPointerDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onInsert(name)}
+            className="flex h-10 min-w-0 max-w-full items-center gap-[6px] rounded-[8px] border border-dashed border-[color:color-mix(in_srgb,var(--accent)_55%,transparent)] px-[10px] hover:border-solid hover:bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] active:border-solid active:bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] md:h-8"
+          >
+            <span aria-hidden className="flex-none text-[13px] text-[color:var(--accent-text)]">
+              +
+            </span>
+            <span className="flex-none font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--accent-text)]">{name}</span>
+            {values[name] !== undefined && <span className="min-w-0 truncate text-[13px] text-[color:var(--fg-muted)]">{values[name]}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
