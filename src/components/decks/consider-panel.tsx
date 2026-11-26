@@ -159,8 +159,8 @@ export function rolesWithShelves(suggestions: DeckSuggestion[]): ReadonlySet<Mix
  * type would quietly break a control the player is using to ask a different question.
  *
  * AND TWO SHELVES ARE EXEMPT FROM `gaps` ENTIRELY, because their order is their claim. The
- * synergy shelf is built by sorting on `synergyFigure` and says so on its face — `ranked by
- * synergy · {n} to consider` — and the unowned append is EDHREC's own top picks. `gaps` is
+ * synergy shelf is built by sorting on `synergyFigure` and says so on its face (`ranked by
+ * synergy` in the band's clause) — and the unowned append is EDHREC's own top picks. `gaps` is
  * the DEFAULT sort (`builder-shell.tsx`), so re-ordering them here would have shipped a
  * synergy shelf ordered by type under a heading claiming otherwise, to every reader, before
  * they touched the control. Before this change `gaps` was a pass-through and both were safe
@@ -389,15 +389,13 @@ function ShelfSection({
         {desktop ? showAllButton : null}
         {/* The chevron at the band's far end is a second, mouse-only target for the same fold: the named
             disclosure button above stays the one tab stop. */}
-        <button
-          type="button"
-          tabIndex={-1}
+        <span
           aria-hidden
           onClick={() => { setPressed(true); onToggleFold(); }}
-          className="flex-none inline-flex min-h-[44px] min-w-[32px] items-center justify-center p-0 border-none bg-transparent cursor-pointer"
+          className="flex-none inline-flex min-h-[44px] min-w-[32px] items-center justify-center cursor-pointer"
         >
           <Chevron kind="disclosure" open={!folded} style={{ color: "var(--fg-muted)" }} />
-        </button>
+        </span>
       </div>
       {!desktop && !folded ? (
         <p className="m-0 px-[14px] pt-[8px] md:px-[16px]">{clause}</p>
@@ -598,13 +596,6 @@ export function ConsiderPanel({
             />
           </div>
 
-          {/* THE KEY, once for the panel rather than once per shelf — the marks are one
-              vocabulary and a reader learns it once. Above the shelves, so it is met before
-              the first glyph rather than after the last.
-
-              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
-              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
-              candidates". See `AddSurfaceMarkKey`. */}
           {shelves.map((shelf, i) => (
             <ShelfSection
               // Keyed on deckId too, not just the shelf key: `BuilderShell` is
@@ -644,6 +635,12 @@ export function ConsiderPanel({
               onSeeCards={onSeeCards}
             />
           ))}
+          {/* THE KEY, once for the panel rather than once per shelf: the marks are one vocabulary and a
+              reader learns it once. A box below the shelves, as the board draws it.
+
+              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
+              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
+              candidates". See `AddSurfaceMarkKey`. */}
           <DeckBox className="!mt-[16px] md:!mt-[20px]">
             <div className="flex flex-col gap-[8px] px-[14px] py-[12px] md:px-[16px]">
               <AddSurfaceMarkKey />
