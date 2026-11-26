@@ -9,13 +9,14 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
 import { PersonName, PersonText, personText } from "../../lib/person-name";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { OpponentInitials } from "./opponent-initials";
 import { TrophyIcon } from "./trophy-icon";
 import { vsParts } from "./game-vs-line";
 
 const copy = gameHistoryCopy.row;
 
-const TILE = "relative flex h-[74px] min-w-0 flex-col justify-end overflow-hidden rounded-[9px] px-[10px] py-[8px] ";
+const TILE = `${ART_CROP_TRIM.box} relative flex h-[74px] min-w-0 flex-col justify-end overflow-hidden rounded-[9px] px-[10px] py-[8px] `;
 
 function WonTag() {
   return (
@@ -29,7 +30,7 @@ function WonTag() {
 function Art({ src }: { src: string }) {
   return (
     <>
-      <ArtLayer src={src} style={{ backgroundPosition: "50% 20%" }} />
+      <ArtLayer src={src} style={{ backgroundPosition: "50% 20%", ...ART_CROP_TRIM.layer }} />
       <span aria-hidden className="absolute inset-0 bg-[linear-gradient(to_top,color-mix(in_srgb,var(--surface)_78%,transparent),transparent_70%)]" />
     </>
   );

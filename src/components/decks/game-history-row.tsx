@@ -104,9 +104,9 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       className={
         "list-none scroll-mt-[80px] border-0 border-b border-solid border-b-[color:var(--border)] px-[14px] py-[12px] last:border-b-0 md:px-[16px] " + (ringed ? "" : RING_FADE_CLASS + " ") +
         (ringed
-          ? "rounded-[10px] outline outline-2 outline-offset-0 outline-[color:var(--accent)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
+          ? "rounded-[10px] outline outline-2 -outline-offset-2 outline-[color:var(--accent)] shadow-[inset_0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
           // Unringed keeps a clear outline and halo, so the ring leaving fades (RING_FADE_CLASS) rather than snapping.
-          : "rounded-[9px] outline outline-2 outline-offset-0 outline-transparent shadow-[0_0_0_6px_transparent]")
+          : "rounded-[9px] outline outline-2 -outline-offset-2 outline-transparent shadow-[inset_0_0_0_6px_transparent]")
       }
     >
       <div className="flex items-center justify-between gap-[12px]">

@@ -34,6 +34,7 @@ import { GameEntry } from "./game-entry";
 import { groupByMonth, monthKey, MonthBox, SummaryBox, type SummaryCell } from "./game-boxes";
 import { formatPlayed } from "../../lib/decks/format";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { IdentityMark } from "./lineup/identity-mark";
 import { GamesFailedToast } from "./games-failed-toast";
 import { useZone } from "../zone-context";
@@ -266,7 +267,7 @@ function Summary({ data, games, decks, against }: { data: GamesPayload; games: r
       value: s.mostPlayed.name,
       sub: copy.boxes.mostOf(s.mostPlayed.games, s.games),
       art: deck?.artUri
-        ? <span aria-hidden className="relative h-[26px] w-[26px] flex-none overflow-hidden rounded-[6px] bg-elevated"><ArtLayer src={deck.artUri} style={{ backgroundPosition: "50% 25%" }} /></span>
+        ? <span aria-hidden className={`relative h-[26px] w-[26px] flex-none overflow-hidden rounded-[6px] bg-elevated ${ART_CROP_TRIM.box}`}><ArtLayer src={deck.artUri} style={{ backgroundPosition: "50% 25%", ...ART_CROP_TRIM.layer }} /></span>
         : deck ? <IdentityMark identity={deck.identity} /> : null,
     });
   }
