@@ -108,7 +108,7 @@ export const landingCopy = {
   written: {
     eyebrow: "Commander and precon pages",
     /** READINESS-audit finding 11: "Most", never "Every". The figure is the catalog's own count. */
-    title: (n: number) => `A write-up on why to build ${n.toLocaleString("en-US")} commanders`,
+    title: (commanderCount: number) => `A write-up on why to build ${commanderCount.toLocaleString("en-US")} commanders`,
     /** The count is missing: say what the page does, claim no figure. */
     titleNoCount: "Commander pages say why to build them",
     /** Finding 11: "Almost every precon". Said by the sentences that are true of what was drawn. */
@@ -158,7 +158,7 @@ export const landingCopy = {
     markedCount: (markedCount: number, total: number) => `${markedCount} of ${total} \u00b7 the cards with a mark`,
     showAll: (total: number) => `Show all ${total}`,
     /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
-    commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
+    commandersCount: (commanderCount: number, player: string) => `${commanderCount.toLocaleString("en-US")} ${commanderCount === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
     /** Step 4's line under the commander, the deck's own split: copies built of 99, owned, and to buy. */
     deckFigure: (built: number, owned: number, toBuy: number) => `${built} / 99 \u00b7 ${owned} owned \u00b7 ${toBuy} to buy`,
     /** Step 4's note under the list, drawn only when a row is short because another deck holds the player\u2019s one copy: the
@@ -199,7 +199,7 @@ export const landingCopy = {
       { id: "buy", title: () => "Buy only what\u2019s missing", tags: [], line: (playerName: string) => `Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck ${playerName} has.`, press: null },
     ],
     /** How many tools the demo steps through, in words, for the lead and the start card: eight, or nine while the Upgrade step is in. */
-    toolCount: (n: number) => (n === 9 ? "nine" : "eight"),
+    toolCount: (toolCount: number) => (toolCount === 9 ? "nine" : "eight"),
     /** Step 7 of 9, Precon Upgrade (addendum A5b). Its chip is built from the claim's units (`credits.one`, `credits.many`), never typed; the step is left out when the fixture has no run or Upgrade is off. */
     upgradeStep: {
       id: "upgrade",

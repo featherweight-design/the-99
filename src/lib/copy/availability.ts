@@ -142,10 +142,10 @@ export const availabilityCopy = {
     // was given a second name for one control. "Ranked from" rather than
     // "Re-ranked", because free mode also decides which commanders the list
     // holds, and the count beside it is what moved.
-    announce: (mode: "all" | "free", n: number) =>
+    announce: (mode: "all" | "free", commanderCount: number) =>
       `${
         mode === "free" ? "Ranked from free cards only" : "Ranked from all my cards"
-      } · ${n === 1 ? "1 commander" : `${n} commanders`}`,
+      } · ${commanderCount === 1 ? "1 commander" : `${commanderCount} commanders`}`,
   },
 
   // ── The receipt line (surfaces 1 and 2) ───────────────────────────────
@@ -210,7 +210,7 @@ export const availabilityCopy = {
     bodyManyShort: "Each is on more committed decks than you have copies.",
     /** The row's press: the visible verb, and its full name (row 8). */
     press: "Shopping",
-    pressAria: (n: number) => (n === 1 ? "See it in Shopping" : "See them in Shopping"),
+    pressAria: (cardCount: number) => (cardCount === 1 ? "See it in Shopping" : "See them in Shopping"),
   },
 
   // The quick-add row's accessible name lives on the shipped signature in
@@ -257,8 +257,8 @@ export const availabilityCopy = {
     filterSoft: "Wanted by a draft",
     filterHard: "In use",
     filterOver: "Over-committed",
-    filterOptionAria: (label: string, n: number) =>
-      `${label}, ${n === 1 ? "1 card" : `${n} cards`}`,
+    filterOptionAria: (label: string, cardCount: number) =>
+      `${label}, ${cardCount === 1 ? "1 card" : `${cardCount} cards`}`,
     filterEmptyOptionAria: (label: string) => `${label}, no cards`,
     // Chips reuse the shipped chip row; glyph is the chip's leading dot.
     chipRemoveAria: (label: string) => `Remove filter: ${label.toLowerCase()}`,
@@ -270,7 +270,7 @@ export const availabilityCopy = {
     rowAria: (
       name: string,
       typeLine: string,
-      qty: number,
+      copyCount: number,
       setAndRarity: string,
       availability?: string | null,
       /**
@@ -292,7 +292,7 @@ export const availabilityCopy = {
       combo?: string | null,
     ) =>
       `${name}${facts ? `, ${facts}` : ""}, ${typeLine}, ` +
-      `${qty === 1 ? "1 copy" : `${qty} copies`}, ${setAndRarity}` +
+      `${copyCount === 1 ? "1 copy" : `${copyCount} copies`}, ${setAndRarity}` +
       (availability ? `, ${availability}` : "") +
       (combo ? `, ${combo}` : ""),
     // Heads the allocation receipt. Describes a list, never a location. Deck

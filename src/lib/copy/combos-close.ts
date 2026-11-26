@@ -10,15 +10,15 @@ const count = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : 
 
 export const combosCloseCopy = {
   /** The status line's segment: `∞ 5 combos one piece away ›`. Never drawn at zero. */
-  segment: (n: number) => `${count(n, "combo", "combos")} one piece away`,
+  segment: (comboCount: number) => `${count(comboCount, "combo", "combos")} one piece away`,
   /** The segment's caret, after the words. */
   caret: "›",
 
   sheet: {
     eyebrow: "One piece away",
     title: (n: number) => count(n, "combo", "combos"),
-    lead: (n: number, deckName: string) =>
-      n === 1
+    lead: (comboCount: number, deckName: string) =>
+      comboCount === 1
         ? `It needs one more card in ${deckName}. Here’s where that card is.`
         : `Each needs one more card in ${deckName}. Here’s where that card is.`,
     closeAria: "Close combos one piece away",
@@ -52,7 +52,7 @@ export const combosCloseCopy = {
   detail: {
     /** `← 5 combos`: the way back to the list, with the list's count. */
     back: (n: number) => count(n, "combo", "combos"),
-    backAria: (n: number) => `Back to ${count(n, "combo", "combos")} one piece away`,
+    backAria: (comboCount: number) => `Back to ${count(comboCount, "combo", "combos")} one piece away`,
     /** The combo's name, what a card stacked on it calls it (`← Avatar Aang + Searing Touch`). */
     name: (pieces: readonly string[]) => pieces.join(" + "),
     plate: {

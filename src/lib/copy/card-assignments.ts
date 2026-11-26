@@ -146,9 +146,9 @@ export const cardAssignmentsCopy = {
      * A Sync that moved no card, only tokens (Hugh's case, Y1b): the nothing-to-report line with
      * Sync's ending. Its collection is NOT the new file, so the shipped ending would be false.
      */
-    ledeTokensOnly: (t: number) =>
+    ledeTokensOnly: (tokenCount: number) =>
       "Nothing your decks care about moved. Your cards are as you left them" +
-      (t > 0 ? `, and ${tokens(t)} changed.` : "."),
+      (tokenCount > 0 ? `, and ${tokens(tokenCount)} changed.` : "."),
     /**
      * (new) A Sync that moved cards none of the decks care about. The shipped ending (`Your collection
      * is the new file.`) is false after a Sync, which kept the player's own changes; this says so.
@@ -268,7 +268,7 @@ export const cardAssignmentsCopy = {
      * Landing PR 7b: said on the receipt of a collection's first import only, from the ranked list's one definition
      * (`buildableCount`). "Buildable" is the Commanders place's own sense: a ranked commander they own and have not built.
      */
-    buildable: (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} you can build from your cards`,
+    buildable: (commanderCount: number) => `${commanderCount.toLocaleString("en-US")} ${commanderCount === 1 ? "commander" : "commanders"} you can build from your cards`,
     seeCommanders: "See your commanders",
   },
 
