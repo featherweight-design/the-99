@@ -134,12 +134,12 @@ export const creditsCopy = {
   limitFree: (left: number, total: number, next: Date | null, paidBack: Date) =>
     `${freeHead(left, total, next)} · paid back at ${clockTime(paidBack)} (daily limit)`,
   /** L7 and the menu chip's expiring line: a cancelled plan's credits, within three days of lapsing. */
-  expiring: (n: number, on: Date) => `${n} plan credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${shortDay(on)}`,
+  expiring: (creditCount: number, on: Date) => `${creditCount} plan credit${creditCount === 1 ? "" : "s"} ${creditCount === 1 ? "expires" : "expire"} ${shortDay(on)}`,
   /** Finds `expiring`'s phrase at the end of a line, so `CreditsText` can draw it in `--warning`. */
   expiringPattern: /\d+ plan credits? expires? [A-Z][a-z]{2} \d{1,2}(?=\.?(?: · |\n|$))/,
   /** The welcome lot's L7-shaped tail and the chip's welcome line, within three days of expiry: `9 welcome credits expire
    *  Nov 20`, dated in the reader's own day (`localDay`), so it is drawn after hydration. */
-  welcomeExpiring: (n: number, on: Date) => `${n} welcome credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${localDay(on)}`,
+  welcomeExpiring: (creditCount: number, on: Date) => `${creditCount} welcome credit${creditCount === 1 ? "" : "s"} ${creditCount === 1 ? "expires" : "expire"} ${localDay(on)}`,
   /** Finds `welcomeExpiring`'s tail WITH the ` · ` before it, so `CreditsText` holds the whole tail back until hydration
    *  (the date is the reader's day) and then draws the phrase in `--warning`, as it does the plan's. */
   welcomeExpiringPattern: / · (\d+ welcome credits? expires? [A-Z][a-z]{2} \d{1,2})(?=\.?(?: · |\n|$))/,
@@ -184,8 +184,8 @@ export const creditsCopy = {
 
   /** The account menu's chip (M1b), by state. The count and the date are the server's read. */
   chip: {
-    credits: (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`,
-    free: (n: number) => `${n} free ${n === 1 ? "credit" : "credits"}`,
+    credits: (creditCount: number) => `${creditCount} ${creditCount === 1 ? "credit" : "credits"}`,
+    free: (creditCount: number) => `${creditCount} free ${creditCount === 1 ? "credit" : "credits"}`,
     out: "Get more credits",
   },  /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,

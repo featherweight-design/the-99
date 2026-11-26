@@ -28,12 +28,12 @@ export const addedCopyCopy = {
     goesToEarlier: (card: string, deck: string) => `${card} goes to ${deck}, which you picked earlier`,
     goesToPicked: (card: string, deck: string) => `${card} goes to ${deck}, as you picked`,
     freeForBrew: (card: string, brew: string) => `${card} is free for ${brew}, a brew that needs one`,
-    freeForBrews: (card: string, k: number) => `${card} is free for the ${n(k)} brews that need it`,
+    freeForBrews: (card: string, brewCount: number) => `${card} is free for the ${n(brewCount)} brews that need it`,
     /** The foot, when every card added went to no deck (L9). */
     nobodyOne: (card: string) => `No deck needed ${card}, so it’s free.`,
     nobodyMany: "No deck needed these, so they’re free.",
     /** The foot under rows, for the cards added that no deck needed. */
-    nobodyRest: (k: number) => `No deck needed the other ${n(k)}, so they’re free.`,
+    nobodyRest: (cardCount: number) => `No deck needed the other ${n(cardCount)}, so they’re free.`,
   },
   /** The summary's short forms: the card is the row's own first column. */
   row: {
@@ -45,7 +45,7 @@ export const addedCopyCopy = {
     goesToEarlier: (deck: string) => `goes to ${deck}, which you picked earlier`,
     goesToPicked: (deck: string) => `goes to ${deck}, as you picked`,
     freeForBrew: (brew: string) => `is free for ${brew}, a brew`,
-    freeForBrews: (k: number) => `is free for the ${n(k)} brews that need it`,
+    freeForBrews: (brewCount: number) => `is free for the ${n(brewCount)} brews that need it`,
   },
   change: "Change",
   done: "Done",
@@ -56,12 +56,12 @@ export const addedCopyCopy = {
   chooser: {
     /** A brew's soft share: it reads a loose copy as covered, and so does every other brew. */
     canUse: "can use it",
-    fold: (k: number, deck: string | null) =>
-      k === 1
+    fold: (deckCount: number, deck: string | null) =>
+      deckCount === 1
         ? (deck ? `1 committed deck ahead of ${deck} has its copy` : "1 committed deck has its copy")
-        : (deck ? `${n(k)} committed decks ahead of ${deck} have theirs` : `${n(k)} committed decks have theirs`),
+        : (deck ? `${n(deckCount)} committed decks ahead of ${deck} have theirs` : `${n(deckCount)} committed decks have theirs`),
     /** The handoff wrote `all both` at two brews; `both` alone is the sentence. */
-    brewNote: (k: number) =>
-      `A brew holds a copy only once you pick it, so ${k === 2 ? "both" : `all ${n(k)}`} can use this one. Pick one to give it the copy.`,
+    brewNote: (brewCount: number) =>
+      `A brew holds a copy only once you pick it, so ${brewCount === 2 ? "both" : `all ${n(brewCount)}`} can use this one. Pick one to give it the copy.`,
   },
 };

@@ -8,8 +8,8 @@ export const deckOrderCopy = {
   /** The page heading in Arrange mode, and the eyebrow above it. */
   headingAll: "Arrange decks",
   headingShelf: (shelf: string) => `Arrange ${shelf}`,
-  eyebrowAll: (n: number) => `ALL DECKS · ${n}`,
-  eyebrowShelf: (shelf: string, n: number) => `FOLDER · ${shelf.toUpperCase()} · ${n}`,
+  eyebrowAll: (deckCount: number) => `ALL DECKS · ${deckCount}`,
+  eyebrowShelf: (shelf: string, deckCount: number) => `FOLDER · ${shelf.toUpperCase()} · ${deckCount}`,
   hint: "Drag a deck by its handle. Filters and search come back when you’re done.",
   shelfNote:
     "Moves these decks among themselves. Your other decks keep their places in All decks.",
@@ -24,8 +24,8 @@ export const deckOrderCopy = {
   discard: "Discard",
   /** The handle's accessible name, and the live region's lines. */
   handle: (name: string) => `Move ${name}`,
-  lifted: (name: string, k: number, n: number) => `${name} lifted, ${k} of ${n}. Use the arrow keys, then Space to drop.`,
-  position: (name: string, k: number, n: number) => `${name}, ${k} of ${n}`,
-  dropped: (name: string, k: number, n: number) => `${name} dropped, ${k} of ${n}`,
+  lifted: (name: string, position: number, total: number) => `${name} lifted, ${position} of ${total}. Use the arrow keys, then Space to drop.`,
+  position: (name: string, position: number, total: number) => `${name}, ${position} of ${total}`,
+  dropped: (name: string, position: number, total: number) => `${name} dropped, ${position} of ${total}`,
   cancelledLift: (name: string) => `${name} back where it was`,
 } as const;

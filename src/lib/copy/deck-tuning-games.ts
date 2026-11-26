@@ -31,7 +31,7 @@ export const deckTuningGamesCopy = {
     // Always drawn, from 0 / N (the foot of the TaggedBox); `--warning` from
     // `warnAt`; a hard stop at `maxLength` with no error, because a cap you
     // cannot exceed does not need one.
-    counter: (n: string, max: string) => `${n} / ${max}`,
+    counter: (charCountText: string, max: string) => `${charCountText} / ${max}`,
     maxLength: 140,
     warnAt: 130,
     // AMENDS `gameLogCopy.form.optionalNote`, which said "marks are optional".

@@ -66,8 +66,8 @@ export const deckImportCopy = {
     // figure at all before there is one to name — an empty paste read
     // "Import 0 cards", which is a promise to import nothing rather than a
     // prompt to paste something.
-    submitPasteCount: (n: number) =>
-      n === 0 ? "Import deck →" : n === 1 ? "Import 1 card" : `Import ${n} cards`,
+    submitPasteCount: (cardCount: number) =>
+      cardCount === 0 ? "Import deck →" : cardCount === 1 ? "Import 1 card" : `Import ${cardCount} cards`,
 
     footnoteMobile: "We’ll leave the sideboard behind: Commander doesn’t have one.",
     // No-collection entry R2 (S8): the precon start's own opt-in, under Deck name. Unticked by default.
@@ -102,10 +102,10 @@ export const deckImportCopy = {
     fileRejected: {
       heading: "We can’t open that file",
       // Both numbers are interpolated so the message names the actual file.
-      bodyMobile: (ext: string, size: string) =>
-        `We need a .csv or .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${ext} at ${size}.`,
-      body: (ext: string, size: string) =>
-        `We need a .csv or a .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${ext} at ${size}. Export it as CSV from wherever it came from and we’ll take it.`,
+      bodyMobile: (fileExtension: string, size: string) =>
+        `We need a .csv or .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${fileExtension} at ${size}.`,
+      body: (fileExtension: string, size: string) =>
+        `We need a .csv or a .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${fileExtension} at ${size}. Export it as CSV from wherever it came from and we’ll take it.`,
       // Eng-authored. The handoff interpolates an extension and assumes there is
       // always one; a file with no dot needs a phrase that still reads as a noun
       // in "That one is a ___ at 40 KB". Ratification owed.
@@ -121,10 +121,10 @@ export const deckImportCopy = {
     // is malformed, because that is not what this state means.
     noneMatched: {
       heading: "We couldn’t find any of these cards",
-      bodyMobile: (lines: number) =>
-        `All ${lines} lines read fine: none of them matched a card we know.`,
-      body: (lines: number) =>
-        `All ${lines} lines read fine, and not one of them matched a card we know. Check you copied the decklist itself and not the page around it.`,
+      bodyMobile: (lineCount: number) =>
+        `All ${lineCount} lines read fine: none of them matched a card we know.`,
+      body: (lineCount: number) =>
+        `All ${lineCount} lines read fine, and not one of them matched a card we know. Check you copied the decklist itself and not the page around it.`,
       action: "Clear and start over",
       retry: false,
     },
@@ -228,12 +228,12 @@ export const deckImportCopy = {
     // A list with exactly one unmarked legendary still opens the picker — only a
     // list with none is the dead end — so the singular is reachable, not
     // theoretical.
-    introMobile: (n: number) =>
-      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you’re building around: it sets the colors and anchors everything we suggest.`,
-    count: (n: number) =>
-      n === 1
+    introMobile: (legendaryCreatureCount: number) =>
+      `${legendaryCreatureCount === 1 ? "1 legendary creature" : `${legendaryCreatureCount} legendary creatures`} came over. Pick the one you’re building around: it sets the colors and anchors everything we suggest.`,
+    count: (legendaryCreatureCount: number) =>
+      legendaryCreatureCount === 1
         ? "1 legendary creature in this import"
-        : `${n} legendary creatures in this import`,
+        : `${legendaryCreatureCount} legendary creatures in this import`,
     rowMetaMobile: (identity: string, line: number) => `${identity} · line ${line}`,
     rowMetaOwned: (identity: string, line: number) => `${identity} · line ${line} · you own it`,
     rowMetaUnowned: (identity: string, line: number) =>
@@ -276,15 +276,15 @@ export const deckImportCopy = {
     // two?" better than any sentence of ours, and the em-dashed restricted form
     // is the reason the spec needed the `restricted` arm at all.
     //
-    // `n` is the canPair count over the player's owned legal commanders, so a
+    // `commanderCount` is the canPair count over the player's owned legal commanders, so a
     // filter that returns 3 of 400 is visibly a filter and not a broken list.
-    // At n === 0 the ability still prints and the plate is still drawn: the
+    // At commanderCount === 0 the ability still prints and the plate is still drawn: the
     // commander CAN pair, the player just owns nothing to pair it with, and that
     // is a collection fact rather than a disabled control.
-    partnerAvailable: (ability: string, n: number) =>
-      n === 1
+    partnerAvailable: (ability: string, commanderCount: number) =>
+      commanderCount === 1
         ? `${ability} · 1 of your commanders can pair`
-        : `${ability} · ${n} of your commanders can pair`,
+        : `${ability} · ${commanderCount} of your commanders can pair`,
     partnerNoneOwned: (ability: string) => `${ability} · none of your commanders can pair`,
 
     // State C, the import proposal. `line` is the source line number the
@@ -307,7 +307,7 @@ export const deckImportCopy = {
     // view on a phone, so this strip is the only thing naming what you are
     // pairing. Short rather than full because the strip also carries the count
     // and a Cancel, and the full name is 27 characters of a 358px row.
-    pairingFor: (short: string, n: number) => `Partners for ${short} · ${n}`,
+    pairingFor: (short: string, commanderCount: number) => `Partners for ${short} · ${commanderCount}`,
     pairingCancel: "Cancel",
 
     // ---- The header's second card trigger ----------------------------------
@@ -327,8 +327,8 @@ export const deckImportCopy = {
     pairAria: (primary: string, partner: string) => `${primary}, with partner ${partner}`,
     // The resume row drops the to-buy clause on pair decks, so the accessible
     // name is where it survives. Appended after pairAria's names.
-    pairRowBuyAria: (copies: number) =>
-      copies === 1 ? "1 copy to buy" : `${copies} copies to buy`,
+    pairRowBuyAria: (copyCount: number) =>
+      copyCount === 1 ? "1 copy to buy" : `${copyCount} copies to buy`,
     // The empty plate's accessible name, since `Add a partner` alone does not say
     // a partner for WHAT once the list has scrolled.
     addPartnerAria: (primary: string) => `Add a partner for ${primary}`,
@@ -342,20 +342,20 @@ export const deckImportCopy = {
   // One dismissible strip. There is no "import complete" screen — the deck is
   // the confirmation.
   arrival: {
-    clean: (n: string) =>
-      `All ${n} lines came over clean. Imported from your list a moment ago.`,
+    clean: (lineCountText: string) =>
+      `All ${lineCountText} lines came over clean. Imported from your list a moment ago.`,
     // Deck printings: the clean strip with the import's printing clauses (R3 canvas, part C; Hugh's
     // ruling a adds the not-owned clause). `kept` and `notOwned` are card counts, either 0 to omit
     // its clause; the caller uses `clean` when both are.
-    cleanWithPrintings: (n: string, kept: number, notOwned: number) =>
-      `All ${n} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}. Imported from your list a moment ago.`,
+    cleanWithPrintings: (lineCountText: string, kept: number, notOwned: number) =>
+      `All ${lineCountText} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}. Imported from your list a moment ago.`,
     dismiss: "Dismiss",
     // No-collection entry R2 (S10): the ticked import's strip, in the precon start's three-line form
     // at both widths. `lines` is the deck's line count, `copies` the copies the add wrote.
     own: {
-      head: (lines: string) => `All ${lines} lines came over clean.`,
-      headWithPrintings: (lines: string, kept: number, notOwned: number) =>
-        `All ${lines} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}.`,
+      head: (lineCountText: string) => `All ${lineCountText} lines came over clean.`,
+      headWithPrintings: (lineCountText: string, kept: number, notOwned: number) =>
+        `All ${lineCountText} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}.`,
       body: (copies: number) =>
         `All ${copies === 1 ? "1 card" : `${copies.toLocaleString("en-US")} cards`} added to your collection.`,
       // Eng-authored, not drawn (the handoff draws the clean case only): an import with unresolved lines
@@ -375,9 +375,9 @@ export const deckImportCopy = {
   unresolved: {
     // The to-do card's row (handoff `deck_messages`). The title says "unresolved", so the body does
     // not repeat it, and keeps the consequence: the lines hold the deck off Complete.
-    rowTitle: (n: number) => (n === 1 ? "1 line unresolved" : `${n} lines unresolved`),
-    rowBody: (n: number) =>
-      n === 1
+    rowTitle: (lineCount: number) => (lineCount === 1 ? "1 line unresolved" : `${lineCount} lines unresolved`),
+    rowBody: (lineCount: number) =>
+      lineCount === 1
         ? "It’s at the bottom of the list and keeps the deck off Complete."
         : "They’re at the bottom of the list and keep the deck off Complete.",
     bannerActionShort: "Look",
@@ -405,10 +405,10 @@ export const deckImportCopy = {
     // The marker on a deck's card in /decks, so a deck that imported short
     // carries the signal outside the builder too. It counts cards, matching the
     // group header beside it in the builder rather than the banner's lines.
-    deckCardBadge: (n: number) =>
-      n === 1 ? "1 card we couldn’t name" : `${n} cards we couldn’t name`,
-    footnote: (n: number) =>
-      n === 1
+    deckCardBadge: (cardCount: number) =>
+      cardCount === 1 ? "1 card we couldn’t name" : `${cardCount} cards we couldn’t name`,
+    footnote: (lineCount: number) =>
+      lineCount === 1
         ? "That line is a card the deck wants. We can’t name it yet, so it doesn’t count as built or owned, and it stays out of the shopping list."
         : "These lines are cards the deck wants. We can’t name them yet, so they don’t count as built or owned, and they stay out of the shopping list.",
   },
@@ -424,7 +424,7 @@ export const deckImportCopy = {
     // owned-only filter that quick-add-bar defaults ON (#158). See README §A/§B.
     // The count and the caption are separate strings now: the count sits beside
     // the scoped owned toggle, the caption sits under both.
-    resultsCount: (n: number) => `${n} result${n === 1 ? "" : "s"}`,
+    resultsCount: (resultCount: number) => `${resultCount} result${resultCount === 1 ? "" : "s"}`,
     filterCaptionMobile: "every card, owned or not: you’re naming a line, not shopping",
     filterCaption:
       "every card, owned or not, in every color: you’re naming a line that’s already in the deck, not shopping for a new one",
@@ -436,7 +436,7 @@ export const deckImportCopy = {
     useShort: "Use this",
     rawLabel: "The line as it came",
     rawLine: (quantity: number, raw: string) => `${quantity} ${raw}`,
-    rawLineNumber: (n: number) => `line ${n} of the import`,
+    rawLineNumber: (lineNumber: number) => `line ${lineNumber} of the import`,
     delete: "Delete this line",
     deleteNote: "Deleting drops it from the deck’s total too: 100 becomes 99.",
     dismiss: "Leave it for now",
@@ -486,14 +486,14 @@ export const deckImportCopy = {
     // of the 99 — a commander sitting in the 99 would change the deck's colour
     // identity — so the deck the player gets is one card shorter than the list
     // they pasted, and this is the only account of where it went.
-    thirdCommanderDeclared: (n: number) =>
-      n === 1
+    thirdCommanderDeclared: (lineCount: number) =>
+      lineCount === 1
         ? "One more line was marked as a commander. A deck takes two at most, so we left it out."
-        : `${n} more lines were marked as commanders. A deck takes two at most, so we left them out.`,
-    quantityClamped: (n: number) =>
-      n === 1
+        : `${lineCount} more lines were marked as commanders. A deck takes two at most, so we left them out.`,
+    quantityClamped: (lineCount: number) =>
+      lineCount === 1
         ? "One line asked for more than one copy of a card that only takes one. We brought over a single copy."
-        : `${n} lines asked for more than one copy of a card that only takes one. We brought over a single copy of each.`,
+        : `${lineCount} lines asked for more than one copy of a card that only takes one. We brought over a single copy of each.`,
   },
 
   // ---- Updating a deck from a list (#277) ---------------------------------
@@ -522,7 +522,7 @@ export const deckImportCopy = {
       // Promises a comparison, not a creation.
       submit: "Compare with this deck",
       reassure: "Nothing is saved yet.",
-      reassureCounted: (n: number) => `${n} cards. Nothing is saved yet.`,
+      reassureCounted: (cardCount: number) => `${cardCount} cards. Nothing is saved yet.`,
       reassureMobile: "Nothing is saved until you say so on the next screen.",
       aboutHeading: "What we do with it",
       about:
@@ -545,10 +545,10 @@ export const deckImportCopy = {
         "committed deck. You will still commit it yourself.",
       // "lines" not "cards" — one line can carry many copies, the distinction
       // the shipped arrival strip is also careful about.
-      provenance: (lines: string, deckName: string, built: string) =>
-        `${lines} lines read from your paste, matched against the ${built} cards in ${deckName}. Nothing is saved until you apply it.`,
-      provenanceMobile: (lines: string, built: string) =>
-        `${lines} lines · matched against ${built} cards`,
+      provenance: (lineCountText: string, deckName: string, built: string) =>
+        `${lineCountText} lines read from your paste, matched against the ${built} cards in ${deckName}. Nothing is saved until you apply it.`,
+      provenanceMobile: (lineCountText: string, built: string) =>
+        `${lineCountText} lines · matched against ${built} cards`,
 
       // Lowercase because they are units under a figure, the treatment the
       // facet strip gives its counts.
@@ -558,9 +558,9 @@ export const deckImportCopy = {
       chipUnnamedMobile: "unnamed",
       chipUnchanged: "unchanged",
       chipUnchangedMobile: "same",
-      landing: (from: string, to: string, body: number) => `${from} → ${to} / ${body}`,
+      landing: (previousCountText: string, resultingCountText: string, body: number) => `${previousCountText} → ${resultingCountText} / ${body}`,
 
-      outHeading: (n: string) => `Coming out · ${n}`,
+      outHeading: (cardCountText: string) => `Coming out · ${cardCountText}`,
       // One sentence, with no hand-added variant. Nothing records who placed a
       // card — `auto` is false for a hand-add and for a previous import's rows
       // alike — so no removal can honestly be labelled differently from any
@@ -568,14 +568,14 @@ export const deckImportCopy = {
       outBody: "Your list does not name these.",
       // When a count the list lowers sits among them: those rows are named, at fewer copies.
       outBodyFewer: "Your list does not name these, or names fewer copies.",
-      keepAll: (n: string) => `Keep all ${n}`,
+      keepAll: (cardCountText: string) => `Keep all ${cardCountText}`,
 
-      inHeading: (n: string) => `Going in · ${n}`,
+      inHeading: (cardCountText: string) => `Going in · ${cardCountText}`,
       // The shipped ownership vocabulary — new cards can cost money, and this
       // is how the app already says so.
       inMeta: (owned: string, toBuy: string) => `${owned} owned · ${toBuy} to buy`,
 
-      unnamedHeading: (n: string) => `We cannot name these · ${n}`,
+      unnamedHeading: (cardCountText: string) => `We cannot name these · ${cardCountText}`,
       // Says the replacement out loud: it is the one write in this flow a
       // player could not have predicted from the group headings.
       unnamedBody: (existing: string) =>
@@ -588,12 +588,12 @@ export const deckImportCopy = {
       // A count the list moves is a row in the group its copies count toward (Hugh, 2026-10-15),
       // drawn with both figures: a drop under Coming out, a rise under Going in. The line that
       // used to name them under the heading went with that.
-      recountedItem: (name: string, from: string, to: string) => `${name} ${from} → ${to}`,
+      recountedItem: (name: string, oldQuantityText: string, newQuantityText: string) => `${name} ${oldQuantityText} → ${newQuantityText}`,
 
-      unchangedDisclosure: (n: string) => `Show the ${n} that do not change`,
+      unchangedDisclosure: (cardCountText: string) => `Show the ${cardCountText} that do not change`,
       // "the other N" rather than "N more": the group header already printed
       // the total, so this names the remainder.
-      showMore: (n: string) => `Show the other ${n}`,
+      showMore: (cardCountText: string) => `Show the other ${cardCountText}`,
       showFewer: "Show fewer",
 
       keep: "Keep",
@@ -606,29 +606,29 @@ export const deckImportCopy = {
       // of a previous import's rows as of a hand-add.
       rowAria: (name: string, marker: string) => (marker ? `${name}. ${marker}.` : name),
       ariaAuto: "Added automatically",
-      sourceLine: (n: string) => `line ${n}`,
+      sourceLine: (lineNumberText: string) => `line ${lineNumberText}`,
 
       // States what it will do, recomputed on every Keep. Never "Apply" and
       // never "Confirm": it is the last thing read before the only
       // irreversible click in the flow.
-      apply: (inN: string, outN: string) => `Update the deck: ${inN} in, ${outN} out`,
-      applyMobile: (inN: string, outN: string) => `Update: ${inN} in, ${outN} out`,
-      applyAria: (inN: string, outN: string, deckName: string) =>
-        `Update ${deckName}: add ${inN} cards, remove ${outN}`,
+      apply: (addCountText: string, removeCountText: string) => `Update the deck: ${addCountText} in, ${removeCountText} out`,
+      applyMobile: (addCountText: string, removeCountText: string) => `Update: ${addCountText} in, ${removeCountText} out`,
+      applyAria: (addCountText: string, removeCountText: string, deckName: string) =>
+        `Update ${deckName}: add ${addCountText} cards, remove ${removeCountText}`,
       cancel: "Cancel",
-      summary: (kept: string, to: string, body: number) =>
-        kept === "0"
-          ? `lands at ${to} / ${body}`
-          : kept === "1"
-            ? `1 kept · lands at ${to} / ${body}`
-            : `${kept} kept · lands at ${to} / ${body}`,
+      summary: (keptCountText: string, resultingCountText: string, body: number) =>
+        keptCountText === "0"
+          ? `lands at ${resultingCountText} / ${body}`
+          : keptCountText === "1"
+            ? `1 kept · lands at ${resultingCountText} / ${body}`
+            : `${keptCountText} kept · lands at ${resultingCountText} / ${body}`,
       // One message per settle, debounced — six fast toggles is one
       // announcement, the contract the synergy selection already uses.
-      liveKept: (kept: string, inN: string, outN: string) =>
-        `${kept} kept. This update will add ${inN} and remove ${outN}.`,
+      liveKept: (keptCountText: string, addCountText: string, removeCountText: string) =>
+        `${keptCountText} kept. This update will add ${addCountText} and remove ${removeCountText}.`,
 
-      wholesaleNote: (inN: string, outN: string) =>
-        `This replaces the whole deck. ${inN} cards in, ${outN} out. If that is not what you meant, the list you pasted is probably a different deck. Import it as its own instead.`,
+      wholesaleNote: (addCountText: string, removeCountText: string) =>
+        `This replaces the whole deck. ${addCountText} cards in, ${removeCountText} out. If that is not what you meant, the list you pasted is probably a different deck. Import it as its own instead.`,
       importAsNew: "Import as new instead",
     },
 
@@ -668,12 +668,12 @@ export const deckImportCopy = {
     // A sibling of `arrival`, not an edit of it. A first import's only fact is
     // how much arrived; an update's only interesting fact is what moved.
     arrival: {
-      updated: (inN: string, outN: string) =>
-        `Updated from your list: ${inN} in, ${outN} out.`,
-      updatedWithKept: (inN: string, outN: string, kept: string) =>
-        kept === "1"
-          ? `Updated from your list: ${inN} in, ${outN} out, 1 you kept.`
-          : `Updated from your list: ${inN} in, ${outN} out, ${kept} you kept.`,
+      updated: (addCountText: string, removeCountText: string) =>
+        `Updated from your list: ${addCountText} in, ${removeCountText} out.`,
+      updatedWithKept: (addCountText: string, removeCountText: string, keptCountText: string) =>
+        keptCountText === "1"
+          ? `Updated from your list: ${addCountText} in, ${removeCountText} out, 1 you kept.`
+          : `Updated from your list: ${addCountText} in, ${removeCountText} out, ${keptCountText} you kept.`,
       // State 20. A `?updated=` value that is not ours still says an update
       // brought the player here, so the strip states the fact and drops the
       // figures rather than printing NaN.
