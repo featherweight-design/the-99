@@ -334,7 +334,7 @@ describe("GamesView: the filters", () => {
     // The parent draws what it was handed; Won was filed on its way past, so asking for it again reads nothing.
     rerender(<GamesView data={all} onData={onData} viewSwitch={<span>switch</span>} decks={[]} />);
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
-    fireEvent.click(within(screen.getByRole("dialog", { name: gameHistoryCopy.filter.open })).getByRole("button", { name: /Won\s*9/ }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: gameHistoryCopy.filter.open })).getByRole("radio", { name: gameHistoryCopy.filter.results.win }));
     expect(onData).toHaveBeenLastCalledWith(won);
     expect(more.read).toHaveBeenCalledTimes(1);
   });
@@ -389,22 +389,35 @@ describe("GamesView: the filters", () => {
     await waitFor(() => expect(more.load).toHaveBeenCalledWith(data.next, { result: "loss" }));
   });
 
-  it("opens the shared sheet with Result counts under the other filters, and a button that says what it would show", () => {
+  it("opens the shared sheet with the Result switch, and a button that says what it would show", () => {
     draw(payload(TWO));
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
     const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
-    expect(within(sheet).getByRole("button", { name: /Won\s*9/ })).toBeInTheDocument();
-    expect(within(sheet).getByRole("button", { name: /Drawn\s*2/ })).toBeInTheDocument();
+    const labels = [gameHistoryCopy.filter.anyShort, ...Object.values(gameHistoryCopy.filter.results)];
+    expect(within(sheet).getAllByRole("radio").map((r) => r.textContent)).toEqual(labels);
+    expect(within(sheet).getByRole("radio", { name: gameHistoryCopy.filter.anyShort })).toBeChecked();
     expect(within(sheet).getByRole("button", { name: "Show 23 games" })).toBeInTheDocument();
     expect(within(sheet).getByText("Colin")).toBeInTheDocument();
     expect(within(sheet).getByText("Fixture Commander")).toBeInTheDocument();
   });
 
-  it("never disables an option: a zero stays pressable", () => {
-    const base = payload(TWO);
-    draw({ ...base, aggregates: { ...base.aggregates, byResult: { wins: 2, losses: 3, draws: 0 } } });
+  it("asks for one result from the switch, and Any takes it off", () => {
+    more.read.mockResolvedValue(payload(TWO));
+    draw(payload(TWO));
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
-    expect(within(screen.getByRole("dialog", { name: gameHistoryCopy.filter.open })).getByRole("button", { name: /Drawn\s*0/ })).toBeEnabled();
+    const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
+    fireEvent.click(within(sheet).getByRole("radio", { name: gameHistoryCopy.filter.results.loss }));
+    expect(more.read).toHaveBeenCalledWith({ result: "loss" });
+  });
+
+  it("lists only decks with games in the Deck sheet and says how many it left out", () => {
+    const decks = [{ id: "deck-sai", name: "HD - Sai", identity: ["U"] }, { id: "deck-dina", name: "HD - Dina", identity: ["B", "G"] }];
+    draw(payload(TWO), decks);
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.deck }));
+    const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.deck });
+    expect(within(sheet).getByRole("button", { name: /HD - Sai/ })).toBeInTheDocument();
+    expect(within(sheet).queryByRole("button", { name: /HD - Dina/ })).toBeNull();
+    expect(within(sheet).getByText(gameHistoryCopy.filter.deckLeftOut(1))).toBeInTheDocument();
   });
 
   it("searches friends and commanders in the sheet's list", () => {

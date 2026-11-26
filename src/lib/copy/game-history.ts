@@ -54,7 +54,18 @@ export const gameHistoryCopy = {
     optionCount: games,
     /** The sheet's button: what it would show. A zero stays pressable, so `Show 0 games` lands on the no-match frame. */
     show: (shown: number) => `Show ${games(shown)}`,
-    clearAll: "Clear all",
+    /** DRAFT for `/copy-review` (games tabs, PR 4): the sheet's reset. */
+    clearAll: "Clear all filters",
+    /** DRAFT: the Result switch's first segment (`Any · Won · Lost · Drawn`). */
+    anyShort: "Any",
+    /** DRAFT: the Deck panel's search field. */
+    deckSearch: "Find a deck",
+    /** DRAFT: the Deck panel's foot, for decks with no game under the other filters. */
+    deckLeftOut: (k: number) => `${k} ${k === 1 ? "deck" : "decks"} left out: no games logged`,
+    /** DRAFT: the Deck list when the search matches nothing. */
+    noDeck: "No deck matches.",
+    /** DRAFT: the ✕ on the Played against trigger. */
+    clearAgainst: "Clear played against",
     /** Undrawn (eng default): the Played against list when the search matches nobody. */
     noOption: "Nothing matches.",
     /** Undrawn (eng default): a chip for a friend an address names who is not the reader's friend now. */

@@ -6,8 +6,8 @@
 // the three are dropdowns on the view row, Played against in the app's anchored panel. Neither reads or writes the URL: the
 // view hands a whole new filter back and the hook that holds it does that (`useGamesFilters`).
 //
-// The two native selects (deck, result) draw their closed state themselves and lay the real `<select>` over it, invisible:
-// the platform owns the list and its keyboard, as `DeckSelect` does, and the trigger still wears the board's chip.
+// Deck is a custom trigger opening an anchored panel (wide) or a Sheet (phone); Result is an inline SegmentedSwitch (on the
+// phone inside the sheet); Played against is the anchored panel with the picked face and a ✕ (games tabs redesign, PR 4).
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -17,6 +17,8 @@ import type { GameHistoryFilter, GameResult } from "../../lib/games/history-rule
 import type { GamesPayload } from "../../lib/games/history-wire";
 import { nameIncludes, PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { Face } from "../social/face";
+import { ArtLayer } from "../ui/art-layer";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { Chevron } from "../ui/chevron";
 import { GhostButton } from "../ui/button";
@@ -70,34 +72,109 @@ const TRIGGER =
 const triggerLook = (on: boolean) =>
   `${TRIGGER} ${on ? "border-[color:var(--accent)] bg-[color:var(--elevated)]" : "border-[color:var(--border-strong)] bg-[color:var(--elevated)] hover:bg-[color:var(--border-strong)]"}`;
 
-/**
- * A closed select drawn as the board's trigger. `children` is what it reads; the `<select>` is the real control, laid
- * over it at no opacity, 16px below `md` on a touch screen so iOS does not zoom (the shared deck select's rule).
- */
-function SelectTrigger({ label, value, onChange, className, children, options }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  className: string;
-  children: ReactNode;
-  options: readonly { value: string; label: string }[];
-}) {
+/** A deck's art crop as a small tile; blank until the art lands or when the deck has none. */
+function DeckTile({ deck, size }: { deck: DeckChoice | null; size: 22 | 28 }) {
   return (
-    <label className={`${className} focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--accent)]`}>
-      {children}
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0 text-[16px]"
-      >
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </label>
+    <span
+      aria-hidden
+      style={{ width: size, height: size }}
+      className="relative inline-block flex-none overflow-hidden rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)]"
+    >
+      {deck?.artUri ? <ArtLayer src={deck.artUri} /> : null}
+    </span>
   );
 }
 
-/** The deck picker, in the shelf picker's slot on the phone: the deck's name, how many games it has under the others, a chevron. */
+/** The one-of-the-list mark: only the chosen row carries it, so a single-value list does not read as multi-select. */
+function ChosenMark({ on }: { on: boolean }) {
+  return on ? (
+    <span aria-hidden className="relative h-[18px] w-[18px] flex-none rounded-[5px] border border-solid border-[color:var(--accent)] bg-[color:var(--accent)]">
+      <span className="absolute left-[5px] top-[2px] h-[9px] w-[5px] rotate-45 border-0 border-b-2 border-r-2 border-solid border-[color:var(--bg)]" />
+    </span>
+  ) : (
+    // The slot stays so the counts keep one column whichever row is chosen.
+    <span aria-hidden className="h-[18px] w-[18px] flex-none" />
+  );
+}
+
+/** The decks the list draws: those with a game under the other filters, and the chosen one whatever its count. */
+function listedDecks(decks: readonly DeckChoice[], counts: ReadonlyMap<string, number>, chosenId: string | undefined) {
+  const listed = decks.filter((d) => (counts.get(d.id) ?? 0) > 0 || d.id === chosenId);
+  return { listed, leftOut: decks.length - listed.length };
+}
+
+/**
+ * The Deck list: a field, an `All decks` row, then a row per deck with games (art, name, count, mark), and a foot that
+ * says how many decks are left out and why. 56px rows in the phone sheet, 38px in the desktop panel.
+ */
+function DeckList({ decks, counts, chosenId, onPick, inputRef, panel }: {
+  decks: readonly DeckChoice[];
+  counts: ReadonlyMap<string, number>;
+  chosenId: string | undefined;
+  onPick: (id: string | undefined) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  panel: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const { listed, leftOut } = listedDecks(decks, counts, chosenId);
+  const shown = q === "" ? listed : listed.filter((d) => d.name.toLowerCase().includes(q));
+  const total = [...counts.values()].reduce((a, b) => a + b, 0);
+  const row = `flex w-full cursor-pointer items-center gap-[10px] border-0 border-t border-solid border-t-[color:var(--border)] bg-transparent px-[12px] text-left text-[color:var(--fg)] hover:bg-[color:var(--surface-raised)] ${panel ? "min-h-[38px] text-[13px]" : "min-h-[56px] text-[14px]"}`;
+  return (
+    <>
+      <div className="shrink-0">
+        <SearchField
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery("")}
+          placeholder={copy.deckSearch}
+          aria-label={copy.deckSearch}
+          autoComplete="off"
+          className={panel ? "h-[34px] text-[16px] [@media(pointer:fine)]:text-[13px]" : "h-[44px] text-[16px]"}
+        />
+      </div>
+      <div className={`min-h-0 overflow-y-auto rounded-[10px] border border-solid border-[color:var(--border)] ${panel ? "" : "mt-[9px]"}`}>
+        {q === "" ? (
+          <button type="button" aria-pressed={chosenId === undefined} onClick={() => onPick(undefined)} className={`${row} border-t-0`}>
+            <DeckTile deck={null} size={panel ? 22 : 28} />
+            <span className="min-w-0 flex-1 truncate">{copy.allDecks}</span>
+            <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{total}</span>
+            <ChosenMark on={chosenId === undefined} />
+          </button>
+        ) : null}
+        {shown.length === 0 ? (
+          <p className="m-0 px-[14px] py-[12px] text-[13px] text-[color:var(--fg-muted)]">{copy.noDeck}</p>
+        ) : (
+          shown.map((d) => (
+            <button key={d.id} type="button" aria-pressed={chosenId === d.id} onClick={() => onPick(d.id)} className={row}>
+              <DeckTile deck={d} size={panel ? 22 : 28} />
+              <span className="min-w-0 flex-1 truncate">{d.name}</span>
+              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{counts.get(d.id) ?? 0}</span>
+              <ChosenMark on={chosenId === d.id} />
+            </button>
+          ))
+        )}
+      </div>
+      {leftOut > 0 ? <p className="m-0 px-[4px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.deckLeftOut(leftOut)}</p> : null}
+    </>
+  );
+}
+
+/** The deck trigger's art: the chosen deck's tile, or up to three listed decks' tiles overlapped. */
+function DeckArtStack({ decks, chosen }: { decks: readonly DeckChoice[]; chosen: DeckChoice | undefined }) {
+  const tiles = chosen ? [chosen] : decks.slice(0, 3);
+  return (
+    <span aria-hidden className="inline-flex flex-none items-center">
+      {tiles.map((d, i) => (
+        <span key={d.id} className={i === 0 ? "" : "-ml-[8px]"}><DeckTile deck={d} size={22} /></span>
+      ))}
+    </span>
+  );
+}
+
+/** The phone's deck picker, in the shelf picker's slot: the deck's name, its games under the others, a chevron; a press opens the sheet. */
 export function DeckPhonePicker({ decks, filter, counts, onChange }: {
   decks: readonly DeckChoice[];
   filter: GameHistoryFilter;
@@ -105,59 +182,160 @@ export function DeckPhonePicker({ decks, filter, counts, onChange }: {
   counts: ReadonlyMap<string, number>;
   onChange: (next: GameHistoryFilter) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const chosen = decks.find((d) => d.id === filter.deckId);
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
   const count = chosen ? counts.get(chosen.id) ?? 0 : total;
   return (
-    <SelectTrigger
-      label={copy.deck}
-      value={filter.deckId ?? ""}
-      onChange={(id) => onChange(withGamesFilter(filter, { deckId: id || undefined }))}
-      options={[{ value: "", label: copy.allDecks }, ...decks.map((d) => ({ value: d.id, label: `${d.name} · ${counts.get(d.id) ?? 0}` }))]}
-      className="relative flex h-[44px] min-w-0 cursor-pointer items-baseline gap-[7px] pt-[13px] font-sans text-[15px] font-semibold text-[color:var(--fg)]"
-    >
-      <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{chosen ? chosen.name : copy.allDecks}</span>
-      <span className="font-mono text-[11.5px] font-normal text-[color:var(--fg-faint)]">{count}</span>
-      <Chevron className="self-center text-[11px] text-[color:var(--fg-muted)]" />
-    </SelectTrigger>
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={copy.deck}
+        onClick={() => setOpen(true)}
+        className="relative flex h-[44px] min-w-0 cursor-pointer items-baseline gap-[7px] border-0 bg-transparent p-0 pt-[13px] font-sans text-[15px] font-semibold text-[color:var(--fg)]"
+      >
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{chosen ? chosen.name : copy.allDecks}</span>
+        <span className="font-mono text-[11.5px] font-normal text-[color:var(--fg-faint)]">{count}</span>
+        <Chevron className="self-center text-[11px] text-[color:var(--fg-muted)]" />
+      </button>
+      {open ? <DeckSheet decks={decks} counts={counts} chosenId={filter.deckId} onPick={(id) => { onChange(withGamesFilter(filter, { deckId: id })); setOpen(false); }} onDismiss={() => setOpen(false)} /> : null}
+    </>
   );
 }
 
-/** The wide form's Deck dropdown. */
-export function DeckWideTrigger({ decks, filter, onChange }: {
+function DeckSheet({ decks, counts, chosenId, onPick, onDismiss }: {
+  decks: readonly DeckChoice[];
+  counts: ReadonlyMap<string, number>;
+  chosenId: string | undefined;
+  onPick: (id: string | undefined) => void;
+  onDismiss: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  useDialogA11y(panelRef, onDismiss);
+  return (
+    <Sheet open portal onDismiss={onDismiss} ariaLabel={copy.deck} panelRef={panelRef} header={<SheetHeader title={copy.deck} closeLabel={copy.close} onDismiss={onDismiss} />}>
+      <div className="flex min-h-0 flex-col gap-[8px] overflow-y-auto px-[18px] pb-[18px] pt-[14px]">
+        <DeckList decks={decks} counts={counts} chosenId={chosenId} onPick={onPick} inputRef={inputRef} panel={false} />
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * The wide form's anchored panel and its trigger: a non-modal panel under the button (the page beside it stays usable),
+ * closed by Escape, a press outside, or the child's `close`. `clear` adds a ✕ after the trigger that takes the value off.
+ */
+function WidePanel({ label, on, trigger, clear, children }: {
+  label: string;
+  on: boolean;
+  trigger: ReactNode;
+  clear?: { label: string; onClear: () => void };
+  children: (ctx: { close: () => void; inputRef: React.RefObject<HTMLInputElement | null> }) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { at, panelRef, triggerRef } = useAnchoredPanel<HTMLButtonElement>({ open, width: PANEL_WIDTH });
+  // The panel is hidden until it is placed, and a hidden field takes no focus: focus the search once it is visible.
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!open) { focused.current = false; return; }
+    if (!at || focused.current) return;
+    focused.current = true;
+    inputRef.current?.focus();
+  }, [open, at]);
+  useDialogA11y(panelRef, () => setOpen(false), { initialFocusRef: inputRef, returnFocusRef: triggerRef, lockScroll: false, trapTab: false });
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      const node = e.target as Node;
+      if (panelRef.current?.contains(node) || triggerRef.current?.contains(node)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", away);
+    return () => document.removeEventListener("mousedown", away);
+  }, [open, panelRef, triggerRef]);
+  return (
+    <>
+      <span className={`${triggerLook(on)} !p-0 ${open ? "border-[color:var(--accent)]" : ""}`}>
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-controls={open ? id : undefined}
+          aria-label={label}
+          onClick={() => setOpen((o) => !o)}
+          className={`inline-flex cursor-pointer items-center gap-[8px] border-0 bg-transparent py-[9px] pl-[14px] font-sans text-[13px] font-medium text-[color:var(--fg)] ${clear ? "pr-[6px]" : "pr-[14px]"}`}
+        >
+          {trigger}
+          <Chevron open={open} />
+        </button>
+        {clear ? (
+          <button type="button" aria-label={clear.label} onClick={clear.onClear} className="flex cursor-pointer items-center border-0 bg-transparent py-[9px] pl-[4px] pr-[12px] text-[13px] leading-none text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]">
+            <span aria-hidden>✕</span>
+          </button>
+        ) : null}
+      </span>
+      {open ? (
+        <div
+          id={id}
+          ref={panelRef}
+          role="dialog"
+          aria-label={label}
+          className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col gap-[8px] p-[8px]`}
+          style={{ background: "var(--surface-raised)", width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+        >
+          {children({ close: () => setOpen(false), inputRef })}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/** The wide form's Deck trigger (art stack and name) and its panel. */
+export function DeckWideTrigger({ decks, filter, counts, onChange }: {
   decks: readonly DeckChoice[];
   filter: GameHistoryFilter;
+  counts: ReadonlyMap<string, number>;
   onChange: (next: GameHistoryFilter) => void;
 }) {
   const chosen = decks.find((d) => d.id === filter.deckId);
+  const { listed } = listedDecks(decks, counts, filter.deckId);
   return (
-    <SelectTrigger
+    <WidePanel
       label={copy.deck}
-      value={filter.deckId ?? ""}
-      onChange={(id) => onChange(withGamesFilter(filter, { deckId: id || undefined }))}
-      options={[{ value: "", label: copy.allDecks }, ...decks.map((d) => ({ value: d.id, label: d.name }))]}
-      className={`${triggerLook(chosen !== undefined)} max-w-[240px] cursor-pointer`}
+      on={chosen !== undefined}
+      trigger={
+        <>
+          <DeckArtStack decks={listed} chosen={chosen} />
+          <span className="max-w-[170px] truncate">{chosen ? chosen.name : copy.allDecks}</span>
+        </>
+      }
     >
-      <span className="min-w-0 overflow-hidden text-ellipsis">{chosen ? chosen.name : copy.allDecks}</span>
-      <Chevron />
-    </SelectTrigger>
+      {({ close, inputRef }) => (
+        <DeckList decks={decks} counts={counts} chosenId={filter.deckId} inputRef={inputRef} panel onPick={(id) => { onChange(withGamesFilter(filter, { deckId: id })); close(); }} />
+      )}
+    </WidePanel>
   );
 }
 
-/** The wide form's Result dropdown. */
-export function ResultWideTrigger({ filter, onChange }: { filter: GameHistoryFilter; onChange: (next: GameHistoryFilter) => void }) {
+/** Result as an inline switch: Any · Won · Lost · Drawn. Wide on the view row; `fill` in the phone sheet. */
+export function ResultSwitch({ filter, onChange, fill }: { filter: GameHistoryFilter; onChange: (next: GameHistoryFilter) => void; fill?: boolean }) {
   const on = RESULTS.find((r) => r === filter.result);
   return (
-    <SelectTrigger
-      label={copy.result}
-      value={on ?? ""}
-      onChange={(r) => onChange(withGamesFilter(filter, { result: r || undefined }))}
-      options={[{ value: "", label: copy.anyResult }, ...RESULTS.map((r) => ({ value: r, label: copy.results[r] }))]}
-      className={`${triggerLook(filter.result !== undefined)} cursor-pointer`}
-    >
-      <span>{on ? copy.results[on] : copy.anyResult}</span>
-      <Chevron />
-    </SelectTrigger>
+    <SegmentedSwitch<GameResult | "any">
+      kind="radio"
+      ariaLabel={copy.result}
+      size="compact"
+      fill={fill}
+      value={on ?? "any"}
+      onChange={(v) => onChange(withGamesFilter(filter, { result: v === "any" ? undefined : v }))}
+      segments={[{ value: "any", label: copy.anyShort }, ...RESULTS.map((r) => ({ value: r, label: copy.results[r] }))]}
+    />
   );
 }
 
@@ -227,18 +405,7 @@ function AgainstList({ options, chosen, onPick, inputRef, panel, describedBy }: 
                     <OptionFace option={o} panel={panel} />
                     <span className="min-w-0 flex-1 truncate"><OptionName option={o} /></span>
                     <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{panel && o.kind === "commander" ? o.games : copy.optionCount(o.games)}</span>
-                    {/* One value (Played against): only the chosen row carries a mark, so the list does not read as multi-select. */}
-                    {on ? (
-                      <span
-                        aria-hidden
-                        className="relative h-[18px] w-[18px] flex-none rounded-[5px] border border-solid border-[color:var(--accent)] bg-[color:var(--accent)]"
-                      >
-                        <span className="absolute left-[5px] top-[2px] h-[9px] w-[5px] rotate-45 border-0 border-b-2 border-r-2 border-solid border-[color:var(--bg)]" />
-                      </span>
-                    ) : (
-                      // The slot stays so the counts keep one column whichever row is chosen.
-                      <span aria-hidden className="h-[18px] w-[18px] flex-none" />
-                    )}
+                    <ChosenMark on={on} />
                   </button>
                 );
               })}
@@ -250,72 +417,30 @@ function AgainstList({ options, chosen, onPick, inputRef, panel, describedBy }: 
   );
 }
 
-/** The wide form's Played against: the trigger and, open, the anchored panel under it. */
+/** The wide form's Played against: the picked face and name with a ✕, and the anchored panel under it. */
 export function AgainstWideTrigger({ options, filter, onChange }: {
   options: readonly AgainstOption[];
   filter: GameHistoryFilter;
   onChange: (next: GameHistoryFilter) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
   const chosen = chosenAgainst(options, filter);
   const on = playedAgainstOf(filter) !== null;
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const { at, panelRef, triggerRef } = useAnchoredPanel<HTMLButtonElement>({ open, width: PANEL_WIDTH });
-  // The panel is hidden until it is placed, and a hidden field takes no focus: focus the search once it is visible.
-  const focused = useRef(false);
-  useEffect(() => {
-    if (!open) { focused.current = false; return; }
-    if (!at || focused.current) return;
-    focused.current = true;
-    inputRef.current?.focus();
-  }, [open, at]);
-  // A non-modal panel (the page beside it stays usable): Escape and focus-return, no trap and no scroll lock.
-  useDialogA11y(panelRef, () => setOpen(false), { initialFocusRef: inputRef, returnFocusRef: triggerRef, lockScroll: false, trapTab: false });
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => {
-      const node = e.target as Node;
-      if (panelRef.current?.contains(node) || triggerRef.current?.contains(node)) return;
-      setOpen(false);
-    };
-    document.addEventListener("mousedown", away);
-    return () => document.removeEventListener("mousedown", away);
-  }, [open, panelRef, triggerRef]);
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? id : undefined}
-        aria-label={copy.playedAgainst}
-        onClick={() => setOpen((o) => !o)}
-        className={`${triggerLook(on)} cursor-pointer ${open ? "border-[color:var(--accent)]" : ""}`}
-      >
-        <span className="max-w-[170px] truncate">{chosen ? <OptionName option={chosen} /> : copy.playedAgainst}</span>
-        <Chevron open={open} />
-      </button>
-      {open ? (
-        <div
-          id={id}
-          ref={panelRef}
-          role="dialog"
-          aria-label={copy.playedAgainst}
-          className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col gap-[8px] p-[8px]`}
-          style={{ background: "var(--surface-raised)", width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
-        >
-          <AgainstList
-            options={options}
-            chosen={chosen}
-            panel
-            inputRef={inputRef}
-            onPick={(o) => { onChange(pickAgainst(filter, o)); setOpen(false); }}
-          />
-        </div>
-      ) : null}
-    </>
+    <WidePanel
+      label={copy.playedAgainst}
+      on={on}
+      clear={on ? { label: copy.clearAgainst, onClear: () => onChange(withGamesFilter(filter, { friend: undefined, commander: undefined })) } : undefined}
+      trigger={
+        <>
+          {chosen ? <OptionFace option={chosen} panel /> : null}
+          <span className="max-w-[170px] truncate">{chosen ? <OptionName option={chosen} /> : copy.playedAgainst}</span>
+        </>
+      }
+    >
+      {({ close, inputRef }) => (
+        <AgainstList options={options} chosen={chosen} panel inputRef={inputRef} onPick={(o) => { onChange(pickAgainst(filter, o)); close(); }} />
+      )}
+    </WidePanel>
   );
 }
 
@@ -325,25 +450,23 @@ export function AgainstWideTrigger({ options, filter, onChange }: {
  * as they are touched, as the deck filter sheet's do; the button only closes. Nothing is ever disabled: a zero option stays
  * pressable and `Show 0 games` lands on the no-match frame.
  */
-export function GamesFilterSheet({ open, onDismiss, filter, onChange, options, byResult, shown }: {
+export function GamesFilterSheet({ open, onDismiss, filter, onChange, options, shown }: {
   open: boolean;
   onDismiss: () => void;
   filter: GameHistoryFilter;
   onChange: (next: GameHistoryFilter) => void;
   options: readonly AgainstOption[];
-  byResult: { wins: number; losses: number; draws: number };
   /** Games the list holds under the filter as it stands. */
   shown: number;
 }) {
   // Mounted only while open: its trap and scroll lock follow the dialog, not this component's lifetime.
-  return open ? <SheetBody onDismiss={onDismiss} filter={filter} onChange={onChange} options={options} byResult={byResult} shown={shown} /> : null;
+  return open ? <SheetBody onDismiss={onDismiss} filter={filter} onChange={onChange} options={options} shown={shown} /> : null;
 }
 
-function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Omit<Parameters<typeof GamesFilterSheet>[0], "open">) {
+function SheetBody({ onDismiss, filter, onChange, options, shown }: Omit<Parameters<typeof GamesFilterSheet>[0], "open">) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   useDialogA11y(panelRef, onDismiss);
-  const counts: Record<GameResult, number> = { win: byResult.wins, loss: byResult.losses, draw: byResult.draws };
   const chosen = chosenAgainst(options, filter);
   const none = filter.result === undefined && playedAgainstOf(filter) === null;
   return (
@@ -377,23 +500,7 @@ function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Om
       <div className="flex min-h-0 flex-col gap-[18px] overflow-y-auto px-[18px] pb-[14px] pt-[14px]">
         <fieldset role="group" aria-label={copy.result} className="m-0 border-none p-0">
           <legend className="mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{copy.result}</legend>
-          <div className="flex flex-wrap gap-[8px]">
-            {RESULTS.map((r) => {
-              const on = filter.result === r;
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => onChange(withGamesFilter(filter, { result: on ? undefined : r }))}
-                  className={`flex h-[40px] cursor-pointer items-center gap-[8px] rounded-[9px] border border-solid px-[14px] font-sans text-[14px] ${on ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_12%,transparent)] text-[color:var(--fg)]" : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"}`}
-                >
-                  {copy.results[r]}
-                  <small className="font-mono text-[11px] text-[color:var(--fg-faint)]">{counts[r]}</small>
-                </button>
-              );
-            })}
-          </div>
+          <ResultSwitch filter={filter} onChange={onChange} fill />
         </fieldset>
         <fieldset role="group" aria-label={copy.playedAgainst} className="m-0 flex min-h-0 flex-col border-none p-0">
           <legend className="mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{copy.playedAgainst}</legend>
