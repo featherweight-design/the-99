@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-26T00:30:00Z"
+ },
+ "title": "Games tabs redesign (approved)",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Final-Desktop.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 2680,
+   "h": 2094,
+   "title": "Desktop · Decks › Games + Deck details › Games"
+  },
+  "Final-Phone.dc.html": {
+   "x": 2760,
+   "y": 0,
+   "w": 860,
+   "h": 3177,
+   "title": "Phone · both tabs"
+  },
+  "Final-Matchups.dc.html": {
+   "x": 3700,
+   "y": 0,
+   "w": 2552,
+   "h": 980,
+   "title": "Matchups fuller · Commander, Colors, Friend"
+  },
+  "Tiles-24.dc.html": {
+   "x": 3700,
+   "y": 1340,
+   "w": 1400,
+   "h": 1138,
+   "title": "How it's playing · 24 games, all 8 marks"
+  },
+  "Filters.dc.html": {
+   "x": 0,
+   "y": 3537,
+   "w": 2680,
+   "h": 1602,
+   "title": "Filters · custom components"
+  }
+ },
+ "order": [
+  "Final-Desktop.dc.html",
+  "Final-Phone.dc.html",
+  "Final-Matchups.dc.html",
+  "Tiles-24.dc.html",
+  "Filters.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
