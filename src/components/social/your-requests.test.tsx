@@ -9,6 +9,7 @@ import { requestText, YourRequests } from "./your-requests";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+import { bandName } from "../decks/deck-box";
 
 /** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
 const expectTrimmed = (img: HTMLImageElement) => {
@@ -104,7 +105,8 @@ describe("YourRequests", () => {
   it("heads the section with its count and order, and draws every row with its ✕", () => {
     render(<YourRequests rows={[req("a", "open"), req("b", "yes"), req("c", "no"), req("d", "expired")]} now={NOW} />);
     const head = screen.getByRole("heading", { level: 2 });
-    expect(head.textContent).toBe(`${m.head(4)}${m.order}`);
+    expect(head.textContent).toBe(`◆${bandName(m.head(4))}`);
+    expect(screen.getByText(m.order)).toBeTruthy();
     const rows = screen.getAllByTestId("your-request");
     expect(rows.map((x) => x.dataset.state)).toEqual(["open", "yes", "no", "expired"]);
     for (const row of rows) expect(within(row).getByTestId("your-request-close").textContent).toBe("✕");

@@ -6,6 +6,7 @@
 // and a write that fails puts the last saved store back and says so in the shared social toast. `#settings-store` is where Change
 // store lands; arriving on it washes the whole section for two seconds (`useWashFromHash`).
 
+import { BandText } from "../decks/deck-box";
 import { storeCopy } from "../../lib/copy/store";
 import { STORE_INFO, STORE_SETTINGS_ID } from "../../lib/stores/info";
 import { STORES, type Store } from "../../lib/stores/rows";
@@ -28,7 +29,7 @@ export function StoreSection({ store }: { store: Store }) {
       data-store-section=""
       className={`-mx-[10px] mt-[22px] scroll-mt-[72px] rounded-[10px] px-[10px] py-[2px] md:mt-[30px] ${WASH}`}
     >
-      <h2 id="settings-store-head" className={SECTION_HEAD}>{c.head}</h2>
+      <h2 id="settings-store-head" className={SECTION_HEAD}><BandText text={c.head} /></h2>
       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
       <div role="radiogroup" aria-label={c.groupLabel} className="m-0 mt-[4px] flex flex-col">
         {STORES.map((id) => {

@@ -9,7 +9,7 @@ export const PANEL =
 
 /** The header band: the shipped section-head type, on the rail ground, a hairline under it, links at its end. */
 export const BAND =
-  "m-0 flex min-h-[48px] items-center justify-between gap-[12px] bg-[color:var(--surface-rail)] pl-[14px] pr-[6px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] outline-none [border-bottom:1px_solid_var(--border)] md:min-h-[44px] md:pl-[16px] md:pr-[8px]";
+  "m-0 flex min-h-[48px] items-center justify-between gap-[12px] py-[8px] pl-[14px] pr-[6px] font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] bg-[color:var(--surface-rail)] outline-none [border-bottom:1px_solid_var(--border)] md:min-h-[44px] md:pl-[16px] md:pr-[8px] md:text-[17px]";
 
 /**
  * The handover mark: two cards, a friend's (dashed, behind) and the one passed (accent edge, tilted forward), with the

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { DeckBox, DeckBoxBand } from "./deck-box";
+import { bandName, BandText, DeckBox, DeckBoxBand, splitBand } from "./deck-box";
 
 describe("DeckBoxBand", () => {
   it("names the heading by its title and count alone, never by the aside", () => {
@@ -25,5 +25,21 @@ describe("DeckBoxBand", () => {
     );
     expect(screen.getByRole("heading", { level: 3 }).id).toBe("fixture-head");
     expect(screen.getByRole("region", { name: "Fixture title" })).toBeTruthy();
+  });
+});
+
+describe("BandText", () => {
+  it("splits a count off the last separator, and draws a copy with none as the title alone", () => {
+    expect(splitBand("Fixture head · 4")).toEqual({ title: "Fixture head", count: "4" });
+    expect(splitBand("Fixture head")).toEqual({ title: "Fixture head" });
+    expect(splitBand("Fixture · odd head · 4")).toEqual({ title: "Fixture · odd head", count: "4" });
+    expect(bandName("Fixture · odd head · 4")).toBe("Fixture · odd head 4");
+  });
+
+  it("names a heading by its title and count, with the diamond hidden from the name", () => {
+    render(<h2><BandText text="Fixture · odd head · 4" /></h2>);
+    expect(screen.getByRole("heading", { name: "Fixture · odd head 4" })).toBeTruthy();
+    render(<h3><BandText text="Fixture head" /></h3>);
+    expect(screen.getByRole("heading", { name: "Fixture head" })).toBeTruthy();
   });
 });

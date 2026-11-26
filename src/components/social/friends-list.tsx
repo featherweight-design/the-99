@@ -20,13 +20,14 @@ import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name
 import { Face } from "./face";
 import { SpareChip } from "./spare-key-item";
 import { BAND, PANEL } from "./section-panel";
+import { BandText } from "../decks/deck-box";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useMomentHold } from "../../lib/moments/hold";
 
 const f = socialCopy.friends;
 
 export const SECTION_HEAD =
-  "m-0 flex min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]";
+  "m-0 flex min-h-[44px] items-center font-display text-[17px] font-semibold leading-[1.2] text-[color:var(--fg)] md:min-h-[32px]";
 
 export function FriendsList({
   friends,
@@ -69,7 +70,7 @@ export function FriendsList({
   }, [friends.length]);
   return (
     <section aria-labelledby="friends-head" className={PANEL}>
-      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}>{f.head(friends.length)}</h2>
+      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}><BandText text={f.head(friends.length)} /></h2>
       {friends.length === 0 ? (
         <div className="m-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:m-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>

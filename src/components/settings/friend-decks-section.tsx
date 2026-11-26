@@ -5,6 +5,7 @@
 // it dims, reads unticked and cannot be pressed: there is nothing for it to include. A write that fails puts both back
 // to what was last saved and says so in the shared social toast, as the news and Spares sections do.
 
+import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { setFriendDeckPrefsAction } from "../../app/settings/actions";
 import { settingsCopy } from "../../lib/copy/settings";
@@ -63,7 +64,7 @@ export function FriendDecksSection({ prefs }: { prefs: FriendDeckPrefs }) {
   const unfinishedLive = on.seeDecks;
   return (
     <section aria-labelledby="settings-decks" className="mt-[26px] md:mt-[34px]">
-      <h2 id="settings-decks" className={SECTION_HEAD}>{c.head}</h2>
+      <h2 id="settings-decks" className={SECTION_HEAD}><BandText text={c.head} /></h2>
       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
       <ul className="m-0 mt-[4px] list-none p-0">
         <li className="[&+&]:[border-top:1px_solid_var(--border)]">

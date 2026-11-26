@@ -29,6 +29,7 @@ import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { KICKER_AGE } from "../feed/kicker-age";
 import { BAND, PANEL } from "./section-panel";
+import { BandText } from "../decks/deck-box";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
@@ -136,9 +137,9 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
       <h2
         id="waiting-on-you"
         tabIndex={-1}
-        className={bare ? "sr-only" : `${BAND} text-[color:var(--accent-text)]!`}
+        className={bare ? "sr-only" : BAND}
       >
-        {w.head(waiting.length)}
+        <BandText text={w.head(waiting.length)} />
       </h2>
       <div ref={root} className="flex flex-col">
       <ul ref={listRef} className="m-0 flex list-none flex-col p-0">

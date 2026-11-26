@@ -1,0 +1,118 @@
+{
+  "feature": "R4 PR A: Social and Settings bands drawn as the diamond head (handoff design_handoff_the99_deck_details_refresh, R4-Friends and R4-Settings)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and a signed-in account. The Pods band, the Waiting on you and Your requests bands (drawn bare, sr-only, inside the Home and Friends tabs), Open links, Request history and the Store head have no reachable fixture on local-dev (a pod, an open link, a request history and the store section), so they are not photographed here; their heads are held by unit tests.",
+  "out": "contact-sheets/r4-a",
+  "shares": [
+    {
+      "binding": "BandText",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "friends-list",
+      "label": "Friends: the Friends band, diamond head with its count",
+      "view": "src/components/social/friends-list.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "#friends-head",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#friends-head",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-account",
+      "label": "Settings: Account and News heads",
+      "view": "src/components/settings/account-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-account",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-account",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-news",
+      "label": "Settings: What's new head",
+      "view": "src/components/settings/news-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-news",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-news",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-spares",
+      "label": "Settings: Spares head and Kept back sub-head",
+      "view": "src/components/settings/spares-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-spares",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-spares",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "settings-decks",
+      "label": "Settings: Friend decks head",
+      "view": "src/components/settings/friend-decks-section.tsx",
+      "binding": "BandText",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-decks",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#settings-decks",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

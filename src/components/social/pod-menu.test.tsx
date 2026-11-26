@@ -28,6 +28,7 @@ import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import { folderCopy } from "../../lib/copy/folders";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
+import { bandName } from "../decks/deck-box";
 
 const P = socialCopy.pods;
 /** No open table: each pod card draws its Rule 0 check row. */
@@ -347,7 +348,7 @@ describe("leave and delete", () => {
     await press(screen.getByRole("button", { name: P.leaveConfirm }));
     expect(m.leave).toHaveBeenCalledWith("pod-2");
     expect(names()).toEqual(["Thursday"]);
-    expect(screen.getByRole("heading", { name: P.head(1) })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: bandName(P.head(1)) })).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: P.newPod }));
   });

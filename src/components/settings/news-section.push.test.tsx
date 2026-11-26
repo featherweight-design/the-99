@@ -102,7 +102,7 @@ describe("push unavailable", () => {
 describe("the column", () => {
   it("heads two 52px columns, In app then Push, gives each kind its push box after its in-app box, and the foot gains its push clause", async () => {
     await draw();
-    expect(screen.getByRole("heading", { name: C.head }).textContent).toBe(C.head);
+    expect(screen.getByRole("heading", { name: C.head }).textContent).toContain(C.head);
     expect(heads()).toEqual([C.inApp, P.head]);
     expect(pushBox("spare-request").checked).toBe(true);
     expect(pushBox("new-set").checked).toBe(false);
