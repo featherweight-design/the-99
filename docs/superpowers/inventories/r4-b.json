@@ -1,0 +1,195 @@
+{
+  "feature": "R4 PR B: Precons, cart Decks box, Analysis empty and Home zero drawn as the diamond head",
+  "note": "Needs PRECONS_ENABLED, ANALYSIS_TAB_ENABLED and ALL_DECKS_CART_ENABLED on. Env: ANALYSIS_EMPTY_DECK (a deck with no stored reading), R4B_PRECON (a precon file name whose list has a current Overview row; local-dev has none, so a marker precon_synopses row is seeded for the run). The Announced rows need an upcoming commander set (local-dev holds none, so a marker `sets` row, code r4bfx, is seeded for the run); the folded row visits twice because an unseen set opens the group by itself and the first visit marks it seen.",
+  "out": "contact-sheets/r4-b",
+  "shares": [
+    {
+      "binding": "DeckBox",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "DeckBoxBand",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "DeckBoxFoot",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "BandTitle",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "BAND_GROUND",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "BAND_RULE",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "list-tiles",
+      "label": "/decks/precons tiles: year bands as diamond-head boxes",
+      "view": "src/components/decks/precons/precon-list-view.tsx",
+      "binding": "DeckBoxBand",
+      "steps": [
+        {
+          "goto": "/decks/precons",
+          "wait": "[aria-labelledby^='precons-']",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "list-rows",
+      "label": "/decks/precons?view=rows: year bands over the rows view",
+      "view": "src/components/decks/precons/precon-list-view.tsx",
+      "binding": "DeckBox",
+      "steps": [
+        {
+          "goto": "/decks/precons?view=rows",
+          "wait": "[aria-labelledby^='precons-']",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "announced-folded",
+      "label": "/decks/precons?sort=newest: Announced group folded (phone's drawn state)",
+      "view": "src/components/decks/precons/announced-group.tsx",
+      "binding": "BAND_GROUND",
+      "steps": [
+        {
+          "goto": "/decks/precons?sort=newest",
+          "wait": "#announced",
+          "settle": 2500
+        },
+        {
+          "goto": "/decks/precons?sort=newest",
+          "wait": "#announced",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#announced",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "announced-open",
+      "label": "/decks/precons?sort=newest#announced: Announced group unfolded",
+      "view": "src/components/decks/precons/announced-group.tsx",
+      "binding": "BAND_RULE",
+      "steps": [
+        {
+          "goto": "/decks/precons?sort=newest#announced",
+          "wait": "[data-testid=announced-set]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#announced",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "pick",
+      "label": "/decks/precons?pick=own: the pick view's year bands",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "binding": "DeckBoxBand",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "[aria-labelledby^='pick-']",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "open-overview",
+      "label": "Open precon: Overview block as a diamond-head box",
+      "view": "src/components/decks/precons/precon-overview.tsx",
+      "binding": "DeckBoxFoot",
+      "steps": [
+        {
+          "goto": "/decks/precons/${R4B_PRECON}",
+          "wait": "[data-testid=precon-overview]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-testid=precon-overview]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "cart-closed",
+      "label": "/decks/shopping: Decks box (phone fold closed)",
+      "view": "src/components/decks/cart/deck-select.tsx",
+      "binding": "BandTitle",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-decks]",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "[data-cart-decks]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "cart-open",
+      "label": "/decks/shopping: Decks box with the fold open",
+      "view": "src/components/decks/cart/deck-select.tsx",
+      "binding": "BandTitle",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-decks]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-cart-decks] button[aria-expanded]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-cart-decks]",
+          "settle": 500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "analysis-empty",
+      "label": "Deck Analysis tab before a reading: Overview band",
+      "view": "src/components/decks/analysis-empty.tsx",
+      "binding": "DeckBoxBand",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_EMPTY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='analysis-empty']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='analysis-empty']",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}
