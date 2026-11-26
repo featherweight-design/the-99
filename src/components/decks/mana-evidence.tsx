@@ -101,7 +101,7 @@ export function ManaEvidenceTable({ balance }: { balance: ClientManaBalance }) {
   const colorless = rows.find((r) => r.c === "C");
   const byColor = new Map(balance.colors.map((e) => [e.color, e]));
   return (
-    <div data-mana-table className="border-t border-t-[color:var(--border)]">
+    <div data-mana-table>
       <div aria-hidden="true" className={`hidden border-b border-b-[color:var(--border)] px-[2px] py-[8px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid ${GRID}`}>
         <span>{copy.table.head.color}</span>
         <span>{copy.table.head.pips}</span>

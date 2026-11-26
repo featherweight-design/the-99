@@ -12,16 +12,17 @@ import { colorName, colorWord } from "../../lib/tuning/mana-view";
 import { HoverPreviewProvider } from "./hover-preview";
 import { PIP_STYLE } from "./mana-color-parts";
 import { Chevron } from "../ui/chevron";
+import { BAND_GROUND, BAND_HEIGHT, BAND_RULE, BandTitle, DeckBox } from "./deck-box";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 
 /** Names a pattern row shows before `+N more`. */
 const NAMES_SHOWN = 3;
 
-export function ManaSection({ id, label, clause, open, onToggle, tight = false, children }: {
+export function ManaSection({ id, label, count, clause, open, onToggle, children }: {
   id: string;
-  /** Set 12 after the section above it rather than the panel's 18 (R3b). */
-  tight?: boolean;
   label: string;
+  /** The mono count in the band (cost patterns in Hardest costs, lands in Lands). */
+  count: number;
   clause: string;
   open: boolean;
   onToggle: () => void;
@@ -32,7 +33,7 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
   // mount is the tool panel's own arrival, which already plays around it.
   const [pressed, setPressed] = useState(false);
   return (
-    <section data-mana-section={id} aria-label={label} className={`border-t border-t-[color:var(--border-strong)] ${tight ? "-mt-[6px]" : ""}`}>
+    <DeckBox data-mana-section={id} aria-label={label} className="!mt-[14px] md:!mt-[18px]">
       <h3 className="m-0">
         <button
           type="button"
@@ -40,17 +41,17 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
           // The body is unmounted while folded, so the reference would dangle.
           aria-controls={open ? bodyId : undefined}
           onClick={() => { setPressed(true); onToggle(); }}
-          className="flex min-h-[52px] w-full cursor-pointer items-center gap-x-[8px] border-none bg-transparent p-0 text-left md:min-h-[44px] md:gap-x-[10px]"
+          className={`flex ${BAND_HEIGHT} w-full cursor-pointer items-center justify-between gap-[12px] border-none py-[8px] pl-[14px] pr-[10px] text-left md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${open ? BAND_RULE : ""}`}
         >
-          <Chevron kind="disclosure" open={open} className="text-[color:var(--fg-muted)]" />
-          <span className="flex flex-col gap-x-[10px] gap-y-[2px] md:flex-row md:items-baseline">
-            <span className="font-sans text-[16px] font-semibold leading-[1.2] text-[color:var(--fg)] md:text-[17px]">{label}</span>
-            <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] md:text-[11px]">{clause}</span>
+          <span className="min-w-0">
+            <BandTitle title={label} count={count} />
+            <span className="block font-mono text-[10.5px] font-normal text-[color:var(--fg-faint)] md:ml-[12px] md:inline md:text-[11.5px]">{clause}</span>
           </span>
+          <Chevron kind="disclosure" open={open} className="flex-none text-[color:var(--fg-muted)]" />
         </button>
       </h3>
-      {open ? <div id={bodyId} className={`${pressed ? "anim-gentle-in " : ""}mt-[9px] md:mt-[11px]`}>{children}</div> : null}
-    </section>
+      {open ? <div id={bodyId} className={`${pressed ? "anim-gentle-in " : ""}px-[14px] py-[12px] md:px-[16px]`}>{children}</div> : null}
+    </DeckBox>
   );
 }
 
@@ -158,7 +159,7 @@ export function PatternRows({ colors, initial, ids, art, renderCard }: { colors:
   return (
     <HoverPreviewProvider className="flex flex-col gap-[10px]">
       {pipped.length > 1 ? <ColorChips colors={pipped.map((c) => c.color)} picked={current.color} onPick={setPicked} /> : null}
-      <div className="border-t border-t-[color:var(--border)]">
+      <div>
         <div aria-hidden="true" className="hidden grid-cols-[72px_minmax(0,1fr)_200px] gap-[14px] border-b border-b-[color:var(--border)] px-[2px] py-[8px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid">
           <span>{copy.patterns.head.cost}</span>
           <span>{copy.patterns.head.cards}</span>
@@ -237,7 +238,7 @@ export function LandFacts({ lands, cards, commander, commanders }: { lands: Land
   const avg = lands.averageManaValue.toFixed(2);
   return (
     <div className="flex flex-col gap-[8px]">
-      <ul className="border-t border-t-[color:var(--border)]">
+      <ul>
         <FactRow label={copy.lands.count} figure={String(lands.count)} note={copy.lands.countOf(cards)} />
         {tapped.map((r) => (
           // A row reading 0 says nothing about which kind of land: no note and nothing to open.

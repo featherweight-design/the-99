@@ -49,6 +49,7 @@ export const manaBalanceCopy = {
   /** Any link that leaves the app. */
   newTab: (name: string) => `${name}, opens in a new tab`,
   sections: {
+    colors: { label: "Colors" },
     hardest: { label: "Hardest costs", clause: (colorNames: string) => `six per color · ${colorNames}` },
     lands: {
       label: "Lands",
