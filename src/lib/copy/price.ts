@@ -74,6 +74,8 @@ export const priceCopy = {
       lastChecked: "Last checked",
       /** The Over cell's label, naming the deck's limit (`$10` by default). */
       over: (figure: string) => `Over ${figure}`,
+      /** The foot link that opens the limit editor, naming the current mark. */
+      changeMark: (figure: string) => `Change the ${figure} mark`,
       overValue: (n: number) => (n === 0 ? "none" : n === 1 ? "1 card" : `${n} cards`),
     },
   },

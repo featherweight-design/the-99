@@ -71,6 +71,8 @@ export function PriceStrip({
   tokenProvenance = null,
   tokenOwnProvenance = null,
   overCount = 0,
+  limitOpen = false,
+  onToggleLimit,
 }: {
   summary: PriceSummary;
   /** Null when the table is empty or the read failed — the strip renders nothing. */
@@ -93,6 +95,10 @@ export function PriceStrip({
   tokenOwnProvenance?: ProvenanceForm | null;
   /** Shopping rows over the deck's limit: the Over cell's figure. The cell is drawn with the swap tools alone. */
   overCount?: number;
+  /** The limit editor under the box is open: the foot link says so (`aria-expanded`). */
+  limitOpen?: boolean;
+  /** Opens or closes that editor. With it and the swap tools the foot draws `Change the $N mark`. */
+  onToggleLimit?: () => void;
 }) {
   const store = useStoreInfo();
   const tools = useSwapTools();
@@ -133,6 +139,17 @@ export function PriceStrip({
   const cellClass = "flex min-w-0 flex-col gap-[5px] px-[14px] py-[14px] md:px-[16px] [border-left:1px_solid_var(--border)] first:[border-left:0]";
   const labelClass = "font-mono text-[10px] font-medium uppercase tracking-[.12em]";
   const limitFigure = tools ? formatLimit(tools.limitCents) : null;
+  const changeMark =
+    tools && limitFigure && onToggleLimit ? (
+      <button
+        type="button"
+        aria-expanded={limitOpen}
+        onClick={onToggleLimit}
+        className="inline-flex min-h-[44px] items-center bg-transparent border-0 p-0 font-mono text-[11.5px] underline underline-offset-2 cursor-pointer text-[color:var(--fg-muted)]"
+      >
+        {box.changeMark(limitFigure)}
+      </button>
+    ) : null;
   const behindNotes = [
     ...(dated.behind ? [priceCopy.strip.behind] : []),
     // Only beside a figure: why the cart the link builds can cost more than it.
@@ -198,12 +215,14 @@ export function PriceStrip({
             {storeCopy.noCart(store)}
           </p>
           <StorePasteRow store={store} lines={shoppingCards} />
+          {changeMark}
         </DeckBoxFoot>
       ) : null}
       {buyHref ? (
         <DeckBoxFoot className="!gap-0 !py-0">
-          <div className="flex min-h-[44px] items-center">
+          <div className="flex min-h-[44px] flex-wrap items-center justify-between gap-x-[16px]">
             <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
+            {changeMark}
           </div>
           {/* What the link sends, said once: cards by name and quantity, tokens by set and number. */}
           {tokens ? (

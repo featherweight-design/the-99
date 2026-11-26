@@ -19,11 +19,25 @@ import { useGotIt } from "./got-it";
 import { ShoppingKeyOver } from "./shopping-key";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
-export function StandInLimit({ shoppingCount, overCount, countInBox = false }: { shoppingCount: number; overCount: number; countInBox?: boolean }) {
+export function StandInLimit({
+  shoppingCount,
+  overCount,
+  countInBox = false,
+  open = false,
+  onClose,
+}: {
+  shoppingCount: number;
+  overCount: number;
+  /** The To buy box draws the count and the `Change the $N mark` link; this draws the editor alone, under the box, while `open`. */
+  countInBox?: boolean;
+  open?: boolean;
+  onClose?: () => void;
+}) {
   const tools = useSwapTools();
   const gotIt = useGotIt();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
+  const [editingOwn, setEditing] = useState(false);
+  // Null until typed: the field then reads the current limit, so opening the editor needs no effect to seed it.
+  const [draftText, setDraft] = useState<string | null>(null);
   const [invalid, setInvalid] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [pending, startTransition] = useTransition();
@@ -31,12 +45,20 @@ export function StandInLimit({ shoppingCount, overCount, countInBox = false }: {
 
   if (!tools || shoppingCount === 0) return null;
   const figure = formatLimit(tools.limitCents);
+  // With the box drawing the figure, the line is the editor and nothing else, shown while the box's link has it open.
+  const editing = countInBox ? open : editingOwn;
+  const draft = draftText ?? String(tools.limitCents / 100);
+  const stopEditing = () => {
+    setEditing(false);
+    setDraft(null);
+    onClose?.();
+  };
 
   const save = (cents: number | null) =>
     startTransition(async () => {
       const { ok } = await setShoppingLimitAction(tools.deckId, cents);
       if (ok) {
-        setEditing(false);
+        stopEditing();
         setAnnouncement(copy.announce.limitSaved(formatLimit(cents ?? DEFAULT_LIMIT_CENTS)));
       }
     });
@@ -58,6 +80,7 @@ export function StandInLimit({ shoppingCount, overCount, countInBox = false }: {
       data-testid="stand-in-limit"
       className="flex flex-col gap-0 md:gap-[4px] mt-[4px] md:mt-[10px] px-[2px] pb-[2px] md:px-[4px] md:pb-0"
     >
+      {countInBox && !open ? null : (
       <form onSubmit={submit} className="flex flex-wrap items-center gap-[8px] min-h-[44px] md:min-h-[30px]">
         <span className="text-[12.5px]" style={{ color: "var(--fg-body)" }}>{copy.limit.lead}</span>
         {editing ? (
@@ -93,13 +116,23 @@ export function StandInLimit({ shoppingCount, overCount, countInBox = false }: {
             <button
               type="button"
               onClick={() => {
-                setEditing(false);
                 setInvalid(false);
+                stopEditing();
               }}
               className="inline-flex items-center min-h-[44px] md:min-h-0 px-[6px] text-[13px] md:text-[12.5px] bg-transparent border-none cursor-pointer text-[color:var(--fg-muted)]"
             >
               {copy.limit.cancel}
             </button>
+            {countInBox && tools.storedLimitCents !== null ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => save(null)}
+                className={`${quiet} px-[4px] md:px-0 text-[color:var(--fg-faint)] decoration-[color:var(--border-strong)]`}
+              >
+                {copy.limit.reset(formatLimit(DEFAULT_LIMIT_CENTS))}
+              </button>
+            ) : null}
           </>
         ) : (
           <>
@@ -142,6 +175,7 @@ export function StandInLimit({ shoppingCount, overCount, countInBox = false }: {
           </span>
         )}
       </form>
+      )}
       {invalid ? (
         <p id={errorId} role="alert" className="m-0 font-mono text-[10px]" style={{ color: "var(--warning)" }}>
           {copy.limit.invalid}

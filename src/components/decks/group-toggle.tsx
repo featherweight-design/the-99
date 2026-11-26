@@ -203,6 +203,8 @@ export function GroupToggle({
   // Keep all's question replaces the bulk pair, and Lock cards stands down with it (addendum F3):
   // a mode that changes every row's ✕ has no business beside an unanswered question about them.
   const [keepAsking, setKeepAsking] = useState(false);
+  // The To buy box's `Change the $N mark` link opens the limit editor under the box.
+  const [limitOpen, setLimitOpen] = useState(false);
   // The tokens joined to this deck, for the buy box alone: the pill, the counts and the status stay the cards'.
   const deckTokens = useDeckTokens();
   const joinedTokens = tokenShopping(deckTokens?.read);
@@ -499,11 +501,11 @@ export function GroupToggle({
           gap under the pills with nothing in it. The strip owns its own top
           margin so the decision and the space it occupies stay together. */}
       {!panelOpen && filter === "shopping" && priceSummary && (
-        <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} tokens={joinedTokens} tokenProvenance={deckTokens?.provenance ?? null} tokenOwnProvenance={deckTokens?.ownProvenance ?? null} overCount={shoppingOverCount} />
+        <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} tokens={joinedTokens} tokenProvenance={deckTokens?.provenance ?? null} tokenOwnProvenance={deckTokens?.ownProvenance ?? null} overCount={shoppingOverCount} limitOpen={limitOpen} onToggleLimit={() => setLimitOpen((o) => !o)} />
       )}
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then, with its own `N over` count (the box's Over cell carries it otherwise). */}
-      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} countInBox={priceSummary !== null && stripDate(priceSummary, provenance, joinedTokens, deckTokens?.provenance ?? null, deckTokens?.ownProvenance ?? null) !== null} />}
+      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} open={limitOpen} onClose={() => setLimitOpen(false)} countInBox={priceSummary !== null && stripDate(priceSummary, provenance, joinedTokens, deckTokens?.provenance ?? null, deckTokens?.ownProvenance ?? null) !== null} />}
     </div>
   );
 }
