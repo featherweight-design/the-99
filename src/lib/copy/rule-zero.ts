@@ -22,17 +22,17 @@ export const ruleZeroCopy = {
     row: "Rule 0 check",
     rowSub: "Seat tonight’s players, compare their decks",
     open: "Tonight’s table",
-    openSub: (n: number, closes: string) => `${seated(n)} · open until ${closes}`, // "4 seated · open until 9:40 pm tomorrow"
+    openSub: (seatCount: number, closes: string) => `${seated(seatCount)} · open until ${closes}`, // "4 seated · open until 9:40 pm tomorrow"
     homeKicker: "Tonight’s table",
-    homeBody: (setter: Said, deck: Said, n: number, closes: string) =>
-      personText`${setter} seated you with ${deck}. ${seated(n)}, open until ${closes}.`,
-    homeBodyOwn: (deck: Said, n: number, closes: string) => personText`You’re seated with ${deck}. ${seated(n)}, open until ${closes}.`,
+    homeBody: (setter: Said, deck: Said, seatCount: number, closes: string) =>
+      personText`${setter} seated you with ${deck}. ${seated(seatCount)}, open until ${closes}.`,
+    homeBodyOwn: (deck: Said, seatCount: number, closes: string) => personText`You’re seated with ${deck}. ${seated(seatCount)}, open until ${closes}.`,
     // Not drawn: your seat waits for a deck. `setter` is null when their profile is gone, so the sentence names nobody.
-    homeBodyWaiting: (setter: Said | null, n: number, closes: string) =>
+    homeBodyWaiting: (setter: Said | null, seatCount: number, closes: string) =>
       setter === null
-        ? personText`You’re seated. Pick your deck at the table. ${seated(n)}, open until ${closes}.`
-        : personText`${setter} seated you. Pick your deck at the table. ${seated(n)}, open until ${closes}.`,
-    homeBodyWaitingOwn: (n: number, closes: string) => `You set the table. Pick your deck there. ${seated(n)}, open until ${closes}.`,
+        ? personText`You’re seated. Pick your deck at the table. ${seated(seatCount)}, open until ${closes}.`
+        : personText`${setter} seated you. Pick your deck at the table. ${seated(seatCount)}, open until ${closes}.`,
+    homeBodyWaitingOwn: (seatCount: number, closes: string) => `You set the table. Pick your deck there. ${seated(seatCount)}, open until ${closes}.`,
     homeOpen: "Open the table",
   },
 
@@ -42,7 +42,7 @@ export const ruleZeroCopy = {
     whoSub: (pod: Said) => personText`${pod} · pick tonight’s players. A game seats 2 to 8.`,
     noDecks: "no decks yet",
     picksOwn: "picks their own", // tile sub for a member who isn't your friend
-    decks: (n: number) => (n === 1 ? "1 deck" : `${n} decks`), // tile sub for you and a friend with decks ("5 decks")
+    decks: (deckCount: number) => (deckCount === 1 ? "1 deck" : `${deckCount} decks`), // tile sub for you and a friend with decks ("5 decks")
     count: seated,
     next: "Next: decks",
     tooFew: "Seat one more player.",
@@ -82,7 +82,7 @@ export const ruleZeroCopy = {
     title: "Rule 0 check",
     // The meta line after the pod's name (drawn in bold), then `open until`: its own line on the phone, after a ` · `
     // on desktop. "Thursday night · set by Colin · 4 seated · open until 9:40 pm tomorrow"
-    metaSetBy: (setter: Said | null, n: number) => personText` · set by ${setter ?? "you"} · ${seated(n)}`,
+    metaSetBy: (setter: Said | null, seatCount: number) => personText` · set by ${setter ?? "you"} · ${seated(seatCount)}`,
     metaOpen: (closes: string) => `open until ${closes}`,
     closesTomorrow: (time: string) => `${time} tomorrow`, // "9:40 pm tomorrow"; today's close is the time alone
     closesOn: (time: string, day: string) => `${time} ${day}`, // "12:30 am Mon": two calendar days on, across a clock change
@@ -105,15 +105,15 @@ export const ruleZeroCopy = {
     // T7: a flagged seat whose declaration drifted says so in place of the closing line.
     driftNote: (whose: Said, declared: string) => personText`${whose} declared ${declared} is from before its last reading, so it settles nothing.`,
     // S1, S6: the viewer's own flagged seat with decks nearer the middle closes on them instead (after `sitsAt`).
-    closer: (n: number) => (n === 1 ? "You have a deck that sits closer." : "You have decks that sit closer."),
+    closer: (deckCount: number) => (deckCount === 1 ? "You have a deck that sits closer." : "You have decks that sit closer."),
     // S2: after the viewer's own swap this visit, in place of the read's sentence.
     youSwapped: (deck: Said) => personText`You swapped to ${deck}. The others see it on their next look.`,
     two: "Two decks sit off the table, one each way.",
-    many: (n: number) => `${n} decks sit off the table.`,
+    many: (deckCount: number) => `${deckCount} decks sit off the table.`,
     // T4, T6: the middle, then each flagged seat. T5: each seat after `splitBody`. Parts join with `readsList`.
     middleIs: (middle: Said) => personText`The middle is ${middle}.`,
     seatReads: (whose: Said, deck: Said, reads: Said) => personText`${whose} ${deck} reads ${reads}`,
-    seatReadsRange: (whose: Said, deck: Said, range: Said, from: string) => personText`${whose} ${deck} reads ${range}, measured from ${from}`,
+    seatReadsRange: (whose: Said, deck: Said, range: Said, sourceText: string) => personText`${whose} ${deck} reads ${range}, measured from ${sourceText}`,
     seatDeclared: (name: Said, answer: Said) => personText`${name} declared ${answer}`, // "Colin declared Optimized", "You declared Optimized"
     // T8, T9: who the read compares while seats are left out. `names` comes from `seatNames`.
     comparing: (names: Said, both: boolean, reads: Said) => personText`Comparing ${names}: ${both ? "both" : "all"} read ${reads}.`,
@@ -128,7 +128,7 @@ export const ruleZeroCopy = {
     keyLabel: "What the counts on each seat are",
     split: "A split: these two decks are a bracket or more apart.",
     splitBody: "With two seats there’s no rest of the table, so both are marked.",
-    leftOut: (n: number) => (n === 1 ? "One seat isn’t in the read yet." : `${n} seats aren’t in the read yet.`),
+    leftOut: (seatCount: number) => (seatCount === 1 ? "One seat isn’t in the read yet." : `${seatCount} seats aren’t in the read yet.`),
     reading: (name: Said) => personText`Reading ${name}’s deck…`,
     nothing: "Nothing to compare yet.",
     nothingBody: "A read needs two seats with decks we’ve read.",
@@ -147,8 +147,8 @@ export const ruleZeroCopy = {
     below: "Below the table",
     split: "Split",
     whyLead: "What puts it here:",
-    whyCombo: (a: string, b: string, tutors: number) =>
-      `it can find a two-card combo, ${a} + ${b}, with ${tutors === 1 ? "1 tutor" : `${tutors} tutors`} to reach it. Upgraded allows a combo only as a draw away.`,
+    whyCombo: (comboCardA: string, comboCardB: string, tutors: number) =>
+      `it can find a two-card combo, ${comboCardA} + ${comboCardB}, with ${tutors === 1 ? "1 tutor" : `${tutors} tutors`} to reach it. Upgraded allows a combo only as a draw away.`,
     whyLimit: (have: number, label: string, below: string, limit: number) => `${have} ${label}, where ${below} allows ${limit}.`,
     // What Core's and Upgraded's extra-turn limit counts: a two-card combo that loops turns (the brackets sheet's words).
     loopNouns: ["combo that loops turns", "combos that loop turns"] as const,
@@ -158,13 +158,13 @@ export const ruleZeroCopy = {
       name === null
         ? personText`the rules leave ${lo} against ${hi} to the player, and you haven’t said. Even at ${hi} it sits below the table.`
         : personText`the rules leave ${lo} against ${hi} to the player, and ${name} hasn’t said. Even at ${hi} it sits below the table.`,
-    undeclared: (from: string) => `not declared · measured from ${from}`,
+    undeclared: (sourceText: string) => `not declared · measured from ${sourceText}`,
     declared: (answer: string, range: string) => `declared ${answer} · reads ${range}`,
-    drifted: (declared: string, from: string) => `declared ${declared}, outside this reading · measured from ${from}`,
+    drifted: (declared: string, sourceText: string) => `declared ${declared}, outside this reading · measured from ${sourceText}`,
     stale: "from before its last change",
-    short: (n: number) => `${n} of 100 cards.`,
+    short: (cardCount: number) => `${cardCount} of 100 cards.`,
     shortBody: "A deck is read once it’s complete, so this seat is left out of the read for now.",
-    over: (n: number) => `${n} cards, over 100.`,
+    over: (cardCount: number) => `${cardCount} cards, over 100.`,
     // Neutral on whether a reading exists: an over-100 deck may never have been read (the board's had one).
     overBody: "Any reading from before that change isn’t used. Back at 100, it joins the read.",
     readingNow: "Reading this deck.",
@@ -198,7 +198,7 @@ export const ruleZeroCopy = {
     sheetTitle: "Your deck tonight",
     sheetSub: "Nearest the table first. Everyone sees the change on their next look.",
     seatedTag: "seated",
-    notRead: (n: number) => `${n} of 100 · not read yet`,
+    notRead: (cardCount: number) => `${cardCount} of 100 · not read yet`,
     // Not drawn: a deck of 100 we have not read yet (S3 draws only a short one).
     notReadYet: "not read yet",
     loadFailed: "We couldn’t load your decks. Try again.", // Change deck’s list did not arrive
@@ -244,7 +244,7 @@ export const ruleZeroCopy = {
   // Log reminder 2b (boards H1 to H3): Home's Game to log card. Copy-reviewed with the design.
   homeLog: {
     kicker: "Game to log",
-    kickerMany: (n: number) => `Games to log · ${n}`,
+    kickerMany: (gameCount: number) => `Games to log · ${gameCount}`,
     /** The one-game sentence; the deck is drawn bold between the halves. */
     body: (until: string) => ({ before: "Seats and result are filled in for ", after: ` until ${until}.` }),
     /** The pod and the day, under the kicker (one game) or under the result (a row). */
@@ -255,7 +255,7 @@ export const ruleZeroCopy = {
     lastDay: "Last day",
     rowLabel: (pod: Said) => personText`Log ${pod}’s game`,
     dismiss: (pod: Said) => personText`Dismiss ${pod}’s game`,
-    more: (n: number) => `Show ${n} more`,
+    more: (gameCount: number) => `Show ${gameCount} more`,
     hidden: (until: string) => `Reminder hidden. Log this game stays on the table until ${until}.`,
     undo: "Undo",
     hideFailed: "We couldn’t hide that reminder. Try again.",

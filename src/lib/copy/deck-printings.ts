@@ -9,12 +9,12 @@ export const deckPrintingsCopy = {
     pinned: "For this deck",
     /** D1: the region's intro slot in deck scope. `regionIntro` says the pick represents the card
      *  everywhere in the Collection, which is false here. */
-    regionIntro: (n: number) => `You own ${count(n)} of these. Pick the one this deck uses.`,
+    regionIntro: (printingCount: number) => `You own ${count(printingCount)} of these. Pick the one this deck uses.`,
     regionIntroPicked: "The one marked For this deck shows in this deck only.",
     /** The Set field's disclosure button in deck scope. `triggerAria` says the pick represents the card
      *  everywhere in the Collection, which is false here; a token is named, since its details show no card. */
-    triggerAria: (n: number, caption: string, tokenName?: string) =>
-      `Set: ${caption}. ${count(n)} printings owned. Choose which one this deck uses${tokenName ? ` for ${tokenName}` : ""}.`,
+    triggerAria: (printingCount: number, caption: string, tokenName?: string) =>
+      `Set: ${caption}. ${count(printingCount)} printings owned. Choose which one this deck uses${tokenName ? ` for ${tokenName}` : ""}.`,
     failed: "That may not have saved. Reload to see this deck’s pick.",
     /** The modal's one live region, on a pick. */
     announcePicked: (setName: string, collectorNumber: string) =>

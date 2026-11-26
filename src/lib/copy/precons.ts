@@ -245,7 +245,7 @@ export const preconsCopy = {
       // Two rows each carry a `Link`: the spoken name says which precon it links.
       linkOneAria: (precon: string) => `Link ${precon}`,
       dismissAria: (precon: string) => `Dismiss the suggestion that this started as ${precon}`,
-      dismissAriaTwo: (a: string, b: string) => `Dismiss the suggestion that this started as ${a} or ${b}`,
+      dismissAriaTwo: (firstPreconName: string, secondPreconName: string) => `Dismiss the suggestion that this started as ${firstPreconName} or ${secondPreconName}`,
     },
     versionsRow: {
       head: "Built from a precon?",
@@ -294,7 +294,7 @@ export const preconsCopy = {
       foot: "Linking adds v0 before v1. Its cards don’t change.",
       footNone: "Select a deck to link.",
       none: "You have no other deck to link.",
-      noMatch: (q: string) => `No deck matches “${q}”`,
+      noMatch: (query: string) => `No deck matches “${query}”`,
       submit: (deck: string) => `Link ${deck}`,
     },
     linked: {
@@ -323,7 +323,7 @@ export const preconsCopy = {
     action: "Upload your collection",
   },
   none: {
-    head: (q: string) => `No precon matches “${q}”`,
+    head: (query: string) => `No precon matches “${query}”`,
     headColours: "No precon matches those colors",
     body: "The search looks at each precon’s name, its commanders and its set.",
     clear: "Clear the search",
@@ -342,8 +342,8 @@ export const preconsCopy = {
     /** The date and its countdown: `Nov 13, 2026 · in 30 days`. */
     when: (date: string, until: string) => `${date} · ${until}`,
     /** A set block's meta at 900, one line; at 390 the `when` half is its own line and this keeps the code. */
-    meta: (code: string, when: string, count: string) => `${code} · ${when} · ${count}`,
-    metaCode: (code: string, count: string) => `${code} · ${count}`,
+    meta: (code: string, when: string, countText: string) => `${code} · ${when} · ${countText}`,
+    metaCode: (code: string, countText: string) => `${code} · ${countText}`,
     /** A set row's line 3, after the dots. */
     rowMeta: (code: string, date: string) => `${code} · ${date}`,
     revealed: (count: number) => count === 0 ? "no commanders revealed yet" : `${plural(count, "commander", "commanders")} revealed`,
@@ -384,13 +384,13 @@ export const preconsCopy = {
     /** The set's count half while its decks are named and no list is posted. */
     decks: (count: number) => plural(count, "deck", "decks"),
     /** Rows view, line 2 of a named set: the revealed commanders after the deck count (`4 decks · Jace and Sai revealed`). */
-    namesRevealed: (names: string) => `${names} revealed`,
+    namesRevealed: (commanderNames: string) => `${commanderNames} revealed`,
     /** A revealed commander not matched to a deck, in the rows view of a set whose decks are named. */
     waitingUnmatched: "revealed · deck not known yet",
     /** A revealed commander whose list is still to come, in the rows view. */
     waiting: "revealed · list to come",
     /** Rows view, line 2 once lists are posted: the lists count, then the names. */
-    listsAndNames: (lists: string, names: string) => `${lists} · ${names}`,
+    listsAndNames: (lists: string, revealedText: string) => `${lists} · ${revealedText}`,
     /** An early list's link, spoken: the tile clips its caption, and the commander is on the art only. */
     earlyAria: (name: string, commanders: string[], owned: number, of: number) =>
       `${name}, early list${commanders.length > 0 ? `, with ${commanders.join(" and ")}` : ""}. You own ${n(owned)} of ${n(of)} of its cards.`,
@@ -399,16 +399,16 @@ export const preconsCopy = {
     /** Added to the list's result line when a filter is on and announced sets survive it. */
     resultSets: (sets: number) => ` · ${plural(sets, "announced set", "announced sets")}`,
     /** A revealed card, spoken: its full name (the printed one is clamped to two lines) and its colors. */
-    cardAria: (name: string, colors: string) => `${name}, ${colors}. Revealed commander.`,
+    cardAria: (name: string, colorNames: string) => `${name}, ${colorNames}. Revealed commander.`,
     /** The same card as the control that opens its details: the press's whole name, so nothing beside it is spoken. */
-    pressAria: (name: string, colors: string) => `View details for ${name}, ${colors}. Revealed commander.`,
+    pressAria: (name: string, colorNames: string) => `View details for ${name}, ${colorNames}. Revealed commander.`,
     /** A large reveal folds to its first row (addendum A1). The visible labels are the shared toggle's own; the spoken names carry the set, since two large sets would each draw one. */
-    showAll: (n: number) => `Show all ${n}`,
-    showAllAria: (n: number, set: string) => `Show all ${n} commanders revealed for ${set}`,
+    showAll: (commanderCount: number) => `Show all ${commanderCount}`,
+    showAllAria: (commanderCount: number, set: string) => `Show all ${commanderCount} commanders revealed for ${set}`,
     showFewer: "Show fewer",
     showFewerAria: (set: string) => `Show fewer commanders revealed for ${set}`,
     /** The same toggle once early lists share the grid: it unfolds lists and waiting commanders together. */
-    showAllEarlyAria: (n: number, set: string) => `Show all ${n} lists and commanders for ${set}`,
+    showAllEarlyAria: (itemCount: number, set: string) => `Show all ${itemCount} lists and commanders for ${set}`,
     showFewerEarlyAria: (set: string) => `Show fewer lists and commanders for ${set}`,
   },
   /**
@@ -423,8 +423,8 @@ export const preconsCopy = {
     backHome: "‹ Home",
     backCollection: "‹ Collection",
     /** The row's figure: `100 cards` on desktop, `100` at 390. */
-    cards: (c: number) => plural(c, "card", "cards"),
-    cardsShort: (c: number) => n(c),
+    cards: (cardCount: number) => plural(cardCount, "card", "cards"),
+    cardsShort: (cardCount: number) => n(cardCount),
     edition: "Edition",
     regular: "Regular",
     collector: "Collector’s Edition",
@@ -435,12 +435,12 @@ export const preconsCopy = {
     /** S17: the plain note under such a box once ticked. */
     addedAgain: (date: string) => `You added this box on ${date}. Adding it again gives you a second copy of each card and a second deck.`,
     leadNone: "Select the decks you own.",
-    lead: (b: number, c: number, t: number) =>
-      `${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}`,
+    lead: (boxCount: number, cardCount: number, tokenCount: number) =>
+      `${plural(boxCount, "box", "boxes")} · ${plural(cardCount, "card", "cards")}${tokenCount > 0 ? ` and ${plural(tokenCount, "token", "tokens")}` : ""}`,
     addHeld: "Add boxes",
-    add: (b: number, c: number) => `Add ${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}`,
+    add: (boxCount: number, cardCount: number) => `Add ${plural(boxCount, "box", "boxes")} · ${plural(cardCount, "card", "cards")}`,
     adding: "Adding…",
-    addingLead: (b: number) => `Adding ${plural(b, "box", "boxes")} to your collection…`,
+    addingLead: (boxCount: number) => `Adding ${plural(boxCount, "box", "boxes")} to your collection…`,
     cancel: "Cancel",
     /** Replaces Cancel once any box has landed (S7). */
     done: "Done",
@@ -453,22 +453,22 @@ export const preconsCopy = {
       `Added ${names(landed)}${decks ? ` and started ${landed.length === 1 ? "its deck" : "their decks"}` : ""}. We couldn’t add ${names(failed)}.`,
     tryAgain: "Try again",
     /**
-     * The receipt strip on the destination (S5). `d` counts the boxes whose deck still stands. Decks are named only
+     * The receipt strip on the destination (S5). `deckCount` counts the boxes whose deck still stands. Decks are named only
      * when every box has one: fewer means a deck the player has since deleted, or a box added before the pick started
      * decks (a retry spanning that deploy), and the two cannot be told apart, so the line names the precons alone,
      * which is true either way.
      */
     receipt: {
-      head: (b: number, d = 0) =>
-        d > 0 && d === b
-          ? `Added ${plural(b, "deck", "decks")} and ${b === 1 ? "its" : "their"} cards to your collection:`
-          : `${plural(b, "precon", "precons")} added to your collection:`,
-      body: (boxNames: string[], c: number, t: number) =>
-        `${names(boxNames)}. ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}.`,
-      phone: (b: number, c: number, d = 0) =>
-        d > 0 && d === b
-          ? `${plural(b, "deck", "decks")} added · ${plural(c, "card", "cards")}`
-          : `${plural(b, "precon", "precons")} added · ${plural(c, "card", "cards")}`,
+      head: (boxCount: number, deckCount = 0) =>
+        deckCount > 0 && deckCount === boxCount
+          ? `Added ${plural(boxCount, "deck", "decks")} and ${boxCount === 1 ? "its" : "their"} cards to your collection:`
+          : `${plural(boxCount, "precon", "precons")} added to your collection:`,
+      body: (boxNames: string[], cardCount: number, tokenCount: number) =>
+        `${names(boxNames)}. ${plural(cardCount, "card", "cards")}${tokenCount > 0 ? ` and ${plural(tokenCount, "token", "tokens")}` : ""}.`,
+      phone: (boxCount: number, cardCount: number, deckCount = 0) =>
+        deckCount > 0 && deckCount === boxCount
+          ? `${plural(boxCount, "deck", "decks")} added · ${plural(cardCount, "card", "cards")}`
+          : `${plural(boxCount, "precon", "precons")} added · ${plural(cardCount, "card", "cards")}`,
       history: "History",
     },
   },

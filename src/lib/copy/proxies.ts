@@ -147,8 +147,8 @@ export const proxyCopy = {
   // a player could be misled. Says "proxies" and not "N you don't own" — the latter is
   // true of the buy list too and means something else there.
   deckHeader: {
-    line: (n: number) =>
-      n === 1 ? "1 of these is a proxy" : `${n} of these are proxies`,
+    line: (proxyCount: number) =>
+      proxyCount === 1 ? "1 of these is a proxy" : `${proxyCount} of these are proxies`,
   },
 
   // ── The /decks tile (R2) ──────────────────────────────────────────────
@@ -167,7 +167,7 @@ export const proxyCopy = {
   // `cardAria(name, identity, status, count, detail, lastPlayed)`, so this lands in it in
   // position — "… Complete, 99 / 99, 7 proxies".
   deckCard: {
-    line: (n: number) => (n === 1 ? "1 proxy" : `${n} proxies`),
+    line: (proxyCount: number) => (proxyCount === 1 ? "1 proxy" : `${proxyCount} proxies`),
   },
 
   // ── The review row on /decks/[id]/changes (R2) ────────────────────────
@@ -225,23 +225,23 @@ export const proxyCopy = {
     // whose figure is that card's own price on the row below.
     line: (priced: number, total: number) =>
       priced === total ? `over all ${total}.` : `over ${priced} of the ${total}.`,
-    unpriced: (n: number) =>
-      n === 1
+    unpriced: (proxyCount: number) =>
+      proxyCount === 1
         ? "1 has never been stocked and is not in this figure."
-        : `${n} have never been stocked and are not in this figure.`,
+        : `${proxyCount} have never been stocked and are not in this figure.`,
     // Another store's (store preference): its rows carry no history, so a card it does not price has no price from it,
     // never "never stocked" (`storeCopy.noStockAria` says the same on a tag).
-    noFigure: (n: number, store: string) =>
-      n === 1
+    noFigure: (proxyCount: number, store: string) =>
+      proxyCount === 1
         ? `1 has no price from ${store} and is not in this figure.`
-        : `${n} have no price from ${store} and are not in this figure.`,
+        : `${proxyCount} have no price from ${store} and are not in this figure.`,
     // RENDERED since the loader took the app's own price read: `priceState`
     // tells sold-out from never-stocked, and the two are different facts — one
     // card was on sale and is not now, the other never has been.
-    soldOut: (n: number) =>
-      n === 1
+    soldOut: (proxyCount: number) =>
+      proxyCount === 1
         ? "1 is sold out and is not in this figure."
-        : `${n} are sold out and are not in this figure.`,
+        : `${proxyCount} are sold out and are not in this figure.`,
     stale: (asOf: string) => `Prices as of ${asOf}.`,
     // Stands in for the figure when nothing on the list can be costed. A zero would read
     // as a list that costs nothing to own rather than one nobody is selling.
@@ -254,7 +254,7 @@ export const proxyCopy = {
     // the parts.
     cardAria: (name: string) => `${name}, card details`,
     deckAria: (deck: string) => `Open the ${deck} deck`,
-    deckCount: (n: number) => (n === 1 ? "1 deck" : `${n} decks`),
+    deckCount: (deckCount: number) => (deckCount === 1 ? "1 deck" : `${deckCount} decks`),
     // Ruling 3's case is invisible in this list otherwise — a legend looks like any other
     // card here. Neutral hairline skin, never a colour.
     commander: "commander",

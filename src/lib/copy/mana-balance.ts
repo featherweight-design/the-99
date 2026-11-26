@@ -15,12 +15,12 @@ const basics = (name: string) => (name.endsWith("s") ? name : `${name}s`);
 
 export const manaBalanceCopy = {
   title: "Mana Balance",
-  sub: (pips: number, sources: number) =>
-    `free · counted just now · ${pips} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"}, as on Deck stats`,
+  sub: (pips: number, sourceCount: number) =>
+    `free · counted just now · ${pips} ${pips === 1 ? "pip" : "pips"} · ${sourceCount} ${sourceCount === 1 ? "source" : "sources"}, as on Deck stats`,
   lead: "Pips and sources for each color, counted the way the Mana colors card counts them, beside what each color’s tightest cost needs.",
   table: {
     head: { color: "Color", pips: "Pips", sources: "Sources", needed: "Needed" },
-    share: (n: number, pct: number) => `${n} · ${pct}%`,
+    share: (count: number, percent: number) => `${count} · ${percent}%`,
     /** A zero side is left out: `5 other`, `3 lands`, or both. */
     split: (lands: number, other: number) => {
       const landsText = `${lands} ${lands === 1 ? "land" : "lands"}`;
@@ -31,10 +31,10 @@ export const manaBalanceCopy = {
     /** A color with pips and no cost Karsten publishes a figure for (a hybrid or X cost alone). */
     noPublished: "no published figure",
     /** `pct` is the share of all sources, drawn beside colored rows; the colorless deck draws none. */
-    colorless: (pips: number, sources: number, pct: number | null) =>
-      `${pips === 0 ? "no" : pips} {C} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"}${pct === null ? "" : ` · ${pct}%`}`,
+    colorless: (pips: number, sourceCount: number, pct: number | null) =>
+      `${pips === 0 ? "no" : pips} {C} ${pips === 1 ? "pip" : "pips"} · ${sourceCount} ${sourceCount === 1 ? "source" : "sources"}${pct === null ? "" : ` · ${pct}%`}`,
     /** Engineering: the row's spoken form, since its figures sit in separate cells. */
-    rowAria: (name: string, pips: string, sources: string, needed: string) => `${name}. Pips ${pips}. Sources ${sources}. Needed ${needed}.`,
+    rowAria: (name: string, pips: string, sourceCountText: string, needed: string) => `${name}. Pips ${pips}. Sources ${sourceCountText}. Needed ${needed}.`,
   },
   needs: {
     toggle: "What “Needs” means",
@@ -49,18 +49,18 @@ export const manaBalanceCopy = {
   /** Any link that leaves the app. */
   newTab: (name: string) => `${name}, opens in a new tab`,
   sections: {
-    hardest: { label: "Hardest costs", clause: (colors: string) => `six per color · ${colors}` },
+    hardest: { label: "Hardest costs", clause: (colorNames: string) => `six per color · ${colorNames}` },
     lands: {
       label: "Lands",
-      clause: (lands: number, tapped: number, count: string) => `${lands} ${lands === 1 ? "land" : "lands"} · ${tapped} can enter tapped · formula ${count}`,
+      clause: (landCount: number, tapped: number, formulaText: string) => `${landCount} ${landCount === 1 ? "land" : "lands"} · ${tapped} can enter tapped · formula ${formulaText}`,
     },
   },
   patterns: {
     head: { cost: "Cost", cards: "Cards", needed: "Needed" },
     chips: "Color",
-    copies: (n: number) => `×${n}`,
+    copies: (copyCount: number) => `×${copyCount}`,
     commander: "commander",
-    more: (n: number) => `+${n} more`,
+    more: (moreCount: number) => `+${moreCount} more`,
     fewer: "show fewer",
     haveNeeds: (have: number, needs: number) => `You have ${have} · Needs ${needs}`,
     haveNeedsAtMost: (have: number, needs: number) => `You have ${have} · Needs at most ${needs}`,
@@ -69,7 +69,7 @@ export const manaBalanceCopy = {
   },
   lands: {
     count: "Lands",
-    countOf: (cards: number) => `of ${cards} ${cards === 1 ? "card" : "cards"}`,
+    countOf: (cardCount: number) => `of ${cardCount} ${cardCount === 1 ? "card" : "cards"}`,
     always: "Enter tapped",
     alwaysNote: "always",
     unless: "Tapped unless a condition holds",
@@ -110,8 +110,8 @@ export const manaBalanceCopy = {
     close: "Close",
     order: "Listed by how close each color’s sources are to what its tightest cost needs, counting costs two or more cards share. Pick any.",
     group: "Which color",
-    cost: (code: string, cards: number) => `${code} · ${cards} ${cards === 1 ? "card" : "cards"}`,
-    noPips: (sources: number) => `${sources} ${sources === 1 ? "source" : "sources"} · no pips`,
+    cost: (code: string, cardCount: number) => `${code} · ${cardCount} ${cardCount === 1 ? "card" : "cards"}`,
+    noPips: (sourceCount: number) => `${sourceCount} ${sourceCount === 1 ? "source" : "sources"} · no pips`,
     /** A color with pips and no cost Karsten publishes a figure for. */
     noPublished: "no published figure",
     have: (have: number) => `You have ${have}`,
@@ -121,7 +121,7 @@ export const manaBalanceCopy = {
     head: (color: string) => `Help adding ${color}`,
     change: "Change color",
     swaps: "Swap basics",
-    swap: (n: number, out: string, into: string) => (n === 1 ? `1 ${out} → ${into}` : `Up to ${n} ${basics(out)} → ${basics(into)}`),
+    swap: (maxCopies: number, outBasicName: string, into: string) => (maxCopies === 1 ? `1 ${outBasicName} → ${into}` : `Up to ${maxCopies} ${basics(outBasicName)} → ${basics(into)}`),
     change_: (color: string, before: number, after: number) => `${color} ${before} → ${after}`,
     noSwap: (color: string) => `No basic swap for ${color}.`,
     howLabel: "How moves are picked",
@@ -135,11 +135,11 @@ export const manaBalanceCopy = {
     buyLink: (s: StoreInfo) => s.name,
     buyAria: (s: StoreInfo, name: string) => `Buy ${name} at ${s.name}, opens in a new tab`,
     rate: {
-      commander: (p: number, name: string) => `in ${p}% of ${name} decks`,
-      pair: (p: number) => `in ${p}% of this pairing’s decks`,
-      identity: (p: number, bucket: string) => `${bucket} average, ${p}%`,
+      commander: (percent: number, name: string) => `in ${percent}% of ${name} decks`,
+      pair: (percent: number) => `in ${percent}% of this pairing’s decks`,
+      identity: (percent: number, bucket: string) => `${bucket} average, ${percent}%`,
       /** The bucket a commander with no page of its own falls back to: `3-color`. */
-      countBucket: (n: number) => `${n}-color`,
+      countBucket: (colorCount: number) => `${colorCount}-color`,
     },
     adds: "adds",
     /** The card the trade cuts: a basic, a land making none of the deck's colors, or a cut the deck's tuning named. */

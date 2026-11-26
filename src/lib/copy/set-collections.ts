@@ -71,10 +71,10 @@ export const setFilterCopy = {
       price: { asc: "Lowest first", desc: "Highest first" },
     },
   },
-  sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
+  sheetPrimary: (cardCount: number) => (cardCount === 1 ? "Show 1 card" : `Show ${cardCount} cards`),
   // DIMENSIONS, and ownership is one of them since H13 moved it into the sheet: the phone
   // row no longer draws it beside the badge, so the badge is the only place it shows.
-  countBadgeAria: (n: number) => (n === 1 ? "1 filter on" : `${n} filters on`),
+  countBadgeAria: (filterCount: number) => (filterCount === 1 ? "1 filter on" : `${filterCount} filters on`),
 
   // The chip line (addendum R2 §28). Dimension order, never click order.
   // Every field here READS its canonical source rather than restating it. Four routes share
@@ -117,9 +117,9 @@ export const setFilterCopy = {
     // select retired the `Rarity · all` / `Rarity · uncommon` pair: past one value a name
     // has nowhere to go, and a counting trigger holds one width from nothing to four. The
     // names live in the chip row. Queued for /copy-review.
-    triggerCount: (n: number) => (n <= 1 ? `Rarity ${n}` : `Rarities ${n}`),
+    triggerCount: (rarityCount: number) => (rarityCount <= 1 ? `Rarity ${rarityCount}` : `Rarities ${rarityCount}`),
     triggerAriaCollapsed: "Filter by rarity, collapsed",
-    triggerAriaWithSelection: (n: number) => `Filter by rarity, ${n} selected, collapsed`,
+    triggerAriaWithSelection: (rarityCount: number) => `Filter by rarity, ${rarityCount} selected, collapsed`,
     panelAriaLabel: "Filter by rarity",
     sheetTitle: "Rarity",
     // Inert: four values have nothing to search, so the panel is mounted with
@@ -129,8 +129,8 @@ export const setFilterCopy = {
     searchAriaLabel: "Search rarities",
     clearSearch: "Clear search",
     groupDefault: "All rarities",
-    groupSelected: (n: number) => `Selected · ${n}`,
-    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    groupSelected: (rarityCount: number) => `Selected · ${rarityCount}`,
+    groupMatches: (matchCount: number) => (matchCount === 1 ? "1 match" : `${matchCount} matches`),
     // Through the same `en-US` formatter the rest of the filter-panel copy uses: the
     // visible count renders `1,234` while a bare interpolation announced `1234 cells`.
     optionAria: (name: string, count: number) =>
@@ -138,14 +138,14 @@ export const setFilterCopy = {
     optionAriaUnavailable: (name: string) => `${name}, no cards match your other filters`,
     // Numbers since the chassis's own change: `FilterPanelCopy` formats them itself now.
     footerTotal: (total: number) => `${total} rarities`,
-    footerSelected: (n: number, total: number) => `${n} of ${total} on`,
+    footerSelected: (selectedCount: number, total: number) => `${selectedCount} of ${total} on`,
     clear: "Clear rarity",
     done: "Done",
     closeLabel: "Close",
     emptyTitle: "No rarities to show",
     emptyBody: (query: string) => ({ before: "No rarity matches ", query: `“${query}”`, after: "." }),
-    announceMatches: (n: number, query: string) =>
-      n === 0 ? `No rarities match ${query}` : `${n} ${n === 1 ? "rarity matches" : "rarities match"} ${query}`,
+    announceMatches: (matchCount: number, query: string) =>
+      matchCount === 0 ? `No rarities match ${query}` : `${matchCount} ${matchCount === 1 ? "rarity matches" : "rarities match"} ${query}`,
     announceAdded: (name: string, _n: number, shown: number, total: number) =>
       `${name} on. ${shown} of ${total} cards shown.`,
     announceRemoved: (name: string, _n: number, shown: number, total: number) =>
@@ -160,10 +160,10 @@ export const setsIndexCopy = {
   // numbered run completes against it; a set with none — a masterpiece sheet, most promos
   // — completes against every printing instead (`sectionsOf`). "The base numbered run"
   // named only the first case.
-  subtitle: (n: number) =>
-    n === 1
+  subtitle: (setCount: number) =>
+    setCount === 1
       ? "1 set you hold cards in. Completion counts the checklist."
-      : `${n} sets you hold cards in, newest first. Completion counts the checklist.`,
+      : `${setCount} sets you hold cards in, newest first. Completion counts the checklist.`,
 
   search: {
     placeholder: "Find any set",
@@ -243,7 +243,7 @@ export const setsIndexCopy = {
   noMatch: {
     // Describes the search that actually ran: it is a substring match on name AND code,
     // so "no set called war" is wrong about both the query and the result.
-    heading: (q: string) => `No collectible set matches ${q}`,
+    heading: (query: string) => `No collectible set matches ${query}`,
     body:
       "Search covers every collectible set, not only yours, so this is a spelling rather than a gap in your collection.",
     action: "Clear the search",
@@ -331,40 +331,40 @@ export const setPageCopy = {
       `over ${priced} of the ${missing} missing`,
     // Split at review: the aggregate said every uncosted card had "never been stocked",
     // which is false for one that was stocked and has since sold out.
-    unpriced: (n: number) =>
-      n === 1
+    unpriced: (cardCount: number) =>
+      cardCount === 1
         ? "1 has never been stocked and is not in this figure"
-        : `${n} have never been stocked and are not in this figure`,
+        : `${cardCount} have never been stocked and are not in this figure`,
     // Stocked, but the feed carries no usable figure for it. Neither "never stocked" nor
     // "sold out" is true of these.
     // `store` is the reader's store's name (store preference).
-    noFigure: (n: number, store: string) =>
-      n === 1
+    noFigure: (cardCount: number, store: string) =>
+      cardCount === 1
         ? `1 has no price from ${store} and isn’t in this figure`
-        : `${n} have no price from ${store} and aren’t in this figure`,
-    soldOut: (n: number) =>
-      n === 1
+        : `${cardCount} have no price from ${store} and aren’t in this figure`,
+    soldOut: (cardCount: number) =>
+      cardCount === 1
         ? "1 is sold out and is not in this figure"
-        : `${n} are sold out and are not in this figure`,
+        : `${cardCount} are sold out and are not in this figure`,
     // Page-level staleness. Prints only when the feed itself trails.
     stale: (asOf: string) => `prices as of ${asOf}`,
     // The page's one selector. Its count always equals the sentence's.
-    send: (n: number) => (n === 1 ? "Send 1 to Mana Pool" : `Send ${n} to Mana Pool`),
+    send: (cardCount: number) => (cardCount === 1 ? "Send 1 to Mana Pool" : `Send ${cardCount} to Mana Pool`),
     // The list travels in a URL, so a full set does not fit. The button says what it is
     // actually sending rather than implying it sends everything missing.
-    sendCapped: (n: number) => `Send the first ${n} to Mana Pool`,
+    sendCapped: (cardCount: number) => `Send the first ${cardCount} to Mana Pool`,
     // Why only the first N (H15, Hugh's walk 2026-10-02): the cap was stated on the button
     // and never explained. Drawn under it only when the cap bites. Through /copy-review: the
     // missing count is already the figure's own line above, so it is not said twice.
     capNote: (cap: number) => `One send holds up to ${cap} cards. Filter the grid to send the rest.`,
     // No price: the figure above costs every missing card, and this link carries only the
     // first N of them.
-    sendCappedAria: (n: number) =>
-      `Open Mana Pool Mass Entry with the first ${n} missing cards. Opens in a new tab`,
+    sendCappedAria: (cardCount: number) =>
+      `Open Mana Pool Mass Entry with the first ${cardCount} missing cards. Opens in a new tab`,
     // Mass Entry, not a cart: #330 ships no cart or checkout, and the link goes to
     // /add-deck. Telling a screen-reader user "cart" names an action that does not exist.
-    sendAria: (n: number, total: string) =>
-      `Open Mana Pool Mass Entry with ${n} missing ${n === 1 ? "card" : "cards"}, ${total}.`
+    sendAria: (cardCount: number, totalPrice: string) =>
+      `Open Mana Pool Mass Entry with ${cardCount} missing ${cardCount === 1 ? "card" : "cards"}, ${totalPrice}.`
       + " Opens in a new tab",
     emptyTotal: "$0.00 over 0 of 0",
     // Stands in for the figure when nothing missing can be costed. A zero would read as a
@@ -390,11 +390,11 @@ export const setPageCopy = {
     // has already made two lines above, so the phone keeps the count and drops it. The
     // filtered and missing-only forms are untouched: neither is stated anywhere else.
     restShort: (cells: number) => `${cells} ${cells === 1 ? "card" : "cards"}`,
-    missingOnly: (n: number) =>
-      `${n} missing · numbers skip, because the cards you own are hidden`,
+    missingOnly: (cardCount: number) =>
+      `${cardCount} missing · numbers skip, because the cards you own are hidden`,
     // The owned-only mirror of the line above (H12). Queued for /copy-review.
-    ownedOnly: (n: number) =>
-      `${n} yours · numbers skip, because the cards you are missing are hidden`,
+    ownedOnly: (cardCount: number) =>
+      `${cardCount} yours · numbers skip, because the cards you are missing are hidden`,
     filtered: (shown: number, total: number) =>
       `${shown} of ${total} ${total === 1 ? "card" : "cards"}`,
   },
@@ -408,17 +408,17 @@ export const setPageCopy = {
 
   cell: {
     // The cell is the target; this is its accessible name.
-    aria: (name: string, num: string, owned: boolean, price?: string) =>
+    aria: (name: string, collectorNumber: string, owned: boolean, price?: string) =>
       owned
-        ? `${name}, ${num}, in your collection`
-        : `${name}, ${num}, not in your collection${price ? `, ${price}` : ""}`,
+        ? `${name}, ${collectorNumber}, in your collection`
+        : `${name}, ${collectorNumber}, not in your collection${price ? `, ${price}` : ""}`,
     foil: "◆ FOIL",
     foilAria: "You hold this in foil",
     noStock: "no stock",
     // The qualifier is the finish word the buy tag chose — foil or etched — because
     // priceState collapses both into one state and only the column says which.
-    qualifiedPrice: (finish: string, p: string) => `◆ ${finish} ${p}`,
-    qualifiedPriceAria: (finish: string, p: string) => `Available in ${finish} only, ${p}`,
+    qualifiedPrice: (finish: string, price: string) => `◆ ${finish} ${price}`,
+    qualifiedPriceAria: (finish: string, price: string) => `Available in ${finish} only, ${price}`,
   },
 
   // Ruling 4, ruled at R2: a per-cell mark, not a head line. The outlined
@@ -437,16 +437,16 @@ export const setPageCopy = {
   // An upload completed while this page was open. The delta is for THIS set
   // only, and the strip does not render when it is zero.
   staleAfterUpload: {
-    line: (n: number) =>
-      n === 1
+    line: (cardCount: number) =>
+      cardCount === 1
         ? "Your upload finished. 1 more card from this set is in your collection now."
-        : `Your upload finished. ${n} more cards from this set are in your collection now.`,
+        : `Your upload finished. ${cardCount} more cards from this set are in your collection now.`,
     // The mirror of the line above. An upload that REMOVES cards leaves the grid just as
     // stale as one that adds them, and the strip detected that before it could say it.
-    removed: (n: number) =>
-      n === 1
+    removed: (cardCount: number) =>
+      cardCount === 1
         ? "Your upload finished. 1 card from this set is no longer in your collection."
-        : `Your upload finished. ${n} cards from this set are no longer in your collection.`,
+        : `Your upload finished. ${cardCount} cards from this set are no longer in your collection.`,
     // Deliberately says nothing about WHAT changed it. The same-count case is reached by
     // picking a different printing in the card modal, which is not an upload, and
     // announcing one would name an act the reader did not perform.
@@ -469,7 +469,7 @@ export const setPageCopy = {
   // matches" on a page reached from a catalogue-wide search reads as a claim about the
   // catalogue. Two corrections, narrowest first.
   searchZero: {
-    heading: (set: string, q: string) => `Nothing in ${set} matches \u201C${q}\u201D`,
+    heading: (set: string, query: string) => `Nothing in ${set} matches \u201C${query}\u201D`,
     // Only ever shown when the query is the ONLY thing narrowing. With a colour or rarity
     // on, the name may well be in the set and a filter removed it — calling that a spelling
     // would be false, so that case takes the ordinary filtered-empty heading instead.
@@ -483,11 +483,11 @@ export const setPageCopy = {
   zeroResults: {
     // With missing-only ON, zero is good news and the copy has to say so.
     headingOwnsAll: (what: string) => `You are not missing any ${what}`,
-    bodyOwnsAll: (n: number, set: string) =>
-      `There ${n === 1 ? "is 1" : `are ${n}`} in ${set} and you hold ${n === 1 ? "it" : "all of them"}.`,
+    bodyOwnsAll: (cardCount: number, set: string) =>
+      `There ${cardCount === 1 ? "is 1" : `are ${cardCount}`} in ${set} and you hold ${cardCount === 1 ? "it" : "all of them"}.`,
     // With missing-only OFF, zero means the filters excluded everything.
     headingNone: (what: string) => `No ${what} in this set`,
-    showAll: (n: number) => (n === 1 ? "Show it" : `Show all ${n}`),
+    showAll: (cardCount: number) => (cardCount === 1 ? "Show it" : `Show all ${cardCount}`),
     clear: "Clear filters",
   },
 
