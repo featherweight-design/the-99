@@ -1226,3 +1226,15 @@ board('I-Fuller.dc.html', 'R6 fuller states (14 games) + Colors with the Stats i
       + pair(labelled('A · PHONE · 14 GAMES', full_phone(FH6(how6, True))), labelled('B · PHONE · 14 GAMES', full_phone(FH6(how7, True))))
       + '</div>', 2552)
 print('r6 ok')
+
+# ======================= R6b: tiles at 24 games =======================
+HP24 = [('Mana', 'd', 'dd-d-ud-dd', 5, 14), ('Answers', 'd', '-d-dd-u-d-', 6, 9), ('Board presence', 'b', 'u-d-u-dd-u', 9, 8),
+        ('Cards in hand', 'b', 'd-u--du-u-', 6, 6), ('Speed', 'u', 'uu-u-uu-uu', 15, 3), ('Closing the game', 'u', 'u-u-uu--u-', 11, 2),
+        ('The deck’s plan', 'u', '-u--u-u--u', 8, 1), ('Comebacks', 'u', '--u---u--u', 5, 0)]
+L24 = ('Mana is holding it back.', 'Marked against you in 14 of 24 games, and in 4 of the last 5.')
+board('J-Tiles24.dc.html', 'R6b tiles with 24 games, all 8 marks', '<div style="display:flex;flex-direction:column;gap:60px">'
+      + pair(labelled('DESKTOP · 24 GAMES · ALL 8 MARKS (the most there can be)', full_desk(how7(HP24, 24, *L24))))
+      + pair(labelled('PHONE · 24 GAMES · CLOSED', full_phone(how7(HP24, 24, *L24, phone=True))),
+             labelled('PHONE · 24 GAMES · SHOW 4 MORE OPENED', full_phone(how7(HP24, 24, *L24, phone=True, cap=8).replace('</div><div class="key2">', '</div><div class="more6">Show fewer<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></div><div class="key2">', 1))))
+      + '</div>', 1400)
+print('r6b ok')

@@ -156,6 +156,13 @@
    "w": 2552,
    "h": 2062,
    "title": "R6 Seat not logged, Colors identity mark, 14 games"
+  },
+  "J-Tiles24.dc.html": {
+   "x": 6340,
+   "y": -14612,
+   "w": 1400,
+   "h": 1138,
+   "title": "R6b Tiles with 24 games (all 8 marks)"
   }
  },
  "order": [
@@ -179,7 +186,8 @@
   "H-Fuller.dc.html",
   "I-Desktop.dc.html",
   "I-Phone.dc.html",
-  "I-Fuller.dc.html"
+  "I-Fuller.dc.html",
+  "J-Tiles24.dc.html"
  ],
  "notes": {
   "ta": {
@@ -236,7 +244,7 @@
    "y": -14872,
    "text": "R6 · Compact How it’s playing (A list, B tiles), filled figure, Stats identity mark",
    "kind": "title1",
-   "maxW": 6252
+   "maxW": 7740
   }
  },
  "designSystems": []

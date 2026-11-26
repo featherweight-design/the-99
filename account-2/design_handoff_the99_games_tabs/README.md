@@ -58,3 +58,4 @@ Hugh: R2's headline rows still didn't land; A's rows are the favourite, and a dr
 - How it's playing is tighter in both options: the lead finding and its line share one row; the status moves to a dot before the name, and the count is coloured by status ("down 8 of 14", "up 6 of 14", "4 up · 3 down"). Dots show the last 10 games; the key says so.
   - A (recommended): desktop splits the list into two columns of rows. Phone shows the top 3 rows (worst first) and a "Show N more" row.
   - B: tiles, 4 across on desktop and 2 on phone (top 4 on phone, then "Show N more").
+- R6b (Hugh prefers B tiles, asked about 20+ games): tiles never grow with games. There is one tile per mark (8 axes in src/lib/copy/game-log.ts at most), each tile shows the last 10 dots, and the count carries the total ("down 14 of 24"). The most there can be is 2 rows on desktop, and 2 rows plus "Show 4 more" on phone. Board J-Tiles24.
