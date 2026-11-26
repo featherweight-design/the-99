@@ -73,13 +73,19 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
   const active = kind && kinds.some((k) => k.kind === kind) ? kind : null;
   const shown = active ? items.filter((i) => i.kind === active) : items;
   const groups = sheetGroups(shown, now);
+  // A combo row's press opens the combo view in the page, under `<main>`, which this sheet holds inert while it is up (the sheet is
+  // portalled to `<body>`, so `<main>` is its sibling). Left open, the combo draws and takes no press, and the app reads as frozen
+  // (#3371). So the sheet gives way after the press goes through (a tick later: unmounting the row inside its own click drops the open).
+  const giveWayToCombo = () => {
+    setTimeout(onClose, 0);
+  };
   const group = (label: string, rows: FeedView[], after: boolean) =>
     rows.length === 0 ? null : (
       <section key={label} aria-label={label} className={`flex flex-col ${after ? "[border-top:1px_solid_var(--border)]" : ""}`}>
         <p className={`${FEED_DAY} !pt-[12px] !pb-[2px] md:!px-[18px]`}>{label}</p>
         <ul className={FEED_ROWS}>
           {rows.map((i) => (
-            <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+            <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact onComboOpen={giveWayToCombo} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
           ))}
         </ul>
       </section>

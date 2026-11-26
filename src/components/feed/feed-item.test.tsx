@@ -245,6 +245,18 @@ describe("FeedItemRow", () => {
     expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ art: null }));
   });
 
+  it("tells the sheet a combo row's press opened its combo, and a card row's press does not", () => {
+    const onComboOpen = vi.fn();
+    list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation", variantId: "1-2" } })} now={NOW} onComboOpen={onComboOpen} />);
+    fireEvent.click(screen.getByRole("button", { name: /See the combo/ }));
+    expect(onComboOpen).toHaveBeenCalledTimes(1);
+    cleanup();
+    const onOther = vi.fn();
+    list(<FeedItemRow item={view({ opens: "a", name: "Secrets", setSize: 288 })} now={NOW} onComboOpen={onOther} />);
+    fireEvent.click(screen.getAllByRole("button").find((b) => b.hasAttribute("data-feed-press"))!);
+    expect(onOther).not.toHaveBeenCalled();
+  });
+
   it("reads 'just now' for an item under an hour old", () => {
     list(<FeedItemRow item={view({ at: "2026-10-22T11:30:00Z", href: "/x" })} now={NOW} />);
     expect(screen.getAllByText(refreshCopy.home.elapsed.justNow)).toHaveLength(1);
