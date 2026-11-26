@@ -163,8 +163,8 @@ describe("the History Seats", () => {
     mount(games, wire(games, by));
     const row = rowOf("g2");
     expect(within(row).getAllByText(gameHistoryCopy.row.someone)).toHaveLength(3);
-    // The winner tag lives in the Seats list; the row's own result pill reads Won for a won game.
-    expect(within(within(row).getByRole("list", { name: gameHistoryCopy.row.seats })).queryByText(gameHistoryCopy.row.won)).toBeNull();
+    // g2 is a win, so the one Won tag in the Seats list is your own tile's; no unlogged seat claims it.
+    expect(within(within(row).getByRole("list", { name: gameHistoryCopy.row.seats })).getAllByText(gameHistoryCopy.row.won)).toHaveLength(1);
   });
 
   it("keeps both commanders of a recorded pair on the vs line", () => {
