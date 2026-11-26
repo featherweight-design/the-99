@@ -411,8 +411,9 @@ describe("GamesView: the filters", () => {
     const any = within(sheet).getByRole("radio", { name: gameHistoryCopy.filter.anyShort });
     expect(any).toHaveAttribute("aria-checked", "false");
     fireEvent.click(any);
+    // Any is the unfiltered payload the view already holds, so taking the result off asks the server for nothing.
     expect(any).toHaveAttribute("aria-checked", "true");
-    expect(more.read).toHaveBeenLastCalledWith(expect.not.objectContaining({ result: "loss" }));
+    expect(more.read).toHaveBeenCalledTimes(1);
   });
 
   it("lists only decks with games in the Deck sheet and says how many it left out", () => {
