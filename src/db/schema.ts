@@ -871,7 +871,12 @@ export const deckCards = pgTable("deck_cards", {
   // it). Re-sorting, regrouping, or opening the card detail must leave it set, or
   // the sweep would silently spare cards the player only looked at.
   auto: boolean("auto").notNull().default(false),
-}, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
+}, (t) => [
+  primaryKey({ columns: [t.deckId, t.oracleId] }),
+  // The own-both combos read asks "which decks hold this card", an oracle_id-only filter the primary key (deck_id
+  // first) cannot serve: without this, each lookup Seq Scans the table.
+  index("deck_cards_oracle_id_deck_id_idx").on(t.oracleId, t.deckId),
+]);
 
 /**
  * One deck's statement that its copy of a card is printed rather than owned.
