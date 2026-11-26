@@ -224,8 +224,8 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(panel).toHaveTextContent(`${TEST_MIX.cells.removal.target} · ${TEST_MIX.cells.wipes.target}`);
     expect(panel).toHaveTextContent(`~${TEST_MIX.cells.land.target}`);
     // "you have N" per tile, from the deck's own counts (none here).
-    expect(panel).toHaveTextContent(addPanelCopy.strip.tileHave("0"));
-    expect(panel).toHaveTextContent(addPanelCopy.strip.tileHave("0 · 0"));
+    expect(within(panel).getAllByText(addPanelCopy.strip.tileHave("0"))).toHaveLength(3);
+    expect(within(panel).getAllByText(addPanelCopy.strip.tileHave("0 · 0"))).toHaveLength(1);
   });
 
   // WCAG 2.5.3: the accessible name has to contain the words on screen, so the
@@ -329,7 +329,7 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   // out of step with: a deck with something pending says which list it counted.
   it("names the list the figures came from while a draft exists", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
-    expect(screen.getByText(deckVersioningCopy.pending.mixStripDraftNote)).toBeInTheDocument();
+    expect(screen.getAllByText(deckVersioningCopy.pending.mixStripDraftNote).length).toBeGreaterThan(0);
   });
 
   // On a clean deck there is only one list to have counted, and naming it would
@@ -375,18 +375,17 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
     ).toBeNull();
   });
 
-  // Brass, and beside the EDHREC line rather than under it — the two sub-runs
-  // read as one sentence about where the numbers come from.
-  it("draws the note in accent, at the source line's size, at both widths (deck messages A16)", () => {
+  // Brass, and beside the EDHREC line rather than under it: the two sub-runs read as one sentence about where the
+  // numbers come from. The sentence draws twice (band aside from md, a line under the band on the phone), each
+  // copy with its note in accent.
+  it("draws the note in accent beside the source line, at both widths (deck messages A16)", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
-    const note = screen.getByText(deckVersioningCopy.pending.mixStripDraftNote);
-    const source = screen.getByText(roleStripCopy.sourceStarting, { exact: false });
-    expect(note.getAttribute("style")).toContain("var(--accent-text)");
-    expect(note.className).toContain("md:text-[10.5px]");
-    // Not hidden on the phone: the source line and the note join the label row there, in one group.
-    expect(note.className).not.toContain("hidden");
-    expect(source.className).not.toContain("hidden");
-    expect(note.parentElement).toBe(source.parentElement);
+    const notes = screen.getAllByText(deckVersioningCopy.pending.mixStripDraftNote);
+    expect(notes).toHaveLength(2);
+    for (const note of notes) {
+      expect(note.className).toContain("text-[color:var(--accent-text)]");
+      expect(note.parentElement).toHaveTextContent(roleStripCopy.sourceStarting);
+    }
   });
 });
 

@@ -66,7 +66,6 @@ export function StripRationale({ mix, counts }: { mix: RecommendedMix; counts: R
           {TILES.map(({ key, roles }) => {
             const targets = joined(roles.map((role) => mix.cells[role].target));
             const have = joined(roles.map((role) => counts[role]));
-            const over = roles.length === 1 && counts[roles[0]] > mix.cells[roles[0]].target;
             return (
               <div
                 key={key}
@@ -99,7 +98,6 @@ export function StripRationale({ mix, counts }: { mix: RecommendedMix; counts: R
                     {targets}
                   </span>
                   <span
-                    data-over={over ? "" : undefined}
                     className="ml-auto font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
                   >
                     {addPanelCopy.strip.tileHave(have)}
