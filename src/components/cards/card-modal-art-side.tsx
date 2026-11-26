@@ -209,12 +209,17 @@ export function CardModalArtSide({
   const leftPeek = enteredFrom === "next" || enteredFrom === "nextPeek" ? "prev"
     : enteredFrom === "prev" || enteredFrom === "prevPeek" ? "next"
     : null;
+  // A swipe's release goes straight into the glide: the finger has already moved the card, so the transition's beat
+  // (`--motion-delay`) would be a hold with nothing under the finger. A press or a key (a swipe of 0) keeps its beat.
+  const enterDelay = enteredOffset !== 0 ? "0s" : "var(--motion-delay)";
   const phoneEnterVars = phoneEnterX === null ? null : ({
+    "--enter-delay": enterDelay,
     "--enter-x": phoneEnterX,
     "--enter-scale": String(0.7375 + 0.2625 * enteredProgress),
     "--enter-opacity": String(0.5 + 0.5 * enteredProgress),
   } as React.CSSProperties);
   const leftPeekVars = leftPeek === null ? null : ({
+    "--enter-delay": enterDelay,
     "--enter-x": `calc(${leftPeek === "prev" ? "" : "-"}1 * (var(--card-w) * 0.86875 + 12px) + ${enteredOffset}px)`,
     "--enter-scale": String((1 - 0.2625 * enteredProgress) / 0.7375),
     "--enter-opacity": String(1 - 0.5 * enteredProgress),
