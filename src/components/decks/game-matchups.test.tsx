@@ -11,7 +11,8 @@ import type { GameOpponent } from "../../lib/decks/game-opponents";
 import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
 import { vsParts } from "./game-vs-line";
 import { gameMatchupsCopy } from "../../lib/copy/game-matchups";
-import { gameLogCopy } from "../../lib/copy/game-log";
+import { gameHistoryCopy } from "../../lib/copy/game-history";
+import { gameRowId } from "../../lib/games/landing";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 
@@ -31,14 +32,13 @@ function wire(games: DeckGame[], by: Record<string, GameOpponent[]>): DeckOppone
   return { opponents: by, matchups: summarizeMatchups(games, new Map(Object.entries(by))) };
 }
 function mount(games: DeckGame[], gameOpponents: DeckOpponentsWire | null) {
-  render(<GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} gameOpponents={gameOpponents} />);
+  render(<GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={games} summary={summarizeGames(games)} gameOpponents={gameOpponents} />);
 }
 
 describe("the section's states", () => {
-  it("is absent with no opponents payload (switch off) and draws no vs line", () => {
+  it("is absent with no opponents payload (switch off) and draws no seats from a snapshot", () => {
     mount([game("g1")], null);
     expect(screen.queryByText(copy.heading)).toBeNull();
-    expect(screen.queryByText(gameMatchupsCopy.history.vs)).toBeNull();
   });
 
   it("games and no opponents: the heading, 0 of N, one dashed line, and no switch", () => {
@@ -135,7 +135,7 @@ describe("a row past ten games", () => {
   });
 });
 
-describe("the History vs line", () => {
+describe("the History Seats", () => {
   const games = [game("g1", "loss"), game("g2")];
   const by = {
     g1: [
@@ -144,27 +144,26 @@ describe("the History vs line", () => {
       seat({ seat: 3, commander: { oracleId: "z", name: "Zed, the Unnamed", imageUri: null } }),
     ],
   };
+  const rowOf = (id: string) => document.getElementById(gameRowId(id))!;
 
-  it("reads the snapshot: a friend with their deck, a label with its commander, a bare commander by its short name, a trophy before the winner", () => {
+  it("reads the snapshot: a friend with their deck, a label with its commander, a bare commander by its short name, the Won tag on the winner", () => {
     mount(games, wire(games, by));
-    const rows = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(gameMatchupsCopy.history.vs));
-    expect(rows).toHaveLength(1);
-    const row = rows[0];
+    const row = rowOf("g1");
     // A saved friend's name, their deck and a saved label are each marked on the element drawing them.
     expect(within(row).getByText("Dave")).toHaveClass("ph-no-capture");
-    expect(within(row).getByText("· Avengers Tempo")).toHaveClass("ph-no-capture");
+    expect(within(row).getByText("Avengers Tempo")).toHaveClass("ph-no-capture");
     expect(within(row).getByText("Lee")).toHaveClass("ph-no-capture");
-    expect(within(row).getByText("· Tymna the Weaver")).toBeInTheDocument();
+    expect(within(row).getByText("Tymna the Weaver")).toBeInTheDocument();
     expect(within(row).getByText("Zed")).toBeInTheDocument();
-    expect(within(row).getAllByRole("img", { name: gameMatchupsCopy.history.wonAria })).toHaveLength(1);
+    expect(within(row).getAllByText(gameHistoryCopy.row.won)).toHaveLength(1);
+    expect(within(row).queryByText(gameHistoryCopy.row.someone)).toBeNull();
   });
 
-  it("draws nothing, and reserves nothing, for a game with no seat", () => {
+  it("draws a dashed Someone tile for each seat the pod had and the log did not name", () => {
     mount(games, wire(games, by));
-    const plainRows = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(gameLogCopy.history.meta("4", "")) && !li.textContent?.includes(gameMatchupsCopy.history.vs));
-    expect(plainRows.length).toBeGreaterThan(0);
-    // One game has seats, the other none: exactly one `vs` line exists on the page.
-    expect(screen.getAllByText(gameMatchupsCopy.history.vs)).toHaveLength(1);
+    const row = rowOf("g2");
+    expect(within(row).getAllByText(gameHistoryCopy.row.someone)).toHaveLength(3);
+    expect(within(row).queryByText(gameHistoryCopy.row.won)).toBeNull();
   });
 
   it("keeps both commanders of a recorded pair on the vs line", () => {
@@ -199,7 +198,7 @@ describe("the switch is Matchups' landing target (discovery R2, E11)", () => {
     render(
       <TargetsProvider>
         <Grab />
-        <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} gameOpponents={wire(games, by)} />
+        <GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={games} summary={summarizeGames(games)} gameOpponents={wire(games, by)} />
       </TargetsProvider>,
     );
     const split = screen.getByRole("radiogroup", { name: copy.split });
@@ -213,7 +212,7 @@ describe("the switch is Matchups' landing target (discovery R2, E11)", () => {
     render(
       <TargetsProvider>
         <Grab />
-        <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} gameOpponents={wire(games, {})} />
+        <GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={games} summary={summarizeGames(games)} gameOpponents={wire(games, {})} />
       </TargetsProvider>,
     );
     expect(box.t!.haloTarget("matchups")).toBe(false);

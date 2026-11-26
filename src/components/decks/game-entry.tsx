@@ -1,47 +1,28 @@
 "use client";
 
-// One game in the cross-deck Games view (design handoff `design_handoff_the99_game_history`, Rows R1-R2): the shipped
-// history row with its deck added (commander art and name: the row's first line on the phone, a 230px column from md,
-// the width of the Stats lanes' name column) and a chevron, and the ✕ removed. The whole row is ONE press: the deck's
-// Games tab at that game (`?tab=games&game=<id>`), where it is scrolled into view and ringed. Read-only: the tab stays the
-// only place a game is logged, corrected or deleted. Every name in the vs line is the owner's snapshot.
+// One game in the cross-deck Games view (design handoff `design_handoff_the99_games_tabs`, Seats): a head with the result
+// and `3 players · Nov 19`, and the way to the deck in words (`Open {deck}`, the phone's `Open deck`), then the Seats, the
+// Helped and Hurt marks and the note. The press is the link in the head, to the deck's Games tab at that game
+// (`?tab=games&game=<id>`), where it is scrolled into view and ringed. Read-only: the tab stays the only place a game is
+// logged, corrected or deleted. Every name in the seats is the owner's snapshot.
 
 import Link from "next/link";
 import { memo } from "react";
-import { gameLogCopy } from "../../lib/copy/game-log";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { gameHistoryCopy } from "../../lib/copy/game-history";
 import { formatPlayed } from "../../lib/decks/format";
 import { gameHref } from "../../lib/games/landing";
 import type { HistoryGame } from "../../lib/games/history";
-import { ArtLayer } from "../ui/art-layer";
-import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { PendingReporter } from "../shell/pending-reporter";
-import { GameMarks, GameNote } from "./game-row-parts";
-import { GameVsLine } from "./game-vs-line";
-import { IdentityMark } from "./lineup/identity-mark";
+import { GameRowBody, ResultHead } from "./game-row-parts";
 import { useZone } from "../zone-context";
 
-const RESULT_GLYPH = { win: gameLogCopy.history.won, loss: gameLogCopy.history.lost, draw: gameLogCopy.history.drawn } as const;
+const copy = gameHistoryCopy.row;
 
-/** The deck's commander art at the board's 26px (radius 6, the tile's crop); the identity mark when the deck has no art to draw.
-    An art_crop, so it takes ArtWash's top trim (`ART_CROP_TRIM`): the box clips the crop's top 3%, where some printings
-    carry an arc of the card frame. */
-function DeckArt({ deck }: { deck: HistoryGame["deck"] }) {
-  if (!deck.commanderArtCropUri) return <IdentityMark identity={deck.identity} />;
+function Chevron() {
   return (
-    <span aria-hidden data-deck-art className={`relative h-[26px] w-[26px] flex-none overflow-hidden rounded-[6px] bg-elevated ${ART_CROP_TRIM.box}`}>
-      <ArtLayer src={deck.commanderArtCropUri} style={{ backgroundPosition: "50% 25%", ...ART_CROP_TRIM.layer }} />
-    </span>
-  );
-}
-
-function Chevron({ className }: { className: string }) {
-  return (
-    <span aria-hidden className={`${className} w-[24px] flex-none items-center justify-end text-fg-faint`}>
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 5.5 12.5 10 8 14.5" />
-      </svg>
-    </span>
+    <svg aria-hidden width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 5.5 12.5 10 8 14.5" />
+    </svg>
   );
 }
 
@@ -51,41 +32,28 @@ export const GameEntry = memo(function GameEntry({ game }: { game: HistoryGame }
   const href = gameHref(game.deck.id, game.id);
   const note = game.note?.trim() ? game.note : null;
   return (
-    <li data-game-entry={game.id} className="list-none">
-      <Link
-        href={href}
-        className="flex min-h-[64px] flex-col rounded-[9px] border border-border bg-surface py-[8px] pr-[12px] pl-[14px] hover:bg-[color:var(--surface-raised)] md:min-h-[52px]"
-      >
-        <PendingReporter href={href} />
-        <div className="flex flex-1 flex-wrap items-center gap-x-[14px] gap-y-[14px] md:flex-nowrap">
-          {/* The deck leads: line one on the phone (a rule under it), a fixed column from md. */}
-          <span className="flex min-w-0 basis-full items-center gap-[7px] border-0 border-b border-solid border-b-[color:var(--border)] pt-[2px] pb-[6px] -mb-[8px] md:basis-[230px] md:mb-0 md:flex-none md:border-b-0 md:pt-0 md:pb-0">
-            <DeckArt deck={game.deck} />
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium leading-[1.4] text-[color:var(--fg)]">{game.deck.name}</span>
-            <Chevron className="flex md:hidden" />
-          </span>
-
-          {/* Result square: never --danger. A loss is a result, not an error. */}
-          <span
-            className={
-              "flex h-[26px] w-[26px] flex-none items-center justify-center rounded-[7px] border font-mono text-[12px] font-semibold " +
-              (game.result === "win" ? "border-success text-success" : "border-border-strong text-fg-body")
-            }
-          >
-            {RESULT_GLYPH[game.result]}
-          </span>
-          <span className="flex-none font-mono text-[11px] leading-[normal] tabular-nums text-fg-faint md:w-[156px]">
-            {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt, undefined, zone))}
-          </span>
-          <span className={"w-[44px] flex-none font-mono text-[10.5px] leading-[normal] tabular-nums " + (game.versionNumber === null ? "text-fg-locked" : "text-fg-faint")}>
-            {game.versionNumber === null ? deckVersioningCopy.stamp.absent : deckVersioningCopy.stamp.value(game.versionNumber)}
-          </span>
-          <GameMarks worked={game.worked} hurt={game.hurt} note={note} normalLeading />
-          <Chevron className="hidden md:flex" />
-        </div>
-        {game.opponents.length > 0 && <GameVsLine seats={game.opponents} inset="md:ml-[488px]" />}
-        {note !== null && <GameNote note={note} inset="md:pl-[284px]" />}
-      </Link>
+    <li data-game-entry={game.id} className="list-none border-0 border-b border-solid border-b-[color:var(--border)] px-[14px] py-[12px] last:border-b-0 md:px-[16px]">
+      <div className="flex items-center justify-between gap-[12px]">
+        <ResultHead result={game.result} podSize={game.podSize} date={formatPlayed(game.playedAt, undefined, zone)} />
+        <Link
+          href={href}
+          className="inline-flex min-h-[44px] min-w-0 flex-none items-center gap-[4px] text-[12.5px] text-[color:var(--accent-text)] hover:underline md:min-h-[32px]"
+        >
+          <PendingReporter href={href} />
+          <span className="min-w-0 truncate md:hidden">{copy.openShort}</span>
+          <span className="hidden max-w-[260px] truncate md:inline">{copy.open(game.deck.name)}</span>
+          <Chevron />
+        </Link>
+      </div>
+      <GameRowBody
+        you={{ deckName: game.deck.name, artUri: game.deck.commanderArtCropUri ?? null, versionNumber: game.versionNumber }}
+        seats={game.opponents}
+        podSize={game.podSize}
+        result={game.result}
+        worked={game.worked}
+        hurt={game.hurt}
+        note={note}
+      />
     </li>
   );
 });

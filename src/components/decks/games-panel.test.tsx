@@ -33,7 +33,7 @@ function game(over: Partial<DeckGame> = {}): DeckGame {
 }
 
 function mount(games: DeckGame[]) {
-  return render(<GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} />);
+  return render(<GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={games} summary={summarizeGames(games)} />);
 }
 
 // The mock deck from the handoff: 2–1 across three games, card_flow 3 of 3
@@ -193,7 +193,7 @@ describe("GamesPanel — empty", () => {
 describe("the Suggested changes pointer", () => {
   const draw = (games: DeckGame[], tuned: boolean, onOpenTuning = vi.fn()) => {
     render(
-      <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} tuned={tuned} onOpenTuning={onOpenTuning} />,
+      <GamesPanel deckId="deck_1" deck={{ name: "Fixture deck", artUri: null }} games={games} summary={summarizeGames(games)} tuned={tuned} onOpenTuning={onOpenTuning} />,
     );
     return onOpenTuning;
   };

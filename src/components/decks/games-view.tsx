@@ -31,30 +31,14 @@ import { useGamesFilters } from "./use-games-filters";
 import { spanText } from "./lineup/recency-card";
 import { viewPanelId, viewTabId } from "./lineup/stats-view-switch";
 import { GameEntry } from "./game-entry";
+import { groupByMonth, monthKey, MonthBox, SummaryBox, type SummaryCell } from "./game-boxes";
+import { formatPlayed } from "../../lib/decks/format";
+import { ArtLayer } from "../ui/art-layer";
+import { IdentityMark } from "./lineup/identity-mark";
 import { GamesFailedToast } from "./games-failed-toast";
-import { wall } from "../../lib/time/zoned";
 import { useZone } from "../zone-context";
 
-const MONTH = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-
-/** `2026-10`, the way the read groups: the reader's month of `played_at` (a UTC timestamp), in the zone both sides read. */
-export const monthKey = (d: Date, zone: string | null = null) => {
-  const w = wall(d, zone ?? "UTC");
-  return `${w.y}-${String(w.mo).padStart(2, "0")}`;
-};
-const monthLabel = (key: string) => MONTH.format(new Date(`${key}-01T00:00:00Z`));
-
-/** The rows in order, cut at each change of month. */
-export function groupByMonth(games: readonly HistoryGame[], zone: string | null = null): { key: string; games: HistoryGame[] }[] {
-  const out: { key: string; games: HistoryGame[] }[] = [];
-  for (const g of games) {
-    const key = monthKey(g.playedAt, zone);
-    const last = out[out.length - 1];
-    if (last?.key === key) last.games.push(g);
-    else out.push({ key, games: [g] });
-  }
-  return out;
-}
+export { groupByMonth, monthKey };
 
 /** What the view has drawn beyond the first window: the rows, the position after them, and a failed ask. Tied to the payload it grew from. */
 export type GamesHeld = { seen: GamesPayload; games: HistoryGame[]; next: string | null; moreFailed: boolean };
@@ -128,7 +112,7 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
   }, [games]);
 
   const { summary, months, total } = data.aggregates;
-  const monthCounts = useMemo(() => new Map(months.map((m) => [m.month, m.games])), [months]);
+  const monthCounts = useMemo(() => new Map(months.map((m) => [m.month, m])), [months]);
   const groups = useMemo(() => groupByMonth(games, zone), [games, zone]);
 
   // The filters draw from PATTERN_MIN games of history on: under it the view is a count and a line on where games come from.
@@ -236,18 +220,13 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
           <NoMatch onClear={() => gf.change({})} />
         ) : (
           <>
-            <Summary data={data} games={games} against={chosenAgainst(options, data.filter)} />
+            <Summary data={data} games={games} decks={decks} against={chosenAgainst(options, data.filter)} />
             {groups.map((g) => (
-              <div key={g.key} data-games-month={g.key}>
-                <h3 className="mx-0 mt-[18px] mb-[10px] flex items-baseline gap-[10px] font-mono text-[10px] font-normal uppercase leading-[normal] tracking-[0.14em] text-fg-faint">
-                  {monthLabel(g.key)}
-                  <span className="sr-only">, </span>
-                  <em className="text-[11px] normal-case leading-[normal] not-italic tracking-normal text-fg-locked">{copy.count(monthCounts.get(g.key) ?? g.games.length)}</em>
-                </h3>
-                <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+              <MonthBox key={g.key} monthKey={g.key} count={monthCounts.get(g.key)?.games ?? g.games.length} record={monthCounts.get(g.key) ?? recordOfRows(g.games)}>
+                <ul className="m-0 flex list-none flex-col p-0">
                   {g.games.map((game) => <GameEntry key={game.id} game={game} />)}
                 </ul>
-              </div>
+              </MonthBox>
             ))}
             <Foot shown={games.length} total={summary.games} more={next !== null} loading={loading} onMore={more} />
           </>
@@ -259,42 +238,56 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
   );
 }
 
-function Summary({ data, games, against }: { data: GamesPayload; games: readonly HistoryGame[]; against: AgainstOption | null }) {
+const recordOfRows = (rows: readonly HistoryGame[]) => ({
+  wins: rows.filter((g) => g.result === "win").length,
+  losses: rows.filter((g) => g.result === "loss").length,
+  draws: rows.filter((g) => g.result === "draw").length,
+});
+
+function Summary({ data, games, decks, against }: { data: GamesPayload; games: readonly HistoryGame[]; decks: readonly DeckChoice[]; against: AgainstOption | null }) {
   const s = data.aggregates.summary;
   const f = data.filter;
-  const first = s.firstPlayedAt && s.lastPlayedAt ? spanText(s.firstPlayedAt.toISOString(), s.lastPlayedAt.toISOString()) : null;
-  // One deck holds every game: its own name stands in for `1 deck`.
+  const zone = useZone();
+  // One deck holds every game: its own name stands in for `4 decks`.
   const lead = s.decks === 1 && games[0] ? games[0].deck.name : copy.decks(s.decks);
-  const tail = [s.podMin !== null && s.podMax !== null ? copy.pods(s.podMin, s.podMax) : null, first].filter((x) => x !== null);
   const won = against?.kind === "friend" && typeof against.name !== "string" ? s.friendWonLosses : null;
-  return (
-    <div data-games-summary className="flex flex-col gap-[7px] pt-[20px] pb-[6px]">
-      <h2 className="m-0 font-display text-[17px] font-bold leading-[1.3] text-fg md:text-[20px]">
-        {copy.headline(s.games, s.wins, s.losses, s.draws)}
-      </h2>
-      <p className="m-0 font-mono text-[11px] leading-[1.6] text-fg-faint">
-        <b className="font-normal text-fg-body">{lead}</b>
-        {against ? (
-          <> {copy.scoped.with} <b className="font-normal text-fg-body"><OptionName option={against} /></b> {copy.scoped.atTable}</>
-        ) : null}
-        {tail.map((t) => ` · ${t}`).join("")}
-      </p>
+  const cells: SummaryCell[] = [];
+  if (s.podMin !== null && s.podMax !== null) cells.push({ key: "pods", label: copy.boxes.cell.pods, value: copy.boxes.players(s.podMin, s.podMax) });
+  if (s.firstPlayedAt && s.lastPlayedAt) {
+    cells.push({ key: "played", label: copy.boxes.cell.played, value: spanText(s.firstPlayedAt.toISOString(), s.lastPlayedAt.toISOString()) });
+    cells.push({ key: "last", label: copy.boxes.cell.last, value: formatPlayed(s.lastPlayedAt, undefined, zone) });
+  }
+  // Most played says nothing under a deck filter (that deck leads its own list), so it goes with it; art comes from the deck list.
+  if (s.games >= PATTERN_MIN && s.mostPlayed && !f.deckId) {
+    const deck = decks.find((d) => d.id === s.mostPlayed?.deckId);
+    cells.push({
+      key: "most",
+      label: copy.boxes.cell.most,
+      value: s.mostPlayed.name,
+      sub: copy.boxes.mostOf(s.mostPlayed.games, s.games),
+      art: deck?.artUri
+        ? <span aria-hidden className="relative h-[26px] w-[26px] flex-none overflow-hidden rounded-[6px] bg-elevated"><ArtLayer src={deck.artUri} style={{ backgroundPosition: "50% 25%" }} /></span>
+        : deck ? <IdentityMark identity={deck.identity} /> : null,
+    });
+  }
+  const foot = (
+    <>
+      {against ? (
+        <p className="m-0 font-mono text-[11px] leading-[1.6] text-fg-faint">
+          {copy.scoped.with} <b className="font-normal text-fg-body"><OptionName option={against} /></b> {copy.scoped.atTable}
+        </p>
+      ) : null}
       {won && won.losses > 0 && against && typeof against.name !== "string" ? (
         <p data-games-beat-me className="m-0 flex items-center gap-[6px] font-mono text-[11px] leading-[1.6] text-fg-faint">
           <TrophyIcon size={12} />
           <span><PersonName n={against.name} />{copy.beatMe(won.won, won.losses)}</span>
         </p>
       ) : null}
-      {/* Most played says nothing under a deck filter (that deck leads its own list), so it goes with it. */}
-      {s.games >= PATTERN_MIN && s.mostPlayed && !f.deckId ? (
-        <p className="m-0 font-mono text-[11px] leading-[1.6] text-fg-faint">
-          {copy.mostPlayed.lead} <b className="font-normal text-fg-body">{s.mostPlayed.name}</b>
-          {copy.mostPlayed.tail(s.mostPlayed.games, s.games)}
-        </p>
-      ) : null}
       {s.games < PATTERN_MIN && isEmptyGamesFilter(f) ? <p className="m-0 max-w-[620px] text-[13px] leading-[1.55] text-fg-muted">{copy.low}</p> : null}
-    </div>
+    </>
   );
+  const hasFoot = Boolean(against) || (won !== null && won.losses > 0) || (s.games < PATTERN_MIN && isEmptyGamesFilter(f));
+  return <SummaryBox title={copy.boxes.band(s.games, lead)} record={{ wins: s.wins, losses: s.losses, draws: s.draws }} cells={cells} foot={hasFoot ? foot : null} />;
 }
 
 /** Filters that match nothing (Small items 9, A1): one line and one way out, where the headline and the months were. Z2: Clear filters takes off ALL of them, the deck included, so it can never be inert (a deck with no games is a choice the picker offers). */

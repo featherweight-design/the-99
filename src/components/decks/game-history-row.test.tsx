@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GameHistoryRow } from "./game-history-row";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
+import { gameHistoryCopy } from "../../lib/copy/game-history";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckGame } from "../../lib/decks/games";
 
@@ -15,6 +16,8 @@ beforeAll(() => {
 afterAll(() => {
   vi.useRealTimers();
 });
+
+const rowCopy = gameHistoryCopy.row;
 
 const deleteGame = vi.fn<(deckId: string, gameId: string) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -36,7 +39,7 @@ const GAME: DeckGame = {
 
 function mount(game: DeckGame = GAME, onDeleted = vi.fn()) {
   return {
-    ...render(<GameHistoryRow deckId="deck_1" game={game} isLast={false} onDeleted={onDeleted} />),
+    ...render(<GameHistoryRow deckId="deck_1" you={{ deckName: "Fixture deck", artUri: null }} game={game} isLast={false} onDeleted={onDeleted} />),
     onDeleted,
   };
 }
@@ -44,27 +47,20 @@ function mount(game: DeckGame = GAME, onDeleted = vi.fn()) {
 describe("GameHistoryRow", () => {
   beforeEach(() => deleteGame.mockClear());
 
-  // Vocabulary order, not grouped by direction — the row reads in the same
-  // sequence as the form that produced it.
-  it("draws the marks in vocabulary order regardless of polarity", () => {
+  // Two groups, Helped then Hurt, each in the vocabulary's order.
+  it("draws the marks as a Helped group, then a Hurt group", () => {
     const { container } = mount();
-    const text = container.textContent!;
+    const text = container.querySelector("[data-marks]")!.textContent!;
+    expect(text.indexOf(rowCopy.helped)).toBeLessThan(text.indexOf(rowCopy.hurt));
+    expect(text.indexOf(rowCopy.hurt)).toBeLessThan(text.indexOf(axisCopy.speed.label));
     expect(text.indexOf(axisCopy.speed.label)).toBeLessThan(text.indexOf(axisCopy.mana.label));
-    expect(text.indexOf(axisCopy.mana.label)).toBeLessThan(text.indexOf(axisCopy.engine.label));
+    expect(text.indexOf(rowCopy.helped)).toBeLessThan(text.indexOf(axisCopy.engine.label));
   });
 
-  // Pod size first, then the date — the pod is what changes how a game read.
-  it("puts the pod size before the date in the meta slot", () => {
+  // Pod size first, then the date, in the head's meta slot.
+  it("puts the pod size before the date in the head", () => {
     mount();
-    expect(screen.getByText(gameLogCopy.history.meta("4", "Sep 1"))).toBeInTheDocument();
-  });
-
-  // Small items 7, addendum 5: 156 on desktop holds `4-player · Dec 31, 2025` on one line. The phone sizes to its text.
-  it("gives the meta a 156px slot on desktop and none on the phone", () => {
-    mount({ ...GAME, playedAt: new Date("2025-12-31T12:00:00") });
-    const meta = screen.getByText(gameLogCopy.history.meta("4", "Dec 31, 2025"));
-    expect(meta).toHaveClass("md:w-[156px]");
-    expect(meta.className).not.toMatch(/(^|\s)w-\[/);
+    expect(screen.getByText(rowCopy.meta(4, "Sep 1"))).toBeInTheDocument();
   });
 
   // §Surfaces 5 — the stamp answers "which list was on the table", which is the
@@ -99,7 +95,7 @@ describe("GameHistoryRow", () => {
   // the whole row, because the delete affordance is legitimately danger-tinted.
   it("never paints a loss in the danger colour", () => {
     mount();
-    const square = screen.getByText(gameLogCopy.history.lost);
+    const square = screen.getByText(rowCopy.result.loss);
     expect(square.outerHTML).not.toContain("danger");
     expect(square.outerHTML).not.toContain("--success");
   });

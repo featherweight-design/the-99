@@ -7,7 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { GAME_PARAM, LANDING_RING_MS } from "../../lib/games/landing";
 import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
-import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
+import type { Headline } from "../../lib/decks/game-headline";
+import { gameHistoryCopy } from "../../lib/copy/game-history";
+import { formatPlayed } from "../../lib/decks/format";
+import { groupByMonth, MonthBox, recordOf, SummaryBox, type SummaryCell } from "./game-boxes";
+import { spanText } from "./lineup/recency-card";
+import { useZone } from "../zone-context";
 import { GameAxisCell } from "./game-axis-cell";
 import { GameHistoryRow } from "./game-history-row";
 import { GameLogForm, type GameLogFormProps, type GameResult } from "./game-log-form";
@@ -18,6 +23,8 @@ import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
 export interface GamesPanelProps {
   deckId: string;
+  /** This deck's name and its commander's art: the summary box's band and your tile in every game's Seats. */
+  deck: { name: string; artUri: string | null };
   games: DeckGame[];
   summary: GameSummary;
   /** Suggested changes is on this deck: the Tuning tab holds it over a reading. */
@@ -246,8 +253,22 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenTuning, opponents, gameOpponents = null, prefill, onPrefillSpent, landingGameId = null, onLandingSpent }: GamesPanelProps) {
-  const headline = deriveHeadline(summary);
+/** The deck tab's summary cells: pods, the span played and the last game, read off the deck's own games (all of them are loaded). */
+function deckCells(games: readonly DeckGame[], zone: string | null): SummaryCell[] {
+  if (games.length === 0) return [];
+  const pods = games.map((g) => g.podSize);
+  const times = games.map((g) => g.playedAt.getTime());
+  const first = new Date(Math.min(...times));
+  const last = new Date(Math.max(...times));
+  return [
+    { key: "pods", label: gameHistoryCopy.boxes.cell.pods, value: gameHistoryCopy.boxes.players(Math.min(...pods), Math.max(...pods)) },
+    { key: "played", label: gameHistoryCopy.boxes.cell.played, value: spanText(first.toISOString(), last.toISOString()) },
+    { key: "last", label: gameHistoryCopy.boxes.cell.last, value: formatPlayed(last, undefined, zone) },
+  ];
+}
+
+export function GamesPanel({ deckId, deck, games, summary, tuned = false, onOpenTuning, opponents, gameOpponents = null, prefill, onPrefillSpent, landingGameId = null, onLandingSpent }: GamesPanelProps) {
+  const zone = useZone();
   const [announcement, setAnnouncement] = useState("");
   // The table's prefill is held, and spent, by `BuilderShell` (a save or a Cancel in either form mount): this panel
   // remounts on every tab change. Its `table` parameter leaves the address on arrival, so a reload opens it plain.
@@ -340,11 +361,13 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenTuning
 
   return (
     <section className="px-[16px] py-[14px] md:px-[30px] md:py-[20px]">
-      {headline && <GameHeadlineHeader headline={headline} count={summary.count} />}
-
-      {/* Above the aggregate, below the record line: logging is the action this
-          view exists for, and burying it under the readings hides it. */}
-      <GameLogForm
+      {/* The summary box leads, and logging is its fourth cell: the action this view exists for sits in the first box,
+          and its form opens across the whole row. */}
+      <SummaryBox
+        title={gameHistoryCopy.boxes.band(summary.count, deck.name)}
+        record={summary.record}
+        cells={deckCells(games, zone)}
+        action={<GameLogForm
         deckId={deckId}
         tuned={tuned}
         isFirstGame={games.length === 0}
@@ -357,6 +380,8 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenTuning
             ? setAnnouncement(gameLogCopy.announce.savedFirst)
             : announceShift(result, 1, gameLogCopy.announce.saved)
         }
+          ctaSolid
+        />}
       />
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
@@ -378,34 +403,31 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenTuning
 
       {gameOpponents && <GameMatchups matchups={gameOpponents.matchups} />}
 
-      <div className={`flex items-baseline gap-[10px] mb-[10px] ${(tuned && onOpenTuning) && !gameOpponents ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
-        <h2 className="font-mono uppercase text-[10px] tracking-[0.14em] text-fg-faint">
-          {gameLogCopy.history.heading}
-        </h2>
-        <span className="font-mono text-[10px] text-fg-locked">
-          {gameLogCopy.history.headingNote}
-        </span>
-      </div>
       {/* The row deletes through the server action; deckSurfaces() revalidates,
           so the shortened list comes back from the server rather than being
           spliced out here. */}
-      <ul className="flex flex-col gap-[6px]">
-        {games.map((g) => (
-          <GameHistoryRow
-            key={g.id}
-            deckId={deckId}
-            game={g}
-            isLast={games.length === 1}
-            opponents={gameOpponents?.opponents[g.id]}
-            ringed={ringed === g.id}
-            onDeleted={(wasLast) =>
-              wasLast
-                ? setAnnouncement(gameLogCopy.announce.deletedLast)
-                : announceShift(g.result, -1, gameLogCopy.announce.deleted)
-            }
-          />
-        ))}
-      </ul>
+      {groupByMonth(games, zone).map((m) => (
+        <MonthBox key={m.key} monthKey={m.key} count={m.games.length} record={recordOf(m.games)}>
+          <ul className="m-0 flex list-none flex-col p-0">
+            {m.games.map((g) => (
+              <GameHistoryRow
+                key={g.id}
+                deckId={deckId}
+                you={{ deckName: deck.name, artUri: deck.artUri }}
+                game={g}
+                isLast={games.length === 1}
+                opponents={gameOpponents?.opponents[g.id]}
+                ringed={ringed === g.id}
+                onDeleted={(wasLast) =>
+                  wasLast
+                    ? setAnnouncement(gameLogCopy.announce.deletedLast)
+                    : announceShift(g.result, -1, gameLogCopy.announce.deleted)
+                }
+              />
+            ))}
+          </ul>
+        </MonthBox>
+      ))}
     </section>
   );
 }

@@ -85,7 +85,7 @@ describe("/decks' games prop", () => {
     total: 1,
     byResult: { wins: 1, losses: 0, draws: 0 },
     byDeck: [{ deckId: "11111111-1111-4111-8111-111111111111", games: 1 }],
-    months: [{ month: "2026-09", games: 1 }],
+    months: [{ month: "2026-09", games: 1, wins: 1, losses: 0, draws: 0 }],
     summary: {
       games: 1, wins: 1, losses: 0, draws: 0, decks: 1, podMin: 4, podMax: 4, firstPlayedAt: null, lastPlayedAt: null,
       mostPlayed: null, friendWonLosses: null,

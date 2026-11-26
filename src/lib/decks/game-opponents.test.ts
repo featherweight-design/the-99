@@ -250,6 +250,8 @@ describe("who reads the opponents table", () => {
     const IMPORTERS = new Set([
       "src/app/decks/actions.ts", "src/lib/decks/matchups.ts", "src/lib/decks/deck-opponents-read.ts", "src/lib/decks/game-seats.ts",
       "src/components/decks/game-history-row.tsx", "src/components/decks/game-matchups.tsx", "src/components/decks/game-vs-line.tsx", "src/lib/decks/matchup-rows.ts",
+      // Games tabs redesign (PR 1): the Seats grid and the row body draw the same snapshot types, and send nothing to a model.
+      "src/components/decks/seats-grid.tsx", "src/components/decks/game-row-parts.tsx",
       // Game history (PR 1): its friend half draws the same snapshot types and sends nothing to a model.
       // (`src/lib/games/history.ts` was listed here and imports neither module, so the staleness check dropped it.)
       "src/lib/social/game-history.ts",
