@@ -36,7 +36,7 @@ export const copyEditorCopy = {
     preview: (text: string) => `Preview: ${text}`,
     /** One note per fill-in in the field: what it reads on this page when the editor can tell, and how to move or remove it. */
     fill: (name: string, value: string | undefined) =>
-      value === undefined ? `${name} is filled in by the app. Drag it to move it, or select ✕ to take it out.` : `${name} reads “${value}” here. Drag it to move it, or select ✕ to take it out.`,
+      value === undefined ? `{${name}} is filled in by the app. Drag it to move it, or select ✕ to take it out.` : `{${name}} reads “${value}” here. Drag it to move it, or select ✕ to take it out.`,
     /** The chip's ✕, read by a screen reader. */
     removeFill: (name: string) => `Remove ${name}`,
     /** The label over the fill-ins a line supplies and its text no longer uses. */
