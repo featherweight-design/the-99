@@ -67,6 +67,11 @@ try {
       await sheet.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
       check("the sheet gave way to the combo", (await sheet.count()) === 0);
       await page.waitForTimeout(700); // the modal slides in; a press mid-slide lands on its scrim
+      const focus = await page.evaluate(() => {
+        const el = document.activeElement;
+        return { inside: !!el?.closest('[role="dialog"][aria-modal="true"]:not([data-feed-sheet])'), what: el ? `${el.tagName}${el.getAttribute("aria-label") ? ":" + el.getAttribute("aria-label") : ""}` : "none" };
+      });
+      check("focus is inside the combo view, not back on the Show all trigger behind it", focus.inside, focus.what);
       const box = await modal.boundingBox();
       const hit = await page.evaluate(({ x, y }) => {
         const el = document.elementFromPoint(x, y);

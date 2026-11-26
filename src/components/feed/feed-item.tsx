@@ -208,9 +208,12 @@ export function FeedPress({
   stretch,
   describedBy,
   filled = false,
+  onComboOpen,
 }: {
   item: FeedView;
   label: string | PersonParts;
+  /** Called after a combo row's press has opened its combo view: the Show all sheet gives way to it (#3371). */
+  onComboOpen?: () => void;
   className: string;
   /** The lead's filled button: a Requested or Accepted label takes the button's ink (`TradeAskLabel`). */
   filled?: boolean;
@@ -285,7 +288,10 @@ export function FeedPress({
     <button
       type="button"
       data-feed-press
-      onClick={(e) => detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget, ...(item.kind === "combo" ? comboSheetOpenOpts(item.combo?.variantId, item.combo?.added) : {}) })}
+      onClick={(e) => {
+        detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget, ...(item.kind === "combo" ? comboSheetOpenOpts(item.combo?.variantId, item.combo?.added) : {}) });
+        if (item.kind === "combo") onComboOpen?.();
+      }}
       className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
       aria-describedby={describedBy}
     >
@@ -375,10 +381,12 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
   );
 }
 
-export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, compact = false }: {
+export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, when, zone = null, compact = false }: {
   item: FeedView;
   /** The phone grid at any width (What's new in the rail and its Show all sheet, G17): the picture beside the text, the press under it. */
   compact?: RowCompact;
+  /** A combo row's press opened its combo view: the Show all sheet closes so the view is not left under a held page (#3371). */
+  onComboOpen?: () => void;
   now: string;
   /** The reader's IANA zone (the zone cookie), or null: a drop's sale lines then read in the store's zone, labelled. */
   zone?: string | null;
@@ -486,6 +494,7 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
                 item={item}
                 label={withChevron(text.press)}
                 describedBy={titleId}
+                onComboOpen={onComboOpen}
                 stretch="after:absolute after:inset-0 after:content-['']"
                 className={`flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
               />
@@ -503,6 +512,7 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
           ) : text.press && (
             <FeedPress
               item={item}
+              onComboOpen={onComboOpen}
               // An outbound press ends in its link-out icon (`FeedPress`), not the in-app ›.
               label={item.outbound ? text.press : withChevron(text.press)}
               describedBy={titleId}
