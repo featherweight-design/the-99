@@ -2155,6 +2155,7 @@ export function BuilderShell({
                   deckName={deck.name}
                   versions={versions}
                   origin={preconOrigin}
+                  pending={draft?.version ? { changes: pendingChange?.moves.size ?? 0, version: draft.version.number } : null}
                   // K5's row is the unlinked deck's door; a linked deck has v0 in its place.
                   foot={preconLink && !preconOrigin ? <LinkPreconRow deckId={deck.id} deckName={deck.name} picker={preconLink.picker} /> : null}
                 />

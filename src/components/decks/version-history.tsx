@@ -382,6 +382,7 @@ export function VersionRail({
   versions,
   origin = null,
   foot = null,
+  pending = null,
 }: {
   deckId: string;
   /** Named in the unlink confirm v0's panel opens. */
@@ -395,6 +396,8 @@ export function VersionRail({
   /** Drawn after the last row: an unlinked deck's `Built from a precon?` row (precons R3 K5), where
    *  v0 will land once linked. */
   foot?: ReactNode;
+  /** The uncommitted changes and the version they are against: the band's desktop subline (R3 Versions). */
+  pending?: { changes: number; version: number } | null;
 }) {
   const panelPrefix = useId();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -414,7 +417,10 @@ export function VersionRail({
   return (
     <div className="w-full px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
       <DeckBox aria-labelledby={`${panelPrefix}-band`} className="mt-0! md:mt-0!">
-  <DeckBoxBand as="h2" id={`${panelPrefix}-band`} title={copy.band} count={versions.length} />
+  <DeckBoxBand as="h2" id={`${panelPrefix}-band`} title={copy.band}
+          count={versions.length}
+          aside={pending && pending.changes > 0 ? <span className="hidden flex-none font-mono text-[11.5px] font-medium text-[color:var(--fg-faint)] md:inline">{copy.sinceNote(pending.changes, pending.version)}</span> : undefined}
+        />
         <div className="flex flex-col">
         {apart && versions.length === 0 && (
           // K14: a linked brew. Nothing is committed, so nothing is current; v0 stands alone.

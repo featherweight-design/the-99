@@ -160,6 +160,14 @@ describe("VersionRail", () => {
     expect(heading.closest("section")!.getAttribute("aria-labelledby")).toBe(heading.id);
   });
 
+  it("draws the uncommitted changes in the band's subline, and none at zero", () => {
+    const { unmount } = render(<VersionRail deckId="deck_1" versions={THREE} pending={{ changes: 2, version: 3 }} />);
+    expect(screen.getByText(copy.sinceNote(2, 3))).toBeTruthy();
+    unmount();
+    render(<VersionRail deckId="deck_1" versions={THREE} pending={{ changes: 0, version: 3 }} />);
+    expect(screen.queryByText(copy.sinceNote(0, 3))).toBeNull();
+  });
+
   // The row is the control, so its state has to be announced and not merely
   // drawn — and the panel it opens has to be the one it names.
   it("announces the open row and points it at the panel it opens", async () => {

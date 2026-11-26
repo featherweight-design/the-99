@@ -440,6 +440,8 @@ export const deckVersioningCopy = {
     heading: (versionCount: number) => plural(versionCount, "version"),
     /** The Versions box's band title (deck refresh R3): the count rides beside it. */
     band: "Versions",
+    /** The band's desktop subline while the list has uncommitted changes (R3 Versions). */
+    sinceNote: (changeCount: number, version: number) => `${plural(changeCount, "change")} since v${version} · committed from the to-do above`,
     manaValue: (manaValue: string) => `mv ${manaValue}`,
     current: "current",
     committed: (date: string, cards: number) =>
