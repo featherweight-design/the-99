@@ -5,7 +5,7 @@
 // and a row reopening that run (in its own tool, or read-only when it has nothing to load). Lives in the hub, which owns the open past run
 // so its phone header can carry `‹ History` in the switch slot (H3b).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { historyDay } from "./tuning-history-day";
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
@@ -194,6 +194,8 @@ export function TuningHistory({
     load(tool, true);
   };
 
+  // Show 20 more moves with the foot into the last month's box, so its button remounts: focus goes to the first new row.
+  const focusAfterMore = useRef<string | null>(null);
   const showMore = () => {
     if (state.kind !== "ok" || !state.nextCursor || state.more === "loading") return;
     const ticket = asked.current;
@@ -202,12 +204,21 @@ export function TuningHistory({
     readTuningHistory(deckId, filter, cursor)
       .then((page) => {
         if (ticket !== asked.current) return;
+        focusAfterMore.current = page?.rows[0]?.id ?? null;
         setState((s) => (s.kind !== "ok" ? s : page
           ? { kind: "ok", rows: [...s.rows, ...page.rows], nextCursor: page.nextCursor, more: "idle" }
           : { ...s, more: "failed" }));
       })
       .catch(() => { if (ticket === asked.current) setState((s) => (s.kind === "ok" ? { ...s, more: "failed" } : s)); });
   };
+
+  const monthId = useId();
+  useEffect(() => {
+    const id = focusAfterMore.current;
+    if (id === null || state.kind !== "ok") return;
+    focusAfterMore.current = null;
+    listRef.current?.querySelector<HTMLElement>(`[data-history-row="${CSS.escape(id)}"]`)?.focus();
+  }, [state]);
 
   // Back from a past run lands on the row that opened it.
   const lastOpened = useRef<string | null>(null);
@@ -284,13 +295,13 @@ export function TuningHistory({
             const credits = rows.reduce((n, r) => n + TIER_CREDITS[r.tier], 0);
             const last = i === months.length - 1;
             return (
-              <DeckBox key={month} aria-labelledby={`history-month-${i}`}>
+              <DeckBox key={month} aria-labelledby={`${monthId}-${i}`} className="mt-0! md:mt-0!">
                 <DeckBoxBand
                   as="h4"
-                  id={`history-month-${i}`}
+                  id={`${monthId}-${i}`}
                   title={month}
                   count={copy.month.runs(rows.length)}
-                  aside={<span className="flex-none font-mono text-[11.5px] font-medium text-[color:var(--fg-faint)]">{credits > 0 ? copy.month.credits(credits) : copy.month.free}</span>}
+                  aside={<span className="flex-none font-mono text-[11.5px] font-medium text-[color:var(--fg-faint)]">{rows.every((r) => r.tier === "free") ? copy.month.free : copy.month.credits(credits)}</span>}
                 />
                 <div className="flex flex-col">
                   {rows.map((row) => (

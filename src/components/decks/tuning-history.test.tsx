@@ -159,7 +159,11 @@ describe("HistoryList", () => {
     // Each month is a box: its band names the month, counts its runs and says what they cost; the foot closes the last.
     const boxes = [...document.querySelectorAll("[data-history] section")];
     expect(boxes).toHaveLength(2);
-    expect(boxes[0].querySelector("h4")!.textContent).toContain(copy.month.runs(boxes[0].querySelectorAll("[data-history-row]").length));
+    // October: running and deeper (1 credit), a free count, one credit run = 2 credits; September: one credit run.
+    expect(boxes[0].querySelector("h4")!.textContent).toContain(copy.month.runs(4));
+    expect(boxes[0].textContent).toContain(copy.month.credits(3));
+    expect(boxes[1].querySelector("h4")!.textContent).toContain(copy.month.runs(1));
+    expect(boxes[1].textContent).toContain(copy.month.credits(1));
     expect(boxes[0].getAttribute("aria-labelledby")).toBe(boxes[0].querySelector("h4")!.id);
     expect(boxes[0].textContent).not.toContain(copy.foot);
     expect(boxes[1].textContent).toContain(copy.foot);

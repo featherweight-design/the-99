@@ -156,7 +156,8 @@ describe("VersionRail", () => {
     mount(THREE);
     const heading = screen.getByRole("heading", { level: 2 });
     expect(heading.textContent).toContain(copy.band);
-    expect(heading.textContent).toContain("3");
+    expect(heading.textContent).toMatch(/3$/);
+    expect(heading.closest("section")!.getAttribute("aria-labelledby")).toBe(heading.id);
   });
 
   // The row is the control, so its state has to be announced and not merely
@@ -255,7 +256,7 @@ describe("VersionRail with v0", () => {
     mountLinked(THREE);
     const heading = screen.getByRole("heading", { level: 2 });
     expect(heading.textContent).toContain(copy.band);
-    expect(heading.textContent).toContain("3");
+    expect(heading.textContent).toMatch(/3$/);
   });
 
   it("draws v0 last, below the divider, naming the precon with its own card count", () => {

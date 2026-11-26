@@ -413,9 +413,9 @@ export function VersionRail({
 
   return (
     <div className="w-full px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
-      <DeckBox aria-labelledby={`${panelPrefix}-band`}>
-      <DeckBoxBand as="h2" id={`${panelPrefix}-band`} title={copy.band} count={versions.length} />
-      <div className="flex flex-col">
+      <DeckBox aria-labelledby={`${panelPrefix}-band`} className="mt-0! md:mt-0!">
+  <DeckBoxBand as="h2" id={`${panelPrefix}-band`} title={copy.band} count={versions.length} />
+        <div className="flex flex-col">
         {apart && versions.length === 0 && (
           // K14: a linked brew. Nothing is committed, so nothing is current; v0 stands alone.
           <p className="m-0 p-[12px_14px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{historyOriginCopy.brewLine}</p>
@@ -456,7 +456,7 @@ export function VersionRail({
           );
         })}
         {apart && (
-          <div className="flex flex-col gap-[6px] p-[12px_14px] md:px-[16px] [border-top:1px_solid_var(--border)] first:[border-top:0]">
+          <div className={`flex flex-col gap-[6px] p-[12px_14px] md:px-[16px] ${versions.length > 0 ? "" : "[border-top:1px_solid_var(--border)]"}`}>
             {versions.length > 0 && <OriginDivider />}
             <OriginRow
               origin={apart}
