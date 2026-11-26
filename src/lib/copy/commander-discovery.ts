@@ -212,8 +212,8 @@ export const discoveryCopy = {
     // construction. Naming the wrong axis had the state describe a list nobody
     // is looking at.
     filteredHeading: "No commander in those colors",
-    filteredBody: (colors: string, candidates: number) =>
-      `${colors} together leave nothing in the ${n(candidates)} you don’t own.`,
+    filteredBody: (colorNames: string, candidates: number) =>
+      `${colorNames} together leave nothing in the ${n(candidates)} you don’t own.`,
     // "cover", not "are": the count behind this clause comes from the list's own
     // `selected ⊆ colorIdentity` test, so an Esper deck is counted under an
     // Orzhov filter. The drawn line claimed those decks ARE Orzhov, which is
@@ -230,33 +230,33 @@ export const discoveryCopy = {
     // When Printed in emptied the list rather than the colors (decision 9). The set filter
     // matches printings the reader does not own, so this lane can be emptied by it outright.
     filteredSetsHeading: "No commander printed there",
-    filteredSetsBody: (sets: string, candidates: number) =>
-      `${sets} leaves nothing in the ${n(candidates)} you don’t own.`,
+    filteredSetsBody: (setNames: string, candidates: number) =>
+      `${setNames} leaves nothing in the ${n(candidates)} you don’t own.`,
     filteredSetsCta: "Clear the printed-in filter",
     // Both lit: the COMBINATION left nothing, so neither is named as the cause on its own.
     filteredTogetherHeading: "No commander fits both",
     // `colors` arrives lower-case (`colorWords`), and `sets` as the chip names it (`Printed in
     // CMM`), so the sentence opens on the count and lowers the chip's first letter.
-    filteredTogetherBody: (colors: string, sets: string, candidates: number) =>
-      `None of the ${n(candidates)} you don’t own is ${colors} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
+    filteredTogetherBody: (colorNames: string, sets: string, candidates: number) =>
+      `None of the ${n(candidates)} you don’t own is ${colorNames} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
     filteredBothCta: "Clear both filters",
     // Themes ▾ (#159). With All on, the pick itself can empty the list, and the one-tap fix keeps
     // every theme the reader picked: it loosens how they combine instead of dropping one.
     filteredThemesAllHeading: "No commander plays all of those",
-    filteredThemesAllBody: (themes: string, candidates: number) =>
-      `${themes} together leave nothing in the ${n(candidates)} you don’t own.`,
+    filteredThemesAllBody: (themeNames: string, candidates: number) =>
+      `${themeNames} together leave nothing in the ${n(candidates)} you don’t own.`,
     filteredThemesAllCta: "Match any theme",
     // Any (or one theme): every commander with it is one the reader owns already.
     filteredThemesHeading: "No commander for that theme here",
-    filteredThemesBody: (themes: string, candidates: number) =>
-      `${themes} leaves nothing in the ${n(candidates)} you don’t own. The ones you own are on your commanders.`,
+    filteredThemesBody: (themeNames: string, candidates: number) =>
+      `${themeNames} leaves nothing in the ${n(candidates)} you don’t own. The ones you own are on your commanders.`,
     filteredThemesCta: "Clear the theme filter",
     // Themes with colors, a set, or both: the shipped `filteredTogetherHeading` ("No commander fits
     // both"), and with all three lit `filteredAllHeading`. Colors then set then themes, so it reads
     // "is W/U, printed in Kaldheim and plays Tokens".
-    filteredThemesTogetherBody: (colors: string | null, sets: string | null, themes: string, candidates: number) => {
+    filteredThemesTogetherBody: (colors: string | null, sets: string | null, themeNames: string, candidates: number) => {
       const lead = [colors, sets ? `${sets.charAt(0).toLowerCase()}${sets.slice(1)}` : null].filter(Boolean).join(", ");
-      return `None of the ${n(candidates)} you don’t own is ${lead} and plays ${themes}.`;
+      return `None of the ${n(candidates)} you don’t own is ${lead} and plays ${themeNames}.`;
     },
     filteredAllHeading: "No commander fits all three",
     filteredAllCta: "Clear all filters",

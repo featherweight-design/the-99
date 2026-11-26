@@ -50,8 +50,8 @@ export const feedbackAdminCopy = {
   contextSource: { error: "from the error screen", about: "from About" },
   summaryNoAverage: (fresh: number) => `${fresh} new`,
   ago: {
-    minutes: (n: number) => `${n}m ago`,
-    hours: (n: number) => `${n}h ago`,
+    minutes: (minutes: number) => `${minutes}m ago`,
+    hours: (hours: number) => `${hours}h ago`,
     yesterday: "yesterday",
     date: (month: number, day: number) => `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1]} ${day}`,
   },
@@ -69,7 +69,7 @@ export const adminCopy = {
     tiles: { gross: "Paid", tax: "Tax", net: "Net", spend: "Model spend" },
     tileSub: {
       payments: (n: number) => plural(n, "payment", "payments"),
-      unattributed: (n: number) => `${n} unattributed`,
+      unattributed: (paymentCount: number) => `${paymentCount} unattributed`,
       refunded: (amount: string) => `${amount} refunded`,
       tax: "collected by Stripe Tax",
       net: "paid less tax and refunds",
@@ -81,7 +81,7 @@ export const adminCopy = {
     grantsMeta: (shown: number, total: number) => (shown < total ? `newest ${shown} of ${total}` : plural(total, "lot", "lots")),
     grantsCols: { account: "Account", source: "Source", units: "Credits", when: "When" },
     sources: { plan: "Plan", pack: "Pack", gift: "Gift" },
-    revoked: (n: number) => `${n} taken back`,
+    revoked: (paymentCount: number) => `${paymentCount} taken back`,
     noGrants: "No credits granted this month.",
     giftsHead: "Gifts",
     giftLine: (who: string, whom: string, units: number) => `${who} gave ${whom} ${plural(units, "credit", "credits")}`,
@@ -145,17 +145,17 @@ export const adminCopy = {
     period: {
       previous: "Previous month",
       next: "Next month",
-      range: (last: number, mon: string, day: number | null, days: number) =>
-        `${mon} 1 to ${last} · UTC${day === null ? "" : ` · day ${day} of ${days}`}`,
+      range: (last: number, monthName: string, day: number | null, days: number) =>
+        `${monthName} 1 to ${last} · UTC${day === null ? "" : ` · day ${day} of ${days}`}`,
       compare: (month: string, figure: string, runs: number) =>
         runs === 0 ? `${month}: no model calls.` : `${month}: ${figure} in ${plural(runs, "run", "runs")}.`,
     },
     tiles: { calls: "Model calls", player: "Player runs", system: "System", perAccount: "Per active account" },
     tileSub: {
       runs: (runs: number) => plural(runs, "run", "runs"),
-      pace: (v: string) => `on pace for ${v}`,
-      ofCeiling: (pct: number, cap: string) => `${pct}% of the ${cap} ceiling`,
-      ofCeilingAtLeast: (pct: number, cap: string) => `at least ${pct}% of the ${cap} ceiling`,
+      pace: (projectedSpend: string) => `on pace for ${projectedSpend}`,
+      ofCeiling: (ceilingPercent: number, cap: string) => `${ceilingPercent}% of the ${cap} ceiling`,
+      ofCeilingAtLeast: (ceilingPercent: number, cap: string) => `at least ${ceilingPercent}% of the ${cap} ceiling`,
       system: "labels, rewrites and prose",
       accounts: (n: number) => (n === 0 ? "no accounts with runs" : `${plural(n, "account", "accounts")} with runs`),
     },
@@ -175,7 +175,7 @@ export const adminCopy = {
       noCeiling: "No ceiling is set.",
       startsIn: (month: string) => `Starts ${month}.`,
       workspace: "Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched.",
-      elsewhere: (v: string) => ` Elsewhere ${v}: the other environment and anything else on this workspace.`,
+      elsewhere: (spendText: string) => ` Elsewhere ${spendText}: the other environment and anything else on this workspace.`,
       ledgerAhead:
         " This environment’s ledger reads more than the workspace bill, so elsewhere reads $0. Spend from before a key moved to this workspace stays billed where it ran.",
       org: (here: string, others: string) => `The 99 ${here}, other workspaces ${others} hatched, the default workspace included.`,
@@ -194,7 +194,7 @@ export const adminCopy = {
       upstream: "Anthropic’s cost report did not answer. A load a minute from now tries again.",
       shape: "Anthropic’s cost report came back in a shape this page does not read.",
       no_workspace: (name: string) => `No Anthropic workspace is named ${name}.`,
-      ambiguous: (n: number, name: string) => `${n} Anthropic workspaces are named ${name}, so none is read.`,
+      ambiguous: (workspaceCount: number, name: string) => `${workspaceCount} Anthropic workspaces are named ${name}, so none is read.`,
     },
     note: (text: string) => `Note: ${text}`,
     changeCap: "Change the cap",
@@ -211,14 +211,14 @@ export const adminCopy = {
     trendPlayer: "Player runs, month to date",
     trendNote: "Free rewrites are system spend and not in this line.",
     trend: {
-      scale: (v: string) => `${v} scale`,
+      scale: (scaleText: string) => `${scaleText} scale`,
       soFar: "so far",
       onPace: "on this pace",
-      today: (v: string) => `${v} today`,
-      byEnd: (v: string, day: number, mon: string) => `${v} by ${mon} ${day}`,
-      byDay: (v: string) => `By day · tallest ${v}`,
-      label: (month: string, v: string, pace: string | null) =>
-        `Player runs in ${month}: ${v}${pace === null ? "." : `, on pace for ${pace} by month end.`}`,
+      today: (spendText: string) => `${spendText} today`,
+      byEnd: (spendText: string, day: number, monthName: string) => `${spendText} by ${monthName} ${day}`,
+      byDay: (tallestSpend: string) => `By day · tallest ${tallestSpend}`,
+      label: (month: string, spendText: string, pace: string | null) =>
+        `Player runs in ${month}: ${spendText}${pace === null ? "." : `, on pace for ${pace} by month end.`}`,
     },
     empty: (month: string) => `No model calls in ${month}.`,
 
@@ -226,13 +226,13 @@ export const adminCopy = {
     byModel: "By model",
     byModelMeta: "model calls and card labels",
     modelSub: {
-      calls: (n: number, features: string) => `${plural(n, "call", "calls")} · ${features}`,
+      calls: (n: number, featureNames: string) => `${plural(n, "call", "calls")} · ${featureNames}`,
       batches: (n: number) => `card labels, Batch API · ${plural(n, "batch", "batches")}`,
       composite: "a composite run from before the parts table, not split",
     },
     split: "Player against system",
-    splitLine: (pct: string, month: string) => `System is ${pct}% of ${month}.`,
-    splitLineAtLeast: (pct: string, month: string) => `System is at least ${pct}% of ${month}, with some of its spend not in yet.`,
+    splitLine: (systemPercentText: string, month: string) => `System is ${systemPercentText}% of ${month}.`,
+    splitLineAtLeast: (systemPercentText: string, month: string) => `System is at least ${systemPercentText}% of ${month}, with some of its spend not in yet.`,
     series: { player: "Player runs", labels: "Card labels", rewrites: "Free rewrites and prose" },
     evalsApart: {
       title: "Evals (all environments, from the repo)",
@@ -259,19 +259,19 @@ export const adminCopy = {
     effortUnknown: "not recorded",
     callsRow: "Model calls",
     runsCell: (n: number) => plural(n, "run", "runs"),
-    featureMeta: (model: string, effort: string, runs: number, perRun: string, p90: string) =>
-      `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run, p90 ${p90}`,
+    featureMeta: (model: string, effort: string, runs: number, perRun: string, p90Spend: string) =>
+      `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run, p90 ${p90Spend}`,
     byFeatureNote: "Effort is recorded per call from the parts table on. An earlier run reads not recorded rather than a guess.",
     refunds: "Refunds",
-    refundsMeta: (v: string, pct: number) => `${v} · ${pct}% of model calls`,
+    refundsMeta: (refundedSpend: string, refundedPercent: number) => `${refundedSpend} · ${refundedPercent}% of model calls`,
     refundLine: "the player got the credit back, and the cost still counts",
     refundsBody: (n: number, line: string) => `${n === 1 ? "One run was" : `${n} runs were`} refunded: ${line}.`,
-    refundFeature: (name: string, runs: number, v: string) => `${name} ${plural(runs, "run", "runs")}, ${v}.`,
+    refundFeature: (name: string, runs: number, refundedSpend: string) => `${name} ${plural(runs, "run", "runs")}, ${refundedSpend}.`,
     noRefunds: "No runs were refunded.",
     reserved: "Reserved against spent",
     reservedMeta: "the worst case a run is held at, against its mean",
-    reservedOnly: (v: string) => `${v} reserved`,
-    reservedShare: (pct: string) => `${pct}% of the reservation`,
+    reservedOnly: (reservedSpend: string) => `${reservedSpend} reserved`,
+    reservedShare: (reservedPercentText: string) => `${reservedPercentText}% of the reservation`,
     noPress: "no run yet",
     noCostYet: (runs: number) => `${plural(runs, "run", "runs")}, none priced yet`,
     perAccount: "Per account",
@@ -288,16 +288,16 @@ export const adminCopy = {
       [batches === null ? "manual collector" : plural(batches, "batch", "batches"), tokens ? `${tokens} tokens` : null].filter(Boolean).join(" · "),
     noLabelRuns: (month: string) => `No label runs in ${month}.`,
     unpriced: "not priced",
-    soFar: (v: string) => `${v} so far`,
+    soFar: (spendText: string) => `${spendText} so far`,
     labelsPartial: "label runs still collecting or not priced",
     systemPartial: "some label spend is not in yet",
-    ledgersUnreadable: (names: string) => `Couldn’t read ${names}, so the eval figures leave that out.`,
+    ledgersUnreadable: (ledgerNames: string) => `Couldn’t read ${ledgerNames}, so the eval figures leave that out.`,
     labelsOnStaging: "Card labels run on staging; production receives copies and calls no model for them.",
     evals: "Eval ledgers",
     evalsMeta: "committed in the repo; they move only with a merge",
     ledgerHead: { ledger: "Ledger", requests: "Requests", settled: "Settled", limit: "Limit", window: "Window" },
     originalLedger: "Original campaign",
-    pending: (v: string) => `${v} pending`,
+    pending: (pendingSpend: string) => `${pendingSpend} pending`,
     nothingPending: "nothing pending",
     limit: (hard: string, askAt: string | null) => `${hard} hard${askAt ? ` · ask at ${askAt}` : ""}`,
     noLimit: "no limit in code",
@@ -328,8 +328,8 @@ export const adminCopy = {
     count: (n: number) => plural(n, "group", "groups"),
     back: "‹ Groups",
     newTitle: "New group",
-    movesFrom: (g: string) => `moves from ${g}`,
-    inGroup: (g: string) => `in ${g}`,
+    movesFrom: (groupName: string) => `moves from ${groupName}`,
+    inGroup: (groupName: string) => `in ${groupName}`,
     /** A member row for an account in no group (Admin R3 boards, C2). */
     inNoGroup: "no group",
     newGroup: "New group",
@@ -346,9 +346,9 @@ export const adminCopy = {
     credits: "Daily credits",
     creditsHelp: "Members get this many credits in a rolling 24 hours. Empty means the default.",
     paidLimit: "Daily paid runs",
-    paidLimitHelp: (n: number) => `How many runs a member’s paid and welcome credits can fund in a rolling 24 hours. Empty means ${n}.`,
+    paidLimitHelp: (defaultLimit: number) => `How many runs a member’s paid and welcome credits can fund in a rolling 24 hours. Empty means ${defaultLimit}.`,
     membersHead: "Members",
-    selectedCount: (n: number, unsaved: number) => `${n} selected${unsaved ? `, ${unsaved} not saved` : ""}`,
+    selectedCount: (selectedCount: number, unsaved: number) => `${selectedCount} selected${unsaved ? `, ${unsaved} not saved` : ""}`,
     selected: "selected",
     unselected: "unselected",
     selectedUnsaved: "selected, not saved",
@@ -364,15 +364,15 @@ export const adminCopy = {
     thisGroup: "this group",
     pending: {
       one: (who: string, selected: boolean) => `${who} ${selected ? "selected" : "unselected"}, not saved`,
-      many: (n: number) => `${n} changes not saved`,
+      many: (changeCount: number) => `${changeCount} changes not saved`,
       fields: "Not saved",
-      rename: (from: string, to: string) => `Saving renames ${from} to ${to}.`,
+      rename: (from: string, newName: string) => `Saving renames ${from} to ${newName}.`,
       create: (name: string) => `Saving creates ${name}.`,
       describe: "Saving changes the description.",
-      credits: (n: number | null) => (n === null ? "Saving sets daily credits back to the default." : `Saving sets daily credits to ${n}.`),
-      paidLimit: (n: number | null) => (n === null ? "Saving sets daily paid runs back to the default." : `Saving sets daily paid runs to ${n}.`),
-      move: (who: string, from: string, to: string) => `${who} moves from ${from} to ${to}`,
-      add: (who: string, to: string) => `Saving adds ${who} to ${to}`,
+      credits: (dailyCredits: number | null) => (dailyCredits === null ? "Saving sets daily credits back to the default." : `Saving sets daily credits to ${dailyCredits}.`),
+      paidLimit: (dailyPaidRuns: number | null) => (dailyPaidRuns === null ? "Saving sets daily paid runs back to the default." : `Saving sets daily paid runs to ${dailyPaidRuns}.`),
+      move: (who: string, from: string, toGroup: string) => `${who} moves from ${from} to ${toGroup}`,
+      add: (who: string, groupName: string) => `Saving adds ${who} to ${groupName}`,
       remove: (who: string, from: string) => `Saving removes ${who} from ${from}`,
       // `who` is empty after a move, whose sentence already names the account.
       gains: (who: string, gains: string, loses: string) =>
@@ -390,17 +390,17 @@ export const adminCopy = {
     },
     history: {
       created: (who: string, name: string) => `${who} created ${name}`,
-      renamed: (who: string, from: string, to: string) => `${who} renamed ${from} to ${to}`,
-      described: (who: string, to: string | null) => (to === null ? `${who} cleared the description` : `${who} set the description to “${to}”`),
-      credits: (who: string, from: string, to: string) => `${who} set daily credits: ${from} → ${to}`,
-      paidLimit: (who: string, from: string, to: string) => `${who} set daily paid runs: ${from} → ${to}`,
+      renamed: (who: string, from: string, newName: string) => `${who} renamed ${from} to ${newName}`,
+      described: (who: string, description: string | null) => (description === null ? `${who} cleared the description` : `${who} set the description to “${description}”`),
+      credits: (who: string, from: string, newCreditsText: string) => `${who} set daily credits: ${from} → ${newCreditsText}`,
+      paidLimit: (who: string, from: string, newLimitText: string) => `${who} set daily paid runs: ${from} → ${newLimitText}`,
       creditsDefault: "default",
       added: (who: string, account: string) => `${who} added ${account}`,
       removed: (who: string, account: string) => `${who} removed ${account}`,
-      overrideSet: (who: string, label: string, from: string, to: string) => `${who} set ${label}: ${from} → ${to}`,
+      overrideSet: (who: string, label: string, from: string, newValue: string) => `${who} set ${label}: ${from} → ${newValue}`,
       overrideCleared: (who: string, label: string, from: string) => `${who} cleared ${label} (was ${from})`,
     },
-    confirmLead: (g: string) => `Saving changes who is in ${g}, and so which overrides apply to them.`,
+    confirmLead: (groupName: string) => `Saving changes who is in ${groupName}, and so which overrides apply to them.`,
     /** Delete a group (small items 9, item 7; `Groups-Delete` D1 to D8). Only an empty group can go. */
     delete: {
       action: "Delete this group",
@@ -412,7 +412,7 @@ export const adminCopy = {
       refusedBoth: (n: number, code: string) =>
         `It still has ${plural(n, "member", "members")} and the live flyer code ${code}. Only an empty group can go: no members, no live flyer codes.`,
       codesLink: "Flyer codes ›",
-      title: (g: string) => `Delete ${g}?`,
+      title: (groupName: string) => `Delete ${groupName}?`,
       lead: (n: number) =>
         `It’s empty, so deleting it changes nothing for any account. ${
           n === 0
@@ -433,10 +433,10 @@ export const adminCopy = {
       historyFact: "Kept in the admin log, under the group’s name.",
       keep: "Keep it",
       confirm: "Delete the group",
-      raced: (g: string) => `${g} isn’t empty now. Nothing was deleted.`,
+      raced: (groupName: string) => `${groupName} isn’t empty now. Nothing was deleted.`,
       failed: "Couldn’t delete the group. Nothing was deleted.",
       lost: "Lost touch with the server, so the group may be gone. Reload the page before pressing again.",
-      toast: (g: string) => `Deleted ${g}.`,
+      toast: (groupName: string) => `Deleted ${groupName}.`,
       toastDismiss: "Dismiss",
     },
   },
@@ -450,7 +450,7 @@ export const adminCopy = {
     title: "Accounts",
     sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails are masked; Show reveals one account and logs it.`,
     search: FIND_BY_NAME,
-    noMatch: (q: string) => `No account matches ${q}.`,
+    noMatch: (searchText: string) => `No account matches ${searchText}.`,
     clerkDown: "Names didn’t load from Clerk.",
     back: "‹ Accounts",
     cols: { account: "Account", group: "Group", credits: "Credits now" },
@@ -459,27 +459,27 @@ export const adminCopy = {
       owner: (credits: number, share: string) => `Owner. ${plural(credits, "credit", "credits")} a day, and a ${share} testing share each month.`,
       other: (credits: number) => `${plural(credits, "credit", "credits")} a day.`,
     },
-    tiles: { credits: "Credits now", spent: (m: string) => `Spent in ${m}`, presses: "Runs", hub: "Tuning hub" },
+    tiles: { credits: "Credits now", spent: (monthName: string) => `Spent in ${monthName}`, presses: "Runs", hub: "Tuning hub" },
     creditsLeft: (left: number, limit: number) => `${left} of ${limit} left`,
     /** A list row's credits, under the `Credits now` head (Admin R3 boards, A1). */
     creditsRow: (left: number, limit: number) => `${left} of ${limit}`,
     resetAt: (time: string) => `reset at ${time} UTC`,
-    ownerShare: (pct: number, share: string) => `${pct}% of the ${share} testing share`,
-    hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (n: number) => `${n} of its tools on` },
+    ownerShare: (sharePercent: number, share: string) => `${sharePercent}% of the ${share} testing share`,
+    hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (toolCount: number) => `${toolCount} of its tools on` },
     switchGroups: { override: "Set by an override", rule: "Off by a rule", env: "From the environment" },
     // Owed to /copy-review.
     allFeatures: {
       title: "All features",
       body: "Every feature flag on for this account, those added later included. An Off set on one flag here still wins, and so does an env var set to off.",
     },
-    envList: { on: (n: number) => `On · ${n}`, off: (n: number) => `Off · ${n}` },
+    envList: { on: (switchCount: number) => `On · ${switchCount}`, off: (switchCount: number) => `Off · ${switchCount}` },
     group: "Group",
     changeGroup: "Change group",
     pickGroup: "Move to",
     save: "Save",
     cancel: "Cancel",
     spendByFeature: "Spend by feature",
-    spendMeta: (m: string) => `${m} so far`,
+    spendMeta: (spendText: string) => `${spendText} so far`,
     featureCols: { feature: "Feature", presses: "Runs", spent: "Spent" },
     total: "Total",
     pressesCell: (n: number) => plural(n, "run", "runs"),
@@ -510,8 +510,8 @@ export const adminCopy = {
     field: "Invites left",
     fieldHelp: (name: string) => `How many ${name} holds now. Only a new account spends one, and nothing but this field refills it.`,
     /** What Save will do; the waiting ones stay waiting on top of what is set. (new, for /copy-review) */
-    pendingSet: (name: string, from: number, to: number, waiting: number) =>
-      `Saving sets ${name}’s invites from ${from} to ${to}.` +
+    pendingSet: (name: string, from: number, newInvites: number, waiting: number) =>
+      `Saving sets ${name}’s invites from ${from} to ${newInvites}.` +
       (waiting === 0 ? "" : waiting === 1 ? " The one waiting stays waiting." : ` The ${waiting} waiting stay waiting.`),
     /** A draft that is not a whole number from 0 to 1,000 (`INVITES_MAX`). (new, for /copy-review) */
     invalid: "Enter a whole number from 0 to 1,000.",
@@ -546,12 +546,12 @@ export const adminCopy = {
       openAccount: (name: string) => `Open ${name}`,
       /** The desktop toolbar's search and its three counts. (new, for /copy-review) */
       search: FIND_BY_NAME,
-      accounts: (n: number) => `${n} ${n === 1 ? "account" : "accounts"}`,
-      invited: (n: number) => `${n} invited`,
-      waiting: (n: number) => `${n} waiting`,
-      noMatch: (q: string) => `No account matches “${q}”.`,
+      accounts: (accountCount: number) => `${accountCount} ${accountCount === 1 ? "account" : "accounts"}`,
+      invited: (accountCount: number) => `${accountCount} invited`,
+      waiting: (accountCount: number) => `${accountCount} waiting`,
+      noMatch: (searchText: string) => `No account matches “${searchText}”.`,
       /** A search carried down to the phone, where the field is not drawn, and its way back. (new, for /copy-review) */
-      filtered: (q: string) => `Showing accounts matching “${q}”.`,
+      filtered: (searchText: string) => `Showing accounts matching “${searchText}”.`,
       clear: "Clear search",
       /** The tree with no account at all (Clerk down and nothing stored). (new, for /copy-review) */
       empty: "No accounts yet.",
@@ -563,16 +563,16 @@ export const adminCopy = {
     /** The phone's shorter help line. (new, for /copy-review) */
     groupHelpPhone: "Raises every member holding fewer. Nobody is lowered.",
     /** What Top up will do: who rises, with what they hold now, and how many already hold that many. (new, for /copy-review) */
-    groupPending: (raised: number, of: number, n: number, who: string, held: number) =>
+    groupPending: (raised: number, memberTotal: number, inviteTarget: number, who: string, held: number) =>
       raised === 0
-        ? `Nobody holds fewer than ${n}: topping up changes nothing.`
-        : `Topping up raises ${raised} of ${of} members to ${n} invites left: ${who}.` +
-          (held === 0 ? "" : held === 1 ? ` 1 already holds ${n}.` : ` ${held} already hold ${n}.`),
+        ? `Nobody holds fewer than ${inviteTarget}: topping up changes nothing.`
+        : `Topping up raises ${raised} of ${memberTotal} members to ${inviteTarget} invites left: ${who}.` +
+          (held === 0 ? "" : held === 1 ? ` 1 already holds ${inviteTarget}.` : ` ${held} already hold ${inviteTarget}.`),
     topUp: "Top up",
     /** History lines, on an account's page and a group's. (new, for /copy-review) */
     history: {
-      set: (who: string, name: string, from: string, to: string) => `${who} set ${name}’s invites: ${from} → ${to}`,
-      topUp: (who: string, group: string, n: string, raised: string) => `${who} topped up ${group} to ${n}: ${raised} raised`,
+      set: (who: string, name: string, from: string, newInvitesText: string) => `${who} set ${name}’s invites: ${from} → ${newInvitesText}`,
+      topUp: (who: string, group: string, inviteTargetText: string, raised: string) => `${who} topped up ${group} to ${inviteTargetText}: ${raised} raised`,
       revoked: (who: string, name: string) => `${who} revoked a waiting invite of ${name}’s`,
       joined: (name: string, inviter: string) => `${name} joined on ${inviter}’s invite`,
       sent: (name: string) => `${name} sent an invitation: 1 waiting`,
@@ -623,7 +623,7 @@ export const adminCopy = {
     chipsLabel: "Show",
     heads: { features: "Features", plumbing: "Plumbing", plumbingNote: "app-wide only, not features a friend tries" },
     cols: { name: "Flag", app: "App-wide", overrides: "Overrides", resolved: "Resolved" },
-    resolved: { on: "On", off: "Off", mixed: "Mixed", count: (n: number, total: number) => `${n} of ${total} on` },
+    resolved: { on: "On", off: "Off", mixed: "Mixed", count: (enabledCount: number, total: number) => `${enabledCount} of ${total} on` },
     app: { notSet: "Not set", on: "On", off: "Off", killed: "Killed" },
     overrides: {
       none: "None",
@@ -656,8 +656,8 @@ export const adminCopy = {
     ladderHead: "Who gets it",
     ladderMeta: "most specific wins",
     rungs: { killed: "Killed", account: "Account", all: "All features", group: "Group", app: "App-wide", fallback: "Fallback", needs: "Needs" },
-    decides: (n: number) => (n ? `decides for ${n}` : "decides for none"),
-    decidesAll: (t: number) => `decides for all ${t}`,
+    decides: (accountCount: number) => (accountCount ? `decides for ${accountCount}` : "decides for none"),
+    decidesAll: (accountTotal: number) => `decides for all ${accountTotal}`,
     // Small items 9, item 4: the Killed rung's value, and the Fallback rung (the registry's compiled value, `switchFallbackOn`).
     killedApp: "the app-wide row",
     killedEnv: (name: string, value: string) => `${name}=${value}`,
@@ -667,14 +667,14 @@ export const adminCopy = {
     allValue: (n: number) => plural(n, "account", "accounts"),
     // The Account rung's value, one part per value its rows hold (`Flags-Kill`: `2 accounts: On`).
     accountValue: (n: number, value: string) => `${plural(n, "account", "accounts")}: ${value}`,
-    allows: (t: number) => `allows all ${t}`,
+    allows: (accountTotal: number) => `allows all ${accountTotal}`,
     refused: "refused",
     none: "None",
     needsValue: (parent: string, state: string) => `${parent}: ${state}`,
     result: {
-      allOn: (t: number) => `On for all ${t} accounts`,
-      allOff: (t: number) => `Off for all ${t} accounts`,
-      some: (n: number, t: number, names: string) => `On for ${n} of ${t}: ${names}`,
+      allOn: (accountTotal: number) => `On for all ${accountTotal} accounts`,
+      allOff: (accountTotal: number) => `Off for all ${accountTotal} accounts`,
+      some: (enabledCount: number, accountTotal: number, accountNames: string) => `On for ${enabledCount} of ${accountTotal}: ${accountNames}`,
     },
     appHead: "App-wide",
     appSetBy: (who: string, when: string) => `set by ${who}, ${when}`,
@@ -694,7 +694,7 @@ export const adminCopy = {
     checkPick: "Pick an account",
     historyHead: "History",
     historyCount: (n: number) => plural(n, "change", "changes"),
-    historyLatest: (n: number) => `latest ${n}`,
+    historyLatest: (changeCount: number) => `latest ${changeCount}`,
     historyFoot: "Times are UTC.",
     noHistory: "No overrides yet.",
     refusedMeta: "refused, killed",
@@ -714,7 +714,7 @@ export const adminCopy = {
       link: (parent: string) => `Open ${parent} ›`,
     },
     history: {
-      set: (who: string, scope: string, from: string, to: string) => `${who} set ${scope}: ${from} → ${to}`,
+      set: (who: string, scope: string, from: string, newValue: string) => `${who} set ${scope}: ${from} → ${newValue}`,
       cleared: (who: string, scope: string, from: string) => `${who} cleared ${scope} (was ${from})`,
       notSet: "not set",
       you: "You",
@@ -757,15 +757,15 @@ export const adminCopy = {
   // keys. The handoff wrote one lead; one per write, the mean line, a cost line per capability and the
   // rolling-24-hours credits sentence are new here and owed to /copy-review (plan §Copy, items 6, 7).
   confirmModel: {
-    title: (name: string, n: number) => `Turn ${name} on for ${n} more account${n === 1 ? "" : "s"}?`,
+    title: (name: string, accountCount: number) => `Turn ${name} on for ${accountCount} more account${accountCount === 1 ? "" : "s"}?`,
     lead: {
       app: { set: "Turning app-wide on reaches every account without an override of its own.", clear: "Clearing app-wide off falls back to the flag’s compiled default (on)." },
-      group: { set: (g: string) => `Turning ${g} on reaches its members without an account override.`, clear: (g: string) => `Clearing ${g} falls its members back to app-wide or the flag’s compiled default.` },
+      group: { set: (groupName: string) => `Turning ${groupName} on reaches its members without an account override.`, clear: (groupName: string) => `Clearing ${groupName} falls its members back to app-wide or the flag’s compiled default.` },
       user: { set: "Turning this account on lets it spend credits.", clear: "Clearing this account falls it back to its group, app-wide or the flag’s compiled default." },
     },
-    spends: (features: string) => `It turns on ${features}, which spends money.`,
+    spends: (featureNames: string) => `It turns on ${featureNames}, which spends money.`,
     facts: { who: "Who", cost: "Cost", about: "About line", when: "When" },
-    about: (n: number, name: string) => `The ${n} account${n === 1 ? " sees" : "s see"} ${name} in About’s line on Home on their next visit.`,
+    about: (accountCount: number, name: string) => `The ${accountCount} account${accountCount === 1 ? " sees" : "s see"} ${name} in About’s line on Home on their next visit.`,
     noAbout: "No About line changes.",
     cost: (feature: string, reserve: string) => `${feature}: each run reserves up to ${reserve}.`,
     mean: (mean: string) => `Priced runs so far average ${mean}.`,
@@ -773,7 +773,7 @@ export const adminCopy = {
     credits: (limits: string) => `Each run uses one of the account’s ${limits} credits in a rolling 24 hours.`,
     when: WHEN,
     note: "Note (optional)",
-    confirm: (n: number) => `Turn on for ${n}`,
+    confirm: (accountCount: number) => `Turn on for ${accountCount}`,
     cancel: "Cancel",
     capability: { synopsis: "Overview", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2", precon_upgrade: "Upgrade this precon", guided_build: "Guided build" },
   },
@@ -784,8 +784,8 @@ export const adminCopy = {
     title: (flag: string) => `Kill ${flag} for everyone?`,
     lead: (flag: string) => `Killed turns ${flag} off for every account, and beats every override and All features. Nothing is deleted.`,
     facts: { who: "Who", overrides: "Overrides", when: "When" },
-    whoAll: (t: number) => `All ${t} accounts`,
-    whoGroup: (n: number, group: string) => `the ${n} held on by ${group}`,
+    whoAll: (accountTotal: number) => `All ${accountTotal} accounts`,
+    whoGroup: (accountCount: number, group: string) => `the ${accountCount} held on by ${group}`,
     whoAccounts: (n: number) => `${numberWord(n)} account override${n === 1 ? "" : "s"}`,
     whoAllFeatures: "All features too",
     overrides: "Kept, and refused while killed. Lifting the kill brings them back.",
@@ -842,7 +842,7 @@ export const flyerAdminCopy = {
   empty: "No flyer codes yet: make one for a store, then print its flyer.",
   newCode: "New flyer code",
   cols: { store: "Store", code: "Code", signups: "Sign-ups", group: "Group", made: "Made" },
-  used: (n: number, capacity: number) => `${n} of ${capacity}`,
+  used: (usedCount: number, capacity: number) => `${usedCount} of ${capacity}`,
   full: "full",
   print: "Print",
   revoke: "Revoke",
@@ -858,13 +858,13 @@ export const flyerAdminCopy = {
   make: "Make code",
   cancel: "Cancel",
   revokeTitle: (store: string) => `Revoke ${store}’s code?`,
-  revokeBody: (code: string, n: number) =>
-    `People can no longer join with ${code}. The ${n} who joined keep their accounts, their group and their invites. Printed flyers will say it no longer works.`,
+  revokeBody: (code: string, joinedCount: number) =>
+    `People can no longer join with ${code}. The ${joinedCount} who joined keep their accounts, their group and their invites. Printed flyers will say it no longer works.`,
   keep: "Keep it",
   revokeConfirm: "Revoke code",
   treeNode: (store: string) => `Flyer · ${store}`,
   noFriendLink: "no friend link to Hugh",
-  launchList: (n: number) => `Launch list · ${n}`,
+  launchList: (addressCount: number) => `Launch list · ${addressCount}`,
   launchListMeta: "emails left on used-up and ended flyers",
   /** The launch card's meta with no address on it (No-Codes.dc.html). */
   launchListNone: "no emails yet · a used-up or ended flyer asks for one",
@@ -945,12 +945,12 @@ export const launchEmailAdminCopy = {
   meta: "One email to everyone on the launch list, sent in batches.",
   check: "Dry run",
   checking: "Checking…",
-  waiting: (n: number) => (n === 1 ? "1 address waiting." : `${n} addresses waiting.`),
+  waiting: (addressCount: number) => (addressCount === 1 ? "1 address waiting." : `${addressCount} addresses waiting.`),
   none: "Every address has been sent.",
   countLabel: "How many to send",
-  send: (n: number) => `Send next ${n}`,
-  confirm: (n: number) => (n === 1 ? "Send the launch email to 1 address now? This can't be undone." : `Send the launch email to ${n} addresses now? This can't be undone.`),
-  confirmYes: (n: number) => `Yes, send ${n}`,
+  send: (batchSize: number) => `Send next ${batchSize}`,
+  confirm: (addressCount: number) => (addressCount === 1 ? "Send the launch email to 1 address now? This can't be undone." : `Send the launch email to ${addressCount} addresses now? This can't be undone.`),
+  confirmYes: (addressCount: number) => `Yes, send ${addressCount}`,
   cancel: "Cancel",
   sending: "Sending…",
   result: (sent: number, released: number, uncertain: number, skipped: number, waiting: number) =>

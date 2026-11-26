@@ -25,7 +25,7 @@ export const cardSearchCopy = {
     clear: "Clear",
   },
   searching: "Searching…",
-  count: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
+  count: (cardCount: number) => (cardCount === 1 ? "1 card" : `${cardCount} cards`),
   // Shown when the read returns its limit (20).
   limitReached: "Showing the first 20. Type more of the name to narrow it.",
   tryAgain: "Try again",
@@ -52,14 +52,14 @@ export const cardSearchCopy = {
 
   row: {
     inDeck: (deck: string) => `in ${deck}`,
-    moreDecks: (n: number) => `+${n}`,
+    moreDecks: (deckCount: number) => `+${deckCount}`,
     // The bookmark's words, said once: inside the row's one sentence below, never again on the bookmark itself.
     wishlistAria: "on your wishlist",
     // The +'s name (READINESS O4/O8). The + is a pointer target kept out of the tree (an option's contents are
     // presentational), so this is the last clause of the row's own name, with the keys that add it. Through
     // /copy-review: TIGHTEN, the card's name dropped (READINESS E8): the row's name already opens with it, and a reader
     // arrowing through twenty rows would hear each name twice.
-    addAria: (keys: string) => `add to your collection with ${keys}`,
+    addAria: (shortcutKeys: string) => `add to your collection with ${shortcutKeys}`,
     addKeysMac: "Command Enter",
     addKeysOther: "Control Enter",
     // The whole row's accessible name.
@@ -95,9 +95,9 @@ export const askCopy = {
   openFailed: (tool: string) => `Couldn’t open ${tool}. Try again.`,
   /** The deck picker (R12 Q21): a tool several decks can use swaps the answers for the decks, in the same box. */
   pick: {
-    foot: (n: number) => `Pick a deck · ${n} can use it`,
+    foot: (deckCount: number) => `Pick a deck · ${deckCount} can use it`,
     back: "Answers",
-    line: (n: number) => `Which deck? ${n} of yours can use it.`,
+    line: (deckCount: number) => `Which deck? ${deckCount} of yours can use it.`,
     heading: "Your decks, last touched first",
     aria: (tool: string) => `${tool}: pick a deck`,
     list: "Your decks",

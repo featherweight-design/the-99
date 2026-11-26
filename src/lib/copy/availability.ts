@@ -152,15 +152,15 @@ export const availabilityCopy = {
   // OPEN ITEM 7: the line ALWAYS renders; only the second clause is
   // conditional. Row height never changes between players.
   receipt: {
-    fit: (n: number) =>
-      n === 1 ? "1 of your cards fits" : `${n} of your cards fit`,
-    fitFree: (n: number) =>
-      n === 1 ? "1 of your cards is free" : `${n} of your cards are free`,
+    fit: (cardCount: number) =>
+      cardCount === 1 ? "1 of your cards fits" : `${cardCount} of your cards fit`,
+    fitFree: (cardCount: number) =>
+      cardCount === 1 ? "1 of your cards is free" : `${cardCount} of your cards are free`,
     // Appended when inUse > 0. Callers join with ' · '.
-    inUse: (n: number) => `${n} already in use`,
-    inUseShort: (n: number) => `${n} in use`,
-    wantedByDraft: (n: number) =>
-      n === 1 ? "1 wanted by a draft" : `${n} wanted by a draft`,
+    inUse: (cardCount: number) => `${cardCount} already in use`,
+    inUseShort: (cardCount: number) => `${cardCount} in use`,
+    wantedByDraft: (cardCount: number) =>
+      cardCount === 1 ? "1 wanted by a draft" : `${cardCount} wanted by a draft`,
     // Score delta, `free` ranking only, only where the score moved.
     delta: (drop: number) => `↓${drop}`,
     deltaFrom: (drop: number, was: number) => `↓${drop} from ${was}`,
@@ -171,27 +171,27 @@ export const availabilityCopy = {
 
   // ── Surface 2 · commander detail disclosure ───────────────────────────
   detail: {
-    disclosureAria: (n: number) =>
-      n === 1 ? "Show which 1 card is in use" : `Show which ${n} cards are in use`,
+    disclosureAria: (cardCount: number) =>
+      cardCount === 1 ? "Show which 1 card is in use" : `Show which ${cardCount} cards are in use`,
     disclosureCollapseAria: "Show all matching cards again",
     hint: "Tap to see which, and where they went.",
     // Expressive-adjacent, but this is the sentence that must not overclaim.
     // It describes LISTS. Never "in a box", "on a shelf", "sleeved up right now".
-    expandedFor: (n: number) =>
-      n === 1
+    expandedFor: (cardCount: number) =>
+      cardCount === 1
         ? "This one is sleeved into a deck you’ve committed. You can still build with it. You’d be taking it out of something."
-        : `These ${n} are sleeved into decks you’ve committed. You can still build with them. You’d be taking them out of something.`,
-    sectionInUse: (n: number) => `In use: ${n}`,
-    sectionFree: (n: number) => `Free to build with: ${n}`,
-    filteredHeading: (n: number) => `Showing the ${n} in use`,
-    showAll: (n: number) => `show all ${n}`,
+        : `These ${cardCount} are sleeved into decks you’ve committed. You can still build with them. You’d be taking them out of something.`,
+    sectionInUse: (cardCount: number) => `In use: ${cardCount}`,
+    sectionFree: (cardCount: number) => `Free to build with: ${cardCount}`,
+    filteredHeading: (cardCount: number) => `Showing the ${cardCount} in use`,
+    showAll: (cardCount: number) => `show all ${cardCount}`,
     listHeading: "Cards you own that fit",
-    announceExpanded: (n: number) =>
-      n === 1
+    announceExpanded: (cardCount: number) =>
+      cardCount === 1
         ? "Showing the 1 card already in use"
-        : `Showing the ${n} cards already in use`,
-    announceCollapsed: (n: number) =>
-      n === 1 ? "Showing the 1 matching card" : `Showing all ${n} matching cards`,
+        : `Showing the ${cardCount} cards already in use`,
+    announceCollapsed: (cardCount: number) =>
+      cardCount === 1 ? "Showing the 1 matching card" : `Showing all ${cardCount} matching cards`,
   },
 
   // ── Surface 4 · the over-committed row ────────────────────────────────
@@ -317,8 +317,8 @@ export const availabilityCopy = {
     // nothing yet. Do not level these to one verb: the difference between them
     // is exactly what `free` counts.
     detailClaimsHeading: "In your decks",
-    detailClaimHolds: (n: number) => `holds ${n}`,
-    detailClaimWants: (n: number) => `wants ${n}`,
+    detailClaimHolds: (copyCount: number) => `holds ${copyCount}`,
+    detailClaimWants: (copyCount: number) => `wants ${copyCount}`,
     // A COMMITTED deck whose draft has the card and whose sleeved version does not
     // (`loadDraftWants`). Not `in a draft`, which this file and About already spend on an
     // uncommitted deck; `in the draft` is swap tools' word for a committed deck's draft. No
@@ -404,7 +404,7 @@ export const availabilityCopy = {
   deckRollup: {
     // The to-do card's foot segment (deck messages A6 soft, copy-review row 26). Out of the red
     // row's company, so it needs no "more".
-    softFoot: (n: number) => (n === 1 ? "1 in another draft too" : `${n} in other drafts too`),
+    softFoot: (cardCount: number) => (cardCount === 1 ? "1 in another draft too" : `${cardCount} in other drafts too`),
     // What the segment opens: the pass sheet's other-drafts form (deck messages PR 3, `Pass Sheet.dc.html`).
     // The eyebrow is also the way back from a card stacked on it (`← In other drafts too`); the body is
     // the sheet's sentence, under its `{n} cards` title.

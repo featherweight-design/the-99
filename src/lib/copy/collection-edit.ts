@@ -64,7 +64,7 @@ export const collectionEditCopy = {
   upload: {
     // The choice (§A1). Strings are the handoff's; the lines marked (new) have no key there and go to
     // /copy-review.
-    step: (i: number, of: number) => `STEP ${i} OF ${of}`,
+    step: (stepNumber: number, stepTotal: number) => `STEP ${stepNumber} OF ${stepTotal}`,
     choiceTitle: "Replace your collection, or add to it?",
     choiceTitlePhone: "Replace or add?",
     choiceLede: "Nothing changes until you confirm on the next screen.",
@@ -89,7 +89,7 @@ export const collectionEditCopy = {
         .join(" and ");
       return `${cards(c)} you added ${precons > 0 ? "from " : ""}${from} ${c === 1 ? "isn’t" : "aren’t"} in this file and would leave. Revert can bring them back.`;
     },
-    overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file raises those counts.`,
+    overlapNote: (ownedPercent: number) => `You already own ${ownedPercent}% of these cards. Adding the file raises those counts.`,
     continueReplace: "Review the replace →",
     continueAdd: "Review the add →",
     /** (new) The desktop foot's lead-in. */
@@ -223,10 +223,10 @@ export const collectionEditCopy = {
       pickFile: "File",
       // The printing is named too: conflicts are per printing and finish, and two holdings of one card would
       // otherwise sound the same.
-      rowAria: (card: string, printing: string, since: string, b: string, a: string, f: string) =>
-        `${card}, printing ${printing}, at ${since} ${b}, app ${a}, file ${f}`,
+      rowAria: (card: string, printing: string, since: string, baselineQuantityText: string, appQuantityText: string, fileQuantityText: string) =>
+        `${card}, printing ${printing}, at ${since} ${baselineQuantityText}, app ${appQuantityText}, file ${fileQuantityText}`,
       rowPrinting: (set: string, number: string, finish: string) => `${set} ${number}, ${finish}`,
-      rowWas: (since: string, b: string) => `at ${since} ${b}`,
+      rowWas: (since: string, baselineQuantityText: string) => `at ${since} ${baselineQuantityText}`,
       bulkApp: (k: number) => `Keep the app’s for all ${n(k)}`,
       bulkFile: (k: number) => `Take the file’s for all ${n(k)}`,
       bulkDoneApp: (k: number) => `Kept the app’s count for all ${n(k)}. You can still change any one.`,
@@ -317,12 +317,12 @@ export const collectionEditCopy = {
      * (its reservation). DRAFT for /copy-review: the handoff's strings.
      */
     chooser: {
-      body: (card: string, k: number, n: number) =>
-        n === 1
-          ? `${k} decks list ${card} and 1 copy will be left. Pick the one that goes short. Its list stays the same, and ${card} goes on its shopping list.`
-          : `${k} decks list ${card} and 1 copy will be left. Pick the ${n} that go short. Their lists stay the same, and ${card} goes on their shopping lists.`,
-      heading: (n: number) => (n === 1 ? "Which deck goes short" : `Which ${n} decks go short`),
-      tally: (picked: number, n: number) => `${picked} of ${n} picked`,
+      body: (card: string, deckCount: number, shortCount: number) =>
+        shortCount === 1
+          ? `${deckCount} decks list ${card} and 1 copy will be left. Pick the one that goes short. Its list stays the same, and ${card} goes on its shopping list.`
+          : `${deckCount} decks list ${card} and 1 copy will be left. Pick the ${shortCount} that go short. Their lists stay the same, and ${card} goes on their shopping lists.`,
+      heading: (shortCount: number) => (shortCount === 1 ? "Which deck goes short" : `Which ${shortCount} decks go short`),
+      tally: (picked: number, shortCount: number) => `${picked} of ${shortCount} picked`,
       rowSub: (listed: number, date: string) => `lists ${listed} · committed it ${date}`,
       rowSubUndated: (listed: number) => `lists ${listed}`,
       keeperRefused: "That deck can’t hold the copy any more. Nothing was saved.",
@@ -330,8 +330,8 @@ export const collectionEditCopy = {
       keeps: "keeps it",
       footerDefault: (short: string, keepers: string, count: number) => `${short} ${count === 1 ? "goes" : "go"} short because ${keepers} committed it first. Pick another deck to change that.`,
       footerPicked: (short: string, keepers: string) => `You picked ${short} to go short. ${keepers} keeps its copy.`,
-      footerMore: (m: number) => `Pick ${m} more to go short.`,
-      refusal: (n: number) => `${n} decks are already going short. Untick one first.`,
+      footerMore: (moreCount: number) => `Pick ${moreCount} more to go short.`,
+      refusal: (shortCount: number) => `${shortCount} decks are already going short. Untick one first.`,
       back: "Back to first committed",
       groupAria: (card: string) => `Decks that go short on ${card}`,
     },
@@ -427,7 +427,7 @@ export const collectionEditCopy = {
     weekday: (day: string, date: string) => `${day} · ${date}`,
     /** An entry's time slot under an hour old. */
     justNow: "Just now",
-    minAgo: (k: number) => `${k} min ago`,
+    minAgo: (minutes: number) => `${minutes} min ago`,
     /** The same moments inside a sentence ("by the revert today at 9:30 AM", "From yesterday at 3:15 PM"). */
     justNowLower: "just now",
     todayAt: (clock: string) => `today at ${clock}`,
@@ -472,7 +472,7 @@ export const collectionEditCopy = {
     /** No-collection entry S18: the way into Precons I own, in the empty state at both widths. */
     preconLead: "Own precon boxes?",
     preconPress: "Pick them",
-    noResultsTitle: (q: string) => `No card is named “${q}”`,
+    noResultsTitle: (searchText: string) => `No card is named “${searchText}”`,
     noResultsBody: "Check the spelling, or try part of the name. Tokens and emblems aren’t in the catalog.",
     searchFailed: "We couldn’t search just now. Check your connection and try again.",
     resultAdd: "↵ add",
@@ -520,7 +520,7 @@ export const collectionEditCopy = {
       regionLabel: "Printings",
       searchPlaceholder: "Set, code or number",
       searchAria: "Search this card’s printings by set, code or number",
-      emptyBody: (q: string, card: string) => `No printing of ${card} comes from a set matching “${q}”.`,
+      emptyBody: (setSearch: string, card: string) => `No printing of ${card} comes from a set matching “${setSearch}”.`,
       tileOwned: (q: number) => `you own ×${n(q)}`,
       /** The scanner's short list leads; this press adds every other printing after it (new, for /copy-review). */
       showAll: "Show all printings",
@@ -688,7 +688,7 @@ export const collectionEditCopy = {
       sure: "Sure",
       notSure: "Not sure",
       pick: "Pick below",
-      photoOf: (i: number, t: number) => `photo ${i} of ${t}`,
+      photoOf: (photoNumber: number, photoTotal: number) => `photo ${photoNumber} of ${photoTotal}`,
       addSure: (x: number) => (x === 1 ? "Add the sure one" : `Add the ${n(x)} sure ones`),
       more: "Choose more photos",
       /** The photo's own thumbnail, beside what it was read as. */

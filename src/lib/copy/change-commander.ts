@@ -31,19 +31,19 @@ export const changeCommanderCopy = {
       single: "Commanders who can lead these 99 without changing a card. The figure is how many of this deck’s cards their decks run.",
       pair: "Pairs who can lead these 98 without changing a card. The figure is how many of this deck’s cards their decks run.",
     },
-    counted: (n: number) =>
-      `${n} of your cards are counted. Basic lands and the staples every deck runs, like Sol Ring, are left out.`,
-    groupYours: (n: number) => `Yours · ${n}`,
-    groupBuy: (n: number) => `To buy · ${n}`,
+    counted: (cardCount: number) =>
+      `${cardCount} of your cards are counted. Basic lands and the staples every deck runs, like Sol Ring, are left out.`,
+    groupYours: (cardCount: number) => `Yours · ${cardCount}`,
+    groupBuy: (cardCount: number) => `To buy · ${cardCount}`,
     // From the canvas's group headings (not in the handoff's copy file): each group's right note.
     groupNote: "by figure",
     groupNotePairBuy: "a half to buy",
     ownsNone: "You own none of them yet.",
-    showAll: (n: number) => `Show all ${n}`,
+    showAll: (cardCount: number) => `Show all ${cardCount}`,
     showFewer: "Show fewer",
     // The one figure. "its" for a single, "their" for a pair.
-    figure: (n: number, of: number, pair: boolean) => `${n} of ${of} are in ${pair ? "their" : "its"} decks`,
-    figureAria: (n: number, of: number, name: string) => `${n} of ${of} cards in this deck are in ${name}’s decks. Show them.`,
+    figure: (cardCount: number, cardTotal: number, pair: boolean) => `${cardCount} of ${cardTotal} are in ${pair ? "their" : "its"} decks`,
+    figureAria: (cardCount: number, cardTotal: number, name: string) => `${cardCount} of ${cardTotal} cards in this deck are in ${name}’s decks. Show them.`,
     // Hugh, 2026-09-25: the cost is drawn as CostPips; this is the comparison beside it. A pair sums its halves.
     manaValueRel: (mv: number, current: number, currentName: string) => {
       const d = mv - current;
@@ -53,7 +53,7 @@ export const changeCommanderCopy = {
     inDeck: "in this deck · trades places",
     choose: "Choose",
     chooseAria: (name: string) => `Choose ${name}`,
-    expandCaption: (n: number, short: string) => `The ${n} ${short}’s decks run`,
+    expandCaption: (cardCount: number, short: string) => `The ${cardCount} ${short}’s decks run`,
     loading: "Reading which commanders’ decks run your cards…",
     // The Analysis tab's error composition (2c): heading + body + bone Try again.
     failed: { heading: "We couldn’t read the candidates.", body: "Nothing about your deck changed.", cta: "Try again" },
@@ -82,17 +82,17 @@ export const changeCommanderCopy = {
     cardStays: (body: number) => `into the ${body}`,
     cardReleased: "leaves the deck",
     cardFromBody: (body: number) => `from the ${body}`,
-    sentence: (nu: string, old: string, body: number) =>
-      `${nu} takes the command zone. ${old} leaves the deck, and the ${body} stay exactly as they are.`,
-    sentencePair: (a: string, b: string, c: string, d: string, body: number) =>
-      `${a} and ${b} take the command zone. ${c} and ${d} leave the deck, and the ${body} stay exactly as they are.`,
-    trade: (nu: string, old: string, body: number) =>
-      `The two trade places. ${nu} leaves the ${body} for the command zone, and ${old} takes its slot. The deck stays at ${body}.`,
+    sentence: (newCommander: string, oldCommander: string, body: number) =>
+      `${newCommander} takes the command zone. ${oldCommander} leaves the deck, and the ${body} stay exactly as they are.`,
+    sentencePair: (newCommanderA: string, newCommanderB: string, oldCommanderA: string, oldCommanderB: string, body: number) =>
+      `${newCommanderA} and ${newCommanderB} take the command zone. ${oldCommanderA} and ${oldCommanderB} leave the deck, and the ${body} stay exactly as they are.`,
+    trade: (newCommander: string, oldCommander: string, body: number) =>
+      `The two trade places. ${newCommander} leaves the ${body} for the command zone, and ${oldCommander} takes its slot. The deck stays at ${body}.`,
     buy: (short: string) => `You don’t own ${short} yet. It joins this draft’s buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
     // A single becoming a pair (Hugh, 2026-10-26): the deck stays at 100, now led by two.
-    pairTrade: (a: string, b: string, old: string) =>
-      `${a} and ${b} leave the 99 for the command zone, and ${old} takes one of their slots. The deck stays at 100 cards.`,
+    pairTrade: (newCommanderA: string, newCommanderB: string, oldCommander: string) =>
+      `${newCommanderA} and ${newCommanderB} leave the 99 for the command zone, and ${oldCommander} takes one of their slots. The deck stays at 100 cards.`,
     pairUp: (arrive: string, joins: string, old: string) =>
       `${arrive} leaves the 99 for the command zone, and ${joins} joins it there. ${old} leaves the deck. The deck stays at 100 cards.`,
     pairUpKeep: (arrive: string, kept: string) =>
@@ -108,15 +108,15 @@ export const changeCommanderCopy = {
     // A single becoming a pair on a deck with no version: a pair never becomes a single again.
     brewGrow: "This deck has no version yet, so there is nothing to discard back to, and a pair can’t go back to one commander.",
     cta: (short: string) => `Make ${short} commander`,
-    ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
+    ctaPair: (newCommanderA: string, newCommanderB: string) => `Make ${newCommanderA} and ${newCommanderB} commanders`,
     pending: "Changing…",
     failed: (oldShort: string) => `We couldn’t change the commander. ${oldShort} still leads this deck.`,
     // The pair forms a pair reaches (audit F9: two names never share a singular verb). A pair's
     // trade is the half-trade, which has its own sentence (`halfTrade`), so `trade` has no pair form.
     failedPair: (oldShort: string) => `We couldn’t change the commanders. ${oldShort} still lead this deck.`,
     failedRetry: "Try again",
-    announced: (nu: string) => `${nu} leads this deck now. The change is pending.`,
-    announcedPair: (nu: string) => `${nu} lead this deck now. The change is pending.`,
+    announced: (newCommander: string) => `${newCommander} leads this deck now. The change is pending.`,
+    announcedPair: (newCommanders: string) => `${newCommanders} lead this deck now. The change is pending.`,
   },
 
   banner: {
@@ -128,7 +128,7 @@ export const changeCommanderCopy = {
     heading: "Commander", headingPair: "Commanders",
     was: "was", now: "now",
     notePool: (oldShort: string) => `${oldShort} goes back in the pool when you commit`,
-    notePoolPair: (a: string, b: string) => `${a} and ${b} go back in the pool when you commit`,
+    notePoolPair: (oldCommanderA: string, oldCommanderB: string) => `${oldCommanderA} and ${oldCommanderB} go back in the pool when you commit`,
     noteTrade: "the two trade places",
     noteIntoBody: (old: string) => `${old} moves into the 99`,
     notePartnerJoins: "a partner joins from the 99",
@@ -145,12 +145,12 @@ export const changeCommanderCopy = {
     // Appended to deckVersioningCopy.discard.consequence's head when the draft holds a commander change.
     commanderBack: (oldShort: string) => `${oldShort} leads it again.`,
     // The pair form the audit owes (F9); the handoff's file carries the single only.
-    commanderBackPair: (a: string, b: string) => `${a} and ${b} lead it again.`,
+    commanderBackPair: (oldCommanderA: string, oldCommanderB: string) => `${oldCommanderA} and ${oldCommanderB} lead it again.`,
     // A draft that moved ONLY its commander. deckVersioningCopy.discard.consequence names the cards
     // added and cut and would lose its subject over zero of each ("3 cards.  are not stored
     // anywhere"), so this draft takes the version clause alone; `commanderBack` follows it.
-    commanderOnly: (version: number, date: string, cards: number) =>
-      `The deck goes back to v${version} as committed on ${date}: ${cards} ${cards === 1 ? "card" : "cards"}.`,
+    commanderOnly: (version: number, date: string, cardCount: number) =>
+      `The deck goes back to v${version} as committed on ${date}: ${cardCount} ${cardCount === 1 ? "card" : "cards"}.`,
   },
 
   // The toast after a partner is added (#491): it holds the one Undo. The wording is Design's

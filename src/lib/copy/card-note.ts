@@ -44,11 +44,11 @@ export const cardNote = {
 
   /** Register 1 — flat. Membership, a count, and quoted rules text. */
   gameChanger: {
-    plain: (n: string) => `A game changer, and your ${n}.`,
-    declared: (n: string, declared: Bracket, limit: number) =>
+    plain: (ordinal: string) => `A game changer, and your ${ordinal}.`,
+    declared: (ordinal: string, declared: Bracket, limit: number) =>
       limit === 0
-        ? `A game changer, and your ${n}. ${declaredName(declared)} allows none.`
-        : `A game changer, and your ${n}. ${declaredName(declared)} allows ${limit}.`,
+        ? `A game changer, and your ${ordinal}. ${declaredName(declared)} allows none.`
+        : `A game changer, and your ${ordinal}. ${declaredName(declared)} allows ${limit}.`,
   },
 
   /**
@@ -103,15 +103,15 @@ export const cardNote = {
    * to quote, so `plain` is used.
    */
   extraTurns: {
-    plain: (n: string) => `We read this as an extra-turn card, your ${n}.`,
-    forbidden: (declared: Bracket, n: string) =>
-      `We read this as an extra-turn card, your ${n}. ${declaredName(declared)} allows none.`,
-    chaining: (declared: Bracket, n: string) =>
-      `We read this as an extra-turn card, your ${n}. ${declaredName(declared)}’s rule is about chaining them, which a list can’t show, so we count them and stop there.`,
+    plain: (ordinal: string) => `We read this as an extra-turn card, your ${ordinal}.`,
+    forbidden: (declared: Bracket, ordinal: string) =>
+      `We read this as an extra-turn card, your ${ordinal}. ${declaredName(declared)} allows none.`,
+    chaining: (declared: Bracket, ordinal: string) =>
+      `We read this as an extra-turn card, your ${ordinal}. ${declaredName(declared)}’s rule is about chaining them, which a list can’t show, so we count them and stop there.`,
   },
 
   /** Tutors. NO TUTOR GATE (§5, locked). A fact and never a limit. */
-  tutor: (n: string) => `A tutor, and your ${n}. No bracket limits how many you play.`,
+  tutor: (ordinal: string) => `A tutor, and your ${ordinal}. No bracket limits how many you play.`,
 
   /**
    * A candidate that completes a combo the list already half-holds.
@@ -126,7 +126,7 @@ export const cardNote = {
    * Kept here rather than dropped so a later reader of the handoff finds the string accounted
    * for rather than missing, and does not re-add it.
    */
-  completesCombo: (a: string, b: string) => `This completes ${a} + ${b}, a two-card infinite.`,
+  completesCombo: (firstCard: string, secondCard: string) => `This completes ${firstCard} + ${secondCard}, a two-card infinite.`,
 
   /** No fact: nothing renders. The absence is the design. */
   none: null,
