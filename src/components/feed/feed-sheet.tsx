@@ -146,7 +146,18 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
             )}
           </div>
         </div>
-        <div data-dismiss-scope data-feed-sheet-body className="flex min-h-0 flex-auto flex-col overflow-y-auto overscroll-contain">
+        <div
+          data-dismiss-scope
+          data-feed-sheet-body
+          // A combo row's press opens the combo view in the page, under `<main>`, which this sheet holds inert while it is up (the
+          // sheet is portalled to `<body>`, so `<main>` is its sibling). Left open, the combo draws and takes no press, and the app reads
+          // as frozen (#3371). So the sheet gives way after the press goes through (a tick later: unmounting the row inside its own click drops the open): the combo opens in its place.
+          onClick={(e) => {
+            const target = e.target as Element;
+            if (target.closest("[data-feed-press]") && target.closest("li")?.querySelector("[data-feed-combo]")) setTimeout(onClose, 0);
+          }}
+          className="flex min-h-0 flex-auto flex-col overflow-y-auto overscroll-contain"
+        >
           {group(c.today, groups.today, false)}
           {group(s.thisWeek, groups.week, groups.today.length > 0)}
           {group(c.earlier, groups.earlier, groups.today.length + groups.week.length > 0)}
