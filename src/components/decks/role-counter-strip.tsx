@@ -1,5 +1,4 @@
-// Role Counter Strip — §Role Counter Strip — 5 cells.
-// Server component — recomputes role counts from detail.cards.
+// Role Counter Strip — the Recommended mix box, 5 cells (R3-Mix). Recomputes role counts from detail.cards.
 import { roleStripCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -11,6 +10,8 @@ import {
   ROLE_ORDER,
   type MixRole,
 } from "../../lib/decks/mix";
+import { useId } from "react";
+import { DeckBox, DeckBoxBand } from "./deck-box";
 import { RoleCounterCell } from "./role-counter-cell";
 import { StripRationale } from "./strip-rationale";
 
@@ -78,93 +79,72 @@ export function RoleCounterStrip({
   const countRoles = roleCounterFor(labelRows);
   const counts = countRoles(cards);
 
+  const headingId = `${useId()}-mix-band`;
+
   return (
     /*
-      §Strip container (desktop)
-      mobile:  within spine, compressed
-      desktop: p 14px 30px, border-bottom 1px var(--border)
+      The Recommended mix box (R3-Mix): the shared box and band, the source line (and the draft note) at the band's
+      end on desktop and on a line under the band on the phone, the five cells, and the Why foot.
     */
-    <section
-      className="px-[16px] py-[10px] md:px-[30px] md:py-[14px]"
-      style={{ borderBottom: "1px solid var(--border)" }}
-      aria-label={roleStripCopy.mixLabel}
-    >
-      {/*
-        §Strip header row
-        mobile:  flex, baseline, mb 6px, justify space-between
-        desktop: flex, baseline, gap 10px, mb 10px
-      */}
-      <div
-        className="flex items-baseline justify-between md:justify-start md:gap-[10px] mb-[8px] md:mb-[12px]"
-      >
-        {/* §Strip header — "Recommended mix" label */}
-        {/* mobile: var(--fg-faint) · desktop: var(--fg-body) (design table §Strip header — "Recommended mix" label) */}
-        <span
-          className="font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em] text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
-        >
-          {roleStripCopy.mixLabel}
-        </span>
-
-        {/* §Strip header — the source line and the draft sub-run. The phone takes both (deck messages A16,
-            R1's phone parity): they sit on the label row's right, and from md they flatten into the row
-            as before. The source line says what the numbers are, StripRationale below says why. */}
-        <div className="flex items-baseline gap-[8px] md:contents">
-          <span className="font-mono text-[9.5px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
-            {mixSourceLine(mix)}
-          </span>
-
-          {/* §Strip header — the draft sub-run (#389, surface 1). `wasCounts` is the draft's own presence:
-              absent on a brew and on a committed deck with nothing pending, which is exactly when the figures
-              below have only one list to have come from. It rides the source line's size, so the two read as
-              one sentence. */}
-          {wasCounts && (
-            <span
-              className="font-mono text-[9.5px] md:text-[10.5px] md:tracking-[0.06em]"
-              style={{ color: "var(--accent-text)" }}
-            >
-              {deckVersioningCopy.pending.mixStripDraftNote}
+    <div className="px-[16px] pb-[2px] md:px-[30px]">
+      <DeckBox aria-labelledby={headingId} className="!mt-[14px] md:!mt-[18px]">
+        <DeckBoxBand
+          id={headingId}
+          title={roleStripCopy.mixLabel}
+          aside={
+            <span className="hidden font-mono text-[11px] font-normal text-[color:var(--fg-faint)] md:inline">
+              <SourceLine mix={mix} drafted={Boolean(wasCounts)} />
             </span>
-          )}
+          }
+        />
+        <p className="px-[14px] pt-[8px] font-mono text-[11px] text-[color:var(--fg-faint)] md:hidden">
+          <SourceLine mix={mix} drafted={Boolean(wasCounts)} />
+        </p>
+        <div className="flex gap-[6px] p-[10px] md:gap-[12px] md:px-[16px] md:pb-[16px] md:pt-[14px]">
+          {ROLE_ORDER.map((role) => (
+            <RoleCounterCell
+              key={role}
+              label={mix.cells[role].label}
+              have={counts[role]}
+              target={mix.cells[role].target}
+              advisory={mix.cells[role].advisory}
+              justFilled={justFilled}
+              was={wasCounts?.[role] !== counts[role] ? wasCounts?.[role] : undefined}
+              onSeeShelf={
+                onSeeShelf &&
+                counts[role] < mix.cells[role].target &&
+                rolesWithShelves?.has(role)
+                  ? () => onSeeShelf(role)
+                  : undefined
+              }
+              onSeeCards={
+                onSeeCards && role !== "land" && counts[role] > 0 && counts[role] >= mix.cells[role].target
+                  ? () => onSeeCards(role)
+                  : undefined
+              }
+              onBalanceMana={role === "land" ? onBalanceMana : undefined}
+              onSuggest={onSuggest && counts[role] < mix.cells[role].target ? onSuggest : undefined}
+              balanceMoment={role === "land" && balanceMoment}
+            />
+          ))}
         </div>
-      </div>
+        <StripRationale mix={mix} counts={counts} />
+      </DeckBox>
+    </div>
+  );
+}
 
-      {/* Role cells row */}
-      <div className="flex gap-[4px] md:gap-[8px]">
-        {ROLE_ORDER.map((role) => (
-          <RoleCounterCell
-            key={role}
-            label={mix.cells[role].label}
-            have={counts[role]}
-            target={mix.cells[role].target}
-            advisory={mix.cells[role].advisory}
-            justFilled={justFilled}
-            was={wasCounts?.[role] !== counts[role] ? wasCounts?.[role] : undefined}
-            onSeeShelf={
-              onSeeShelf &&
-              counts[role] < mix.cells[role].target &&
-              rolesWithShelves?.has(role)
-                ? () => onSeeShelf(role)
-                : undefined
-            }
-            onSeeCards={
-              onSeeCards && role !== "land" && counts[role] > 0 && counts[role] >= mix.cells[role].target
-                ? () => onSeeCards(role)
-                : undefined
-            }
-            onBalanceMana={role === "land" ? onBalanceMana : undefined}
-            onSuggest={onSuggest && counts[role] < mix.cells[role].target ? onSuggest : undefined}
-            balanceMoment={role === "land" && balanceMoment}
-          />
-        ))}
-      </div>
-
-      {/* One disclosure for the strip, where there were five per-cell buttons.
-          The desktop worked-example callout that used to sit below it is gone:
-          it taught how to read a cell using hypothetical numbers, and
-          StripRationale answers the same question about the reader's own deck
-          and answers it better. Two explanations of one strip, the permanent
-          one weaker than the one behind the disclosure. */}
-      <StripRationale mix={mix} />
-    </section>
+/** What the figures are measured against, and the draft note when a draft moved them (#389, surface 1). */
+function SourceLine({ mix, drafted }: { mix: RecommendedMix; drafted: boolean }) {
+  return (
+    <>
+      {mixSourceLine(mix)}
+      {drafted && (
+        <>
+          {" "}
+          <span className="text-[color:var(--accent-text)]">{deckVersioningCopy.pending.mixStripDraftNote}</span>
+        </>
+      )}
+    </>
   );
 }

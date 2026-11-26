@@ -183,13 +183,8 @@ describe("addPanelCopy punctuation", () => {
   };
 
   it("contains no em dash in any string", () => {
-    // One documented exception: the rationale panel's four lines are quoted
-    // design copy, not written for this surface, and the handoff says in as
-    // many words that they ship as drawn and must not be "fixed". Everything
-    // else — aria-labels included — obeys the rule.
-    const { rationaleBodies, ...strip } = addPanelCopy.strip;
-    expect(Object.values(rationaleBodies).every((line) => line.includes("—"))).toBe(true);
-    for (const string of sample({ ...addPanelCopy, strip })) {
+    // The Why tiles drew their four bodies without the dash (R3-MixWhy), so no string is exempt now.
+    for (const string of sample(addPanelCopy)) {
       expect(string).not.toContain("—");
     }
   });

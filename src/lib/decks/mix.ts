@@ -53,7 +53,7 @@ export function computeRoleCounts(
 // No per-role `rationale` here since #184. The strip's one disclosure carries
 // four authored lines for five roles (Removal and Wipes share one), so a 1:1
 // map over this record could not have produced it; the lines live in
-// `addPanelCopy.strip.rationaleBodies` with the rest of the surface's copy.
+// `addPanelCopy.strip.rationaleTiles` with the rest of the surface's copy.
 export type MixCell = {
   label: string;
   target: number;

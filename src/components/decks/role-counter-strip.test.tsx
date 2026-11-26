@@ -214,17 +214,18 @@ describe("role counter strip — one disclosure for the whole strip", () => {
       screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
     );
     const panel = screen.getByRole("region", { name: addPanelCopy.strip.rationaleToggle });
-    for (const body of Object.values(addPanelCopy.strip.rationaleBodies)) {
+    for (const body of Object.values(addPanelCopy.strip.rationaleTiles)) {
       expect(panel).toHaveTextContent(body);
     }
-    // Four lines for five roles: Removal and Wipes share one, as drawn.
-    expect(panel.querySelectorAll("p")).toHaveLength(4);
-    // Headings quote TEST_MIX.cells, so the panel can never disagree with the
-    // cell above it about a target.
-    expect(panel).toHaveTextContent(
-      `${TEST_MIX.cells.removal.label} ${TEST_MIX.cells.removal.target} · ${TEST_MIX.cells.wipes.label} ${TEST_MIX.cells.wipes.target}`,
-    );
-    expect(panel).toHaveTextContent(`${TEST_MIX.cells.land.label} ~${TEST_MIX.cells.land.target}`);
+    // One tile per line, four for five roles: Removal and Wipes share one, as drawn.
+    expect(panel.querySelectorAll("[data-mix-tile]")).toHaveLength(4);
+    // Tiles quote TEST_MIX.cells, so the panel can never disagree with the cell above it about a target.
+    expect(panel).toHaveTextContent(`${TEST_MIX.cells.removal.label} · ${TEST_MIX.cells.wipes.label}`);
+    expect(panel).toHaveTextContent(`${TEST_MIX.cells.removal.target} · ${TEST_MIX.cells.wipes.target}`);
+    expect(panel).toHaveTextContent(`~${TEST_MIX.cells.land.target}`);
+    // "you have N" per tile, from the deck's own counts (none here).
+    expect(panel).toHaveTextContent(addPanelCopy.strip.tileHave("0"));
+    expect(panel).toHaveTextContent(addPanelCopy.strip.tileHave("0 · 0"));
   });
 
   // WCAG 2.5.3: the accessible name has to contain the words on screen, so the
@@ -238,7 +239,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
 
     fireEvent.click(trigger);
 
-    const open = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
+    const open = screen.getByRole("button", { name: addPanelCopy.strip.rationaleClose });
     expect(open).toHaveAttribute("aria-expanded", "true");
     expect(open).not.toHaveAccessibleDescription(addPanelCopy.strip.rationaleToggleAria);
   });
@@ -261,12 +262,10 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  // Hide unmounts itself, so without a hand-off the caret lands on
-  // `document.body` — the same defect as the toggle above, one control over.
-  it("hands focus back to the trigger when Hide unmounts itself", () => {
+  // Hide is the same button as the toggle, relabeled, so closing from it keeps focus where it was.
+  it("keeps focus on the button when Hide closes the panel", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
-    const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
-    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }));
 
     const hide = screen.getByRole("button", { name: addPanelCopy.strip.rationaleClose });
     hide.focus();
@@ -586,5 +585,28 @@ describe("role counter strip: cards → on a cell at or over target (small items
   it("draws the shipped figure when handed no handler", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} />);
     expect(screen.queryByText(addPanelCopy.strip.cardsLink)).toBeNull();
+  });
+});
+
+describe("role counter strip: the mix box and N over (R3-Mix)", () => {
+  it("is one labelled box headed by the mix label", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    const box = screen.getByRole("region", { name: roleStripCopy.mixLabel });
+    expect(box).toContainElement(screen.getByRole("heading", { level: 2, name: roleStripCopy.mixLabel }));
+  });
+
+  it("says N over in the foot of a role over its target, and the recommendation under it", () => {
+    const over = [...atTarget("ramp"), card("ramp", 99), card("ramp", 100)];
+    render(<RoleCounterStrip mix={TEST_MIX} cards={over} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    expect(screen.getByText(addPanelCopy.strip.cellOver(2))).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.strip.cellOver(1))).toBeNull();
+  });
+
+  it("keeps was N on a role a draft moved, over or not", () => {
+    const over = [...atTarget("ramp"), card("ramp", 99)];
+    const was = { ramp: 3, draw: 0, removal: 0, wipes: 0, land: 0 };
+    render(<RoleCounterStrip mix={TEST_MIX} cards={over} wasCounts={was} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    expect(screen.getByText(deckVersioningCopy.pending.mixCellWas(3))).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.strip.cellOver(1))).toBeNull();
   });
 });
