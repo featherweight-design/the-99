@@ -20,7 +20,7 @@ const joinNames = (names: readonly string[]): CopyPart[] =>
 /** A card's short name for the phone's strip: before its first comma, and its front face alone. */
 const shortName = (name: string) => name.split(" // ")[0]!.split(", ")[0]!;
 
-const left = (n: number) => (n === 1 ? "It’s left your wishlist." : "They’ve left your wishlist.");
+const left = (cardCount: number) => (cardCount === 1 ? "It’s left your wishlist." : "They’ve left your wishlist.");
 
 export const wishlistCopy = {
   tab: "Wishlist", // Collection's place strip, fifth, after History
@@ -39,9 +39,9 @@ export const wishlistCopy = {
       add: "Add to wishlist",
       addShort: "Add", // phone
       // A result row's line under the name: what the collection holds, and whether the card is already on the list.
-      have: (n: number) => `you have ${n}`,
+      have: (copyCount: number) => `you have ${copyCount}`,
       onList: "on your wishlist",
-      haveOnList: (n: number) => `you have ${n} · on your wishlist`,
+      haveOnList: (copyCount: number) => `you have ${copyCount} · on your wishlist`,
     },
     emptyTitle: "Nothing on your wishlist yet",
     emptyBody:
@@ -78,7 +78,7 @@ export const wishlistCopy = {
     section: "In your wishlist",
     remove: "Remove",
     want: "want in all", // the stepper's label, and its count's spoken name: the copies wanted in all
-    have: (n: number) => `you have ${n}`,
+    have: (copyCount: number) => `you have ${copyCount}`,
     fewer: "Want one fewer", // the stepper's −, aria-label (the tab's result stepper too)
     more: "Want one more", // the stepper's +, aria-label
     failedSet: "We couldn’t change that. Your wishlist is unchanged.", // toast, role alert
@@ -90,7 +90,7 @@ export const wishlistCopy = {
     since: (date: string) => `Friend since ${date}`, // date reads "Oct 2"
     head: (name: string) => `${name}’s wishlist`,
     viewOnly: "view only",
-    wants: (n: number) => `wants ${n}`,
+    wants: (copyCount: number) => `wants ${copyCount}`,
     emptyTitle: (name: string) => `${name}’s wishlist is empty`,
     emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want, until they have them.`,
   },
@@ -102,20 +102,20 @@ export const wishlistPrintingCopy = {
     label: "Printing",
     any: "Any printing", // also the press back to any printing
     cheapest: "cheapest", // after `Any printing ·` when no other printing is on screen
-    want: (set: string, n: string) => `Want ${set} ${n}`,
-    wantAria: (set: string, n: string, setName: string, card: string) => `Want ${set} ${n}, ${card} from ${setName}`,
+    want: (set: string, collectorNumber: string) => `Want ${set} ${collectorNumber}`,
+    wantAria: (set: string, collectorNumber: string, setName: string, card: string) => `Want ${set} ${collectorNumber}, ${card} from ${setName}`,
     soldOut: "sold out",
     soldOutNote: (price: string) => storeCopy.soldOutNote(STORE_INFO.manapool, price),
   },
   panel: {
     wantedAny: "Wanted: any printing",
-    wanted: (set: string, n: string) => `Wanted: ${set} ${n}`,
+    wanted: (set: string, collectorNumber: string) => `Wanted: ${set} ${collectorNumber}`,
   },
   tile: {
-    aria: (set: string, n: string) => `wanted printing ${set} ${n}`,
+    aria: (set: string, collectorNumber: string) => `wanted printing ${set} ${collectorNumber}`,
   },
-  linkOut: (set: string, n: string) => storeCopy.linkOutPrinting(STORE_INFO.manapool, set, n),
-  announce: (set: string, n: string) => `Wanted ${set} ${n}.`,
+  linkOut: (set: string, collectorNumber: string) => storeCopy.linkOutPrinting(STORE_INFO.manapool, set, collectorNumber),
+  announce: (set: string, collectorNumber: string) => `Wanted ${set} ${collectorNumber}.`,
   announceAny: "Wanted any printing.",
   failed: "Couldn’t change the printing. Try again.",
 } as const;

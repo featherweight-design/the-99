@@ -19,9 +19,9 @@ export const synergyCopy = {
     // Replaces the shipped sub-caption 'Top {n} synergy cards for this
     // commander', which described a top-N list the panel no longer is. See
     // REPLACES at the bottom.
-    subcaption: (n: string) =>
-      `${n} cards EDHREC associates with this commander, ranked by synergy`,
-    subcaptionMobile: (n: string) => `${n} cards, ranked by synergy`,
+    subcaption: (cardCountText: string) =>
+      `${cardCountText} cards EDHREC associates with this commander, ranked by synergy`,
+    subcaptionMobile: (cardCountText: string) => `${cardCountText} cards, ranked by synergy`,
 
     // The percentage headline is LOCKED by ruling 1 and keeps its shipped
     // strings ('{n} of top {m}', '{p}% owned'). No key here.
@@ -49,18 +49,18 @@ export const synergyCopy = {
     // Signed, always — an unsigned synergy reads as a second percentage. The
     // singular is a real case: +1 pt is the Sol Ring shape and the panel prints
     // it more often than it prints +47.
-    synergy: (pts: string) => `${pts === '1' ? '+1 pt' : `+${pts} pts`}`,
+    synergy: (pointsText: string) => `${pointsText === '1' ? '+1 pt' : `+${pointsText} pts`}`,
     // U+2212 minus, not a hyphen: at mono 11.5px a hyphen beside tabular digits
     // reads as a dash, which is this panel's absence glyph.
-    synergyNegative: (pts: string) => (pts === '1' ? '−1 pt' : `−${pts} pts`),
+    synergyNegative: (synergyPoints: string) => (synergyPoints === '1' ? '−1 pt' : `−${synergyPoints} pts`),
     // Absence, never 0 and never +0 (suggest.ts:31-33). Independent of the
     // inclusion figure: one null never suppresses the other.
     synergyNone: '—',
-    inclusion: (pct: string) => `${pct}%`,
+    inclusion: (inclusionPercent: string) => `${inclusionPercent}%`,
     // Phone prefixes it, desktop does not — the shipped shopping.rowFigure
     // convention: on a meta line detached from the name, '31%' alone is
     // ambiguous.
-    inclusionMobile: (pct: string) => `edhrec ${pct}%`,
+    inclusionMobile: (inclusionPercent: string) => `edhrec ${inclusionPercent}%`,
     inclusionNone: '—',
     // The row's accessible name carries both figures and the ownership, because
     // all three are aria-hidden visual marks. Four branches, because a null in
@@ -80,8 +80,8 @@ export const synergyCopy = {
       (slot ? ` ${slot}.` : ''),
     ariaOwned: 'Owned',
     ariaUnowned: 'Not in your collection',
-    ariaSynergyPlus: (pts: string) => `plus ${pts} points`,
-    ariaSynergyMinus: (pts: string) => `minus ${pts} points`,
+    ariaSynergyPlus: (synergyPoints: string) => `plus ${synergyPoints} points`,
+    ariaSynergyMinus: (synergyPoints: string) => `minus ${synergyPoints} points`,
     ariaSynergyNone: 'no EDHREC figure',
     ariaInclusionNone: 'an unknown share',
 
@@ -120,7 +120,7 @@ export const synergyCopy = {
     allPlural: 'cards',
     // A radiogroup, not tabs: it filters one list rather than swapping panels.
     groupAria: 'Filter the synergy list by card type',
-    itemAria: (facet: string, n: string) => `${facet}, ${n} cards`,
+    itemAria: (facet: string, cardCountText: string) => `${facet}, ${cardCountText} cards`,
     // Every facet count is post-exclusion, so an empty facet is a real state:
     // a commander whose enchantments are all owned role cards has none left.
     empty: (facet: string) => `No ${facet} cards for this commander`,
@@ -131,8 +131,8 @@ export const synergyCopy = {
   // requires the full list be reachable, so 'Show all N' is a promise the
   // control can actually keep and the aria label says the same number.
   disclosure: {
-    showAll: (n: string, facet: string) => `Show all ${n} ${facet}`,
-    showAllAria: (n: string, facet: string) => `Show all ${n} ${facet} cards`,
+    showAll: (cardCountText: string, facet: string) => `Show all ${cardCountText} ${facet}`,
+    showAllAria: (cardCountText: string, facet: string) => `Show all ${cardCountText} ${facet} cards`,
     showFewer: 'Show fewer',
     showFewerAria: (facet: string) => `Show fewer ${facet} cards`,
   },
@@ -145,9 +145,9 @@ export const synergyCopy = {
     removeAria: (name: string) => `Remove ${name} from the deck`,
     // Appended to the picks line (`guidedBuildCopy.commander.picks`) when some of the selection is unowned. Ruling
     // 5 requires buying to be explicit; this is where it is said.
-    promiseUnowned: (n: string) => `${n} you don’t own yet.`,
-    clear: (n: string) => `Clear selection · ${n}`,
-    clearAria: (n: string) => `Clear all ${n} selected cards`,
+    promiseUnowned: (cardCountText: string) => `${cardCountText} you don’t own yet.`,
+    clear: (cardCountText: string) => `Clear selection · ${cardCountText}`,
+    clearAria: (cardCountText: string) => `Clear all ${cardCountText} selected cards`,
     // One message per settle, debounced. Twelve fast taps is one announcement.
     announce: (picked: string, total: string) =>
       `${picked} selected. ${total} of 99 when built.`,
@@ -165,10 +165,10 @@ export const synergyCopy = {
     // unticked: 'your collection ran out' would then be false, and blaming the collection for the
     // player's own restraint is the worst sentence this surface could say. No literal 99: the
     // figure is the shortfall against the deck's own body size.
-    exhaustedTitle: (n: string) => `${n} short, and your collection ran out`,
+    exhaustedTitle: (cardCountText: string) => `${cardCountText} short, and your collection ran out`,
     // The all-negative pool (`topOffCopy.strip.exhaustedAllNegative`): the collection did not run out, EDHREC
     // ranked what is left and ranked it against this deck, so the title says only that nothing is left to suggest.
-    exhaustedTitleAllNegative: (n: string) => `${n} short, and nothing left to suggest`,
+    exhaustedTitleAllNegative: (cardCountText: string) => `${cardCountText} short, and nothing left to suggest`,
     // The clause lifted verbatim from the shipped sentence, which took it from
     // recommendationsCopy.fill.provenanceShort.
     exhaustedBody: 'There was nothing left in it that EDHREC ranks for this commander.',

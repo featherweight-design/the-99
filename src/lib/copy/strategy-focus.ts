@@ -61,7 +61,7 @@ export const strategyFocusCopy = {
   sub: "The themes your deck is built around and how many cards support each strategy.",
   kicker: "Pick a focus",
   /** A legend row's count: the committed count, then what changed since the last commit. */
-  cards: (n: number) => (n === 1 ? "card" : "cards"),
+  cards: (cardCount: number) => (cardCount === 1 ? "card" : "cards"),
   /** Marks the focus's own row when its strategy is outside the top five. */
   outsideTop: "your focus",
   focusLine: { lead: "Focus", tail: ": Suggested changes builds toward it." },

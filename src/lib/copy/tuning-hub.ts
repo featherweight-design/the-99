@@ -16,7 +16,7 @@ export const tuningHubCopy = {
   back: "‹ Tuning",
   /** The phone's header beside the open tool's mark. Engineering: counts the tools this
    *  deployment draws, so a hub with two tools says `1 of 2`. */
-  toolOf: (n: number, total: number) => `${n} of ${total} tools`,
+  toolOf: (toolNumber: number, total: number) => `${toolNumber} of ${total} tools`,
   tools: {
     /** The hub's first tile (tool discovery B2, the handoff's `tuningTabCopy.consider`): the shipped Consider list, opened in place. */
     consider: {
@@ -47,14 +47,14 @@ export const tuningHubCopy = {
       name: "Proposed cuts",
       purpose: "Counts where the deck runs long. Name the cuts to see which cards.",
       cost: "free · name the cuts 1 credit",
-      over: (n: number) => `this deck is ${n} over`,
+      over: (cardCount: number) => `this deck is ${cardCount} over`,
       /** The inert tile. `total` is the spine's figure, commanders included (ruling 4). */
       notOffered: (total: number) => `Offered once the deck passes 100 cards. This one is at ${total}.`,
     },
     history: {
       name: "History",
       purpose: "Every run of every tool on this deck, newest first.",
-      runs: (n: number, running: number) => `${n} ${n === 1 ? "run" : "runs"}${running ? ` · ${running} running` : ""}`,
+      runs: (runCount: number, running: number) => `${runCount} ${runCount === 1 ? "run" : "runs"}${running ? ` · ${running} running` : ""}`,
     },
   },
   /** Dates are US short form, month first: `Oct 7`. */
@@ -68,7 +68,7 @@ export const tuningHubCopy = {
     stopped: "stopped",
   },
   /** The tool's own live-region words, then the elapsed `m:ss`. */
-  running: (words: string, elapsed: string) => `${words} · ${elapsed}`,
+  running: (strategyName: string, elapsed: string) => `${strategyName} · ${elapsed}`,
   runningWords: { suggested: "reading your deck", deeper: "naming the cuts" },
   /** The tile's accessible name: tool, then its status. */
   tileLabel: (name: string, status: string) => (status ? `${name}, ${status}` : name),
@@ -97,7 +97,7 @@ export const tuningHubCopy = {
     pastMeta: (date: string, version: number, tier: string) => `${date} · version ${version} · ${tier}`,
     /** Engineering: a run that read a deck with no committed version. */
     pastMetaNoVersion: (date: string, tier: string) => `${date} · ${tier}`,
-    pastNote: (n: number) => `A past run, read-only. The list has changed by ${n} cards since; nothing here can be applied now.`,
+    pastNote: (cardCount: number) => `A past run, read-only. The list has changed by ${cardCount} cards since; nothing here can be applied now.`,
     /** Engineering: the note when the list has not moved, or the version it read is gone. */
     pastNoteUncounted: "A past run, read-only. Nothing here can be applied now.",
     /** Engineering (re-review, Hugh 2026-10-12): the note above a tool History reopened. A paid
@@ -117,12 +117,12 @@ export const tuningHubCopy = {
     /** Engineering: each row's summary, from the canvas fixtures (§5 of the build spec). */
     summary: {
       running: { suggested: "Reading your deck", cuts: "Naming the cuts", mana: "Looking deeper" },
-      suggestedOk: (inN: number, outN: number, added: number, cut: number, rejected: number) => {
+      suggestedOk: (inCount: number, outCount: number, added: number, cut: number, rejected: number) => {
         const answered = [
           ...(added || cut ? [`${added} added, ${cut} cut`] : []),
           ...(rejected ? [`${rejected} rejected`] : []),
         ].join(", ");
-        return `${inN} in, ${outN} out${answered ? ` · ${answered}` : ""}`;
+        return `${inCount} in, ${outCount} out${answered ? ` · ${answered}` : ""}`;
       },
       cutsDeeperOk: (named: number, asked: number, cut: number, kept: number) => {
         const answered = [...(cut ? [`${cut} cut`] : []), ...(kept ? [`${kept} kept`] : [])].join(", ");

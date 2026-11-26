@@ -27,8 +27,8 @@ export const upgradePathCopy = {
   rungLabel: "To downgrade your deck",
   open: "what would have to go",
   /** `n` counts what must go: the copies a count rule asks for, plus one per combo to break. */
-  heading: (bracket: Bracket, n: number) =>
-    `${name(bracket)}, ${n === 1 ? "one thing" : `${numberWord(n)} things`} would have to go`,
+  heading: (bracket: Bracket, cutCount: number) =>
+    `${name(bracket)}, ${cutCount === 1 ? "one thing" : `${numberWord(cutCount)} things`} would have to go`,
 
   /**
    * CARDINALITY PICKS THE PHRASING, AND THE APP NEVER PICKS A CARD. "Any N of these M" while
@@ -48,8 +48,8 @@ export const upgradePathCopy = {
      * package gives it no key; it states what CAN come out, and the shortfall line below says why
      * that is not enough.
      */
-    canComeOut: (n: number) =>
-      n === 1 ? "One of them can come out." : `${capitalize(numberWord(n))} of them can come out.`,
+    canComeOut: (cutCount: number) =>
+      cutCount === 1 ? "One of them can come out." : `${capitalize(numberWord(cutCount))} of them can come out.`,
   },
 
   /** The combo item states the requirement at the COMBO's cardinality, and never says "remove". */
@@ -66,8 +66,8 @@ export const upgradePathCopy = {
   },
 
   /** Said once, in the foot. Cheaper than de-duplicating items, which would hide a rule. */
-  overlap: (n: number) =>
-    `${capitalize(numberWord(n))} of these ${n === 1 ? "is" : "are"} also the combo, so cutting `
+  overlap: (cardCount: number) =>
+    `${capitalize(numberWord(cardCount))} of these ${cardCount === 1 ? "is" : "are"} also the combo, so cutting `
     + `one can answer both lines at once.`,
   yours: "Which cards go is yours. This is what the bracket asks for, not a recommendation.",
 

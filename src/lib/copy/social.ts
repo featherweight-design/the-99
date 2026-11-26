@@ -41,15 +41,15 @@ export const socialCopy = {
     /** The mono label, drawn uppercase by CSS. */
     head: "Friends",
     /** After `head`, in its own tracking: how many friends. */
-    headCount: (n: number) => `· ${n}`,
+    headCount: (friendCount: number) => `· ${friendCount}`,
     all: "All friends", // the › is drawn
     you: "You", // under your own face, in the no-friends state only
     invite: "Add the people you play with.",
     /** G5: the line's second sentence. */
     inviteMore: "Seat them when you log a game, and see their spares when you shop.",
-    more: (n: number) => `+${n}`, // the overflow slot, aria-hidden
+    more: (moreCount: number) => `+${moreCount}`, // the overflow slot, aria-hidden
     moreSub: "more",
-    links: (n: number) => (n === 1 ? "Friend link open" : `${n} friend links open`),
+    links: (linkCount: number) => (linkCount === 1 ? "Friend link open" : `${linkCount} friend links open`),
     seeAll: "See them", // the › is drawn; to /friends
   },
   // The first-run checklist's Friends row (Discovery R3·3; addendum-friends-home §3; /copy-review 2026-10-17): last,
@@ -61,7 +61,7 @@ export const socialCopy = {
     rowAria: (left: string) => `Add your friends. Friend link open, ${left.charAt(0).toLowerCase()}${left.slice(1)}. Show the link`,
     doneTitle: "Friends",
     /** C3 at more than one friend; at one it is `page.accepted(name)`. */
-    doneMany: (n: number) => `You have ${friends(n)}.`,
+    doneMany: (friendCount: number) => `You have ${friends(friendCount)}.`,
     doneAria: (line: string | PersonParts) => personText`Friends. ${line} Open Friends`,
   },
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
@@ -100,7 +100,7 @@ export const socialCopy = {
   },
 
   friends: {
-    head: (n: number) => `Friends · ${n}`,
+    head: (friendCount: number) => `Friends · ${friendCount}`,
     emptyTitle: "No friends yet",
     emptyBody: "Friends are added by friend link only: send one, or show its QR code at the table. Nobody can find you by name.",
     since: (date: string) => `since ${date}`, // "since today", "since Oct 2"
@@ -116,7 +116,7 @@ export const socialCopy = {
     // The row's link to the friend's page (R2 P1), spoken; the › itself is drawn.
     openAria: (name: ThirdPartyName) => personText`${name}’s page`,
     /** The per-friend chip (You have it): how many of their wanted cards the reader can spare; it opens their wishlist. */
-    spareChipAria: (name: ThirdPartyName, n: number) => personText`You can spare ${String(n)} of ${name}’s wanted cards`,
+    spareChipAria: (name: ThirdPartyName, copyCount: number) => personText`You can spare ${String(copyCount)} of ${name}’s wanted cards`,
   },
 
   // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).
@@ -133,7 +133,7 @@ export const socialCopy = {
     spares: {
       /** The line under the strip: where the share reaches the viewer, and the order. */
       line: (pods: readonly ThirdPartyName[]) => personText`Shared with ${joinNames(pods)}.`,
-      count: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
+      count: (spareCount: number) => (spareCount === 1 ? "1 spare" : `${spareCount} spares`),
       onWishlist: "on your wishlist",
       /** Appended to the line with spare requests on (signature card call 8): a tile press opens the card's modal, with Ask. */
       pressToAsk: " Press one to ask for it.",
@@ -167,10 +167,10 @@ export const socialCopy = {
     why: {
       seeDecksOff: "Friends can’t see any of your decks.",
       draftReady: "It’s a draft. Friends see it once you commit it.",
-      draftShort: (n: number, size: number) => `It’s a draft with ${n} of ${size} cards. Friends see it once it’s full and committed.`,
+      draftShort: (cardCount: number, size: number) => `It’s a draft with ${cardCount} of ${size} cards. Friends see it once it’s full and committed.`,
       draftFull: "It’s a draft. Friends see it once it’s ready and committed.",
       empty: "It has no cards yet. Friends see it once it’s full and committed.",
-      building: (n: number, size: number) => `It’s short, ${n} of ${size} cards. Friends see it once it’s full again.`,
+      building: (cardCount: number, size: number) => `It’s short, ${cardCount} of ${size} cards. Friends see it once it’s full again.`,
     },
     commit: "Commit as v1",
     /** The way out in Settings, by the rule's own sentence; the sub-line says where it lands, the `›` is drawn apart. */
@@ -203,7 +203,7 @@ export const socialCopy = {
   // `/friends`' Waiting on you (menu and Home PR 7, board `Friends` 2a to 2c). Placeholder words, for /copy-review.
   waiting: {
     /** The mono section head, drawn uppercase by CSS; `n` is every row the section shows. */
-    head: (n: number) => `Waiting on you · ${n}`,
+    head: (requestCount: number) => `Waiting on you · ${requestCount}`,
     kind: { "spare-request": "Spare request", "trade-match": "Trade match" },
     /** For a screen reader, beside the unseen diamond. */
     unseen: "new",
@@ -217,7 +217,7 @@ export const socialCopy = {
   },
 
   invites: {
-    head: (n: number) => `Open friend links · ${n}`,
+    head: (linkCount: number) => `Open friend links · ${linkCount}`,
     row: "Friend link",
     made: (when: string) => `made ${when}`, // "made today, 9:41 PM", "made Oct 9"
     // Time left, from expiresAt: whole days down to 1, then under a day (--warning). Rounded, so a link made a
@@ -247,7 +247,7 @@ export const socialCopy = {
     savedNote: "Saved as soon as you pick one.",
     anyNote: "Any commander in the catalog, owned or not.",
     clear: "Use initials instead",
-    noResults: (q: string) => `No commander matches “${q}”.`,
+    noResults: (query: string) => `No commander matches “${query}”.`,
     // Not drawn by the boards (E15): a search that failed, in the list's place, role alert. Typing asks again.
     searchFailed: "We couldn’t search commanders. Try again.",
     /** Spoken beside a colorless commander's pips, which carry color alone. */
@@ -264,17 +264,17 @@ export const socialCopy = {
     sub: "Friends see its art beside your name. Any card, any printing, owned or not.",
     search: "Search cards",
     anyNote: "Any card in the catalog, owned or not.",
-    noResults: (q: string) => `No card matches “${q}”.`,
+    noResults: (query: string) => `No card matches “${query}”.`,
     // Not drawn (as E15): a search that failed, in the list's place, role alert. Typing asks again.
     searchFailed: "We couldn’t search cards. Try again.",
     /** A result with more than one printing: its trailing `N printings ›`, the chevron drawn apart. */
-    printings: (n: number) => `${n} printings`,
+    printings: (printingCount: number) => `${printingCount} printings`,
     /** The same row, spoken: it opens a screen rather than saving. */
-    printingsAria: (card: string, n: number) => `${card}, ${n} printings. Choose one`,
+    printingsAria: (card: string, printingCount: number) => `${card}, ${printingCount} printings. Choose one`,
     /** A row or tile whose save is in flight. */
     saving: "Saving",
     back: "Back",
-    printingsSub: (n: number) => `${n} printings. Press one to use its art.`,
+    printingsSub: (printingCount: number) => `${printingCount} printings. Press one to use its art.`,
     previewNote: "Friends see this, cropped to its art.",
     previewSaving: "Saving…",
     previewNow: "What friends see now.",
@@ -282,7 +282,7 @@ export const socialCopy = {
     /** The preview's printing line: "Eternal Masters · EMA". */
     previewLine: (set: string, code: string) => `${set} · ${code}`,
     setSearch: "Search sets, codes or numbers",
-    setNoResults: (q: string) => `No printing matches “${q}”.`,
+    setNoResults: (query: string) => `No printing matches “${query}”.`,
     /** A printing tile's name, spoken: set, code and collector number, so two printings of one set differ. */
     tileName: (set: string, code: string, number: string) => (number ? `${set} ${code} #${number}` : `${set} ${code}`),
     /** A tile, spoken: its name, and whether it is the face now. */
@@ -369,7 +369,7 @@ export const socialCopy = {
   },
   // Pods on /friends (PR E1: the table; E2 adds the header menu). Taken from the handoff's `pods.*`.
   pods: {
-    head: (n: number) => `Pods · ${n}`,
+    head: (podCount: number) => `Pods · ${podCount}`,
     newPod: "New pod",
     emptyTitle: "No pods yet",
     emptyBody: "A pod is a group of friends you play with. You choose which pods can see your spare cards.",
@@ -378,8 +378,8 @@ export const socialCopy = {
     create: "Create",
     cancel: "Cancel",
     // The card's meta line.
-    metaOwn: (n: number) => `${members(n)} · yours`,
-    metaOther: (n: number, owner: ThirdPartyName) => personText`${members(n)} · ${owner} owns it`,
+    metaOwn: (memberCount: number) => `${members(memberCount)} · yours`,
+    metaOther: (memberCount: number, owner: ThirdPartyName) => personText`${members(memberCount)} · ${owner} owns it`,
     solo: "Just you so far. Add friends to play with.",
     you: "You",
     ownerTag: "owner",
@@ -393,7 +393,7 @@ export const socialCopy = {
     // Add friends (dialog at desktop, sheet at phone).
     addTitle: (pod: string | ThirdPartyName) => personText`Add to ${pod}`,
     addSub: "Only your friends can be added. They aren’t told.",
-    addConfirm: (n: number) => (n === 0 ? "Add friends" : `Add ${friends(n)}`), // held at 0
+    addConfirm: (friendCount: number) => (friendCount === 0 ? "Add friends" : `Add ${friends(friendCount)}`), // held at 0
     addAllIn: "Every friend is already in this pod.",
     addNoFriends: "No friends to add yet. Add one first.",
     // Ticked past the batch cap (ADD_MEMBERS_MAX): the button holds and this says why.
@@ -433,12 +433,12 @@ export const spareCopy = {
   modalTitleSpares: "Friends with a spare",
   close: "Close",
   /** The section's head: the title's words and how many friends have one. */
-  section: (n: number) => `Friends with a spare · ${n}`,
+  section: (friendCount: number) => `Friends with a spare · ${friendCount}`,
   /** Beside the head: nothing here can be taken or asked for in the app (Q3). */
   viewOnly: "view only",
   /** The pods a friend's share reaches the reader through, listed as `shares with A and B`. */
   via: (pods: readonly ThirdPartyName[]) => personText`shares with ${listNames(pods)}`,
-  count: (n: number) => spares(n),
+  count: (spareCount: number) => spares(spareCount),
   foot: "A spare is a copy none of their decks uses, drafts included. Reach out to offer a trade or bargain your prized family goat, and it’s yours!",
   /** The Shopping key's item, beside the press's spare glyph, at both widths (S2). */
   key: "friend has a spare",
@@ -463,10 +463,10 @@ export const spareCopy = {
     accepted: "Accepted",
     declined: "Declined",
     /** The friend row's one sub line: the spare count, then the pods (or the ask's days, or its expiry). */
-    count: (n: number) => spares(n),
+    count: (spareCount: number) => spares(spareCount),
     pods: (pods: readonly ThirdPartyName[]) => joinNames(pods),
-    daysLeft: (n: number) => (n === 1 ? "1 day left" : `${n} days left`),
-    noAnswer: (days: number) => `no answer in ${days} days`,
+    daysLeft: (daysLeft: number) => (daysLeft === 1 ? "1 day left" : `${daysLeft} days left`),
+    noAnswer: (dayCount: number) => `no answer in ${dayCount} days`,
     askAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card}`,
     askInsteadAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card} instead`,
     askAgainAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card} again`,
@@ -532,7 +532,7 @@ export const spareCopy = {
      * kicker names the state (uppercase by CSS); No longer spare and No longer needed are copy only on the board.
      */
     mine: {
-      head: (n: number) => `Your requests · ${n}`,
+      head: (requestCount: number) => `Your requests · ${requestCount}`,
       order: "newest first",
       kind: {
         open: "Requested",
@@ -544,7 +544,7 @@ export const spareCopy = {
       },
       asked: (friend: string | ThirdPartyName, card: string) => personText`You asked ${friend} for ${card}`,
       /** "For Thopter Works · 12 days left"; the days alone with no deck. */
-      openDetail: (deck: string | null, days: string) => (deck ? `For ${deck} · ${days}` : days),
+      openDetail: (deck: string | null, daysLeftText: string) => (deck ? `For ${deck} · ${daysLeftText}` : daysLeftText),
       canSpare: answerCanSpare,
       acceptedDetail: "The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.",
       /** `acceptedDetail` for a standalone ask, whose card may be on no deck's list: the collection takes it by hand. */
@@ -555,7 +555,7 @@ export const spareCopy = {
       othersHave: (first: string | ThirdPartyName, more: number) =>
         more === 0 ? personText`${first} has a spare too.` : personText`${first} and ${more} more have a spare too.`,
       noAnswer: (friend: string | ThirdPartyName, card: string) => personText`${friend} didn’t answer about ${card}`,
-      noAnswerDetail: (days: number, deck: string | null) => `Requested ${days} days ago${deck ? `, for ${deck}` : ""}.`,
+      noAnswerDetail: (dayCount: number, deck: string | null) => `Requested ${dayCount} days ago${deck ? `, for ${deck}` : ""}.`,
       noLongerSpare: (friend: string | ThirdPartyName, card: string) => personText`${friend} no longer has a spare ${card}`,
       noLongerSpareDetail: "Your request is still open. ✕ withdraws it.",
       noLongerNeededDetail: "It’s off your buy lists now. ✕ withdraws the request.",
@@ -584,25 +584,25 @@ export const haveItCopy = {
     foot: (min: number) => `You offer a card only when you have ${min} or more spare copies.`,
     settings: "Change it in Settings ›",
     /** After the call-out's body when some spares can be offered; alone when none can. */
-    more: (n: number) => (n === 1 ? "1 more is under your threshold." : `${n} more are under your threshold.`),
-    title: (n: number) => (n === 1 ? "You have 1 spare under your threshold" : `You have ${n} spares under your threshold`),
-    body: (names: string, min: number) => `${names}. You offer a card from ${min} spare copies; change it in Settings › Spares.`,
+    more: (spareCount: number) => (spareCount === 1 ? "1 more is under your threshold." : `${spareCount} more are under your threshold.`),
+    title: (spareCount: number) => (spareCount === 1 ? "You have 1 spare under your threshold" : `You have ${spareCount} spares under your threshold`),
+    body: (cardNames: string, min: number) => `${cardNames}. You offer a card from ${min} spare copies; change it in Settings › Spares.`,
   },
   /** The press's aria with its mark, as `spareCopy.request.markAria` does for the Wishlist tab's press. */
   markAria: (base: string, mark: "asked" | "offered" | "accepted") => `${base}, ${mark === "asked" ? "asked you" : mark}`,
   title: "You have this",
   close: "Close",
   kicker: (friend: ThirdPartyName, wants: number) => personText`on ${friend}’s wishlist · wants ${wants}`,
-  section: (n: number) => `Your spares · ${n}`,
-  spare: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
+  section: (spareCount: number) => `Your spares · ${spareCount}`,
+  spare: (spareCount: number) => (spareCount === 1 ? "1 spare" : `${spareCount} spares`),
   spareSub: "not in a deck or draft",
   /** The row's title once the friend has an open ask on the card (`Colin asked for 1`). */
-  asked: (friend: ThirdPartyName, n: number) => personText`${friend} asked for ${n}`,
+  asked: (friend: ThirdPartyName, copyCount: number) => personText`${friend} asked for ${copyCount}`,
   offer: "Offer",
   offerAria: (friend: ThirdPartyName, card: string) => personText`Offer ${friend} ${card}`,
   offered: "Offered",
   accepted: "Accepted",
-  daysLeft: (n: number) => (n === 1 ? "1 day left" : `${n} days left`),
+  daysLeft: (daysLeft: number) => (daysLeft === 1 ? "1 day left" : `${daysLeft} days left`),
   foot: {
     offer: (friend: ThirdPartyName) => personText`Offer, and ${friend} answers yes or no. The trade (or the goat) is between you.`,
     offered: (friend: ThirdPartyName) => personText`${friend} has been told. You’ll hear when they answer.`,
@@ -612,8 +612,8 @@ export const haveItCopy = {
   },
   callout: {
     eyebrow: "Your spares",
-    title: (n: number) => `You have ${n} to spare`,
-    body: (names: string) => `${names}. Offer one from its tile.`,
+    title: (spareCount: number) => `You have ${spareCount} to spare`,
+    body: (cardNames: string) => `${cardNames}. Offer one from its tile.`,
     /** Up to four names read whole ("A, B, C and D"); past four, the first three and how many more. */
     names: (list: readonly string[]) => {
       const join = (l: readonly string[]) => (l.length < 2 ? l.join("") : `${l.slice(0, -1).join(", ")} and ${l[l.length - 1]}`);
@@ -640,11 +640,11 @@ export const sparesSearchCopy = {
     panelAria: "Filter by what you want",
   },
   sort: { trigger: (current: string) => `Sort · ${current}`, wantedFirst: "Wanted first", name: "Name", most: "Most spares", panelAria: "Sort spares" },
-  sheet: { title: "Filter spares", colourHeading: "Color identity", typeHeading: "Type", wantedHeading: "Wanted", show: (n: number) => (n === 1 ? "Show 1 spare" : `Show ${n} spares`), match: (shown: number, total: number) => `${shown} of ${total} match` },
-  chip: { search: (q: string) => `“${q}”`, colours: (n: number) => (n === 1 ? "1 color" : `${n} colors`), types: (n: number, first: string) => (n === 1 ? first : `${n} types`), wanted: (n: number, first: string) => (n === 1 ? first : `${n} wanted`) },
-  tile: { deck: (n: number) => (n === 1 ? "a deck needs it" : `${n} decks need it`) },
+  sheet: { title: "Filter spares", colourHeading: "Color identity", typeHeading: "Type", wantedHeading: "Wanted", show: (spareCount: number) => (spareCount === 1 ? "Show 1 spare" : `Show ${spareCount} spares`), match: (shown: number, total: number) => `${shown} of ${total} match` },
+  chip: { search: (query: string) => `“${query}”`, colours: (colorCount: number) => (colorCount === 1 ? "1 color" : `${colorCount} colors`), types: (typeCount: number, first: string) => (typeCount === 1 ? first : `${typeCount} types`), wanted: (wantedCount: number, first: string) => (wantedCount === 1 ? first : `${wantedCount} wanted`) },
+  tile: { deck: (deckCount: number) => (deckCount === 1 ? "a deck needs it" : `${deckCount} decks need it`) },
   none: {
-    heading: (q: string) => (q ? `No spares match “${q}”.` : "No spares match those filters."),
+    heading: (query: string) => (query ? `No spares match “${query}”.` : "No spares match those filters."),
     body: (friend: string | ThirdPartyName) =>
       personText`Search looks at each card’s name and type line, so “wizard” or “saga” works. ${friend} may still have it in a deck.`,
     keepSearch: "Keep only search",
@@ -659,5 +659,5 @@ export const offerSheetCopy = {
   yesDetail: "Hand it over when you meet; your collection stays as it is until you change it.",
   noDetail: spareCopy.request.offer.answered.noLine,
   /** The line under, mono: when it was offered and how many. */
-  meta: (on: string, copies: number) => `Offered ${on} · ${copies === 1 ? "1 copy" : `${copies} copies`}`,
+  meta: (date: string, copies: number) => `Offered ${date} · ${copies === 1 ? "1 copy" : `${copies} copies`}`,
 } as const;

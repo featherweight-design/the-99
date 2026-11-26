@@ -7,7 +7,7 @@
  * `Synopsis Sheet` canvas and the Analysis-tab frames otherwise; owed to `/copy-review` with the
  * credit strings.
  */
-const landsOf = (n: number) => `${n} ${n === 1 ? "land" : "lands"}`;
+const landsOf = (landCount: number) => `${landCount} ${landCount === 1 ? "land" : "lands"}`;
 
 export const synopsisCopy = {
   label: "Overview",
@@ -109,9 +109,9 @@ export const synopsisCopy = {
    */
   version: {
     entry: "Overview for this version",
-    aside: (n: number, date: string) => `version ${n} · committed ${date}`,
-    record: (n: number) =>
-      `Written for version ${n} when it was committed. It describes that list, not your deck as it is now.`,
+    aside: (versionNumber: number, date: string) => `version ${versionNumber} · committed ${date}`,
+    record: (versionNumber: number) =>
+      `Written for version ${versionNumber} when it was committed. It describes that list, not your deck as it is now.`,
   },
 
   modal: {
@@ -136,7 +136,7 @@ export const synopsisCopy = {
      * (contract 6, the-99-d9's copy, 2026-09-24).
      */
     lands: {
-      keep: (low: number, high: number) => (low === high ? landsOf(low) : `${low} to ${high} lands`),
+      keep: (lowLandCount: number, highLandCount: number) => (lowLandCount === highLandCount ? landsOf(lowLandCount) : `${lowLandCount} to ${highLandCount} lands`),
       sendBack: (none: number, under: number, over: number) =>
         `${under - none === 1 ? `${none} or ${under}` : `${none} to ${under}`} lands, or ${over} or more`,
     },

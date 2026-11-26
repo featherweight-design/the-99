@@ -5,9 +5,9 @@
 // the lock line `refreshCopy.firstRun.step2Locked`, the reason line `showcaseCopy.needsADeck`, and the rows are
 // `writtenForYouCopy.rows`.
 
-const credits = (n: number) => `${n} welcome credit${n === 1 ? "" : "s"}`;
+const credits = (creditCount: number) => `${creditCount} welcome credit${creditCount === 1 ? "" : "s"}`;
 const inDays = (days: number) => `in ${days} day${days === 1 ? "" : "s"}`;
-const expire = (n: number) => (n === 1 ? "expires" : "expire");
+const expire = (creditCount: number) => (creditCount === 1 ? "expires" : "expire");
 /** The reader's own daily allowance (`dailyLimitFor`): one for most, more for a group that sets it. The handoff's
  *  sentence is the one-credit form; a larger allowance is named, so the line is never false (copy-review 2026-10-21). */
 const freeFirst = (free: number) => (free === 1 ? "Your free credit each day is spent first." : `Your ${free} free credits each day are spent first.`);
@@ -32,13 +32,13 @@ export const welcomeCreditsCopy = {
   /** The strip's landmark name. */
   region: "Welcome credits",
   strip: {
-    held: (n: number, day: string): LeadLine => ({ lead: credits(n), rest: ` to try the tools, until ${day}.` }),
-    partly: (left: number, units: number, day: string): LeadLine => ({
-      lead: `${left} of your ${units} welcome credits`,
+    held: (creditCount: number, day: string): LeadLine => ({ lead: credits(creditCount), rest: ` to try the tools, until ${day}.` }),
+    partly: (left: number, creditTotal: number, day: string): LeadLine => ({
+      lead: `${left} of your ${creditTotal} welcome credits`,
       rest: ` ${left === 1 ? "is" : "are"} left, until ${day}.`,
     }),
-    expiring: (n: number, days: number, day: string): LeadLine => ({ lead: credits(n), rest: ` ${expire(n)} ${inDays(days)}, on ${day}.` }),
-    usedUp: (units: number) => `You’ve used all ${units} welcome credits.`,
+    expiring: (creditCount: number, days: number, day: string): LeadLine => ({ lead: credits(creditCount), rest: ` ${expire(creditCount)} ${inDays(days)}, on ${day}.` }),
+    usedUp: (creditTotal: number) => `You’ve used all ${creditTotal} welcome credits.`,
     /** Opens the sheet. */
     where: "Where they work",
     /** Used up, while payments are on and nothing was bought: to /credits. */
@@ -52,18 +52,18 @@ export const welcomeCreditsCopy = {
     title: "Where credits work",
     close: "Close",
     /** The grant line, the free credit named after it. `day` is `sheetDay`'s. */
-    held: (n: number, day: string, free: number): LeadLine => ({
+    held: (creditCount: number, day: string, free: number): LeadLine => ({
       before: "You have ",
-      lead: credits(n),
+      lead: credits(creditCount),
       rest: ` until ${day}. ${freeFirst(free)}`,
     }),
-    partly: (left: number, units: number, day: string, free: number): LeadLine => ({
-      lead: `${left} of your ${units} welcome credits`,
+    partly: (left: number, creditTotal: number, day: string, free: number): LeadLine => ({
+      lead: `${left} of your ${creditTotal} welcome credits`,
       rest: ` ${left === 1 ? "is" : "are"} left, until ${day}. ${freeFirst(free)}`,
     }),
-    expiring: (n: number, days: number, day: string, free: number): LeadLine => ({
-      lead: credits(n),
-      rest: ` ${expire(n)} ${inDays(days)}, on ${day}. ${freeFirst(free)}`,
+    expiring: (creditCount: number, days: number, day: string, free: number): LeadLine => ({
+      lead: credits(creditCount),
+      rest: ` ${expire(creditCount)} ${inDays(days)}, on ${day}. ${freeFirst(free)}`,
     }),
     tryIt: "Try it",
     /** At the foot while payments are on and nothing was bought: to /credits. */
@@ -71,8 +71,8 @@ export const welcomeCreditsCopy = {
   },
   cell: {
     /** Under the Welcome cell's count. `day` is `stripDay`'s. */
-    expire: (n: number, day: string) => `${expire(n)} ${day}`,
-    expiring: (n: number, days: number, day: string) => `${expire(n)} ${inDays(days)}, ${day}`,
+    expire: (creditCount: number, day: string) => `${expire(creditCount)} ${day}`,
+    expiring: (creditCount: number, days: number, day: string) => `${expire(creditCount)} ${inDays(days)}, ${day}`,
     where: "Where they work",
   },
 } as const;

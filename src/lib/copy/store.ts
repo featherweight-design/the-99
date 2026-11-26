@@ -47,7 +47,7 @@ export const storeCopy = {
   /** The swapped label and the role=status announcement. */
   copied: "Copied",
   copyFailed: "Couldn’t copy. Try again.",
-  copyAria: (n: number) => `Copy the list, ${n} ${n === 1 ? "card" : "cards"}`,
+  copyAria: (cardCount: number) => `Copy the list, ${cardCount} ${cardCount === 1 ? "card" : "cards"}`,
   /** An ExternalLink, so it draws the link-out icon and the new-tab suffix. */
   openPaste: (s: StoreInfo) => `Open ${s.paste?.name ?? s.name}`,
 
@@ -62,7 +62,7 @@ export const storeCopy = {
   /** Card details' link when the store has a figure for the card. */
   linkOut: (s: StoreInfo) => `Buy any printing at ${s.name}`,
   /** A wishlist line that names a printing reads it on the link. */
-  linkOutPrinting: (s: StoreInfo, set: string, n: string) => `Buy ${set} ${n} at ${s.name}`,
+  linkOutPrinting: (s: StoreInfo, set: string, collectorNumber: string) => `Buy ${set} ${collectorNumber} at ${s.name}`,
   /** The link with no figure from the store: a search, not a claim the store sells it. */
   lookFor: (s: StoreInfo) => `Look for it at ${s.name}`,
   tokenLinkOut: (s: StoreInfo) => `Buy this token at ${s.name}`,
