@@ -1225,10 +1225,10 @@ export const ABOUT_PAGE_STRINGS = {
   tryIt: "Try it",
   tryItSub: "Each button opens the tool for real",
   /** A phone's Try it shows its first card; the rest wait under this button (Addendum R4 board 4). */
-  moreTools: (n: number) => (n === 1 ? "1 more tool" : `${n} more tools`),
+  moreTools: (toolCount: number) => (toolCount === 1 ? "1 more tool" : `${toolCount} more tools`),
   /** A section's kicker: its place on the page among the sections this reader is drawn (R4 board 4). One section
    *  draws no count (R4 ruling 4). */
-  screenOf: (area: string, n: number, total: number) => (total === 1 ? area : `${area} · screen ${n} of ${total}`),
+  screenOf: (area: string, screenNumber: number, total: number) => (total === 1 ? area : `${area} · screen ${screenNumber} of ${total}`),
   /** A tool card's line under its description: lights the tool's control on the capture above (R4 board 5). */
   toolWhere: "Show it above ↑",
   /** The phone's docked label's ✕, its accessible name (R4 board 3). */

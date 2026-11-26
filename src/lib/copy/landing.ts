@@ -133,29 +133,29 @@ export const landingCopy = {
     /** The section's header, as on the board: it stays through the start, every step and the end. */
     eyebrow: "Try it",
     title: "See it work before you join",
-    lead: (tools: string) => `A made-up player\u2019s cards and ${tools} of the tools, working the way they do for members.`,
+    lead: (toolCount: string) => `A made-up player\u2019s cards and ${toolCount} of the tools, working the way they do for members.`,
     /** The start card, inside the frame: its heading, its paragraph and its button. */
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
-    startBody: (player: string, tools: string) => `${player} is a made-up player with a real-looking binder. Step through ${tools} of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
+    startBody: (player: string, toolCount: string) => `${player} is a made-up player with a real-looking binder. Step through ${toolCount} of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
     start: "Start",
     /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
     loading: "Loading",
     loadFailed: "The demo didn\u2019t load. Check your connection, then press Start to try again.",
     stage: (player: string) => `Live demo \u00b7 ${player}\u2019s cards`,
-    step: (n: number, of: number) => `Step ${n} of ${of}`,
+    step: (stepNumber: number, stepCount: number) => `Step ${stepNumber} of ${stepCount}`,
     skip: "Skip to the end",
     back: "Back",
     next: "Next",
     seeEnd: "See the end",
     /** The section's main button after the dialog was closed mid-way, beside the quiet Start over (the page's reload clears both). */
-    carryOn: (n: number) => `Carry on from step ${n}`,
+    carryOn: (stepNumber: number) => `Carry on from step ${stepNumber}`,
     /** The dialog's \u2715 (its accessible name) and the end's quiet Close. */
     closeAria: "Close the demo",
     close: "Close",
     /** Step 1's count line above the grid: the cards drawn, of the binder's whole count. */
     collectionCount: (shown: number, total: string, player: string) => `${shown} of ${player}\u2019s ${total} cards`,
     /** Step 4's counter under the key, and the control that expands the shipped list in place. */
-    markedCount: (n: number, total: number) => `${n} of ${total} \u00b7 the cards with a mark`,
+    markedCount: (markedCount: number, total: number) => `${markedCount} of ${total} \u00b7 the cards with a mark`,
     showAll: (total: number) => `Show all ${total}`,
     /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
     commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
@@ -189,14 +189,14 @@ export const landingCopy = {
     },
     /** The eight tools that are always there, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
-      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string, opens = false, shown = 0) => `${p} is made up, and so is the binder: ${cards}. Here are ${shown} of them.${opens ? " Select any card to open it." : ""}`, press: "Select a card" },
-      { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Select the fit to see why.`, press: "Why it fits" },
-      { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Select a commander" },
-      { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. Here are the cards that carry a mark; the key above them says what each mark means.`, press: "Hover a mark" },
+      { id: "collection", title: (playerName: string) => `${playerName}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (playerName: string, cardCountText: string, opens = false, shown = 0) => `${playerName} is made up, and so is the binder: ${cardCountText}. Here are ${shown} of them.${opens ? " Select any card to open it." : ""}`, press: "Select a card" },
+      { id: "commanders", title: (playerName: string) => `The commanders ${playerName} can build`, tags: [{ kind: "free", label: "Free" }], line: (playerName: string) => `Every commander in the binder, ranked by how much of its deck ${playerName} already owns. Select the fit to see why.`, press: "Why it fits" },
+      { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (playerName: string) => `${playerName} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Select a commander" },
+      { id: "deck", title: (playerName: string) => `A deck from what ${playerName} owns`, tags: [{ kind: "free", label: "Free" }], line: (playerName: string) => `Built from ${playerName}\u2019s cards first. Here are the cards that carry a mark; the key above them says what each mark means.`, press: "Hover a mark" },
       { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "credit", label: "1 credit" }], line: () => "The Overview gives the verdict and the bracket, then a written read of how the deck plays, from the first turns to the win.", press: "Select a finding" },
-      { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: (p: string) => `${p} asked for more interaction. The 99 picked a few swaps, a card in and a card out each, and says why.`, press: "Select a card" },
-      { id: "get-to-99", title: () => "Get it to 99", tags: [], line: (p: string) => `Three tools, one tab each. Proposed cuts names the cuts for a deck over 99. Top off fills a deck under 99 from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
-      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [], line: (p: string) => `Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck ${p} has.`, press: null },
+      { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: (playerName: string) => `${playerName} asked for more interaction. The 99 picked a few swaps, a card in and a card out each, and says why.`, press: "Select a card" },
+      { id: "get-to-99", title: () => "Get it to 99", tags: [], line: (playerName: string) => `Three tools, one tab each. Proposed cuts names the cuts for a deck over 99. Top off fills a deck under 99 from ${playerName}\u2019s cards. Mana Balance checks the lands.`, press: null },
+      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [], line: (playerName: string) => `Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck ${playerName} has.`, press: null },
     ],
     /** How many tools the demo steps through, in words, for the lead and the start card: eight, or nine while the Upgrade step is in. */
     toolCount: (n: number) => (n === 9 ? "nine" : "eight"),
@@ -204,7 +204,7 @@ export const landingCopy = {
     upgradeStep: {
       id: "upgrade",
       title: () => "Upgrade this precon",
-      line: (p: string, swaps: number) => `${p} picked who leads a precon, how strong it plays and the strategy. The 99 found ${swaps} swaps toward that plan and says why for each.`,
+      line: (playerName: string, swaps: number) => `${playerName} picked who leads a precon, how strong it plays and the strategy. The 99 found ${swaps} swaps toward that plan and says why for each.`,
       press: "Select a card",
     },
     end: {
@@ -212,8 +212,8 @@ export const landingCopy = {
       label: "The end",
       title: (player: string) => `That was ${player}\u2019s binder. Yours works the same.`,
       lead: "Bring your cards in, and every commander and deck here is built from what you own.",
-      skipped: (from: number, to: number) => `You skipped steps ${from} to ${to}.`,
-      goBack: (n: number) => `Go back to step ${n}`,
+      skipped: (from: number, endStep: number) => `You skipped steps ${from} to ${endStep}.`,
+      goBack: (stepNumber: number) => `Go back to step ${stepNumber}`,
       startOver: "Start over",
     },
   },
@@ -225,12 +225,12 @@ export const landingCopy = {
     lead: "Browsing is always free. Anything we write just for you uses a credit.",
     welcome: {
       label: "welcome credits",
-      note: (days: number) => `when you join, for ${days} days`,
+      note: (dayCount: number) => `when you join, for ${dayCount} days`,
     },
     /** READINESS-audit finding 11 DEFECT: "1 free credit a day", and it comes back 24 hours after use (never "+1", never "free run"). */
     daily: { figure: "1", label: "free credit a day", note: "back 24 hours after you use it" },
     /** The picture under the block: fifteen diamonds, three over each writing tool. */
-    threeTimes: (units: number) => `${units} credits = each writing tool, three times`,
+    threeTimes: (creditCount: number) => `${creditCount} credits = each writing tool, three times`,
     /** "Every writing tool three times": drawn only while welcome credits are on and the grant is exactly three runs of each of the five tools. The finding-11 qualifier rides only while the 2-credit rule is live. */
     enough: "That covers every writing tool three times over before you spend a thing.",
     enoughV2: "That covers every writing tool three times over (Suggested changes, up to 10 changes) before you spend a thing.",
@@ -258,7 +258,7 @@ export const landingCopy = {
     },
     one: "1 credit",
     suggestedV2: "1 to 2 credits",
-    many: (n: number) => `${n} credits`,
+    many: (creditCount: number) => `${creditCount} credits`,
   },
   tools: [
     {
@@ -304,8 +304,8 @@ export const landingCopy = {
   sheet: {
     title: "What credits cost",
     close: "Close",
-    pack: { name: "Credit pack", line: (units: number) => `${units} credits that never expire` },
-    plan: { name: "Monthly plan", price: (price: string) => `${price} a month`, line: (units: number) => `${units} credits a month; unused ones roll over` },
+    pack: { name: "Credit pack", line: (creditCount: number) => `${creditCount} credits that never expire` },
+    plan: { name: "Monthly plan", price: (price: string) => `${price} a month`, line: (creditCount: number) => `${creditCount} credits a month; unused ones roll over` },
     foot: "Credits are bought once you have an account. Browsing stays free either way.",
   },
   close: {

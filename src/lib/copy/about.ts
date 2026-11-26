@@ -127,8 +127,8 @@ export const aboutCopy = {
     'Cheers nerds,' +
     '\n\n' +
     'Hugh',
-  newSinceEyebrow: (n: number) =>
-    n === 1 ? '1 new since your last visit' : `${n} new since your last visit`,
+  newSinceEyebrow: (newCount: number) =>
+    newCount === 1 ? '1 new since your last visit' : `${newCount} new since your last visit`,
 } as const;
 
 // ---- How the app reaches its answers (handoff about_how_it_works, R1) -----

@@ -153,7 +153,7 @@ export const collectionChassisCopy = {
 
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
-    search: (q: string) => `"${q}"`,
+    search: (searchText: string) => `"${searchText}"`,
     colours: (n: number) => (n === 1 ? "1 color" : `${count(n)} colors`),
     types: (n: number, first: string) => (n === 1 ? first : `${count(n)} types`),
     sets: (n: number, first: string) => (n === 1 ? first : `${count(n)} sets`),
@@ -165,7 +165,7 @@ export const collectionFilterCopy = {
   set: {
     // Trigger
     triggerLabel: "Set",
-    triggerCount: (n: number) => (n <= 1 ? `Set ${n}` : `Sets ${n}`),
+    triggerCount: (selectedCount: number) => (selectedCount <= 1 ? `Set ${selectedCount}` : `Sets ${selectedCount}`),
     /** Nothing chosen, on a trigger that counts (Help me choose's Sets field); the same words as the rack's `setAny`. */
     triggerNone: "Any set",
     triggerAriaCollapsed: "Filter by set, collapsed",
@@ -224,7 +224,7 @@ export const collectionFilterCopy = {
     triggerLabel: "Type",
     // Counts, as Set does (#1050; Hugh, 2026-09-27): a type's name grew the trigger and moved
     // the row. The names live in the chip row.
-    triggerCount: (n: number) => (n <= 1 ? `Type ${n}` : `Types ${n}`),
+    triggerCount: (selectedCount: number) => (selectedCount <= 1 ? `Type ${selectedCount}` : `Types ${selectedCount}`),
     triggerAriaCollapsed: "Filter by type, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by type, ${count(n)} selected, collapsed`,
 
@@ -274,7 +274,7 @@ export const collectionFilterCopy = {
     triggerLabel: availabilityCopy.collection.filterLabel,
     // Counts, as Set does. No plural: "Availabilities" names nothing a reader picks, and the
     // figure counts the states on.
-    triggerCount: (n: number) => `${availabilityCopy.collection.filterLabel} ${n}`,
+    triggerCount: (selectedCount: number) => `${availabilityCopy.collection.filterLabel} ${selectedCount}`,
     triggerAriaCollapsed: "Filter by availability, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by availability, ${count(n)} selected, collapsed`,
 
@@ -566,8 +566,8 @@ export const printingPickerCopy = {
     entryQtyMixed: (n: number, foil: number) => `×${count(n)} · ${count(foil)} foil`,
     // Collector number may be "" (bare Name,Qty import). Omit the field and its
     // separator entirely — never "#—", never a leading "· ".
-    entryMeta: (collectorNumber: string, qty: string) =>
-      collectorNumber ? `#${collectorNumber} · ${qty}` : qty,
+    entryMeta: (collectorNumber: string, quantityText: string) =>
+      collectorNumber ? `#${collectorNumber} · ${quantityText}` : quantityText,
     badgeShownNow: "Shown now",
     badgePicked: "Your pick",
     entryAria: (

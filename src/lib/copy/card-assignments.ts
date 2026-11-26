@@ -186,7 +186,7 @@ export const cardAssignmentsCopy = {
     fileStamp: (date: string, filename: string) => `uploaded ${date} · ${filename}`,
     /** A Sync's stamp. Named apart from the contested row's `stamp` below, which is a deck version's. */
     syncFileStamp: (date: string, filename: string) => `synced ${date} · ${filename}`,
-    fileDelta: (n: number) => `${n} cards differ from the old list`,
+    fileDelta: (cardCount: number) => `${cardCount} cards differ from the old list`,
 
     /**
      * The seam with the shipped replace flow. `ReviewScreen` reports problems with the FILE
@@ -209,12 +209,12 @@ export const cardAssignmentsCopy = {
       `${unmatched} ${unmatched === 1 ? "name" : "names"} didn’t match and ${parseErrors} ` +
       `${parseErrors === 1 ? "line wouldn’t" : "lines wouldn’t"} parse. Any deck still counting ` +
       "one of those as a card to buy is marked below. You saw them before you confirmed.",
-    issuesUnmatchedOnly: (n: number) =>
-      `${n} ${n === 1 ? "name" : "names"} didn’t match. Any deck still counting ` +
-      `${n === 1 ? "that card" : "one of those"} as a card to buy is marked below. You saw them before you confirmed.`,
+    issuesUnmatchedOnly: (cardCount: number) =>
+      `${cardCount} ${cardCount === 1 ? "name" : "names"} didn’t match. Any deck still counting ` +
+      `${cardCount === 1 ? "that card" : "one of those"} as a card to buy is marked below. You saw them before you confirmed.`,
     issuesLink: "Look at the file again",
 
-    sectionCleared: (n: number) => `No longer to buy · ${n}`,
+    sectionCleared: (cardCount: number) => `No longer to buy · ${cardCount}`,
     sectionClearedNote: "These arrived, so the decks that counted them as cards to buy stop counting them.",
 
     /**
@@ -224,7 +224,7 @@ export const cardAssignmentsCopy = {
      * classification as a reason clause on the row. Three headings for two outcomes was the
      * arithmetic showing through the interface.
      */
-    sectionStill: (n: number) => `Still to buy · ${n}`,
+    sectionStill: (cardCount: number) => `Still to buy · ${cardCount}`,
     sectionStillNote:
       "Some of these only partly arrived; the rest aren’t in the new list at all. Either way " +
       "these decks still have to buy them. Prices live on each deck’s Shopping list, where you " +
@@ -241,7 +241,7 @@ export const cardAssignmentsCopy = {
     reasonUnmatched: "name didn’t match",
 
     /** No prices and no totals anywhere on this page. See the section note above. */
-    sectionShort: (n: number) => `Still short · ${n}`,
+    sectionShort: (cardCount: number) => `Still short · ${cardCount}`,
     /**
      * The default rule, stated once and briefly, in the section that holds the decision.
      * "unless you say otherwise" is the whole licence to change it; without that clause the
@@ -256,7 +256,7 @@ export const cardAssignmentsCopy = {
       "it, unless you say otherwise.",
 
 
-    showAll: (n: number) => `Show all ${n}`,
+    showAll: (cardCount: number) => `Show all ${cardCount}`,
 
     /**
      * A ROUTE, not a commit, and the label says where it goes rather than that it is finished.
@@ -296,22 +296,22 @@ export const cardAssignmentsCopy = {
     supplyOwned: (copies: number, decks: number) =>
       `${copies === 1 ? "1 copy" : `${copies} copies`} · ` +
       `${decks === 1 ? "1 deck needs it" : `${decks} decks need it`}`,
-    headingOwned: (copies: number) =>
-      copies === 1 ? "Give the copy to" : `Give the ${copies} copies to`,
+    headingOwned: (copyCount: number) =>
+      copyCount === 1 ? "Give the copy to" : `Give the ${copyCount} copies to`,
 
     /** The cap, stated beside the heading whenever it is above one. */
-    cap: (given: number, copies: number) => `${given} of ${copies} given`,
+    cap: (given: number, copyCount: number) => `${given} of ${copyCount} given`,
     /** The cap once any pick stands, on a card with two or more copies (several picks). */
-    capPicked: (picked: number, copies: number) => `${picked} of ${copies} picked`,
+    capPicked: (picked: number, copyCount: number) => `${picked} of ${copyCount} picked`,
     /**
      * Every copy picked, said under the rows as soon as the last pick lands, and announced on a
      * select past the cap. Not a refusal: nothing was tried that failed.
      */
-    allPicked: (copies: number) =>
-      `All ${copies} copies are picked. Untick one to give another deck a copy.`,
+    allPicked: (copyCount: number) =>
+      `All ${copyCount} copies are picked. Untick one to give another deck a copy.`,
     /** THE VERB. Never rendered as a button. */
-    heading: (copies: number) =>
-      copies === 1 ? "Give the new copy to" : `Give the ${copies} new copies to`,
+    heading: (copyCount: number) =>
+      copyCount === 1 ? "Give the new copy to" : `Give the ${copyCount} new copies to`,
     /** The folded-claim case: a commander's copy is protected and the rest are in play. */
     headingSpare: "Give the spare copy to",
     /** No option can be chosen at all — and only then. */
@@ -349,7 +349,7 @@ export const cardAssignmentsCopy = {
      * has to be checkable.
      */
     stamp: (version: number, date: string) => `v${version} · ${date}`,
-    wants: (n: number) => `wants ${n}`,
+    wants: (copyCount: number) => `wants ${copyCount}`,
     /** In commit order, NEVER promoted: the order IS the explanation of the default. */
     thisDeck: "this deck",
 

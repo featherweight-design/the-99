@@ -36,7 +36,7 @@ export const accountCopy = {
 
   devices: {
     /** The sub-head; while the list loads or fails, it is drawn without the count. */
-    head: (n: number | null) => (n === null ? "Signed in on" : `Signed in on · ${n}`),
+    head: (deviceCount: number | null) => (deviceCount === null ? "Signed in on" : `Signed in on · ${deviceCount}`),
     explain: "Sign out of a device you don’t use or don’t recognize.",
     /** `Chrome on Mac`, `Safari on iPhone`. */
     name: (browser: string, device: string) => `${browser} on ${device}`,

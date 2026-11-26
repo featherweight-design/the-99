@@ -146,9 +146,9 @@ export const comboAwarenessCopy = {
      * `1 in this deck · 4 you don’t` — never `0 you own`.
      */
     summary: {
-      inDeck: (n: number) => `${n} in this deck`,
-      owned: (n: number) => `${n} you own`,
-      notOwned: (n: number) => `${n} you don’t`,
+      inDeck: (cardCount: number) => `${cardCount} in this deck`,
+      owned: (cardCount: number) => `${cardCount} you own`,
+      notOwned: (cardCount: number) => `${cardCount} you don’t`,
       join: ' · ',
     },
     /** The closed row is a button; its name is the label plus the counts as words. */

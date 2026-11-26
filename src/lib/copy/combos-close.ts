@@ -40,7 +40,7 @@ export const combosCloseCopy = {
       /** A copy held elsewhere whose deck the read did not name. */
       inAnotherDeck: "in another deck",
       /** More decks hold a copy than the row names. */
-      more: (n: number) => `+${n}`,
+      more: (moreCount: number) => `+${moreCount}`,
       deckLinkAria: (deckName: string) => `Open the ${deckName} deck`,
     },
     foot: "From Commander Spellbook. Two-card combos legal in this deck’s colors.",

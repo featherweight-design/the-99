@@ -204,7 +204,7 @@ export const explainedCopy = {
 
     pool: {
       label: "Pool",
-      weight: (w: number) => `${w} pts`,
+      weight: (points: number) => `${points} pts`,
       /* POOL NAMES ITS THRESHOLD. Without it this is the one segment a reader can read as a
          percentage: full marks mean "at least `POOL_FULL_AT` legal cards", and a collection of
          any depth clears that for most commanders, so a permanent 15/15 reads as "100% covered"
@@ -218,7 +218,7 @@ export const explainedCopy = {
     },
     roles: {
       label: "Roles",
-      weight: (w: number) => `${w} pts`,
+      weight: (points: number) => `${points} pts`,
       body:
         "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against what this commander’s decks run, or a per-role baseline where we have no figures for it.",
       bodyMobile:
@@ -226,7 +226,7 @@ export const explainedCopy = {
     },
     synergy: {
       label: "Synergy",
-      weight: (w: number) => `${w} pts`,
+      weight: (points: number) => `${points} pts`,
       body:
         "How much of EDHREC’s most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your collection.",
       bodyMobile:
