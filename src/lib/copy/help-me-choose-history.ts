@@ -41,9 +41,9 @@ export const helpMeChooseHistoryCopy = {
     note: "A past run, read-only. Opening it again uses no credit.",
     noteNothing: "A past run, read-only. It found nothing, so no credit was used.",
     /** Appended to the note when some or all picks went. */
-    open: (open: number, picks: number) =>
-      open === 0 ? `None of its ${picks} picks are open to you now.` : `${open} of its ${picks} picks are still open to you.`,
-    goneHead: (n: number) => `Not open to you now · ${n}`,
+    open: (open: number, pickCount: number) =>
+      open === 0 ? `None of its ${pickCount} picks are open to you now.` : `${open} of its ${pickCount} picks are still open to you.`,
+    goneHead: (pickCount: number) => `Not open to you now · ${pickCount}`,
     goneLabel: "Picks not open to you now",
     goneBuilt: (deck: string) => `you built it since · ${deck}`,
     goneIndex: "no longer among the commanders we rank",
@@ -53,13 +53,13 @@ export const helpMeChooseHistoryCopy = {
     failedBack: "Back to History",
   },
   row: {
-    picks: (n: number) => `${n} ${n === 1 ? "pick" : "picks"}`,
+    picks: (pickCount: number) => `${pickCount} ${pickCount === 1 ? "pick" : "picks"}`,
     nothing: "found nothing · no credit used",
     reading: "reading",
     now: "now",
     /** The row link's accessible name. `tail` is `9 picks` or `found nothing, no credit used`. */
     aria: (question: string, date: string, tail: string) => `${question}. ${date}, ${tail}.`,
-    ariaPicks: (n: number) => `${n} ${n === 1 ? "pick" : "picks"}`,
+    ariaPicks: (pickCount: number) => `${pickCount} ${pickCount === 1 ? "pick" : "picks"}`,
     ariaNothing: "found nothing, no credit used",
     readingAria: (question: string) => `Running: ${question}. Opens the run’s waiting panel.`,
   },

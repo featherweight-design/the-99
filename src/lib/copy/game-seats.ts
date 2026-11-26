@@ -30,7 +30,7 @@ export const gameSeatsCopy = {
   seats: {
     label: "Across the table",
     /** `seats` is the pod size minus one. */
-    count: (filled: number, seats: number) => `${filled} of ${seats} seats`,
+    count: (filled: number, seatCount: number) => `${filled} of ${seatCount} seats`,
     you: "You",
     youTag: "YOU",
     add: "Add opponent",
@@ -40,7 +40,7 @@ export const gameSeatsCopy = {
     clear: byName((name) => personText`Clear ${name}’s seat`),
     addName: "Add a name",
     labelAria: "Who played it",
-    labelCounter: (n: number) => `${n} / 30`,
+    labelCounter: (charCount: number) => `${charCount} / 30`,
     /** On a loss, with at least one seat filled. */
     wonHint: "If one of them won, press their trophy. Optional.",
     wonHintPhone: "If one of them won, press their Won. Optional.",
@@ -52,7 +52,7 @@ export const gameSeatsCopy = {
     /** The chips' label, beside one chip per pod. */
     seatPod: "Seat a pod",
     /** A pod larger than the table: who was left out. `names` reads "Sam, Jo and Lee". */
-    podLeftOut: ((names) => (typeof names === "string" ? `No room for ${names}. A pod seats up to 8.` : personText`No room for ${names}. A pod seats up to 8.`)) as {
+    podLeftOut: ((playerNames) => (typeof playerNames === "string" ? `No room for ${playerNames}. A pod seats up to 8.` : personText`No room for ${playerNames}. A pod seats up to 8.`)) as {
       (names: string): string;
       (names: PersonParts): PersonParts;
     },
@@ -69,7 +69,7 @@ export const gameSeatsCopy = {
     placeholderFriends: "Friend or any commander",
     friends: "Friends",
     commanders: "Commanders",
-    deckCount: (n: number) => (n === 0 ? "no decks" : n === 1 ? "1 deck" : `${n} decks`),
+    deckCount: (deckCount: number) => (deckCount === 0 ? "no decks" : deckCount === 1 ? "1 deck" : `${deckCount} decks`),
     /** A friend already at the table, dimmed. */
     seated: "seated",
     footFriends: "Type to search every commander too.",

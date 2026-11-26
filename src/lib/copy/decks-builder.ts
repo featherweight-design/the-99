@@ -42,7 +42,7 @@ export const addPanelCopy = {
     // Round 0's word for the second tab. No count: the tab carries a verdict rather than a
     // number of things, and a figure beside it would be read as one of the counts inside.
     analysis: "Analysis",
-    deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
+    deckAria: (cardCount: number) => `Your deck, ${plural(cardCount, "card", "cards")}`,
     analysisAria: "Analysis of this deck",
     /** Tool discovery B2: the Tuning hub's tab (the handoff's `tuningTabCopy`). Here, not in `tuningHubCopy`, so the deck
      *  page's loading skeleton, which Home's shell carries, names the tab without shipping the hub's copy. */
@@ -58,7 +58,7 @@ export const addPanelCopy = {
     // Replaces the old "Based on your collection and EDHREC data…" sub-caption.
     // Provenance for the collection; the EDHREC claim now sits on the shelf
     // that actually uses it.
-    provenance: (n: number) => `${plural(n, "card", "cards")} you already own`,
+    provenance: (cardCount: number) => `${plural(cardCount, "card", "cards")} you already own`,
     // Used only once the unowned append has put something on the shelves, so
     // the line above never over-claims. Deliberately not the app's `N to buy`
     // (builder-spine.tsx, deck-card.tsx): there it counts cards in this deck
@@ -72,9 +72,9 @@ export const addPanelCopy = {
     sortCheapest: "Cheapest to cast",
     sortAria: "Sort suggestions",
 
-    showAll: (n: number) => `Show all ${n}`,
-    showAllAria: (role: string, n: number) =>
-      `Show all ${n} ${role} ${n === 1 ? "suggestion" : "suggestions"}`,
+    showAll: (cardCount: number) => `Show all ${cardCount}`,
+    showAllAria: (role: string, cardCount: number) =>
+      `Show all ${cardCount} ${role} ${cardCount === 1 ? "suggestion" : "suggestions"}`,
     collapse: "Show fewer",
     // The key row at the foot of the shelves (deck details refresh, PR 1; copy-reviewed).
     keyAdd: "Add puts the card in the deck. Add · to buy also puts it on Shopping.",
@@ -138,7 +138,7 @@ export const addPanelCopy = {
   // The header quotes the same numbers as the coverage cell above it.
   shelf: {
     coverage: (have: number, target: number) => `you have ${have} of ${target}`,
-    count: (n: number) => `${n} to consider`,
+    count: (cardCount: number) => `${cardCount} to consider`,
     // Small items 11, item 2 (copy-reviewed): a role over its target says by how many; at target keeps `coverage`.
     coverageOver: (have: number, over: number) => `you have ${have} · ${over} over`,
     // The press on a met or over shelf's head, opening the role's cards. Its accessible name keeps the visible text.
@@ -182,14 +182,14 @@ export const addPanelCopy = {
     noInclusion: "no EDHREC figure",
     // Non-degraded, role-sourced picks (no EDHREC percentage for this card).
     fillsRole: (role: string) => `fills a ${role} slot`,
-    inclusion: (pct: string) => `${pct}%`,
-    inclusionAria: (pct: string, commanderShortName: string) =>
-      `in ${pct}% of ${commanderShortName} decks on EDHREC`,
+    inclusion: (percent: string) => `${percent}%`,
+    inclusionAria: (percent: string, commanderShortName: string) =>
+      `in ${percent}% of ${commanderShortName} decks on EDHREC`,
     // Both figures name their baseline on screen. Without the label a bare
     // `10%` reads as a share of something on this page rather than an EDHREC
     // inclusion rate.
     evidenceLabel: "edhrec",
-    lift: (pts: string) => `+${pts} pts vs. all decks`,
+    lift: (liftPoints: string) => `+${liftPoints} pts vs. all decks`,
   },
 
   // ── Unowned suggestions ───────────────────────────────────────────────
@@ -252,17 +252,17 @@ export const addPanelCopy = {
     keyboardHintDismiss: "Esc to dismiss",
 
     resultsAria: "Card search results",
-    resultCountWithIdentity: (n: number, identity: string) =>
-      `${n === 1 ? "1 match" : `${n} matches`} · ${identity} only`,
+    resultCountWithIdentity: (matchCount: number, identity: string) =>
+      `${matchCount === 1 ? "1 match" : `${matchCount} matches`} · ${identity} only`,
 
     rowAdd: "Add",
     rowAddActive: "↵ add",
     rowInDeck: "✓ In deck",
-    rowOwned: (qty: number) => `×${qty} owned`,
+    rowOwned: (ownedCount: number) => `×${ownedCount} owned`,
     // The phone row's short form, used ONLY on a row that also carries a combo partner: that
     // line holds the type, the count and the partner at 390px, and the word is what gives.
     // Ruled by Hugh 2026-09-22 (quick-add combo row, option E). Every other row keeps `rowOwned`.
-    rowOwnedShort: (qty: number) => `×${qty}`,
+    rowOwnedShort: (ownedCount: number) => `×${ownedCount}`,
     rowNotOwned: "not owned",
     // `availability` is one of the availabilityCopy.marker.*Aria strings, or
     // null. It is prose, not the visual label: the eye reads "none free — in
@@ -285,10 +285,10 @@ export const addPanelCopy = {
 
     ownedToggle: "Owned only",
     ownedToggleAria: "Show only cards you own",
-    ownedFilterOffNote: (n: number) =>
-      n === 1
+    ownedFilterOffNote: (resultCount: number) =>
+      resultCount === 1
         ? "filter off · 1 result you don’t own"
-        : `filter off · ${n} results you don’t own`,
+        : `filter off · ${resultCount} results you don’t own`,
 
     clear: "Clear search",
 
@@ -349,9 +349,9 @@ export const addPanelCopy = {
     // Addendum C5 / C-N4. Visual only: the name's own button already speaks the
     // card and the ✕'s aria carries the same count in prose, so a screen reader
     // that also read this glyph would say the number twice.
-    quantity: (n: number) => `×${n}`,
+    quantity: (copyCount: number) => `×${copyCount}`,
     // A read-only row (a precon's) has no ✕ to speak the count, so it says it here instead.
-    quantitySpoken: (n: number) => (n === 1 ? "1 copy" : `${n} copies`),
+    quantitySpoken: (copyCount: number) => (copyCount === 1 ? "1 copy" : `${copyCount} copies`),
     removeAria: (name: string) => `Remove ${name}`,
     // A stack of basics decrements rather than unmounting, so the phone label
     // says which of the two is about to happen.
@@ -367,9 +367,9 @@ export const addPanelCopy = {
     moreAria: (name: string, after: number) => `One more ${name}, ${after} in deck`,
     countAria: (name: string) => `${name} copies in deck`,
     // Visual only: the shipped recount description carries the committed figure for a reader.
-    from: (n: number) => `from ${n}`,
+    from: (previousCount: number) => `from ${previousCount}`,
     // Spoken once per settled save, never per press.
-    settled: (name: string, n: number) => `${name}, ${n} in deck.`,
+    settled: (name: string, copyCount: number) => `${name}, ${copyCount} in deck.`,
     // The server returned a refusal before any write.
     refused: "We couldn’t change that. The deck is unchanged.",
     // The save threw, so it may have landed: the row re-reads the deck rather than reverting.
@@ -445,8 +445,8 @@ export const addPanelCopy = {
     /** The phone's sub under the title; desktop has the `sub*` lines above. */
     subPhone: "From your collection.",
     /** A row's meta line: its colors, then how many cards the player owns in them. */
-    rowMeta: (colors: string, poolCount: number) => `${colors} · ${poolCount} cards`,
-    resultCount: (n: number) => `${n} result${n !== 1 ? "s" : ""}`,
+    rowMeta: (colorIdentity: string, poolCount: number) => `${colorIdentity} · ${poolCount} cards`,
+    resultCount: (resultCount: number) => `${resultCount} result${resultCount !== 1 ? "s" : ""}`,
     noOwned: "No owned commanders found. Add cards to your collection first.",
     noMatch: (query: string) => `No commanders match “${query}”.`,
     noneSelected: "No commander selected.",
@@ -471,7 +471,7 @@ export const overCopy = {
     denominator: (bodySize: number) => ` / ${bodySize}`,
     // A second figure, not a recolour — a lone amber 104 beside a 99 asks the
     // player to do the subtraction.
-    delta: (n: string) => `+${n}`,
+    delta: (overCountText: string) => `+${overCountText}`,
   },
 
   // The to-do card's over row (deck messages A4), which the spine's trim line became. Words, not
@@ -484,7 +484,7 @@ export const overCopy = {
   trim: {
     // The deck's own body in words, so a pair reads "ninety-eight" (copy-review row 15). A title,
     // so no period.
-    title: (words: string, bodySize: number) => `${words} over the ${bodyWords(bodySize)}`,
+    title: (overCountWord: string, bodySize: number) => `${overCountWord} over the ${bodyWords(bodySize)}`,
     // Words in both halves, for the same reason the lead spells its number.
     // "Five over the ninety-nine. Cut 5 and it is legal." changed register
     // mid-paragraph, and the singular already spelled itself, so the sentence
@@ -522,10 +522,10 @@ export const overCopy = {
   // `total` is the whole list, commander included — the same figure the preview
   // header prints — while `n` is measured off the ninety-nine. Both are true of
   // the same list: a Commander deck holds a hundred cards.
-  exportNote: (total: string, n: string) =>
-    n === "1"
-      ? `This list is ${total} cards. One over what a Commander deck can hold.`
-      : `This list is ${total} cards. ${n} over what a Commander deck can hold.`,
+  exportNote: (totalText: string, overCountText: string) =>
+    overCountText === "1"
+      ? `This list is ${totalText} cards. One over what a Commander deck can hold.`
+      : `This list is ${totalText} cards. ${overCountText} over what a Commander deck can hold.`,
 
   aria: {
     // Replaces `${built} of ${bodySize} cards built` on the progressbar when
@@ -537,10 +537,10 @@ export const overCopy = {
     // `bodySize` rather than a literal 99 because a Partner deck's body is 98,
     // and a reader hearing "over the 99" beside a visible `/ 98` is being told
     // the deck is one card further from legal than it is.
-    progress: (built: string, n: string, bodySize: number) =>
-      n === "1"
+    progress: (built: string, overCountText: string, bodySize: number) =>
+      overCountText === "1"
         ? `${built} cards, 1 over the ${bodySize}`
-        : `${built} cards, ${n} over the ${bodySize}`,
+        : `${built} cards, ${overCountText} over the ${bodySize}`,
   },
 } as const;
 
@@ -615,7 +615,7 @@ export const exportDialogCopy = {
   copy: "Copy to clipboard",
   copied: "Copied ✓",
   /** The live region's line after a copy. */
-  copiedAnnounce: (lines: number) => `Copied · ${lines} ${lines === 1 ? "line" : "lines"}`,
+  copiedAnnounce: (lineCount: number) => `Copied · ${lineCount} ${lineCount === 1 ? "line" : "lines"}`,
   copyFailed: "Couldn’t copy. Select the text and copy it yourself.",
   /** The preview's first line, a comment in the file the player will get. */
   previewHeader: (deckName: string, totalCards: number) => `// ${deckName} — ${totalCards} cards`,
@@ -632,7 +632,7 @@ export const exportLinkOutCopy = {
  *  holds owned cards that are spoken for elsewhere, so `unowned` would be a
  *  claim about every row that is false for some of them. */
 export const exportShoppingCopy = {
-  countMeta: (copies: number) => `${copies} cards · to buy`,
+  countMeta: (cardCount: number) => `${cardCount} cards · to buy`,
 } as const;
 
 /** Deck rename. */
@@ -653,7 +653,7 @@ export const renameCopy = {
 /** The sheet a role count opens (small items 11, item 1): the cards the strip counts in that role. */
 export const roleCardsCopy = {
   eyebrow: (role: string, target: number) => `${role} · rec ${target}`,
-  title: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
+  title: (cardCount: number) => (cardCount === 1 ? "1 card" : `${cardCount} cards`),
   // Copy-reviewed: the title carries the count, so the lead does not say it again. A card that does two jobs is in
   // both lists, so the lists can sum past the deck.
   lead: (role: string) => `What we count as ${role.toLowerCase()}, A to Z. A card that does two jobs is in both lists.`,

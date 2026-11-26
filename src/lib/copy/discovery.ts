@@ -205,8 +205,8 @@ export const TOUR_HREF = `/?${TOUR_PARAM}=1`;
  * dialog labelled by its title; `lit` names what each step points at, for the dialog's description.
  */
 export const tourCopy = {
-  kicker: (n: number, of: number, place: string) => `${n} of ${of} · ${place}`,
-  progressAria: (n: number, of: number) => `Step ${n} of ${of}`,
+  kicker: (stepNumber: number, stepCount: number, place: string) => `${stepNumber} of ${stepCount} · ${place}`,
+  progressAria: (stepNumber: number, stepCount: number) => `Step ${stepNumber} of ${stepCount}`,
   skip: 'Skip the tour',
   back: 'Back',
   next: 'Next',

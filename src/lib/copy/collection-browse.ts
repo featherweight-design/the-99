@@ -48,7 +48,7 @@ export const collectionPlaceCopy = {
   replace: "Replace",
   emptyTitle: "Your collection is empty",
   searchAria: "Search your cards",
-  showMore: (n: number) => `Show more (${n.toLocaleString()} more)`,
+  showMore: (moreCount: number) => `Show more (${moreCount.toLocaleString()} more)`,
   /** The set row's trigger label while its panel is open (detail is the chosen set, or empty). */
   setExpandedAria: (label: string, detail: string) => `${label}${detail}, expanded`,
   /** The same label with exactly one set chosen, panel closed. */

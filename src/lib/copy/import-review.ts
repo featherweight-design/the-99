@@ -10,11 +10,11 @@ export const importReviewCopy = {
   review: {
     titlePhone: "Review import",
     titleDesktop: "Review before you replace",
-    cardWord: (n: number) => (n === 1 ? "card" : "cards"),
-    readyPhone: (n: number) => `${n === 1 ? "card" : "cards"} matched & ready`,
+    cardWord: (cardCount: number) => (cardCount === 1 ? "card" : "cards"),
+    readyPhone: (cardCount: number) => `${cardCount === 1 ? "card" : "cards"} matched & ready`,
     readyDesktop: "matched to the Oracle database: ready to import",
     willBeSkipped: (count: number) => `${rows(count)} will be skipped`,
-    rowsRead: (n: number) => (n === 1 ? "row read" : "rows read"),
+    rowsRead: (rowCount: number) => (rowCount === 1 ? "row read" : "rows read"),
     line: (line: number, setCode: string | null | undefined) => `Line ${line}${setCode ? ` · ${setCode}` : ""}`,
     importShort: (importCount: number, skipped: number) => `Imports ${cards(importCount)} · skips ${rows(skipped)}`,
     importLong: (importCount: number, skipped: number) =>
@@ -27,19 +27,19 @@ export const importReviewCopy = {
     continueImport: "Continue to import →",
     continueReplace: "Continue to replace →",
     /** The upload step's header line under the step count. */
-    rowsFigure: (n: number) => `${n.toLocaleString("en-US")} rows`,
+    rowsFigure: (rowCount: number) => `${rowCount.toLocaleString("en-US")} rows`,
   },
   /** The upload step's entry: the paste panel and the dropzone's words. */
   entry: {
     pasteLabel: "Paste your list",
     pasteAria: "Paste your card list",
     pastePlaceholder: "3 Sol Ring\n1 Cultivate\nRhystic Study",
-    recognized: (n: number) => `${n} cards recognized`,
+    recognized: (cardCount: number) => `${cardCount} cards recognized`,
     back: "Back",
     previewing: "Previewing…",
     previewEmpty: "Preview list",
     previewOne: "Preview 1 card",
-    previewMany: (n: number) => `Preview ${n} cards`,
+    previewMany: (cardCount: number) => `Preview ${cardCount} cards`,
     uploadAria: "Upload collection CSV",
     formatsPhone: "Moxfield · Archidekt · Deckbox · ManaBox · CSV",
     formatsWide: "Moxfield · Archidekt · Deckbox · ManaBox · plain CSV",
@@ -52,12 +52,12 @@ export const importReviewCopy = {
     notInCatalog: "names not in the card catalog",
     /** Phone mini stat, one word group under the number. */
     notInCatalogShort: "not in catalog",
-    unreadable: (n: number) => (n === 1 ? "unreadable line" : "unreadable lines"),
+    unreadable: (lineCount: number) => (lineCount === 1 ? "unreadable line" : "unreadable lines"),
   },
   sections: {
-    notInCatalogShort: (n: number) => `Not in the catalog: ${n} skipped`,
-    notInCatalog: (n: number) => `Names not in the card catalog: ${n}`,
-    unreadable: (n: number) => `Unreadable lines: ${n}`,
+    notInCatalogShort: (nameCount: number) => `Not in the catalog: ${nameCount} skipped`,
+    notInCatalog: (nameCount: number) => `Names not in the card catalog: ${nameCount}`,
+    unreadable: (lineCount: number) => `Unreadable lines: ${lineCount}`,
   },
   /**
    * Public landing PR 7b: said under the tally only when every row left out is one the skipped ledger holds (tokens, emblems

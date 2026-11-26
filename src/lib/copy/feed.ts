@@ -46,7 +46,7 @@ function askFriend(friend: string | ThirdPartyName): string | PersonParts {
 export const feedSheetCopy = {
   title: "What’s new",
   /** The head's count: every item, and how many of them are unseen. */
-  count: (n: number, fresh: number) => (fresh > 0 ? `${n} · ${fresh} new` : `${n}`),
+  count: (itemCount: number, fresh: number) => (fresh > 0 ? `${itemCount} · ${fresh} new` : `${itemCount}`),
   all: "All",
   kinds: { "price-drop": "Price drops", combo: "Combos", "new-set": "New sets", "trade-match": "Trade matches" } as Partial<Record<FeedKind, string>>,
   thisWeek: "This week",
@@ -91,7 +91,7 @@ export const feedCopy = {
     /** The section's mono head, drawn uppercase by CSS. */
     head: "What’s new",
     /** The head's count of unseen items, lowercase by CSS. */
-    newCount: (n: number) => `· ${n} new`,
+    newCount: (newCount: number) => `· ${newCount} new`,
     /** The head's right link, to Settings, wherever the reader has chosen (What's new empty handoff, DRAFT for
      *  `/copy-review`). */
     choose: "Choose notifications",
@@ -105,22 +105,22 @@ export const feedCopy = {
     upcoming: "Upcoming drops",
     drop: {
       /** The kicker's age slot, in place of how long ago. */
-      age: { inDays: (n: number) => `in ${n} days`, tomorrow: "tomorrow", today: "today", queueOpen: "pre-queue open", live: "on sale now" },
+      age: { inDays: (dayCount: number) => `in ${dayCount} days`, tomorrow: "tomorrow", today: "today", queueOpen: "pre-queue open", live: "on sale now" },
       /** `day` is `Mon Nov 16`; `clock` is `12 p.m.` plus `your time` or the store's label. */
       sale: (day: string, clock: string) => `On sale ${day}, ${clock}`,
       saleDayOnly: (day: string) => `On sale ${day}, time to be announced`,
       saleSince: (clock: string) => `On sale since ${clock}`,
       /** `at` is `at 11 a.m.` or, on another day than the sale's, `Tue at 12 a.m.`; a clock in the store's zone carries its label. */
-      queueOpens: (at: string) => `Pre-queue opens ${at}`,
-      queueOpened: (at: string) => `Pre-queue opened ${at}`,
+      queueOpens: (queueOpensAt: string) => `Pre-queue opens ${queueOpensAt}`,
+      queueOpened: (queueOpenedAt: string) => `Pre-queue opened ${queueOpenedAt}`,
       yourTime: "your time",
       /** The mono line. */
       store: "US store",
       storeClock: (clock: string) => `${clock} on the US store`,
     },
     /** The footer, past five: what is not shown, and the press that shows it in place. */
-    more: (n: number) => `${n} more`,
-    showAll: (n: number) => `Show all ${n}`,
+    more: (moreCount: number) => `${moreCount} more`,
+    showAll: (itemCount: number) => `Show all ${itemCount}`,
     /** Kinds on, nothing in the window: the bold lead, then a tease of two of the kinds that are on (`quietTease`). */
     quietLead: "Nothing new right now.",
     /** With every kind off, after the offer's ✕ or from Settings (small items 6, item 6): why the box is empty. Drafts for
@@ -212,12 +212,12 @@ export const feedCopy = {
       spareRequest: spareRequestTitle,
       /** An offer to the reader (You have it): the same row and lead, turned around. */
       spareOffer: spareOfferTitle,
-      combo: (a: string, b: string) => `${a} + ${b}`,
+      combo: (firstCardName: string, secondCardName: string) => `${firstCardName} + ${secondCardName}`,
     },
     /** Each kind's one line. */
     line: {
-      newSet: (cards: number) => `${cards} cards.`,
-      newPrecon: (owned: number, of: number) => `You own ${owned} of its ${of} cards.`,
+      newSet: (cardCount: number) => `${cardCount} cards.`,
+      newPrecon: (owned: number, cardCount: number) => `You own ${owned} of its ${cardCount} cards.`,
       /** Follows the struck old price and the new one, both formatted. */
       priceDrop: "at the cheapest printing.",
       /** The same line for a wishlist entry that names a printing; `printing` is `SLD 2125` (`wishlistPrintingLabel`). */
@@ -230,9 +230,9 @@ export const feedCopy = {
       /** The lead of the combo sheet the feed opens on its own (small items 12 PR 3b); the second sentence is a DRAFT for `/copy-review`. */
       comboSheet: (added: string) => `You added ${added}. You own both halves now.`,
       /** A Commander decklists post's mono count of lists out, under its summary (board `Row-States` §5). */
-      listsSoFar: (n: number, of: number) => `${n} of ${of} ${of === 1 ? "list" : "lists"} so far`,
+      listsSoFar: (listCount: number, totalListCount: number) => `${listCount} of ${totalListCount} ${totalListCount === 1 ? "list" : "lists"} so far`,
       /** One list is just "1 list": "All 1 lists" read as a defect. */
-      listsAll: (n: number) => (n === 1 ? "1 list" : `All ${n} lists`),
+      listsAll: (listCount: number) => (listCount === 1 ? "1 list" : `All ${listCount} lists`),
     },
     /** The press, ending `›` where drawn as a link. */
     press: {
@@ -279,7 +279,7 @@ export const feedCopy = {
     clearAll: {
       label: "Clear all",
       aria: "Clear all of What’s new",
-      cleared: (n: number) => `Cleared ${n} from What’s new.`,
+      cleared: (itemCount: number) => `Cleared ${itemCount} from What’s new.`,
       undo: "Undo",
       failed: "We couldn’t clear those. Try again.",
       /** Undo's own refusal (not drawn in the handoff): the items stay cleared, so it says what did not happen. */
@@ -295,7 +295,7 @@ export const feedCopy = {
     entry: "Past announcements",
     title: "Announcements",
     back: "Home",
-    sub: (n: number, since: number | null) => (since === null ? `${n} ${n === 1 ? "post" : "posts"} from Wizards` : `${n} ${n === 1 ? "post" : "posts"} from Wizards since ${since}`),
+    sub: (itemCount: number, since: number | null) => (since === null ? `${itemCount} ${itemCount === 1 ? "post" : "posts"} from Wizards` : `${itemCount} ${itemCount === 1 ? "post" : "posts"} from Wizards since ${since}`),
     kindsAria: "Kind",
     /** The kind switch: short names at a phone, the kinds' own names from `md`. */
     segments: {
@@ -308,9 +308,9 @@ export const feedCopy = {
     newestFirst: "newest first",
     jump: { open: (label: string) => `${label}, jump to a month`, title: "Jump to a month", close: "Close" },
     /** A month head: the month, then how many posts it holds under the chosen kind. */
-    monthCount: (n: number) => `· ${n}`,
+    monthCount: (itemCount: number) => `· ${itemCount}`,
     /** The foot: how many are drawn of how many there are, then the press that loads the next thirty. */
-    shown: (n: number, of: number) => `${n} of ${of}`,
+    shown: (shownCount: number, totalCount: number) => `${shownCount} of ${totalCount}`,
     older: "Show older",
     /** A kind with no post in the month the reader is parked on, naming both; the press to the nearest month that has one carries the rest. */
     empty: (kind: string, month: string) => `No ${kind} in ${month}.`,

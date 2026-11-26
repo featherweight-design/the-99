@@ -25,7 +25,7 @@ export const gotItCopy = {
     /** The card's name follows on its own line. */
     title: "Bought this card?",
     printing: "Printing",
-    printingCount: (k: number) => (k === 1 ? "the only printing" : `${n(k)} printings`),
+    printingCount: (printingCount: number) => (printingCount === 1 ? "the only printing" : `${n(printingCount)} printings`),
     finish: "Finish",
     finishes: { nonfoil: "Nonfoil", foil: "Foil", etched: "Etched" },
     foilOnly: "This printing only comes foil.",
@@ -33,9 +33,9 @@ export const gotItCopy = {
     howMany: "How many",
     fewer: "One fewer",
     more: "One more",
-    need: (k: number) => `The deck needs ${n(k)}`,
-    spare: (k: number) => (k === 1 ? "1 spare" : `${n(k)} spares`),
-    add: (q: number) => `Add ${copies(q)}`,
+    need: (copyCount: number) => `The deck needs ${n(copyCount)}`,
+    spare: (spareCount: number) => (spareCount === 1 ? "1 spare" : `${n(spareCount)} spares`),
+    add: (copyCount: number) => `Add ${copies(copyCount)}`,
     choosePrinting: "Choose a printing",
     adding: "Adding…",
     cancel: "Cancel",
@@ -54,7 +54,7 @@ export const gotItCopy = {
     held: (card: string) => `${card} · in your collection`,
   },
   receipt: {
-    added: (card: string, q: number) => `${card} added · ×${n(q)}`,
+    added: (card: string, copyCount: number) => `${card} added · ×${n(copyCount)}`,
     detail: (printing: string, finish: string) => `${printing} · ${finish}`,
     claimed: (deck: string, need: number) =>
       `${deck} is older and was short too, so the copy went there. This deck still needs ${n(need)}.`,
@@ -88,7 +88,7 @@ export const gotItCopy = {
      * not built: deciding it needed the refreshed list, which #1403 settled against. It names
      * only the copies this write added: a spoken-for row's card was already held, and still is.
      */
-    undoneElsewhere: (card: string, q: number) => `Undone. ${card} ×${n(q)} removed from your collection.`,
+    undoneElsewhere: (card: string, copyCount: number) => `Undone. ${card} ×${n(copyCount)} removed from your collection.`,
     undoFailed: "Couldn’t undo that.",
     undoFailedBody: "What you added is still in your collection. You can revert it from History.",
     openHistory: "Open History",
@@ -110,8 +110,8 @@ export const gotItCopy = {
      */
     boughtFor: {
       lead: "Bought for",
-      more: (n: number) => `${n} more`,
-      gone: (n: number) => (n === 1 ? "a deck you’ve since deleted" : `${n} decks you’ve since deleted`),
+      more: (moreCount: number) => `${moreCount} more`,
+      gone: (deckCount: number) => (deckCount === 1 ? "a deck you’ve since deleted" : `${deckCount} decks you’ve since deleted`),
     },
     /**
      * Under an add or an upload entry (and, in its detail, under a row): the decks the copies went to, kept at
@@ -121,7 +121,7 @@ export const gotItCopy = {
   },
   /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
   shortWarning: {
-    titleUndo: (k: number) => `Undoing leaves ${k === 1 ? "a deck" : `${n(k)} decks`} short`,
+    titleUndo: (deckCount: number) => `Undoing leaves ${deckCount === 1 ? "a deck" : `${n(deckCount)} decks`} short`,
     confirmUndo: "Undo anyway",
   },
 } as const;

@@ -61,14 +61,14 @@ export const helpMeChooseCopy = {
     },
     colors: "Colors", // canvas
     colorsNone: "No preference: every identity, five-color included.",
-    colorsAny: (names: string) => `Any identity that includes ${names}.`,
-    colorsExactly: (names: string) => `Exactly ${names}, nothing more.`,
+    colorsAny: (colorNames: string) => `Any identity that includes ${colorNames}.`,
+    colorsExactly: (colorNames: string) => `Exactly ${colorNames}, nothing more.`,
     colorsJoin: (names: readonly string[]) => names.join(" and "), // HANDOFF §2
     theme: "Theme", // canvas
     themeCaption: "EDHREC’s themes. Pick more than one if you like.",
     themePlaceholder: "Add a theme…",
     themeAnother: "Add another…", // canvas
-    themeCount: (n: number) => plural(n, "commander", "commanders"), // canvas
+    themeCount: (commanderCount: number) => plural(commanderCount, "commander", "commanders"), // canvas
     removeTheme: (label: string) => `Remove ${label}`, // eng: the chip's ✕, spoken
     // Three-answers addendum §3: where the 99 comes from.
     pool: "Cards for the 99",
@@ -97,7 +97,7 @@ export const helpMeChooseCopy = {
     bracket: "Bracket", // canvas
     bracketAny: "Any", // canvas
     bracketNone: "No preference: every bracket.",
-    bracketCaption: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
+    bracketCaption: (bracket: 1 | 2 | 3 | 4 | 5) => `${bracket} · ${BRACKET_NAMES[bracket]}`, // canvas
     /**
      * Bracket reach R1b, board A: from 3 up the caption goes on to say what the player's cards in these
      * colors reach, before any commander exists. An ESTIMATE (the commander can move it), so every
@@ -107,9 +107,9 @@ export const helpMeChooseCopy = {
      */
     bracketReach: {
       colorsWhere: (exactly: boolean, picked: number) => (exactly && picked > 0 ? " in these colors" : ""),
-      reached: (n: 1 | 2 | 3 | 4 | 5, where: string) => `${n} · ${BRACKET_NAMES[n]}. Your cards${where} would reach it.`,
-      none: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. What reaching ${n} takes depends on the commander: the new deck shows it once you pick one.`,
+      reached: (bracket: 1 | 2 | 3 | 4 | 5, where: string) => `${bracket} · ${BRACKET_NAMES[bracket]}. Your cards${where} would reach it.`,
+      none: (bracket: 1 | 2 | 3 | 4 | 5, where: string, deckBracket: string) =>
+        `${bracket} · ${BRACKET_NAMES[bracket]}. From your cards${where}, a deck would be bracket ${deckBracket}. What reaching ${bracket} takes depends on the commander: the new deck shows it once you pick one.`,
     },
     submit: "Find commanders", // canvas
   },
@@ -140,7 +140,7 @@ export const helpMeChooseCopy = {
     pressAria: "1 credit. Find commanders and read what you wrote.",
     pendingTitle: "Reading what you wrote…",
     pendingLead: "These results stay until it’s done. It usually takes under a minute.",
-    stepScan: (n: string) => `Scanning the ${n} commanders your answers allow`,
+    stepScan: (commanderCountText: string) => `Scanning the ${commanderCountText} commanders your answers allow`,
     /** eng: step 1 before the results below have said how many commanders the answers allow. */
     stepScanAll: "Scanning the commanders your answers allow",
     stepWeigh: "Weighing the closest few in full",
@@ -151,7 +151,7 @@ export const helpMeChooseCopy = {
     doneTag: "done",
     doneLead: (pool: string, short: number) =>
       `It read the ${pool} commanders your answers allow and weighed the closest ${short} in full.`,
-    heldColors: (colors: string) => `Your colors held: nothing outside ${colors} was read.`,
+    heldColors: (colorNames: string) => `Your colors held: nothing outside ${colorNames} was read.`,
     noDecks: "You have no decks yet, so the lines speak to what you wrote alone.",
     doneLine: (standing: string) => `1 credit used · ${standing}`,
     repeatLine: "No credit used · you asked this already",
@@ -183,26 +183,26 @@ export const helpMeChooseCopy = {
     byOne: (label: string) => `Ordered by ${label}`, // canvas
     byOwned: "Ordered by cards you already have",
     byBestTheme: "Ordered by the theme each fits best",
-    subAny: (names: string) =>
-      `You asked for any of ${names}, so each commander ranks by the one it fits best. Every one it fits is shown.`,
-    subAnyCard: (names: string, card: string) =>
-      `Each commander ranks by the theme of ${names} it fits best, or by ${card} where that figure is lower.`,
-    subTheme: (t: string) => `Each figure is the share of that commander’s decks on EDHREC tagged ${t}.`,
-    subCard: (c: string) => `Each figure is how often that commander’s decks on EDHREC run ${c}. It goes in the deck whichever you pick.`,
+    subAny: (themeNames: string) =>
+      `You asked for any of ${themeNames}, so each commander ranks by the one it fits best. Every one it fits is shown.`,
+    subAnyCard: (themeNames: string, card: string) =>
+      `Each commander ranks by the theme of ${themeNames} it fits best, or by ${card} where that figure is lower.`,
+    subTheme: (themeName: string) => `Each figure is the share of that commander’s decks on EDHREC tagged ${themeName}.`,
+    subCard: (cardName: string) => `Each figure is how often that commander’s decks on EDHREC run ${cardName}. It goes in the deck whichever you pick.`,
     subSeveral: (lead: string, other: string) =>
       `Each commander ranks by the answer it fits least, so one that’s all ${lead} but rarely ${other} won’t outrank one that does both. Every figure is shown.`,
     // The canvas's pair, ruled at copy review (2026-09-25): "owned or not" answers the marks beside
     // each row, and the colors variant names the filter the player set.
     subOwned: "You gave no theme or card, so these are commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.",
-    subOwnedColors: (colors: string) =>
-      `You gave colors but no theme or card, so these are ${colors} commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.`,
-    figTheme: (pct: number, t: string) => `${pct}% of its decks are ${t}`,
-    figCard: (pct: number, c: string) => `${pct}% of its decks run ${c}`,
+    subOwnedColors: (colorNames: string) =>
+      `You gave colors but no theme or card, so these are ${colorNames} commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.`,
+    figTheme: (percent: number, themeName: string) => `${percent}% of its decks are ${themeName}`,
+    figCard: (percent: number, cardName: string) => `${percent}% of its decks run ${cardName}`,
     figOwned: (owned: number, total: number) => `${owned} of the ${total} cards its decks run are yours`,
     // The row draws each figure in its own column and the rest of the sentence beside it (canvas),
     // so the sentence is read whole across the two: `40%` then `of its decks are Dinosaurs`.
-    figThemeTail: (t: string) => `of its decks are ${t}`, // canvas
-    figCardTail: (c: string) => `of its decks run ${c}`, // canvas
+    figThemeTail: (themeName: string) => `of its decks are ${themeName}`, // canvas
+    figCardTail: (cardName: string) => `of its decks run ${cardName}`, // canvas
     figOwnedTail: (total: number) => `of the ${total} cards its decks run are yours`, // canvas
     setsRank: "SETS RANK",
     /** Own-only (addendum §3): the ownership line splits into the commander, then the 99. */
@@ -231,7 +231,7 @@ export const helpMeChooseCopy = {
     rowFailed: "Couldn’t count what you own.",
     retry: "Retry",
     loadingHead: "Finding commanders…",
-    loadingSub: (by: string) => `Ordered by ${by} once they arrive.`,
+    loadingSub: (sortName: string) => `Ordered by ${sortName} once they arrive.`,
     // eng: the `by` for the two orders that name no one answer.
     loadingBy: { owned: "cards you already have", all: "fit to everything you asked", bestTheme: "the theme each fits best" },
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
@@ -253,19 +253,19 @@ export const helpMeChooseCopy = {
     moreFailed: "Couldn’t load more commanders. Try again.",
   },
   narrow: {
-    few: (n: number) => (n === 1 ? "Only one commander fits all of that" : `Only ${n} commanders fit all of that`),
+    few: (commanderCount: number) => (commanderCount === 1 ? "Only one commander fits all of that" : `Only ${commanderCount} commanders fit all of that`),
     /** Diverges from R1's "Loosen one answer": an offer can drop two answers or keep only one (audit 9). */
     fewLead: "Loosen your answers to see more:",
     none: "No commander fits all of that",
     noneLead: "Each of these would bring some back. Pick one and we’ll search again.",
-    count: (n: number) => plural(n, "commander", "commanders"),
+    count: (commanderCount: number) => plural(commanderCount, "commander", "commanders"),
     /** One answer, or several at once when no single one brings a commander back. */
     drop: (answers: readonly string[]) => `Drop ${nameList(answers)}`,
     /** Every answer but one dropped: said as the one that stays. */
     keepOnly: (answer: string) => `Keep only ${answer}`,
-    widenColors: (names: string) => `Any ${names}, not exactly`,
+    widenColors: (colorNames: string) => `Any ${colorNames}, not exactly`,
     /** The themes asked as all of, offered as any of (addendum §1). */
-    widenThemes: (n: number) => `Any of the ${spelled(n)} themes, not all`,
+    widenThemes: (themeCount: number) => `Any of the ${spelled(themeCount)} themes, not all`,
     /** Its reason: the most of those themes any one commander backs at once, measured. */
     widenThemesWhy: (most: number, names: readonly string[]) =>
       `No commander fits more than ${spelled(most)} of ${nameList(names)} at once.`,
@@ -286,9 +286,9 @@ export const helpMeChooseCopy = {
     change: "Change",
     changeAria: "Change your answers",
     keys: { theme: "Theme", anyOf: "Any of", sets: "Printed in", pool: "The 99", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
-    themeFig: (pct: number, t: string) => `${pct}% of its decks are ${t}.`, // canvas
+    themeFig: (percent: number, themeName: string) => `${percent}% of its decks are ${themeName}.`, // canvas
     placed: "Placed in the deck because you asked for it.",
-    cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas
+    cardFig: (percent: number) => `${percent}% of its decks run it.`, // canvas
     budgetFirst: (card: string, price: string) => `${card} takes ${price} of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.`,
     budgetUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it. The fill caps the rest as usual.`,
     /** No card to pay for first, or one with a copy free: the budget caps the fill alone. Eng: undrawn. */
@@ -303,8 +303,8 @@ export const helpMeChooseCopy = {
         : `${card} takes ${price} of it. The fill buys nothing else for the 99.`,
     poolValue: "From cards you own",
     poolLine: "It takes only cards with a copy free, and finishes with basics.",
-    bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
-    bracket: (n: number) => `The fill keeps every card it chooses inside bracket ${n}’s limits.`,
+    bracketValue: (bracket: 1 | 2 | 3 | 4 | 5) => `${bracket} · ${BRACKET_NAMES[bracket]}`, // canvas
+    bracket: (bracket: number) => `The fill keeps every card it chooses inside bracket ${bracket}’s limits.`,
     backToResults: "Back to results",
     /**
      * The Bracket row's reach (bracket reach R1b, board C), from bracket 3 up with the switch on.
@@ -316,14 +316,14 @@ export const helpMeChooseCopy = {
       /** While the fill is read. Eng: the row's pending line. */
       pending: "Reading the bracket this deck lands in…",
       /** One Game Changer the player owns gets the deck there. */
-      reachedOne: (card: string, n: number) => `The fill places ${card}, a Game Changer you own, so the deck is bracket ${n}.`,
+      reachedOne: (card: string, bracket: number) => `The fill places ${card}, a Game Changer you own, so the deck is bracket ${bracket}.`,
       /** A combo, or several cards: named, never called a Game Changer. */
-      reachedMany: (cards: readonly string[], n: number) => `The fill places ${nameList(cards)} from your cards, so the deck is bracket ${n}.`,
-      shortLead: (lands: string) => `From your cards this deck is bracket ${lands}. Choose how to build it:`,
+      reachedMany: (cards: readonly string[], bracket: number) => `The fill places ${nameList(cards)} from your cards, so the deck is bracket ${bracket}.`,
+      shortLead: (deckBracket: string) => `From your cards this deck is bracket ${deckBracket}. Choose how to build it:`,
       fromMine: "From my collection",
-      fromMineLine: (lands: string) => `Builds from your cards: bracket ${lands}.`,
-      fromMineLineOwn: (lands: string) => `Builds from your cards only: bracket ${lands}.`,
-      hit: (n: number) => `Hit bracket ${n}`,
+      fromMineLine: (deckBracket: string) => `Builds from your cards: bracket ${deckBracket}.`,
+      fromMineLineOwn: (deckBracket: string) => `Builds from your cards only: bracket ${deckBracket}.`,
+      hit: (bracket: number) => `Hit bracket ${bracket}`,
       hitLine: (cards: readonly string[], price: string) =>
         `Adds ${nameList(cards)}, about ${price}, to buy. ${cards.length === 1 ? "It joins" : "They join"} the deck’s Shopping list.`,
       /** `left` is set when a placed card already took part of the budget: "over" is past what is left. */
@@ -335,12 +335,12 @@ export const helpMeChooseCopy = {
         `Adds ${nameList(cards)}, about ${price}, to buy: ${cards.length === 1 ? "the one card" : `the ${spelled(cards.length)} cards`} from outside your collection.`,
       overTag: "over budget",
       /** Nothing the fill can place reaches the target: the reason is the target's own. */
-      none: (n: number, lands: string) =>
-        n === 3
-          ? `No Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket ${lands}.`
-          : n === 4
-            ? `The fill can’t place four Game Changers, or a combo with tutors that find both halves, for this commander, so the deck is bracket ${lands}.`
-            : `The fill can’t place four Game Changers for this commander, so the deck is bracket ${lands}.`,
+      none: (bracketNumber: number, deckBracket: string) =>
+        bracketNumber === 3
+          ? `No Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket ${deckBracket}.`
+          : bracketNumber === 4
+            ? `The fill can’t place four Game Changers, or a combo with tutors that find both halves, for this commander, so the deck is bracket ${deckBracket}.`
+            : `The fill can’t place four Game Changers for this commander, so the deck is bracket ${deckBracket}.`,
       /** The error slot while neither row is picked. */
       waiting: "Choose how to build it under Bracket to create the deck.",
       /** The Budget row once *Hit* is picked: the cards it pays for first (`budgetFirst`'s shape). */
