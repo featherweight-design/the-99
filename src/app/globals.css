@@ -1610,6 +1610,7 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   .anim-carousel-next,
   .anim-phone-card-enter,
   .anim-phone-peek-enter,
+  .anim-release-enter,
   /* The hub's tool and its tiles appear in place, opaque. */
   .anim-gentle-in,
   /* A chart's bars are drawn at their size. */
