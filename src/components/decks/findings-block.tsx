@@ -5,6 +5,7 @@ import { useState } from "react";
 import { findings, type Finding } from "../../lib/bracket/findings";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { DeckProfile } from "../../lib/profile/types";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 import { FindingMark } from "./finding-mark";
 import { ProvenanceOpener } from "./provenance-panel";
 import { ReceiptModal, type FindingArt } from "./receipt-modal";
@@ -33,37 +34,26 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
   const opened = open ? list.find((f) => f.id === open) ?? null : null;
 
   return (
-    // ONE OPENER for how these are decided, mounted once: at the head row's right end on desktop,
-    // where the grid places it, and under the box at 44px on the phone (handoff §2, row 4).
-    <section
-      className="flex flex-col gap-[9px] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-baseline md:gap-x-3 md:gap-y-[11px]"
-      data-testid="findings-block"
-    >
-      <h3
-        className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em]"
-        style={{ color: "var(--fg-faint)" }}
-      >
-        {copy.heading}
-      </h3>
-      {/* In the DOM straight after the heading, so focus meets it where desktop draws it; the phone
-          moves it under the box with `order`. */}
-      <ProvenanceOpener className="self-start max-md:order-last" />
+    // ONE OPENER for how these are decided, mounted once, in the box's foot at both widths (R3
+    // Analysis). The head is the shared band; the tiles stay as shipped (R1c).
+    <DeckBox aria-labelledby="findings-head" data-testid="findings-block">
+      <DeckBoxBand id="findings-head" as="h3" title={copy.heading} />
       <ul
         className={
-          "md:col-span-2 "
-          +
-          // The phone's box is one surface; the desktop's is the page, with each tile its own.
-          "m-0 p-0 list-none flex flex-col overflow-hidden rounded-[11px] border border-[color:var(--border)] "
-          + "max-md:bg-[color:var(--surface)] "
-          + "md:grid md:grid-cols-5 md:gap-[10px] md:overflow-visible md:rounded-none md:border-0"
+          "m-0 list-none p-0 flex flex-col "
+          // The phone's rows divide inside the box; the desktop's tiles are their own surfaces.
+          + "md:grid md:grid-cols-5 md:gap-[10px] md:p-[14px] md:pb-[16px]"
         }
       >
         {list.map((f) => (
           <FindingItem key={f.id} finding={f} art={art} onOpen={() => setOpen(f.id)} />
         ))}
       </ul>
+      <DeckBoxFoot>
+        <ProvenanceOpener tone="accent" className="self-start md:min-h-0" />
+      </DeckBoxFoot>
       {opened ? <ReceiptModal finding={opened} art={art} onClose={() => setOpen(null)} /> : null}
-    </section>
+    </DeckBox>
   );
 }
 

@@ -10,6 +10,7 @@ import type { SynopsisState } from "../../lib/synopsis/read";
 import type { FindingArt } from "./receipt-modal";
 import { MethodNotice } from "./method-notice";
 import { SynopsisModal } from "./synopsis-body";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 import { Press, RefusedSlot, WriteRow } from "./synopsis-controls";
 import { SynopsisText } from "./synopsis-text";
 import { WorkPulse } from "./work-pulse";
@@ -293,36 +294,42 @@ export function SynopsisOverview({
   }
 
   return (
-    <section aria-labelledby="synopsis-overview-label" data-testid="synopsis-overview" className="flex flex-col gap-[7px] md:gap-[8px]">
-      <div className="flex flex-wrap items-center gap-[10px]">
-        <h3 id="synopsis-overview-label" className="font-mono uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em] text-[var(--fg-faint)]">
-          {synopsisCopy.label}
-        </h3>
-        {carriedAside ? (
-          <small data-testid="overview-carried-aside" className="font-mono text-[10.5px] text-[var(--fg-faint)]">{carriedAside}</small>
-        ) : null}
-        {synopsis && writing ? (
-          <span ref={statusRef} tabIndex={-1} role="status" data-testid="overview-writing-new" className="inline-flex items-center gap-[8px] outline-none">
-            <WorkPulse />
-            <span className="font-mono text-[10px] text-[var(--fg-muted)] md:text-[10.5px]">{writingFree ? method.writing : synopsisCopy.writingNew}</span>
+    <DeckBox aria-labelledby="synopsis-overview-label" data-testid="synopsis-overview">
+      <DeckBoxBand
+        id="synopsis-overview-label"
+        as="h3"
+        title={synopsisCopy.label}
+        aside={carriedAside || (synopsis && writing) ? (
+          <span className="flex min-w-0 flex-wrap items-center justify-end gap-[10px]">
+            {carriedAside ? (
+              <small data-testid="overview-carried-aside" className="font-mono text-[10.5px] font-medium text-[var(--fg-faint)]">{carriedAside}</small>
+            ) : null}
+            {synopsis && writing ? (
+              <span ref={statusRef} tabIndex={-1} role="status" data-testid="overview-writing-new" className="inline-flex items-center gap-[8px] outline-none">
+                <WorkPulse />
+                <span className="font-mono text-[10px] font-medium text-[var(--fg-muted)] md:text-[10.5px]">{writingFree ? method.writing : synopsisCopy.writingNew}</span>
+              </span>
+            ) : null}
           </span>
         ) : null}
-      </div>
+      />
+      <div className="flex flex-col gap-[7px] px-[14px] py-[12px] md:gap-[8px] md:px-[16px]">
       <p role="status" className="sr-only">{announced}</p>
       {synopsis && state.illegal ? <CheckLine line={deckNoticesCopy.check.warning} onSee={onSeeWhich} /> : null}
       {notice}
       {body}
+      </div>
       {synopsis ? (
-        <div className="flex min-h-[44px] items-center md:min-h-0 md:mt-[2px]">
+        <DeckBoxFoot className="max-md:!py-0">
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="group inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[11px] text-[var(--accent-text)] hover:text-[var(--accent-hover)] md:min-h-0 cursor-pointer transition-colors"
+            className="group inline-flex min-h-[44px] items-center gap-[8px] self-start font-mono text-[11px] text-[var(--accent-text)] hover:text-[var(--accent-hover)] md:min-h-0 cursor-pointer transition-colors"
           >
             <span className="border-b border-b-[color:var(--accent)] border-dotted border-[var(--accent)] group-hover:border-[var(--accent-hover)] transition-colors">{synopsisCopy.entry}</span>
             <span aria-hidden>→</span>
           </button>
-        </div>
+        </DeckBoxFoot>
       ) : null}
       {open && synopsis ? (
         <SynopsisModal
@@ -352,7 +359,7 @@ export function SynopsisOverview({
           onClose={() => setOpen(false)}
         />
       ) : null}
-    </section>
+    </DeckBox>
   );
 }
 
