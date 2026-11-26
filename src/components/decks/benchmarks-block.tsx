@@ -102,7 +102,7 @@ export function BenchmarksBlock({
         as="h3"
         title={<span className="whitespace-nowrap">{copy.heading}</span>}
         aside={
-          <span className="min-w-0 max-w-[62%] text-right font-mono text-[10px] font-medium leading-[1.4] text-[color:var(--fg-faint)] [text-wrap:balance] md:text-[11px]">
+          <span className={w("md:text-[11px]", "min-w-0 max-w-[62%] text-right font-mono text-[10px] font-medium leading-[1.4] text-[color:var(--fg-faint)] [text-wrap:balance]")}>
             {stale ? copy.captionStale(formatShortDeckDate(new Date(analyzedAt), zone)) : copy.caption}
           </span>
         }
