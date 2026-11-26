@@ -15,6 +15,7 @@ import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import { colorRows } from "../../lib/mana/color-rows";
 import { defaultPatternColor, pippedColors, tappedTotal, type ManaPanelData } from "../../lib/tuning/mana-view";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 import { ColorlessLine, KarstenCitation, ManaEvidenceTable, NeedsExplainer } from "./mana-evidence";
 import { hardestClause, LandFacts, ManaSection, PatternRows, type CardNameRender } from "./mana-sections";
 
@@ -53,46 +54,48 @@ export function ManaBalanceView({
   const noLands = supply.lands === 0 && supply.nonlandSources === 0 && supply.unattributedNonland === 0;
   const colorlessRow = rows.find((r) => r.c === "C");
 
-  return (
-    <section aria-labelledby="mana-heading" data-mana-state={balance.state} className={MANA_SHELL} style={MANA_SHELL_STYLE}>
-      <div className="flex flex-col gap-[6px]">
-        <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[3px]">
-          <h2 id="mana-heading" ref={headingRef} tabIndex={-1} className={MANA_HEADING} style={{ color: "var(--fg)" }}>{copy.title}</h2>
-          <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.sub(pipTotal, sourceTotal)}</span>
-        </div>
-        {colorless ? (
-          <div className="flex items-start gap-[10px] rounded-[10px] border border-[color:var(--border-strong)] bg-[var(--surface)] px-[14px] py-[12px]">
-            <span aria-hidden className="inline-flex size-[18px] flex-none items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] font-semibold text-[color:var(--fg-faint)]">i</span>
-            <p className="min-w-0 flex-1 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.thin.colorless}</p>
-          </div>
-        ) : (
-          <p className="max-w-[660px] text-[13px] leading-[1.6] [text-wrap:pretty] text-[color:var(--fg-body)] md:text-[13.5px]">
-            {balance.state === "noSources" && noLands ? `${deckStatsCopy.colors.noLands} ${copy.thin.noSources}` : copy.lead}
-          </p>
-        )}
-      </div>
+  const hardestCount = pipped.reduce((n, c) => n + (balance.colors.find((e) => e.color === c)?.patterns.length ?? 0), 0);
 
+  return (
+    <section aria-labelledby="mana-heading" data-mana-state={balance.state} className="mt-[18px] flex flex-col gap-[6px] md:mt-6">
+      <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[3px]">
+        <h2 id="mana-heading" ref={headingRef} tabIndex={-1} className={MANA_HEADING} style={{ color: "var(--fg)" }}>{copy.title}</h2>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.sub(pipTotal, sourceTotal)}</span>
+      </div>
       {colorless ? (
-        // Alone, every source is colorless, so a share of them says nothing. A deck with no {C} pip and
-        // no source still draws the line the note points to, at zero.
-        <ColorlessLine row={colorlessRow ?? { c: "C", pips: 0, lands: 0, other: 0, pipShare: 0, sourceShare: 0 }} share={false} />
-      ) : (
-        <div className="flex flex-col gap-[8px]">
-          <ManaEvidenceTable balance={balance} />
-          <NeedsExplainer />
+        <div className="flex items-start gap-[10px] rounded-[10px] border border-[color:var(--border-strong)] bg-[var(--surface)] px-[14px] py-[12px]">
+          <span aria-hidden className="inline-flex size-[18px] flex-none items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] font-semibold text-[color:var(--fg-faint)]">i</span>
+          <p className="min-w-0 flex-1 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.thin.colorless}</p>
         </div>
+      ) : (
+        <p className="max-w-[660px] text-[13px] leading-[1.6] [text-wrap:pretty] text-[color:var(--fg-body)] md:text-[13.5px]">
+          {balance.state === "noSources" && noLands ? `${deckStatsCopy.colors.noLands} ${copy.thin.noSources}` : copy.lead}
+        </p>
       )}
 
+      <DeckBox className="!mt-[14px] md:!mt-[18px]" aria-label={copy.sections.colors.label}>
+        <DeckBoxBand as="h3" title={copy.sections.colors.label} count={colorless ? undefined : rows.filter((r) => r.c !== "C").length} />
+        {colorless ? (
+          // Alone, every source is colorless, so a share of them says nothing. A deck with no {C} pip and
+          // no source still draws the line the note points to, at zero.
+          <div className="px-[14px] md:px-[16px]"><ColorlessLine row={colorlessRow ?? { c: "C", pips: 0, lands: 0, other: 0, pipShare: 0, sourceShare: 0 }} share={false} /></div>
+        ) : (
+          <>
+            <div className="px-[14px] md:px-[16px]"><ManaEvidenceTable balance={balance} /></div>
+            <DeckBoxFoot><NeedsExplainer /></DeckBoxFoot>
+          </>
+        )}
+      </DeckBox>
+
       {!colorless && initial ? (
-        <ManaSection id="hardest" label={copy.sections.hardest.label} clause={hardestClause(pipped)} open={isOpen("hardest")} onToggle={() => onToggle("hardest")}>
+        <ManaSection id="hardest" label={copy.sections.hardest.label} count={hardestCount} clause={hardestClause(pipped)} open={isOpen("hardest")} onToggle={() => onToggle("hardest")}>
           <PatternRows colors={balance.colors} initial={initial} ids={ids} art={art} renderCard={renderCard} />
         </ManaSection>
       ) : null}
       <ManaSection
         id="lands"
-        // R3b sets the two sections 12 apart, not the panel's 18.
-        tight={!colorless && !!initial}
         label={copy.sections.lands.label}
+        count={balance.lands.count}
         clause={copy.sections.lands.clause(balance.lands.count, tappedTotal(balance.lands.tapped), balance.lands.karstenLands.toFixed(1))}
         open={isOpen("lands")}
         onToggle={() => onToggle("lands")}
@@ -100,9 +103,10 @@ export function ManaBalanceView({
         <LandFacts lands={balance.lands} cards={cards} commander={commander} commanders={commanders} />
       </ManaSection>
 
-      {improve}
-
-      <KarstenCitation landOnly={colorless} />
+      <div className="mt-[14px] flex flex-col gap-[14px] md:mt-[18px]">
+        {improve}
+        <KarstenCitation landOnly={colorless} />
+      </div>
     </section>
   );
 }

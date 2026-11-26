@@ -1,0 +1,34 @@
+{
+  "feature": "Deck details refresh PR 2: Mana Balance as three boxes, Colors, Hardest costs, Lands (handoff design_handoff_the99_deck_details_refresh, R1-Mana)",
+  "note": "Needs a signed-in fixture account with a deck (DECK_ID).",
+  "out": "contact-sheets/deck-refresh-2",
+  "shares": [
+    { "binding": "DeckBox", "module": "src/components/decks/deck-box.tsx" }
+  ],
+  "rows": [
+    {
+      "id": "mana-phone",
+      "label": "Tuning > Mana Balance at phone: Colors, Hardest costs, Lands boxes",
+      "view": "src/components/decks/mana-balance-view.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/decks/${DECK_ID}", "settle": 2500 },
+        { "click": "[role=tab]:has-text(\"Tuning\")", "settle": 900 },
+        { "click": "text=Mana Balance", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "mana-desktop",
+      "label": "Tuning > Mana Balance at desktop: Colors, Hardest costs, Lands boxes",
+      "view": "src/components/decks/mana-balance-view.tsx",
+      "binding": "DeckBox",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/decks/${DECK_ID}", "settle": 2500 },
+        { "click": "[role=tab]:has-text(\"Tuning\")", "settle": 900 },
+        { "click": "text=Mana Balance", "settle": 2500 }
+      ]
+    }
+  ]
+}
