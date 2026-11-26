@@ -97,71 +97,71 @@
   "R4-Precons.dc.html": {
    "x": 0,
    "y": 7110,
-   "w": 2360,
-   "h": 2348,
+   "w": 2280,
+   "h": 4714,
    "title": "R4 Precons \u00b7 Announced box and year boxes"
   },
   "R4-PreconPick.dc.html": {
-   "x": 2480,
+   "x": 2400,
    "y": 7110,
-   "w": 1910,
-   "h": 1498,
+   "w": 1830,
+   "h": 3014,
    "title": "R4 New deck \u203a From a precon \u00b7 year boxes"
   },
   "R4-PreconOpen.dc.html": {
-   "x": 0,
-   "y": 9578,
-   "w": 1910,
-   "h": 1698,
+   "x": 4350,
+   "y": 7110,
+   "w": 1830,
+   "h": 3414,
    "title": "R4 Open precon \u00b7 Overview box"
   },
   "R4-Cart.dc.html": {
-   "x": 2030,
-   "y": 9578,
-   "w": 1910,
-   "h": 1298,
+   "x": 0,
+   "y": 11944,
+   "w": 1830,
+   "h": 2614,
    "title": "R4 Decks \u203a All shopping cart \u00b7 Decks box"
   },
   "R4-Export.dc.html": {
-   "x": 0,
-   "y": 11396,
-   "w": 3270,
-   "h": 1058,
+   "x": 1950,
+   "y": 11944,
+   "w": 3190,
+   "h": 2134,
    "title": "R4 Export and Export \u203a Shopping"
   },
   "R4-Friends.dc.html": {
-   "x": 3390,
-   "y": 11396,
-   "w": 1910,
-   "h": 1598,
+   "x": 5260,
+   "y": 11944,
+   "w": 1830,
+   "h": 3214,
    "title": "R4 Friends and Pods \u00b7 section bands"
   },
   "R4-Home.dc.html": {
    "x": 0,
-   "y": 13114,
-   "w": 1910,
-   "h": 1498,
-   "title": "R4 Home \u00b7 zero-state heads"
+   "y": 15278,
+   "w": 1830,
+   "h": 3014,
+   "title": "R4 Home at zero decks \u00b7 No decks yet head"
   },
   "R4-Analysis.dc.html": {
-   "x": 2030,
-   "y": 13114,
-   "w": 1910,
-   "h": 1042,
+   "x": 1950,
+   "y": 15278,
+   "w": 1830,
+   "h": 2102,
    "title": "R4 Analysis before a read \u00b7 Overview box"
   },
   "R4-HelpMeChoose.dc.html": {
-   "x": 0,
-   "y": 14732,
-   "w": 3720,
-   "h": 2198,
+   "x": 3900,
+   "y": 15278,
+   "w": 3640,
+   "h": 4414,
    "title": "R4 Help me choose results \u00b7 heads"
   },
   "R4-Settings.dc.html": {
-   "x": 3840,
-   "y": 14732,
-   "w": 1910,
-   "h": 2198,
+   "x": 0,
+   "y": 19812,
+   "w": 1830,
+   "h": 4414,
    "title": "R4 Settings \u00b7 section heads"
   }
  },

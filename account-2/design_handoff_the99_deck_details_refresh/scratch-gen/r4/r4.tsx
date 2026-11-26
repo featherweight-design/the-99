@@ -12,7 +12,7 @@ import { FriendsView } from "../src/components/social/friends-view";
 import { PodsPane } from "../src/components/social/pods-pane";
 import { named } from "../src/lib/person-name/mint";
 import { HomeDecksZero } from "../src/components/home/home-decks-zero";
-import { ReadyToBuild } from "../src/components/home/ready-to-build";
+import { Dashboard } from "../src/components/home/dashboard";
 import { AnalysisEmpty } from "../src/components/decks/analysis-empty";
 import { ChooseResults } from "../src/components/intake/choose-results";
 import { ReadScope } from "../src/components/intake/read-panel";
@@ -127,7 +127,10 @@ app("F-phone", "phone", "/friends", friends, { vh: 1400 });
 // ---------- Home: zero decks, Ready to build ----------
 const hero = (i: number, name: string, ci: string[], score: number, pool: number): any => ({ oracleId: "oh" + i, slug: name.toLowerCase().replace(/\W+/g, "-"), name, colorIdentity: ci, imageUri: img(i), artCropUri: img(i), score, measurableTotal: 100, colorPoolSize: pool, typeLine: "Legendary Creature" });
 const READY: any = { shown: [hero(0, "Brudiclad, Telchor Engineer", ["U", "R"], 74, 92), hero(5, "Beorn, the Fierce", ["G"], 71, 88)], moreCount: 7, floor: 70 };
-const home = () => <div className="flex flex-col" style={{ gap: 34, padding: "24px 16px 40px", maxWidth: 1000, width: "100%", margin: "0 auto", boxSizing: "border-box" }}><HomeDecksZero /><ReadyToBuild ready={READY} inUse={new Map()} /></div>;
+const HNOW = "2026-11-26T08:00:00.000Z";
+const hv = (n: number, o: any = {}): any => ({ key: `k${n}`, kind: "new-set", at: new Date(Date.parse(HNOW) - (n + 1) * 3_600_000).toISOString(), unseen: n < 1, card: null, friend: null, href: `/collection/sets/s${n}`, opens: null, outbound: null, name: ["Avatar: The Last Airbender", "Foundations Jumpstart", "Lorwyn Eclipsed"][n % 3], setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o });
+const HFEED: any = { chosen: true, on: ["new-set", "trade-match"], items: [hv(0), hv(1), hv(2)], unseen: 1, lead: null };
+const home = () => <Dashboard stats={{ totalCards: 1284, uniqueCards: 900 }} lastUpdated={new Date("2026-11-20T00:00:00Z")} ready={READY} inUse={new Map()} decks={[]} commitments={{ inUse: 0, overCommitted: 0 } as any} shopping={{ byDeck: new Map(), total: { copies: 0, cents: 0, pricedCopies: 0 } } as any} friends={{ you: { displayName: "Wren", commander: null }, friends: FR.slice(0, 3) as any, links: [], invites: null } as any} now={HNOW} feed={HFEED} />;
 app("H-desk", "desk", "/", home, { vh: 900 });
 app("H-phone", "phone", "/", home, { vh: 1300 });
 

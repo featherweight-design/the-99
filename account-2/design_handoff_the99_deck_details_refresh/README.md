@@ -34,7 +34,9 @@ Boards `R4-*.dc.html` (shots in `art/r4/`). Unlike R1–R3 these are the SHIPPED
 - Decks › All cart: the deck-select label becomes a ◆ Decks band with `N of M selected`. Checkout total box unchanged (open question: unify with the R3 Shopping summary box).
 - Export: tabs = shipped `SegmentedSwitch`; Shopping rows = shipped `DecklistRow readOnly`; i-callout → one plain line; footer drops the line the subtitle repeats; bare ✕.
 - Friends/Pods: section-panel `BAND` moves to the display face; `BandText` splits "Title · N".
-- Home zero states: `HomeSectionHead`.
+- Home at zero decks: No decks yet uses `HomeSectionHead`. Ready to build is not redrawn: it left Home with What's new (Direction B).
 - Analysis before a read: Overview becomes a box band.
 - Help me choose results: ◆ heads, divider hairline dropped; after a read the rest head replaces More commanders.
 - Settings: `SECTION_HEAD` (all sections + Open links on /friends) and Kept back move to the ◆ display head.
+
+R4b (Hugh 2026-11-26): every board shows BEFORE (shipped main, `art/r4/before/`) above AFTER; Home redrawn as the full shipped Dashboard at zero decks with the feed on.
