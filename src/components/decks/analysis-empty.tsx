@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
+import { PANEL } from "../social/section-panel";
+import { DeckBoxBand } from "./deck-box";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { plainText } from "../../lib/decks/notes-body";
@@ -157,11 +159,9 @@ export function AnalysisEmpty({
     return () => observer.disconnect();
   }, [phase]);
   return (
-    <section ref={sectionRef} className="flex flex-col gap-[7px] md:gap-[8px]" data-testid="analysis-empty" data-phase={phase}>
-      <h3 className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">
-        {copy.overview}
-      </h3>
-      <div className="flex flex-col items-center text-center px-[4px] pt-[22px] pb-[8px] md:flex-row md:items-start md:justify-center md:gap-[40px] md:text-left md:px-[24px] md:pt-[28px] md:pb-[18px]">
+    <section ref={sectionRef} className={`${PANEL} !mt-0`} data-testid="analysis-empty" data-phase={phase}>
+      <DeckBoxBand as="h3" title={copy.overview} />
+      <div className="flex flex-col items-center text-center px-[14px] pt-[22px] pb-[18px] md:flex-row md:items-start md:justify-center md:gap-[40px] md:text-left md:px-[24px] md:pt-[28px] md:pb-[18px]">
         <AnalysisRing busy={busy} opacity={phase === "failed" ? 0.3 : undefined} testId="analysis-ring" />
         <div className="flex flex-col items-center md:min-w-0 md:max-w-[640px] md:flex-1 md:items-start">
           <h2

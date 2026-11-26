@@ -1,5 +1,6 @@
 "use client";
 
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "../deck-box";
 import { useMemo, useState } from "react";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { synopsisCopy } from "../../../lib/copy/synopsis";
@@ -37,26 +38,25 @@ export function PreconOverview({ overview, preconName, commanderId = null, listA
   // does on the Analysis tab.
   return (
     <HoverPreviewProvider>
-    <section aria-labelledby="precon-overview-label" data-testid="precon-overview" className="flex flex-col gap-[6px]">
-      <div className="flex flex-wrap items-baseline gap-[10px]">
-        <h2 id="precon-overview-label" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
-          {synopsisCopy.label}
-        </h2>
-        <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{preconsCopy.open.overview.aside}</small>
-      </div>
-      <p className="m-0 mt-[2px] text-[14px] leading-[1.7] text-[color:var(--fg-body)] [text-wrap:pretty] md:max-w-[760px]">
+    <DeckBox aria-labelledby="precon-overview-label" data-testid="precon-overview" className="!mt-0">
+      <DeckBoxBand
+        id="precon-overview-label"
+        title={synopsisCopy.label}
+        aside={<small className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">{preconsCopy.open.overview.aside}</small>}
+      />
+      <p className="m-0 px-[14px] py-[12px] text-[14px] leading-[1.7] text-[color:var(--fg-body)] [text-wrap:pretty] md:px-[16px]">
         <SynopsisText text={content.overview} cards={content.cards} art={art} />
       </p>
-      <div>
+      <DeckBoxFoot className="!py-[4px]">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] text-[13px] font-medium text-[color:var(--accent-text)] transition-colors hover:text-[color:var(--accent-hover)] md:min-h-[32px]"
+          className="inline-flex min-h-[44px] w-fit cursor-pointer items-center gap-[6px] text-[13px] font-medium text-[color:var(--accent-text)] transition-colors hover:text-[color:var(--accent-hover)] md:min-h-[32px]"
         >
           {synopsisCopy.entry}
           <span aria-hidden>→</span>
         </button>
-      </div>
+      </DeckBoxFoot>
       {open ? (
         <PreconSynopsisModal
           preconName={preconName}
@@ -68,7 +68,7 @@ export function PreconOverview({ overview, preconName, commanderId = null, listA
           onClose={() => setOpen(false)}
         />
       ) : null}
-    </section>
+    </DeckBox>
     </HoverPreviewProvider>
   );
 }

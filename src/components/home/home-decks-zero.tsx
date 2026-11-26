@@ -1,3 +1,4 @@
+import { HomeSectionHead } from "./home-section-head";
 import { refreshCopy } from "@/lib/copy/refresh";
 import { DecksZeroActions } from "@/components/decks/decks-zero";
 
@@ -25,9 +26,7 @@ export function HomeDecksZero() {
   return (
     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
       {/* §SectionLabel, with the resume label's own `margin-top: 6`. */}
-      <h2 className="m-0 mt-[6px] font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
-        {c.decksHeading}
-      </h2>
+      <HomeSectionHead className="mt-[6px]">{c.decksHeading}</HomeSectionHead>
       <div className="flex flex-col gap-[14px] rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] p-[16px] sm:p-[16px_18px]">
         {/* The two paragraphs and their breakpoint swap are DecksZero's, for the same
             reason: which one shows is a CSS fact. */}
