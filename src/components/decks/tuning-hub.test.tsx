@@ -204,8 +204,8 @@ describe("TuningHub opening a tool", () => {
   // back; a tab press remounts the panel so the new tool arrives gently too.
   it("draws the opened tool, and the tiles it returns to, on the shared gentle motion", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
-    const grid = tile("cuts").parentElement!;
-    expect(grid.className.split(/\s+/)).toContain("anim-gentle-in");
+    // The landing's wrapper carries the motion: the Strategy box and the Tools group sit inside it, over the tile grid.
+    expect(tile("cuts").closest(".anim-gentle-in")).not.toBeNull();
     fireEvent.click(tile("cuts"));
     await screen.findByRole("heading", { name: copy.tools.cuts.name });
     const panel = () => document.getElementById("tuning-tool-panel")!;
