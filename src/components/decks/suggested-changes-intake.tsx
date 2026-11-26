@@ -300,15 +300,17 @@ export function IntakeFocusLine({ focus, copies, onChange }: { focus: StrategyKe
   return (
     <div
       data-sc-focus-line=""
+      role="group"
+      aria-label={strategyFocusCopy.intakeRow.label}
       className="mb-[14px] flex min-h-[44px] items-center gap-[10px] rounded-[10px] px-[14px] py-[8px] md:mb-[16px]"
       style={{ background: "var(--surface-rail)", border: "1px solid var(--border)" }}
     >
       <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{strategyFocusCopy.intakeRow.label}</span>
       <span className="min-w-0 truncate text-[13px] font-semibold" style={{ color: "var(--fg)" }}>{strategyName(focus)}</span>
       {copies !== null ? (
-        <span className="font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}>{copies} {strategyFocusCopy.cards(copies)}</span>
+        <span className="whitespace-nowrap font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}>{copies} {strategyFocusCopy.cards(copies)}</span>
       ) : null}
-      <button type="button" onClick={onChange} className={`ml-auto font-mono text-[11.5px] ${LINK}`}>{strategyFocusCopy.intakeRow.change}</button>
+      <button type="button" onClick={onChange} className={`ml-auto whitespace-nowrap font-mono text-[11.5px] ${LINK}`}>{strategyFocusCopy.intakeRow.change}</button>
     </div>
   );
 }

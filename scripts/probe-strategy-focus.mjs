@@ -1,4 +1,4 @@
-// probe:strategy-focus — a deck's focus is picked from the strategy block's legend and cleared by Keep it balanced,
+// probe:strategy-focus — a deck's focus is picked from the strategy block's legend and cleared by Clear focus,
 // in a real browser, at both widths, and each press survives a reload (the write landed, not only the optimistic draw).
 //
 // The block draws only over a reading, so SF_DECK must be an analyzed deck of the signed-in account with a strategy
@@ -72,7 +72,7 @@ async function legend(page) {
 
 async function openBlock(page) {
   await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded" });
-  await onPage(page, "[role=tab]").filter({ hasText: "Analysis" }).first().click();
+  await onPage(page, "[role=tab]").filter({ hasText: "Tuning" }).first().click();
   await onPage(page, "[data-strategy-block]").first().scrollIntoViewIfNeeded({ timeout: 30_000 });
 }
 
@@ -107,8 +107,8 @@ try {
     await openBlock(page);
     const stored = await legend(page);
     report(`the pick survives a reload at ${width}`, stored.find((r) => r.key === target.key)?.checked === true, JSON.stringify(stored.filter((r) => r.checked)));
-    await onPage(page, "[data-strategy-block] button").filter({ hasText: "Keep it balanced" }).first().click();
-    report(`Keep it balanced clears it at ${width}`, (await legend(page)).every((r) => !r.checked), "no row checked");
+    await onPage(page, "[data-strategy-block] button").filter({ hasText: "Clear focus" }).first().click();
+    report(`Clear focus clears it at ${width}`, (await legend(page)).every((r) => !r.checked), "no row checked");
     await page.waitForTimeout(1500);
     await openBlock(page);
     report(`the clear survives a reload at ${width}`, (await legend(page)).every((r) => !r.checked), "no row checked");
@@ -119,8 +119,8 @@ try {
     await openBlock(page).catch(() => {});
     const restore = original
       ? onPage(page, `[data-strategy-block] [role=radio][data-strategy="${original}"]`).first()
-      : onPage(page, "[data-strategy-block] button").filter({ hasText: "Keep it balanced" }).first();
-    // With no focus to restore and none drawn, Keep it balanced is absent and there is nothing to do.
+      : onPage(page, "[data-strategy-block] button").filter({ hasText: "Clear focus" }).first();
+    // With no focus to restore and none drawn, Clear focus is absent and there is nothing to do.
     if (await restore.count().catch(() => 0)) await restore.click().catch(() => {});
     await page.waitForTimeout(1500);
     // Verified, not assumed: a restore that did not persist fails the run.

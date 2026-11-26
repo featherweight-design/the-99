@@ -174,9 +174,6 @@ function scrollToUnresolved() {
   reveal(document.getElementById("unresolved-group"), "start");
 }
 
-/** Immutable omit of one key, for the per-card receipt maps (H29): returns the
- *  same object when the key is already absent, so a `setState` call built on
- *  this never schedules a render that changes nothing. */
 /** How many cards the deck holds of its focus: the ring's own count, else the sixth row the read keeps for a focus outside the top five. */
 function focusCopiesOf(read: StrategyRead, focus: StrategyKey | null): number | null {
   if (!focus) return null;
@@ -187,6 +184,9 @@ function focusCopiesOf(read: StrategyRead, focus: StrategyKey | null): number | 
   return read.focus && read.focus.key === focus ? read.focus.axis.copies : null;
 }
 
+/** Immutable omit of one key, for the per-card receipt maps (H29): returns the
+ *  same object when the key is already absent, so a `setState` call built on
+ *  this never schedules a render that changes nothing. */
 function dropKey<T>(map: Record<string, T>, key: string): Record<string, T> {
   if (!(key in map)) return map;
   const next = { ...map };

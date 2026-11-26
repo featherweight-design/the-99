@@ -73,7 +73,7 @@ export const strategyFocusCopy = {
   footFocus: (name: string) => `Suggested changes builds toward ${name}.`,
   openSuggested: "Open Suggested changes ›",
   clearFocus: "Clear focus",
-  /** The Suggested changes intake's focus row (phone): the pick, its card count, and the way back to the pick. */
+  /** The Suggested changes intake's focus row: the pick, its card count, and the way back to the pick. */
   intakeRow: { label: "Focus", change: "Change ›" },
   /** Read aloud for the ring, which is drawn for the eye alone. */
   ringLabel: (names: string[]) => `Strategies by card count: ${names.join(", ")}.`,

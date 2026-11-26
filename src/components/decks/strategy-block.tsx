@@ -2,7 +2,7 @@
 
 // The deck's strategy on the Tuning landing (handoff `design_handoff_the99_strategy_focus`, R2g): a ring of up to five strategies,
 // the legend that counts them and is the press for a free FOCUS pick, and one line under it. Drawn as a box above the tool tiles. No model call: the read is `loadDeckStrategy`, the pick is `setStrategyFocus`, held by the shell.
-import { useRef } from "react";
+import { useId, useRef } from "react";
 
 import { strategyFocusCopy as copy, strategyName } from "@/lib/copy/strategy-focus";
 import type { StrategyRead } from "@/lib/strategy/load";
@@ -42,11 +42,12 @@ export function StrategyBlock({
 }) {
   const { strategy, pending } = read;
   const name = focus ? strategyName(focus) : null;
+  const headingId = useId();
   return (
-    <DeckBox data-strategy-block aria-labelledby="strategy-heading" className="!mt-0">
+    <DeckBox data-strategy-block aria-labelledby={headingId} className="!mt-0">
       <DeckBoxBand
         as="h3"
-        id="strategy-heading"
+        id={headingId}
         title={copy.heading}
         count={strategy.state === "ok" ? copy.themes(strategy.axes.length) : undefined}
         aside={strategy.state === "ok" ? (

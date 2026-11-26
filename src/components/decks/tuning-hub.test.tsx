@@ -68,8 +68,13 @@ describe("TuningHub landing", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} strategy={(openSuggested) => <button type="button" onClick={openSuggested}>strategy-slot</button>} />);
     await waitFor(() => expect(read).toHaveBeenCalledWith("d"));
     const group = screen.getByRole("group", { name: new RegExp(copy.toolsHead) });
-    expect(group.textContent).toContain("2");
-    expect(within(group).queryByText("strategy-slot")).toBeNull();
+    const headId = group.getAttribute("aria-labelledby") ?? "";
+    const head = document.getElementById(headId)?.textContent ?? "";
+    expect(head).toContain(copy.toolsHead);
+    expect(head.replace(copy.toolsHead, "")).toMatch(/2/);
+    const slot = screen.getByText("strategy-slot");
+    expect(group.contains(slot)).toBe(false);
+    expect(slot.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(screen.getByText("strategy-slot"));
     await waitFor(() => expect(document.querySelector('[data-tuning-tool="suggested"]')).toBeTruthy());
   });

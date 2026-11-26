@@ -408,6 +408,7 @@ export function TuningHub({
   const openedTool = openTool;
   const otherToolsRef = useRef<HTMLDivElement>(null);
   const otherToolsLabelId = useId();
+  const toolsHeadId = useId();
   useLayoutEffect(() => {
     const panel = toolRef.current;
     const section = sectionRef.current;
@@ -639,9 +640,9 @@ export function TuningHub({
       ) : (
         <div className="anim-gentle-in flex flex-col gap-[12px] md:gap-[14px]">
           {strategy?.(() => open("suggested", { focus: true, scroll: true }))}
-          <div role="group" aria-labelledby="tuning-tools-head" className="flex flex-col gap-[10px]">
+          <div role="group" aria-labelledby={toolsHeadId} className="flex flex-col gap-[10px]">
             {/* The bare head over the tiles: a diamond, the word and the count, with no box (R2-Tuning). */}
-            <h3 id="tuning-tools-head" className="m-0 mt-[10px] flex items-center px-[2px] md:mt-[14px]"><BandTitle title={copy.toolsHead} count={String(views.length)} /></h3>
+            <h3 id={toolsHeadId} className="m-0 mt-[10px] flex items-center px-[2px] md:mt-[14px]"><BandTitle title={copy.toolsHead} count={String(views.length)} /></h3>
             <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
           {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
               bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11), smoothly unless the
