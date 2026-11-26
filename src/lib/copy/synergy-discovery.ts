@@ -179,7 +179,8 @@ export const synergyCopy = {
     // One new label beside addPanelCopy.shelf.labels. Not 'Threats & synergy'
     // — that is the shipped targetless shelf and this is a different list.
     label: (commander: string) => `Synergy · ${commander}`,
-    meta: (n: string) => `ranked by synergy · ${n} to consider`,
+    // The band carries the count itself now (deck details refresh, PR 1; copy-reviewed).
+    clause: "ranked by synergy",
     // The tile's lift line loses its ownership gate (see README decision 10)
     // and keeps its shipped string, addPanelCopy.tile.lift. A null synergy
     // drops to a sentence, exactly as noInclusion does:

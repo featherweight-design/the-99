@@ -1,0 +1,59 @@
+{
+  "feature": "Deck details refresh PR 1: the shared deck box band and foot, Consider shelves (handoff design_handoff_the99_deck_details_refresh, R1-Consider)",
+  "note": "Needs a signed-in fixture account with a deck that has Consider suggestions (DECK_ID).",
+  "out": "contact-sheets/deck-refresh-1",
+  "shares": [
+    {
+      "binding": "DeckBox",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "consider-phone",
+      "label": "Tuning > Consider at phone: band with count, clause row, Show all in the box foot, key box",
+      "view": "src/components/decks/consider-panel.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 900
+        },
+        {
+          "click": "text=Cards that fill what this deck is short of",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "consider-desktop",
+      "label": "Tuning > Consider at desktop: clause and links in the band, chevron at the end, key box",
+      "view": "src/components/decks/consider-panel.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 900
+        },
+        {
+          "click": "text=Cards that fill what this deck is short of",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
