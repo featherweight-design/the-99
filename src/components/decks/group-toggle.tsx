@@ -502,8 +502,8 @@ export function GroupToggle({
         <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} tokens={joinedTokens} tokenProvenance={deckTokens?.provenance ?? null} tokenOwnProvenance={deckTokens?.ownProvenance ?? null} overCount={shoppingOverCount} />
       )}
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
-          limit still shows then (it reads `none over`). */}
-      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} countInBox />}
+          limit still shows then, with its own `N over` count (the box's Over cell carries it otherwise). */}
+      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} countInBox={Boolean(priceSummary && (provenance || deckTokens?.ownProvenance))} />}
     </div>
   );
 }
