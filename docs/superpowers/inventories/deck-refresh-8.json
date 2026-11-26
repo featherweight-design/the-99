@@ -1,0 +1,73 @@
+{
+  "feature": "Deck details refresh PR 8: Analysis boxes, Overview, Where you sit, What is in this deck and How it plays (handoff design_handoff_the99_deck_details_refresh, R3-Analysis)",
+  "note": "Needs a server with ANALYSIS_TAB_ENABLED=true and ANALYSIS_DECK set to a deck the signed-in account owns that holds a stored reading and an overview (local-dev: HD Tune - Blood Rites cb877695-aa56-400c-bd10-ede94e67a558); ANALYSIS_EMPTY_DECK for the no-overview state (d3f9ccb4-8ed9-47e1-8b68-9b6fcd4bc85c).",
+  "out": "contact-sheets/deck-refresh-8",
+  "shares": [
+    {
+      "binding": "DeckBox",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "boxes-overview",
+      "label": "Analysis: Overview (written) and Where you sit boxes",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 1500 },
+        { "scrollTo": "[data-testid='synopsis-overview']", "settle": 800 }
+      ]
+    },
+    {
+      "id": "boxes-overview-empty",
+      "label": "Analysis: Overview with no overview written (Write one)",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_EMPTY_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 1500 },
+        { "scrollTo": "[data-testid='synopsis-overview']", "settle": 800 }
+      ]
+    },
+    {
+      "id": "boxes-climb",
+      "label": "Analysis: Where you sit, with see all brackets in the foot",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 1500 },
+        { "scrollTo": "[data-testid='see-all-brackets']", "settle": 800 }
+      ]
+    },
+    {
+      "id": "boxes-findings",
+      "label": "Analysis: What is in this deck, tiles kept, How we make these decisions in the foot",
+      "view": "src/components/decks/findings-block.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 1500 },
+        { "scrollTo": "[data-testid='findings-block']", "settle": 800 }
+      ]
+    },
+    {
+      "id": "boxes-benchmarks",
+      "label": "Analysis: How it plays, tiles kept, caption in the band",
+      "view": "src/components/decks/benchmarks-block.tsx",
+      "binding": "DeckBox",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 1500 },
+        { "scrollTo": "[data-benchmarks]", "settle": 800 }
+      ]
+    }
+  ]
+}

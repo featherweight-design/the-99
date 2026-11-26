@@ -7,6 +7,7 @@ import type { Step } from "../../lib/benchmarks/types";
 import { deckBenchmarksCopy as copy } from "../../lib/copy/deck-benchmarks";
 import { formatShortDeckDate } from "../../lib/decks/format";
 import { InfoTip } from "../ui/info-tip";
+import { DeckBox, DeckBoxBand } from "./deck-box";
 import { useZone } from "../zone-context";
 
 /** Which ledger an opener asks for: a graded benchmark, or one dependency row. */
@@ -95,21 +96,23 @@ export function BenchmarksBlock({
   const tipId = useId();
   const w = (tile: string, row: string) => (rows ? row : `${row} ${tile}`);
   return (
-    <section data-benchmarks className={w("md:gap-[11px]", "flex flex-col gap-[9px]")}>
-      <div className={w("md:flex-row md:items-baseline md:gap-[14px] md:flex-wrap", "flex flex-col gap-[4px]")}>
-        <h3 className={w("md:text-[10px] md:tracking-[0.16em]", "m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]")}>
-          {copy.heading}
-        </h3>
-        <span className={w("md:text-[10.5px] md:leading-normal", "font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-faint)] [text-wrap:pretty]")}>
-          {stale ? copy.captionStale(formatShortDeckDate(new Date(analyzedAt), zone)) : copy.caption}
-        </span>
-      </div>
-
+    <DeckBox data-benchmarks aria-labelledby="benchmarks-head">
+      <DeckBoxBand
+        id="benchmarks-head"
+        as="h3"
+        title={<span className="whitespace-nowrap">{copy.heading}</span>}
+        aside={
+          <span className="min-w-0 max-w-[62%] text-right font-mono text-[10px] font-medium leading-[1.4] text-[color:var(--fg-faint)] [text-wrap:balance] md:text-[11px]">
+            {stale ? copy.captionStale(formatShortDeckDate(new Date(analyzedAt), zone)) : copy.caption}
+          </span>
+        }
+      />
+      <div className={w("md:gap-[12px] md:p-[14px] md:pb-[16px]", "flex flex-col")}>
       <div
         data-grades
         className={w(
           "md:grid md:grid-cols-[repeat(4,minmax(0,1fr))] md:items-stretch md:gap-[10px] md:overflow-visible md:rounded-none md:border-0 md:bg-transparent",
-          "flex flex-col overflow-hidden rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface)]",
+          "flex flex-col overflow-hidden",
         )}
       >
         {GRADES.map((g) => (
@@ -119,7 +122,7 @@ export function BenchmarksBlock({
 
       <div
         data-dependencies
-        className={w("md:rounded-[9px]", "relative flex flex-col rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)]")}
+        className={w("md:rounded-[9px] md:border md:border-[color:var(--border)]", "relative flex flex-col bg-[color:var(--surface-sunken)]")}
       >
         <div className={w("md:min-h-0 md:px-[16px] md:pb-[10px] md:pt-[12px]", "relative flex min-h-[44px] items-center gap-[8px] px-[13px]")}>
           <span className={w("md:text-[12px]", "text-[12.5px] font-semibold text-[color:var(--fg)]")}>{copy.deps.name}</span>
@@ -138,7 +141,8 @@ export function BenchmarksBlock({
           benchmarks.dependencies.map((d) => <DependencyRow key={d.row} dep={d} rows={rows} onOpen={onOpen} />)
         )}
       </div>
-    </section>
+      </div>
+    </DeckBox>
   );
 }
 

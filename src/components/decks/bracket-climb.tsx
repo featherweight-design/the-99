@@ -9,6 +9,7 @@ import { BRACKET_NAMES, deckAnalysisCopy, nameList } from "../../lib/copy/deck-a
 import { downgradeTargets } from "../../lib/bracket/upgrade-view";
 import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { BracketMark, bracketInk } from "./bracket-mark";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 import { FindingMark } from "./finding-mark";
 import { AllBracketsSheet } from "./all-brackets-sheet";
 import type { FindingArt } from "./receipt-modal";
@@ -98,11 +99,9 @@ export function BracketClimb({
   const [allOpen, setAllOpen] = useState(false);
   const targets = downgradeTargets(verdict.permits);
   return (
-    <section className="flex flex-col gap-[9px] md:gap-[11px]">
-      <h3 className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">
-        {copy.heading}
-      </h3>
-      <div className="flex flex-col gap-[7px] rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface)] p-[11px] md:gap-2 md:p-[14px]">
+    <DeckBox aria-labelledby="climb-head">
+      <DeckBoxBand id="climb-head" as="h3" title={copy.heading} />
+      <div className="flex flex-col gap-[7px] p-[11px] md:gap-2 md:p-[14px]">
         {rungs.map((rung) => (
           <Rung
             key={rung.bracket}
@@ -120,23 +119,22 @@ export function BracketClimb({
         ))}
       </div>
       {/*
-        THE FOOT: `see all brackets →`, right-aligned under the rungs box (addendum 1a). A pressed
-        (and, at 1300, hovered) state that the path's opener does not have, drawn as the canvas
-        draws it (audit finding 5). A 44px target at 390, pulled back into the section gap.
+        THE FOOT: `see all brackets →`, at the box's end (R3 Analysis; addendum 1a before it). A
+        pressed (and, at 1300, hovered) state that the path's opener does not have. A 44px target.
       */}
-      <div className="-mb-[6px] -mr-[8px] -mt-[4px] flex justify-end md:m-0">
+      <DeckBoxFoot className="max-md:!py-0">
         <button
           type="button"
           aria-haspopup="dialog"
           data-testid="see-all-brackets"
           onClick={() => setAllOpen(true)}
-          className="group flex min-h-[44px] items-center rounded-[6px] px-[8px] font-mono text-[11px] text-[color:var(--accent-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] active:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] active:text-[color:var(--accent-hover)] md:h-[28px] md:min-h-0 md:hover:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] md:hover:text-[color:var(--accent-hover)] transition-colors"
+          className="group flex min-h-[44px] items-center self-end rounded-[6px] px-[8px] font-mono text-[11px] text-[color:var(--accent-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] active:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] active:text-[color:var(--accent-hover)] md:h-[28px] md:min-h-0 md:hover:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] md:hover:text-[color:var(--accent-hover)] transition-colors"
         >
           <span className="border-b border-b-current border-dotted border-current group-active:border-solid md:group-hover:border-solid">
             {deckAnalysisCopy.bracketsSheet.open} <span aria-hidden="true">→</span>
           </span>
         </button>
-      </div>
+      </DeckBoxFoot>
       {allOpen ? <AllBracketsSheet onClose={() => setAllOpen(false)} /> : null}
       {open && targets.length > 0 ? (
         <UpgradePathSheet
@@ -148,7 +146,7 @@ export function BracketClimb({
           onClose={() => setOpen(false)}
         />
       ) : null}
-    </section>
+    </DeckBox>
   );
 }
 

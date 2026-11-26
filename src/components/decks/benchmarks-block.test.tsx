@@ -98,7 +98,7 @@ describe("BenchmarksBlock", () => {
     for (const dependencies of [[graveyard], []]) {
       const { container, unmount } = render(<BenchmarksBlock benchmarks={wire({ dependencies })} analyzedAt="2026-10-01T12:00:00Z" layout="rows" onOpen={() => {}} />);
       // Whole subtrees the block alone draws.
-      for (const el of container.querySelectorAll("[data-grades], [data-dependency], [data-dependencies-none], [data-benchmarks] > div:first-child")) {
+      for (const el of container.querySelectorAll("[data-grades], [data-dependency], [data-dependencies-none], [data-benchmarks] > div")) {
         expect(el.outerHTML).not.toMatch(/\bmd:/);
       }
       // The Dependencies box and its head hold the shared InfoTip, which keeps its own placement,
