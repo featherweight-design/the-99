@@ -4,10 +4,16 @@ import { named } from "../person-name/mint";
 import type { Matchups } from "./matchups";
 import type { GameSummary } from "./games";
 import { gameMatchupsCopy } from "../copy/game-matchups";
+import { summarizeMatchups } from "./matchups";
 
 const summary = (wins: number, losses: number, draws = 0): GameSummary =>
   ({ count: wins + losses + draws, record: { wins, losses, draws }, axes: [], fix: [], keep: [], mixed: [] }) as unknown as GameSummary;
-const cell = (key: string, s: GameSummary, beatMe = 0) => ({ key, summary: s, beatMe });
+// A cell whose marks follow the summary's record: a loss in it is a loss to THIS opponent; `other` adds games someone else won.
+const cell = (key: string, s: GameSummary, other = 0, beatMe = 0) => {
+  const { wins, draws, losses } = s.record;
+  const marks = [...Array<"W">(wins).fill("W"), ...Array<"D">(draws).fill("D"), ...Array<"L">(losses).fill("L"), ...Array<"-">(other).fill("-")];
+  return { key, summary: { ...s, count: marks.length }, beatMe, marks };
+};
 const yuriko = { oracleId: "y", name: "Yuriko, the Tiger’s Shadow", imageUri: "y.jpg" };
 const tymna = { oracleId: "t", name: "Tymna the Weaver", imageUri: null };
 const thrasios = { oracleId: "h", name: "Thrasios, Triton Hero", imageUri: null };
@@ -21,31 +27,48 @@ describe("squares and counts", () => {
     ] }, "commanders");
     expect(rows[0].squares).toEqual(["L"]);
     expect(rows[1].squares).toEqual(["W", "W", "D", "L", "L"]);
-    expect(rows[1].aria).toBe("2 won, 1 drawn, 2 lost");
+    expect(rows[1].aria).toBe("2 won, 1 drawn, 2 lost to them");
   });
   it("past ten games the squares give way to counts, never a percentage", () => {
     const [row] = matchupRows({ ...base, commanders: [{ ...cell("y", summary(7, 5)), commander: yuriko, partner: null }] }, "commanders");
     expect(SQUARES_MAX).toBe(10);
     expect(row.squares).toBeNull();
-    expect(row.counts).toBe("7 W · 5 L");
+    expect(row.counts).toBe("W 7 · L 5");
     expect(JSON.stringify(row)).not.toMatch(/%/);
     const [ten] = matchupRows({ ...base, commanders: [{ ...cell("y", summary(5, 5)), commander: yuriko, partner: null }] }, "commanders");
     expect(ten.squares).toHaveLength(10);
   });
+  it("draws the games someone else won as dashes after the losses, and counts them past ten", () => {
+    const [few] = matchupRows({ ...base, commanders: [{ ...cell("y", summary(1, 1), 2), commander: yuriko, partner: null }] }, "commanders");
+    expect(few.squares).toEqual(["W", "L", "-", "-"]);
+    expect(few.aria).toBe("1 won, 1 lost to them, 2 won by someone else");
+    const [many] = matchupRows({ ...base, commanders: [{ ...cell("y", summary(4, 5), 2), commander: yuriko, partner: null }] }, "commanders");
+    expect(many.counts).toBe("W 4 · L 5 · – 2");
+  });
   it("adds draws to the counts only when there are some", () => {
     const [row] = matchupRows({ ...base, commanders: [{ ...cell("y", summary(6, 4, 2)), commander: yuriko, partner: null }] }, "commanders");
-    expect(row.counts).toBe("6 W · 4 L · 2 D");
+    expect(row.counts).toBe("W 6 · L 4 · D 2");
+  });
+});
+
+describe("rows from the real tally", () => {
+  it("one lost game gives the winner an L square and the other opponent a dash square", () => {
+    const games = [{ id: "g", result: "loss", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [] }] as unknown as Parameters<typeof summarizeMatchups>[0];
+    const opp = (over: object) => ({ seat: 1, friend: null, deckName: null, commander: null, partner: null, colorIdentity: [], label: null, won: false, ...over }) as Parameters<typeof summarizeMatchups>[1] extends ReadonlyMap<string, readonly (infer O)[]> ? O : never;
+    const m = summarizeMatchups(games, new Map([["g", [opp({ commander: yuriko, won: true }), opp({ seat: 2, commander: thrasios })]]]));
+    const rows = matchupRows(m, "commanders");
+    expect(Object.fromEntries(rows.map((r) => [r.name, r.squares]))).toEqual({ [yuriko.name]: ["L"], [thrasios.name]: ["-"] });
   });
 });
 
 describe("rows by split", () => {
   it("names a commander whole, a pair by both short names, and draws its art or a blank", () => {
     const rows = matchupRows({ ...base, commanders: [
-      { ...cell("y", summary(1, 0), 0), commander: yuriko, partner: null },
-      { ...cell("h+t", summary(0, 1), 1), commander: tymna, partner: thrasios },
+      { ...cell("y", summary(1, 0)), commander: yuriko, partner: null },
+      { ...cell("h+t", summary(0, 1), 0, 1), commander: tymna, partner: thrasios },
     ] }, "commanders");
-    expect(rows[0]).toMatchObject({ name: yuriko.name, thumb: { kind: "art", imageUri: "y.jpg" }, beat: 0 });
-    expect(rows[1]).toMatchObject({ name: "Tymna the Weaver + Thrasios", thumb: { kind: "blank" }, beat: 1 });
+    expect(rows[0]).toMatchObject({ name: yuriko.name, thumb: { kind: "art", imageUri: "y.jpg" } });
+    expect(rows[1]).toMatchObject({ name: "Tymna the Weaver + Thrasios", thumb: { kind: "blank" } });
   });
   it("names an identity as colorLabel does, and the ones it does not name from the copy", () => {
     expect(identityName(["U", "R"])).toEqual({ name: "Izzet", sub: null });

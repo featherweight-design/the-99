@@ -62,12 +62,26 @@ describe("by commander", () => {
     mount(games, wire(games, by));
     expect(screen.getByText(copy.recorded(2, 3))).toBeInTheDocument();
     const section = screen.getByRole("heading", { name: copy.heading }).closest("section")!;
-    // Yuriko: one won game, one lost game she won: W then L, two games, and the trophy counts the loss she won.
-    const squares = within(section).getAllByRole("img", { name: copy.squareAria(1, 1, 0) });
+    // Yuriko: one won game, one lost game she won: W then L, two games. Tymna sat in the won game only.
+    const squares = within(section).getAllByRole("img", { name: copy.squareAria(1, 1, 0, 0) });
     expect(squares[0]).toHaveTextContent("WL");
     expect(within(section).getByText(copy.games(2))).toBeInTheDocument();
-    expect(within(section).getByLabelText(copy.beatAria(1))).toBeInTheDocument();
     expect(within(section).getByText(copy.games(1))).toBeInTheDocument();
+  });
+
+  it("draws a dashed dash for the opponent who did not win a lost game, and the key under the rows", () => {
+    const lost = [game("g1", "loss")];
+    mount(lost, wire(lost, { g1: [
+      seat({ commander: yuriko, colorIdentity: ["U", "B"], won: true }),
+      seat({ seat: 2, commander: tymna, colorIdentity: ["W", "U", "B", "G"] }),
+    ] }));
+    const section = screen.getByRole("heading", { name: copy.heading }).closest("section")!;
+    const marks = [...section.querySelectorAll("[data-mark]")].map((m) => [m.getAttribute("data-mark"), m.textContent]);
+    // Cells with equal games order by key, so the rows' order is not the claim: one L and one dash, whichever row holds them.
+    expect(marks.sort()).toEqual([["-", "–"], ["L", "L"]]);
+    const key = section.querySelector("[data-matchups-key]")!;
+    expect(key.children).toHaveLength(3);
+    expect(key.textContent).toContain("–");
   });
 
   it("prints no percentage anywhere in the section", () => {
@@ -130,7 +144,8 @@ describe("a row past ten games", () => {
     const games = Array.from({ length: 12 }, (_, i) => game(`g${i + 1}`, i < 7 ? "win" : "loss"));
     const by = Object.fromEntries(games.map((g) => [g.id, [seat({ commander: yuriko, colorIdentity: ["U"] })]]));
     mount(games, wire(games, by));
-    expect(screen.getByText(copy.counts(7, 5, 0))).toBeInTheDocument();
+    // No seat won the five lost games, so each is someone else's win: a dash, never a loss to this opponent.
+    expect(screen.getByText(copy.counts(7, 0, 0, 5))).toBeInTheDocument();
     expect(screen.getByText(copy.games(12))).toBeInTheDocument();
   });
 });

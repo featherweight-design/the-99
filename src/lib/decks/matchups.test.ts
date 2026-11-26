@@ -62,6 +62,18 @@ describe("summarizeMatchups", () => {
     expect(m.friends.map((f) => [f.name, f.summary.count, f.beatMe])).toEqual([[named("Dave"), 2, 1]]);
   });
 
+  it("gives a lost game's L only to the opponent who won it; the others take the dash", () => {
+    const lost = summarizeMatchups([game("g", "loss"), game("w", "win"), game("d", "draw")], new Map([
+      ["g", [seat({ commander: yuriko, colorIdentity: ["U", "B"] }), seat({ seat: 2, commander: tymna, colorIdentity: ["W"], won: true })]],
+      ["w", [seat({ commander: yuriko, colorIdentity: ["U", "B"] }), seat({ seat: 2, commander: tymna, colorIdentity: ["W"] })]],
+      ["d", [seat({ commander: yuriko, colorIdentity: ["U", "B"] })]],
+    ]));
+    const marks = (key: string) => lost.commanders.find((c) => c.key === key)!.marks;
+    expect(marks("y").slice().sort()).toEqual(["-", "D", "W"]);
+    expect(marks("t").slice().sort()).toEqual(["L", "W"]);
+    expect(lost.commanders.find((c) => c.key === "y")!.beatMe).toBe(0);
+  });
+
   it("counts one game once in a cell, however many of its seats fall there", () => {
     const twin = summarizeMatchups([game("g", "loss")], new Map([["g", [
       seat({ commander: yuriko, colorIdentity: ["U", "B"] }), seat({ seat: 2, commander: yuriko, colorIdentity: ["U", "B"], won: true }),

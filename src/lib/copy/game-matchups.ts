@@ -11,7 +11,8 @@ const games = (n: number) => (n === 1 ? "1 game" : `${n} games`);
 export const gameMatchupsCopy = {
   matchups: {
     heading: "Matchups",
-    recorded: (recorded: number, total: number) => `recorded in ${recorded} of ${total} games`,
+    /** The band's count, after `Matchups ·`. */
+    recorded: (recorded: number, total: number) => `${recorded} of ${total} games`,
     /** The switch's name for a screen reader. */
     split: "Split by",
     byCommander: "Commander",
@@ -22,13 +23,15 @@ export const gameMatchupsCopy = {
     allOne: "Every row so far is a single game.",
     games,
     /** Past ten games the squares give way to counts. */
-    counts: (w: number, l: number, d: number) => (d > 0 ? `${w} W · ${l} L · ${d} D` : `${w} W · ${l} L`),
-    squareAria: (w: number, l: number, d: number) =>
-      [w && `${w} won`, d && `${d} drawn`, l && `${l} lost`].filter(Boolean).join(", "),
-    beatAria: (n: number) => (n === 1 ? "beat you in 1 game" : `beat you in ${n} games`),
-    legend: "Squares are games: W won, L lost, D drawn.",
-    legendBeat: "how many of your losses they won.",
-    legendPhone: "Squares are games: W won, L lost, D drawn. The trophy counts the losses they won.",
+    counts: (w: number, l: number, d: number, other: number) =>
+      [`W ${w}`, `L ${l}`, d > 0 && `D ${d}`, other > 0 && `– ${other}`].filter(Boolean).join(" · "),
+    squareAria: (w: number, l: number, d: number, other: number) =>
+      [w && `${w} won`, d && `${d} drawn`, l && `${l} lost to them`, other && `${other} won by someone else`].filter(Boolean).join(", "),
+    /** The key under the rows: one entry per square. */
+    keyWon: "you won",
+    keyLost: "they won",
+    keyDrawn: "drawn",
+    keyOther: "someone else won",
     fourColors: "Four colors",
     fourColorsSub: (missing: string) => `no ${missing}`,
     fiveColors: "Five colors",
