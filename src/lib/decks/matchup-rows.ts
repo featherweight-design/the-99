@@ -2,8 +2,10 @@
  * What each split of the Matchups section draws, as plain rows (Social R3 plan, PR 4). Pure, so every rule the
  * section states is one function a test can break:
  *
- * - a game is ONE SQUARE: wins first, then draws, then losses (order, never date), the wins in `--success`.
- *   At one game a row is one square and cannot be read as 100%. Past ten games the squares give way to counts;
+ * - a game is ONE SQUARE: wins first, then draws, then losses, then the games someone else won (order, never
+ *   date), the wins in `--success`. A loss is drawn only on the opponent who won it (`GameMark`); the others in
+ *   that game get a dashed dash. At one game a row is one square and cannot be read as 100%. Past ten games the
+ *   squares give way to counts;
  * - never a ratio: no percentage, no `net`. A row's denominator is its `N games`, the section's is
  *   `recorded in X of N games`;
  * - rows keep `summarizeMatchups`' own order (games, then key), never record;
@@ -13,7 +15,7 @@
 import type { ThirdPartyName } from "../person-name/brand";
 import { colorLabel } from "./format";
 import type { OpponentCommander } from "./game-opponents";
-import type { Matchups } from "./matchups";
+import type { GameMark, Matchups } from "./matchups";
 import { gameMatchupsCopy } from "../copy/game-matchups";
 
 export type MatchupSplit = "commanders" | "identities" | "friends";
@@ -31,14 +33,12 @@ export type MatchupRow = {
   thumb: Thumb;
   name: string | ThirdPartyName;
   sub: string | null;
-  /** One letter per game, W then D then L; null past `SQUARES_MAX` games. */
-  squares: ("W" | "D" | "L")[] | null;
-  /** `7 W · 5 L`, for a row past ten games; null when squares are drawn. */
+  /** One mark per game, W then D then L then the dash; null past `SQUARES_MAX` games. */
+  squares: GameMark[] | null;
+  /** `W 4 · L 5 · – 2`, for a row past ten games; null when squares are drawn. */
   counts: string | null;
   /** The games, spoken: `2 won, 1 lost`. */
   aria: string;
-  /** Losses to this opponent that they won; 0 draws nothing. */
-  beat: number;
   games: number;
 };
 
@@ -53,17 +53,18 @@ function commanderThumb(c: OpponentCommander | null): Thumb {
   return c?.imageUri ? { kind: "art", imageUri: c.imageUri } : { kind: "blank" };
 }
 
-function drawn(summary: { count: number; record: { wins: number; losses: number; draws: number } }) {
-  const { wins, draws, losses } = summary.record;
+const ORDER: GameMark[] = ["W", "D", "L", "-"];
+
+function drawn(cell: { summary: { count: number }; marks: readonly GameMark[] }) {
   const copy = gameMatchupsCopy.matchups;
-  const squares = summary.count <= SQUARES_MAX
-    ? [...Array<"W">(wins).fill("W"), ...Array<"D">(draws).fill("D"), ...Array<"L">(losses).fill("L")]
-    : null;
+  const n = (m: GameMark) => cell.marks.filter((x) => x === m).length;
+  const [w, d, l, o] = [n("W"), n("D"), n("L"), n("-")];
+  const squares = cell.summary.count <= SQUARES_MAX ? ORDER.flatMap((m) => cell.marks.filter((x) => x === m)) : null;
   return {
     squares,
-    counts: squares === null ? copy.counts(wins, losses, draws) : null,
-    aria: copy.squareAria(wins, losses, draws),
-    games: summary.count,
+    counts: squares === null ? copy.counts(w, l, d, o) : null,
+    aria: copy.squareAria(w, l, d, o),
+    games: cell.summary.count,
   };
 }
 
@@ -85,8 +86,7 @@ export function matchupRows(matchups: Matchups, split: MatchupSplit): MatchupRow
       thumb: commanderThumb(c.commander),
       name: c.partner ? `${shortName(c.commander.name)} + ${shortName(c.partner.name)}` : c.commander.name,
       sub: null,
-      beat: c.beatMe,
-      ...drawn(c.summary),
+      ...drawn(c),
     }));
   }
   if (split === "identities") {
@@ -94,8 +94,7 @@ export function matchupRows(matchups: Matchups, split: MatchupSplit): MatchupRow
       key: c.key,
       thumb: { kind: "pips", colorIdentity: c.colorIdentity },
       ...identityName(c.colorIdentity),
-      beat: c.beatMe,
-      ...drawn(c.summary),
+      ...drawn(c),
     }));
   }
   return matchups.friends.map((c) => ({
@@ -103,8 +102,7 @@ export function matchupRows(matchups: Matchups, split: MatchupSplit): MatchupRow
     thumb: c.commander?.imageUri ? { kind: "art", imageUri: c.commander.imageUri } : { kind: "initials", name: c.name },
     name: c.name,
     sub: null,
-    beat: c.beatMe,
-    ...drawn(c.summary),
+    ...drawn(c),
   }));
 }
 

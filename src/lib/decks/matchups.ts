@@ -16,7 +16,13 @@ import { summarizeGames } from "./games-summary";
 import type { DeckGame, GameSummary } from "./games";
 import type { GameOpponent, OpponentCommander } from "./game-opponents";
 
-type Cell = { key: string; summary: GameSummary; beatMe: number };
+/**
+ * One game as a cell's square. No placings are tracked, so a loss belongs only to the opponent who won it: in a
+ * game the player lost, the cell that held the winner is `L` and every other cell is `-` (someone else won).
+ */
+export type GameMark = "W" | "D" | "L" | "-";
+
+type Cell = { key: string; summary: GameSummary; beatMe: number; marks: GameMark[] };
 
 export type CommanderCell = Cell & { commander: OpponentCommander; partner: OpponentCommander | null };
 /** `colorIdentity` in WUBRG order; empty is colorless. */
@@ -34,18 +40,20 @@ export type Matchups = {
   friends: FriendCell[];
 };
 
-type Bucket<T> = { meta: T; games: DeckGame[]; beatMe: number };
+type Bucket<T> = { meta: T; games: DeckGame[]; beatMe: number; marks: GameMark[] };
 
-function add<T>(map: Map<string, Bucket<T>>, key: string, meta: T, game: DeckGame, beat: boolean) {
+function add<T>(map: Map<string, Bucket<T>>, key: string, meta: T, game: DeckGame, cellWon: boolean) {
   let bucket = map.get(key);
-  if (!bucket) map.set(key, (bucket = { meta, games: [], beatMe: 0 }));
+  if (!bucket) map.set(key, (bucket = { meta, games: [], beatMe: 0, marks: [] }));
   bucket.games.push(game);
-  if (beat) bucket.beatMe += 1;
+  const mark: GameMark = game.result === "win" ? "W" : game.result === "draw" ? "D" : cellWon ? "L" : "-";
+  bucket.marks.push(mark);
+  if (mark === "L") bucket.beatMe += 1;
 }
 
 function cells<T>(map: Map<string, Bucket<T>>): (Cell & { meta: T })[] {
   return [...map.entries()]
-    .map(([key, b]) => ({ key, meta: b.meta, summary: summarizeGames(b.games), beatMe: b.beatMe }))
+    .map(([key, b]) => ({ key, meta: b.meta, summary: summarizeGames(b.games), beatMe: b.beatMe, marks: b.marks }))
     .sort((a, b) => b.summary.count - a.summary.count || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
@@ -60,7 +68,6 @@ export function summarizeMatchups(games: readonly DeckGame[], opponents: Readonl
     const seats = opponents.get(game.id) ?? [];
     if (seats.length === 0) continue;
     recorded += 1;
-    const lost = game.result === "loss";
     // One game lands in a cell once, and beat the player there if any of that cell's seats won it.
     const commanders = new Map<string, { meta: { commander: OpponentCommander; partner: OpponentCommander | null }; won: boolean }>();
     const identities = new Map<string, { meta: string[]; won: boolean }>();
@@ -79,9 +86,9 @@ export function summarizeMatchups(games: readonly DeckGame[], opponents: Readonl
         friends.set(s.friend.key, { meta: friends.get(s.friend.key)?.meta ?? s.friend.name, won: (friends.get(s.friend.key)?.won ?? false) || s.won });
       }
     }
-    for (const [k, v] of commanders) add(byCommander, k, v.meta, game, lost && v.won);
-    for (const [k, v] of identities) add(byIdentity, k, v.meta, game, lost && v.won);
-    for (const [k, v] of friends) add(byFriend, k, v.meta, game, lost && v.won);
+    for (const [k, v] of commanders) add(byCommander, k, v.meta, game, v.won);
+    for (const [k, v] of identities) add(byIdentity, k, v.meta, game, v.won);
+    for (const [k, v] of friends) add(byFriend, k, v.meta, game, v.won);
   }
   return {
     games: games.length,
