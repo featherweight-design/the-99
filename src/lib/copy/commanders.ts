@@ -35,7 +35,7 @@ export const commandersCopy = {
   /** A commander page's Pool section. */
   pool: {
     heading: "The Pool",
-    size: (n: number) => `${n} card${n === 1 ? "" : "s"} fit this identity`,
+    size: (cardCount: number) => `${cardCount} card${cardCount === 1 ? "" : "s"} fit this identity`,
     caption: (name: string) =>
       `Cards from your collection that fit within ${name}’s color identity and could slot into the 99.`,
   },
@@ -45,13 +45,13 @@ export const commandersCopy = {
     hidden: "Synergy receipts hidden: EDHREC data unavailable",
     fitBarNone: "Synergy —",
     owned: (owned: number, total: number) => `${owned} / ${total} owned`,
-    pctOwned: (pct: number) => `${pct}% owned`,
+    pctOwned: (ownedPercent: number) => `${ownedPercent}% owned`,
     ofTop: (total: number) => `of top ${total}`,
   },
   /** The ranking's reveal control and its end line. */
   reveal: {
     more: (step: number) => `Show ${step} more`,
-    remaining: (n: number) => `${n.toLocaleString("en-US")} remaining`,
+    remaining: (remainingCount: number) => `${remainingCount.toLocaleString("en-US")} remaining`,
     moreAria: (step: number, remaining: number) =>
       `Show ${step} more commanders, ${remaining.toLocaleString("en-US")} remaining`,
     end: (total: number) => `End of ranking · ${total.toLocaleString("en-US")}`,

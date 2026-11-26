@@ -72,7 +72,7 @@ export const deckNotesCopy = {
     more: "More for this note",
     menuEdit: "Edit",
     menuDelete: "Delete",
-    doneDate: (d: string) => `done ${d}`,
+    doneDate: (doneDate: string) => `done ${doneDate}`,
     doneRefused: "We couldn’t mark that done. The note is unchanged.",
     reopenRefused: "We couldn’t put that back. The note is unchanged.",
   },
@@ -92,11 +92,11 @@ export const deckNotesCopy = {
     refused: "We couldn’t delete that. The note is unchanged.",
   },
   done: {
-    toggle: (n: string) => `Done (${n})`,
+    toggle: (doneCount: string) => `Done (${doneCount})`,
   },
   more: {
-    open: (n: string) => `Show all ${n}`,
-    done: (n: string) => `Show all ${n} done`,
+    open: (noteCount: string) => `Show all ${noteCount}`,
+    done: (noteCount: string) => `Show all ${noteCount} done`,
   },
   announce: {
     added: "Note added.",

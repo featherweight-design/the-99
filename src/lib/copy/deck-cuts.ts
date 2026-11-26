@@ -81,15 +81,15 @@ export const deckCutsCopy = {
     /** Over-99 lead's bold half comes from `overCopy`; these are the sentences after it. */
     lead: "Below is what we counted. Name the cuts to see which cards.",
     /** The over lead, against the deck's own body: 99, or 98 with a partner. */
-    overLead: (words: string, bodySize: number) => `${words} over the ${bodyWords(bodySize)}.`,
+    overLead: (overCountWord: string, bodySize: number) => `${overCountWord} over the ${bodyWords(bodySize)}.`,
     leadBare: "Below is what we counted.",
-    leadNamed: (n: number) => `${cap(numberWord(n))} ${n === 1 ? "card" : "cards"} named. Cut writes to the list straight away.`,
+    leadNamed: (cutCount: number) => `${cap(numberWord(cutCount))} ${cutCount === 1 ? "card" : "cards"} named. Cut writes to the list straight away.`,
     leadPart: (cut: number, kept: number, named: number, open: number) =>
       `${cap(numberWord(cut))} cut, ${numberWord(kept)} kept. ${cap(numberWord(named))} ${named === 1 ? "was" : "were"} named, so ${numberWord(open)} ${open === 1 ? "is" : "are"} left open.`,
     facts: {
       head: "What we counted",
-      read: (cards: number, commander: string, decks: number | null, bracket: number | null) =>
-        `from ${cards} cards${decks === null ? "" : ` · EDHREC for ${commander}, ${decks.toLocaleString("en-US")} decks`}${bracket === null ? "" : ` · bracket ${bracket}, as declared`} · free`,
+      read: (cardCount: number, commander: string, decks: number | null, bracket: number | null) =>
+        `from ${cardCount} cards${decks === null ? "" : ` · EDHREC for ${commander}, ${decks.toLocaleString("en-US")} decks`}${bracket === null ? "" : ` · bracket ${bracket}, as declared`} · free`,
       dividerResult: "The count",
       dividerPart: "The count, as the list is now",
       none: "Nothing runs long: no role, slot or flag is over.",
@@ -97,7 +97,7 @@ export const deckCutsCopy = {
     sources: { role: "role", curve: "curve", bracket: "bracket", edhrec: "edhrec" },
     // A role-overage row opens the cards it counts (small items 11, item 1). Copy-reviewed.
     seeCardsChevron: "›",
-    seeCardsAria: (label: string, n: number) => `${label}, ${n}. See the cards we counted.`,
+    seeCardsAria: (label: string, cardCount: number) => `${label}, ${cardCount}. See the cards we counted.`,
     cut: "Cut",
     keep: "Keep",
     cutDone: "cut",
@@ -105,8 +105,8 @@ export const deckCutsCopy = {
     undo: "Undo",
     showAgain: "Show it again",
     suggestion: "Suggestion",
-    neverCut: (commander: string, locked: number, key: number) =>
-      `Never named: ${commander}${locked > 0 ? `, the ${locked} ${locked === 1 ? "card" : "cards"} you locked` : ""}${key > 0 ? `${locked > 0 ? " and" : ", and"} the ${key} Key ${key === 1 ? "card" : "cards"}` : ""}.`,
+    neverCut: (commander: string, locked: number, keyCardCount: number) =>
+      `Never named: ${commander}${locked > 0 ? `, the ${locked} ${locked === 1 ? "card" : "cards"} you locked` : ""}${keyCardCount > 0 ? `${locked > 0 ? " and" : ", and"} the ${keyCardCount} Key ${keyCardCount === 1 ? "card" : "cards"}` : ""}.`,
     done: {
       // The count only when cuts were made from a result: a deck that reached the line some other way
       // (trimmed elsewhere while the tool was open) did not cut anything here (Hugh, 2026-10-15).
@@ -114,21 +114,21 @@ export const deckCutsCopy = {
       body: "The deck isn\u2019t over any more, so Proposed cuts closes here.",
     },
     deeper: {
-      offerTitle: (n: number) => `Name the ${numberWord(n)} ${n === 1 ? "cut" : "cuts"}`,
-      offerLead: (n: number) =>
-        `Naming the cuts picks ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason. It reads the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, the count below and your description.`,
+      offerTitle: (cutCount: number) => `Name the ${numberWord(cutCount)} ${cutCount === 1 ? "cut" : "cuts"}`,
+      offerLead: (cutCount: number) =>
+        `Naming the cuts picks ${numberWord(cutCount)} ${cutCount === 1 ? "card" : "cards"} to cut, each with a reason. It reads the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, the count below and your description.`,
       offerLeadThin: "EDHREC has no list for this commander to count against, so naming the cuts uses the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, roles, curve, bracket and your description.",
       action: "Name the cuts",
       credit: "1 credit",
       actionAria: "Name the cuts. Uses 1 credit.",
       actionAriaSpent: "Name the cuts. No credits left.",
       pending: "Naming the cuts\u2026",
-      pendingLead: (n: number) => `Naming ${numberWord(n)} ${n === 1 ? "cut" : "cuts"} from the count below. You can keep editing the deck while it reads.`,
+      pendingLead: (cutCount: number) => `Naming ${numberWord(cutCount)} ${cutCount === 1 ? "cut" : "cuts"} from the count below. You can keep editing the deck while it reads.`,
       pendingRead: "reading the count and your description",
-      resultHead: (n: number) => `${cap(numberWord(n))} to cut`,
+      resultHead: (cutCount: number) => `${cap(numberWord(cutCount))} to cut`,
       resultRead: "named by Proposed cuts \u00b7 read the count below and your description",
       /** After a capped run: how many are still over once these are dealt with. Placeholder owed to /copy-review. */
-      resultMore: (n: number) => `${cap(numberWord(n))} more ${n === 1 ? "is" : "are"} still over. Cut these, then name the cuts again for the rest.`,
+      resultMore: (cutCount: number) => `${cap(numberWord(cutCount))} more ${cutCount === 1 ? "is" : "are"} still over. Cut these, then name the cuts again for the rest.`,
       resultFoot: (named: number, asked: number) => `${named} of ${asked} named \u00b7 each figure checked against the count`,
       /** A run that named more than the deck needs (small items R1b, the `Cuts-Alternatives` board): the
        *  player chooses which to cut. Placeholders owed to /copy-review. */
@@ -144,7 +144,7 @@ export const deckCutsCopy = {
         pastLead: (under: number, bodySize: number) => `${cap(numberWord(under))} under the ${bodyWords(bodySize)}.`,
         doneFoot: (cut: number, needed: number, others: number) => `${cut > needed ? `${cut} cut` : `${cut} of ${needed} cut`}${others > 0 ? ` \u00b7 ${others} more named` : ""}`,
       },
-      shortRow: (n: number) => `A ${ordinalWord(n)} wasn\u2019t named`,
+      shortRow: (cutNumber: number) => `A ${ordinalWord(cutNumber)} wasn\u2019t named`,
       shortWhy: "it cited a figure the count doesn\u2019t have \u00b7 left out, not replaced",
       refused: "The run didn\u2019t name a cut it could back with a count, so nothing is shown. Your credit is back.",
       refusedFoot: "your list is untouched \u00b7 the count below stands",
@@ -166,7 +166,7 @@ export const deckCutsCopy = {
     },
     announce: {
       started: "Naming the cuts.",
-      ready: (n: number) => `${numberWord(n)} ${n === 1 ? "cut" : "cuts"} named.`,
+      ready: (cutCount: number) => `${numberWord(cutCount)} ${cutCount === 1 ? "cut" : "cuts"} named.`,
       refused: "The run named nothing. Your credit is back.",
       failed: "The run didn\u2019t finish. Your credit is back.",
       cut: (name: string) => `Cut ${name}.`,

@@ -22,7 +22,7 @@ export const copyEditorCopy = {
     desktop: "Click to edit",
     phone: "Tap again to edit",
     /** More than one key has these words: the editor asks which. */
-    more: (n: number) => `+${n} more`,
+    more: (moreCount: number) => `+${moreCount} more`,
   },
   editor: {
     now: "Now",
@@ -32,7 +32,7 @@ export const copyEditorCopy = {
     update: "Update edit",
     remove: "Remove edit",
     close: "Close",
-    words: (n: number, cap: number | undefined) => (cap === undefined ? `${n} ${n === 1 ? "word" : "words"}` : `${n} of ${cap} words`),
+    words: (wordCount: number, cap: number | undefined) => (cap === undefined ? `${wordCount} ${wordCount === 1 ? "word" : "words"}` : `${wordCount} of ${cap} words`),
     preview: (text: string) => `Preview: ${text}`,
     /** One note per fill-in in the field: what it reads on this page when the editor can tell, and how to move or remove it. */
     fill: (name: string, value: string | undefined) =>
@@ -49,11 +49,11 @@ export const copyEditorCopy = {
     whichKey: "These words are used in two places. Which one is this?",
     /** The kind line under the key: the name of the leaf, its word cap when it has one, or how many variations. */
     kind: (leaf: string, cap: number | undefined) => (cap === undefined ? leaf : `${leaf} · up to ${cap} words`),
-    variations: (n: number) => `${n} variations`,
+    variations: (variationCount: number) => `${variationCount} variations`,
     /** A variation's label from its condition; `otherwise` stands for any negation. */
     when: (cond: string) => `When ${cond}`,
     otherwise: "Otherwise",
-    variationN: (n: number) => `Variation ${n}`,
+    variationN: (variationNumber: number) => `Variation ${variationNumber}`,
     nowIs: (text: string) => `now “${text}”`,
     fieldLabel: "New wording",
   },
@@ -64,13 +64,13 @@ export const copyEditorCopy = {
   },
   /** The count that opens the tray, and the bar's line once a pull request is on its way. */
   barTray: {
-    edits: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} ›`,
+    edits: (editCount: number) => `${editCount} ${editCount === 1 ? "edit" : "edits"} ›`,
     sent: "Submitted, PR on its way",
-    open: (n: number) => `PR #${n} open`,
+    open: (prNumber: number) => `PR #${prNumber} open`,
   },
   tray: {
     region: "Copy edits",
-    title: (n: number) => `Copy edits · ${n}`,
+    title: (editCount: number) => `Copy edits · ${editCount}`,
     sub: "One pull request for all of them. Staging doesn’t change until it merges.",
     empty: "No edits yet. Click any text to change it.",
     edit: "Edit",
@@ -81,10 +81,10 @@ export const copyEditorCopy = {
     working: "Checking the rules, then pushing a branch",
     close: "Close",
     doneTitle: "Submitted",
-    opened: (n: number) => `Pull request #${n} opened`,
-    openedBody: (n: number, branch: string) => `${n} ${n === 1 ? "edit" : "edits"} on ${branch}. Staging shows the new wording once it merges; until then this page keeps today’s text.`,
+    opened: (prNumber: number) => `Pull request #${prNumber} opened`,
+    openedBody: (editCount: number, branch: string) => `${editCount} ${editCount === 1 ? "edit" : "edits"} on ${branch}. Staging shows the new wording once it merges; until then this page keeps today’s text.`,
     onItsWay: "Pull request on its way",
-    onItsWayBody: (n: number, branch: string) => `${n} ${n === 1 ? "edit" : "edits"} on ${branch}. The pull request appears here when it opens.`,
+    onItsWayBody: (editCount: number, branch: string) => `${editCount} ${editCount === 1 ? "edit" : "edits"} on ${branch}. The pull request appears here when it opens.`,
     noPr: "No pull request yet. Check the Copy edit run on GitHub.",
     github: "Open on GitHub ↗",
     run: "Open the run ↗",
@@ -92,7 +92,7 @@ export const copyEditorCopy = {
     retry: "Try again",
     /** The banner: no pull request, and the edits are kept. */
     failed: {
-      stale: (n: number) => (n === 1 ? "No pull request opened. One edit is out of date; your edits are kept." : `No pull request opened. ${n} edits are out of date; your edits are kept.`),
+      stale: (editCount: number) => (editCount === 1 ? "No pull request opened. One edit is out of date; your edits are kept." : `No pull request opened. ${editCount} edits are out of date; your edits are kept.`),
       rule: "No pull request opened. The copy rules refused an edit; your edits are kept.",
       limit: "No pull request opened. One a minute; wait a moment and try again. Your edits are kept.",
       unavailable: "No pull request opened. GitHub or the server did not take it; your edits are kept.",

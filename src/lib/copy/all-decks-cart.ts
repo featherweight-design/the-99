@@ -86,8 +86,8 @@ export const allDecksCartCopy = {
   },
 
   selections: {
-    head: (on: number, of: number) => `Decks · ${n(on)} of ${n(of)}`,
-    headPhone: (on: number, of: number) => `Decks · ${n(on)} of ${n(of)} selected`,
+    head: (selectedCount: number, totalCount: number) => `Decks · ${n(selectedCount)} of ${n(totalCount)}`,
+    headPhone: (selectedCount: number, totalCount: number) => `Decks · ${n(selectedCount)} of ${n(totalCount)} selected`,
     /** The phone fold's toggle, for a reader who cannot see the chevron. */
     toggleAria: (open: boolean) => (open ? "Hide the decks" : "Show the decks"),
     selectAll: "Select all",
@@ -107,9 +107,9 @@ export const allDecksCartCopy = {
     /** Some owned copies are held by a deck on this line itself. */
     ownedSome: (owned: number, held: number) => `you own ${n(owned)} · ${n(held)} in other decks`,
     /** A line still listed after a press this visit (S4). */
-    addedThisVisit: (q: number) => `${n(q)} added this visit`,
+    addedThisVisit: (copyCount: number) => `${n(copyCount)} added this visit`,
     /** Beside the held slot (`gotItCopy.slot.held`) of a line that left (S3). */
-    added: (q: number) => `${n(q)} added`,
+    added: (copyCount: number) => `${n(copyCount)} added`,
   },
 
   /** The desktop column header over By card's rows and each open By deck group (v2 call 1). The actions column has no label. */
@@ -149,10 +149,10 @@ export const allDecksCartCopy = {
     moreNameAria: "Show the full name",
     lessAria: "Show fewer",
     /** The open list's head, in place of the names: `for 4 decks`, `in 2 decks`, `from 2 friends`. */
-    forDecks: (x: number) => `for ${decks(x)}`,
-    inDecks: (x: number) => `in ${decks(x)}`,
-    alsoDecks: (x: number) => `also ${decks(x)}`,
-    fromFriends: (x: number) => `from ${x === 1 ? "1 friend" : `${n(x)} friends`}`,
+    forDecks: (deckCount: number) => `for ${decks(deckCount)}`,
+    inDecks: (deckCount: number) => `in ${decks(deckCount)}`,
+    alsoDecks: (deckCount: number) => `also ${decks(deckCount)}`,
+    fromFriends: (friendCount: number) => `from ${friendCount === 1 ? "1 friend" : `${n(friendCount)} friends`}`,
   },
 
   /** The chassis's controls (v2, PR 8; Friend and Owned, PR 9). */
@@ -179,8 +179,8 @@ export const allDecksCartCopy = {
     chipFriend: "Friend",
     chipOwned: "Owned",
     /** The sheet's figure and primary press. */
-    sheetMatch: (shown: number, of: number) => `${n(shown)} of ${cards(of)} match`,
-    show: (x: number) => `Show ${cards(x)}`,
+    sheetMatch: (shown: number, totalCount: number) => `${n(shown)} of ${cards(totalCount)} match`,
+    show: (cardCount: number) => `Show ${cards(cardCount)}`,
   },
 
   /** The desktop Friend and Owned panels (`FilterPanel`'s contract), on the pattern of `/decks`' panels. */
@@ -217,7 +217,7 @@ export const allDecksCartCopy = {
         ? "0 friends"
         : `${friendsN === 1 ? "1 friend" : `${n(friendsN)} friends`} · ${sparesN === 1 ? "1 spare" : `${n(sparesN)} spares`}`,
     /** A search leaves some of the cards: By card's count against the selected lines. */
-    filtered: (shown: number, of: number) => `${n(shown)} of ${of === 1 ? "1 card" : `${n(of)} cards`}`,
+    filtered: (shown: number, totalCount: number) => `${n(shown)} of ${totalCount === 1 ? "1 card" : `${n(totalCount)} cards`}`,
     /** The trailing slot while friends' spares are still being read. */
     reading: "reading friends’ spares",
     /** By friend's whole sentence while the read is out (Loading C, D): the view has nothing else to count. */
@@ -237,7 +237,7 @@ export const allDecksCartCopy = {
   /** A search that leaves nothing: the chassis's no-match shape, naming the one fix. */
   noMatch: {
     title: "No card matches",
-    body: (term: string, of: number) => `Drop “${term}” and you get ${of === 1 ? "1 card" : `${n(of)} cards`}.`,
+    body: (term: string, totalCount: number) => `Drop “${term}” and you get ${totalCount === 1 ? "1 card" : `${n(totalCount)} cards`}.`,
     drop: (term: string) => `Drop “${term}”`,
   },
 
@@ -262,7 +262,7 @@ export const allDecksCartCopy = {
   none: {
     title: "No decks selected",
     body: "Select a deck to put its cards back in the cart.",
-    action: (of: number) => `Select all ${decks(of)}`,
+    action: (totalCount: number) => `Select all ${decks(totalCount)}`,
   },
 
   empty: {
@@ -284,8 +284,8 @@ export const allDecksCartCopy = {
      * K3: a cart too long for one link, split into parts (Hugh, 2026-10-11). Drawn beside the shared
      * link label, each part with the lines it sends.
      */
-    part: (i: number, of: number, lines: number) =>
-      `part ${n(i)} of ${n(of)} · ${n(lines)} ${lines === 1 ? "line" : "lines"}`,
+    part: (partNumber: number, partCount: number, lines: number) =>
+      `part ${n(partNumber)} of ${n(partCount)} · ${n(lines)} ${lines === 1 ? "line" : "lines"}`,
     unread: "prices couldn’t be read just now",
     noneSelected: "Select a deck to build a cart.",
   },
@@ -300,10 +300,10 @@ export const allDecksCartCopy = {
   /** I got it's confirm on a cart line. Title, printing, finish and Add are `gotItCopy.confirm`'s. */
   confirm: {
     forDecks: (deckN: number) => `For ${decks(deckN)} in this cart`,
-    needsEach: (q: number) => `needs ${n(q)}`,
+    needsEach: (copyCount: number) => `needs ${n(copyCount)}`,
     /** Replaces `gotItCopy.confirm.need` on a cart line. */
-    need: (q: number, deckN: number) =>
-      deckN > 1 && q === deckN ? `The cart needs ${n(q)}, one for each deck` : `The cart needs ${n(q)}`,
+    need: (copyCount: number, deckN: number) =>
+      deckN > 1 && copyCount === deckN ? `The cart needs ${n(copyCount)}, one for each deck` : `The cart needs ${n(copyCount)}`,
     /** Lock 7, said once. */
     readAgain: "Which decks these cover is worked out once they’re added.",
     /** The stale banner on a cart line: `gotItCopy.confirm.staleBody`, said of the cart. */

@@ -186,7 +186,7 @@ export const deckSortCopy: FilterPanelCopy = {
 
   groupDefault: "Sort by",
   groupSelected: () => "Current",
-  groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+  groupMatches: (matchCount: number) => (matchCount === 1 ? "1 match" : `${matchCount} matches`),
 
   // ── Option ───────────────────────────────────────────────────────────────
   //
@@ -225,7 +225,7 @@ export const deckSortCopy: FilterPanelCopy = {
   // "Sorted by Name · Z–A." A reordering is not an addition or a removal, so
   // the added/removed pair say the same thing, exactly as they do on
   // /collection.
-  announceMatches: (n: number) => `${n} sort orders`,
+  announceMatches: (sortOrderCount: number) => `${sortOrderCount} sort orders`,
   announceAdded: (order: string) => `Sorted by ${order}.`,
   announceRemoved: (order: string) => `Sorted by ${order}.`,
   announceCleared: () => "",

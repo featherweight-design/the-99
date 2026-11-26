@@ -9,7 +9,7 @@ export const deckFlipCopy = {
   /** The strip's landmark. */
   region: "Flip between decks",
   /** `2 of 5`. */
-  place: (k: number, n: number) => `${k} of ${n}`,
+  place: (position: number, total: number) => `${position} of ${total}`,
   /** The two squares. The key hint rides the desktop name only: a phone has no arrow keys. */
   prev: (name: string, keyHint: boolean) => `Previous deck · ${name}${keyHint ? " (←)" : ""}`,
   next: (name: string, keyHint: boolean) => `Next deck · ${name}${keyHint ? " (→)" : ""}`,

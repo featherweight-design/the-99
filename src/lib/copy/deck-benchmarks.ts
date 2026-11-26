@@ -34,10 +34,10 @@ export const deckBenchmarksCopy = {
     velocity: (ramp: string, avgMv: string) => ['Early ramp ', ramp, ` · average spell ${avgMv} mana`],
     flow: (engines: number, oneShots: number) => ['', String(engines), ` repeating ${engines === 1 ? 'engine' : 'engines'}, ${n(oneShots, 'one-time draw', 'one-time draws')}`],
     interaction: (answers: number, cheapInstant: number) => [`${n(answers, 'answer', 'answers')} · `, `${cheapInstant} cheap and instant`, ''],
-    win: (lines: number, odds: string) => [`${lines} ${lines === 1 ? 'line' : 'lines'} · `, odds, ' in hand by turn 8'],
+    win: (lineCount: number, odds: string) => [`${lineCount} ${lineCount === 1 ? 'line' : 'lines'} · `, odds, ' in hand by turn 8'],
   },
-  open: (n: number) => (n === 1 ? 'see the card' : `see the ${n} cards`),
-  openCombo: (n: number) => (n === 1 ? 'see the line' : `see the ${n} lines`),
+  open: (cardCount: number) => (cardCount === 1 ? 'see the card' : `see the ${cardCount} cards`),
+  openCombo: (lineCount: number) => (lineCount === 1 ? 'see the line' : `see the ${lineCount} lines`),
   openAria: (name: string, word: string) => `${name}, ${word}: see the cards behind it`,
 
   // Win speed without a counted combo
@@ -98,7 +98,7 @@ export const deckBenchmarksCopy = {
     foundBy: 'Found by',
     spellbook: 'Commander Spellbook',
     onceNote: 'A card is listed once, under its first group.',
-    landsLeftOut: (names: string) => `Lands that use the graveyard aren’t counted: ${names}.`,
+    landsLeftOut: (landNames: string) => `Lands that use the graveyard aren’t counted: ${landNames}.`,
     reachNote: "A one-time burn spell is reach, not a route, so it isn’t listed.",
     groups: {
       usesGraveyard: 'Uses the graveyard',
@@ -114,8 +114,8 @@ export const deckBenchmarksCopy = {
     readings: {
       velocity: (lands: number, ramp: string, avgMv: string) =>
         `${n(lands, 'land', 'lands')} and ${ramp} ${ramp === '1' ? 'point' : 'points'} of early ramp, set against an average spell of ${avgMv} mana. Ramp counts in full at 2 mana or less and half at 3, and a one-time burst counts half again.`,
-      flow: (pts: number, cards: number) =>
-        `${n(pts, 'point', 'points')} from ${n(cards, 'card', 'cards')}. A card that draws again and again counts 2, a one-time draw counts 1, and your commander’s own draw counts double. Draws that go to opponents don’t count.`,
+      flow: (pointCount: number, cards: number) =>
+        `${n(pointCount, 'point', 'points')} from ${n(cards, 'card', 'cards')}. A card that draws again and again counts 2, a one-time draw counts 1, and your commander’s own draw counts double. Draws that go to opponents don’t count.`,
       interaction: (answers: number, cheapInstant: number) =>
         `${n(answers, 'answer', 'answers')}, ${cheapInstant === 0 ? (answers === 1 ? 'and it isn’t' : 'and none is') : answers === 1 ? 'and it is' : `${cheapInstant} of them`} cheap and instant. Each counts 1, plus 1 at instant speed or with flash, plus 1 at 2 mana or less. Counterspells count here; removal is what answers a card already on the battlefield.`,
       win: (odds: string) =>
@@ -123,26 +123,26 @@ export const deckBenchmarksCopy = {
       winNote: 'Each line is named by what it produces. A loop with no way to end it can draw the game.',
       graveyard: (count: number, commander: boolean) =>
         `${n(count, 'card uses', 'cards use')} the graveyard${commander ? ', and your commander is one of them' : ''}. A card counts when it brings cards back, fills your own graveyard, grows with cards there, or has a keyword that plays from it.`,
-      artifacts: (a: number, p: number, act: number) =>
-        `${n(a, 'artifact', 'artifacts')}, ${n(p, 'card that pays off', 'cards that pay off')} on them, and ${n(act, 'artifact', 'artifacts')} with abilities. Artifact wipes take the artifacts and leave the payoffs with nothing. Null Rod and Collector Ouphe leave the artifacts in play but stop their abilities.`,
-      enchantments: (e: number, p: number) =>
-        `${n(e, 'enchantment', 'enchantments')} and ${n(p, 'card that pays off', 'cards that pay off')} on them. An enchantment wipe takes the enchantments and leaves the payoffs with nothing.`,
-      creatures: (p: number) =>
-        `${n(p, 'card pays', 'cards pay')} off on your creatures: lords, anthems, and token makers that work again and again. A creature board wipe takes the bodies and the payoffs together.`,
+      artifacts: (artifactCount: number, payoffCount: number, abilityArtifactCount: number) =>
+        `${n(artifactCount, 'artifact', 'artifacts')}, ${n(payoffCount, 'card that pays off', 'cards that pay off')} on them, and ${n(abilityArtifactCount, 'artifact', 'artifacts')} with abilities. Artifact wipes take the artifacts and leave the payoffs with nothing. Null Rod and Collector Ouphe leave the artifacts in play but stop their abilities.`,
+      enchantments: (enchantmentCount: number, payoffCount: number) =>
+        `${n(enchantmentCount, 'enchantment', 'enchantments')} and ${n(payoffCount, 'card that pays off', 'cards that pay off')} on them. An enchantment wipe takes the enchantments and leaves the payoffs with nothing.`,
+      creatures: (payoffCount: number) =>
+        `${n(payoffCount, 'card pays', 'cards pay')} off on your creatures: lords, anthems, and token makers that work again and again. A creature board wipe takes the bodies and the payoffs together.`,
       activated: (count: number) =>
         `${count === 1 ? '1 creature does' : `${count} creatures do`} their work through an activated ability, such as mana creatures. Cursed Totem turns all of them off at once.`,
       combat: (routes: number) =>
         `${routes === 1 ? 'One card wins' : `${routes} cards win`} without attacking. Every other route runs through combat. A card counts when it drains, poisons or mills opponents again and again, wins or makes an opponent lose outright, or completes a combo.`,
     },
     why: {
-      speedCost: (kind: string, mv: number) => `${kind}, ${mv} mana`,
-      counterspell: (mv: number) => `counterspell, instant, ${mv} mana`,
-      wipe: (kind: string, mv: number) => `${kind}, ${mv} mana, wipe`,
-      landOut: (mv: number) => `land onto the battlefield, ${mv} mana`,
-      landNotOut: (mv: number) => `land not onto the battlefield, ${mv} mana`,
-      burst: (mv: number) => `one-time burst, ${mv} mana`,
+      speedCost: (kind: string, manaValue: number) => `${kind}, ${manaValue} mana`,
+      counterspell: (manaValue: number) => `counterspell, instant, ${manaValue} mana`,
+      wipe: (kind: string, manaValue: number) => `${kind}, ${manaValue} mana, wipe`,
+      landOut: (manaValue: number) => `land onto the battlefield, ${manaValue} mana`,
+      landNotOut: (manaValue: number) => `land not onto the battlefield, ${manaValue} mana`,
+      burst: (manaValue: number) => `one-time burst, ${manaValue} mana`,
       costReduction: 'cost reduction',
-      tooLate: (mv: number) => `ramp, ${mv} mana: too late to count`,
+      tooLate: (manaValue: number) => `ramp, ${manaValue} mana: too late to count`,
       repeatable: 'draws again and again',
       oneShot: 'one-time draw',
       otherPlayerDraws: 'another player draws',

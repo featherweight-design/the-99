@@ -41,15 +41,15 @@ export const deckVersioningCopy = {
       [adds > 0 ? `+${adds}` : null, removes > 0 ? `−${removes}` : null]
         .filter(Boolean)
         .join(" / "),
-    since: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
+    since: (changeCount: number, version: number) => `${plural(changeCount, "change")} since v${version}`,
 
-    reviewCta: (n: number) => `Review ${plural(n, "change")}`,
+    reviewCta: (changeCount: number) => `Review ${plural(changeCount, "change")}`,
     /** The to-do card row's press (handoff `deck_messages`); `reviewCta(n)` is its spoken name. */
     reviewShort: "Review",
     /** The row's body: where Commit and Discard went. The next-step form names the version a commit makes. */
-    rowBody: (n: number) => (n === 1 ? "Commit or discard it in Review." : "Commit or discard them in Review."),
-    rowBodyNext: (n: number, version: number) =>
-      n === 1 ? `Commit it as v${version} in Review.` : `Commit them as v${version} in Review.`,
+    rowBody: (changeCount: number) => (changeCount === 1 ? "Commit or discard it in Review." : "Commit or discard them in Review."),
+    rowBodyNext: (changeCount: number, version: number) =>
+      changeCount === 1 ? `Commit it as v${version} in Review.` : `Commit them as v${version} in Review.`,
     commitCta: (version: number) => `Commit as v${version}`,
     discardCta: "Discard",
 
@@ -78,29 +78,29 @@ export const deckVersioningCopy = {
      * too. A pair is different and stays: `6 → 8` is a move, and no count says
      * that.
      */
-    tilePair: (from: number, to: number) => `${from} → ${to}`,
+    tilePair: (from: number, newCount: number) => `${from} → ${newCount}`,
     // A recounted row prints `Sol Ring 1 → 2` beside the name, but the name's
     // accessible label is the card's whole printed name and carries no count, so
     // the pair would never be spoken. It rides the same description as the word.
-    addMarkRecountedA11y: (from: number, to: number) =>
-      `pending add, was ${from}, now ${to}`,
+    addMarkRecountedA11y: (from: number, newCount: number) =>
+      `pending add, was ${from}, now ${newCount}`,
     // The same rule on a row whose count came DOWN — state 11 is `+1 / −1`, so a
     // cut of two copies out of three is as much a ruled row as an add is. It
     // cannot borrow the word above: the card is in v2, and calling the row a
     // pending add would say the opposite of what happened to it.
-    cutMarkRecountedA11y: (from: number, to: number) =>
-      `pending cut, was ${from}, now ${to}`,
+    cutMarkRecountedA11y: (from: number, newCount: number) =>
+      `pending cut, was ${from}, now ${newCount}`,
     // Said once above the list instead of once per row. `changed`, not `added`:
     // the same rule marks a row the draft cut copies from.
-    changeListCaption: (n: number) =>
-      `the brass rule marks the ${plural(n, "row")} you have changed`,
+    changeListCaption: (rowCount: number) =>
+      `the brass rule marks the ${plural(rowCount, "row")} you have changed`,
     // On the group heading, so grouping by type also maps where the draft happened.
-    groupChangeNote: (n: number) => `${n} changed, not yet committed`,
+    groupChangeNote: (changedCount: number) => `${changedCount} changed, not yet committed`,
     // The list toolbar's right slot, replacing "n cards are yours now" while a draft exists.
     // `differ from`, not `not in yet`: a row that held three copies and now holds
     // one is in the version, at a count the version does not have.
-    toolbarNote: (n: number, version: number) =>
-      `${n} of these ${n === 1 ? "differs" : "differ"} from v${version}`,
+    toolbarNote: (changeCount: number, version: number) =>
+      `${changeCount} of these ${changeCount === 1 ? "differs" : "differ"} from v${version}`,
     // The mix strip's header, beside the EDHREC source line: which list the five
     // figures below were counted from. Drawn only while a draft exists — on a
     // clean deck there is one list, and naming it would raise a question the
@@ -108,10 +108,10 @@ export const deckVersioningCopy = {
     mixStripDraftNote: "· reading pending changes",
     // The mix cell's bottom-left slot takes the previous figure instead of the
     // recommendation while a draft exists — but ONLY when the figure actually moved.
-    mixCellWas: (n: number) => `was ${n}`,
+    mixCellWas: (previousCount: number) => `was ${previousCount}`,
     // The caption above is not part of the cell's accessible name — a figure's and
     // a button's name come from `aria-label` — so the move is appended to it.
-    mixCellWasA11y: (base: string, n: number) => `${base}, was ${n}`,
+    mixCellWasA11y: (base: string, previousCount: number) => `${base}, was ${previousCount}`,
 
     // Committed and clean: the whole of versioning's permanent footprint, the to-do card foot's
     // first segment (omitted while the pending row shows).
@@ -128,7 +128,7 @@ export const deckVersioningCopy = {
 
   /* ---- §Surfaces 2 · review changes ---- */
   review: {
-    heading: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
+    heading: (changeCount: number, version: number) => `${plural(changeCount, "change")} since v${version}`,
     /**
      * "Except the pulls" was true when a pull was the only decision on this page. It is not:
      * Put back (#390) restores a cut, and the contested rows give a copy to a deck. Naming them
@@ -149,7 +149,7 @@ export const deckVersioningCopy = {
     // would read "0 changes since v1" over a sentence about what a draft costs.
     // Nothing is coming in or going out either — the whole list is v1 — so the
     // page is the commit surface and these two say so.
-    firstHeading: (n: number) => `${plural(n, "card")}, ready for v1`,
+    firstHeading: (cardCount: number) => `${plural(cardCount, "card")}, ready for v1`,
     firstLede:
       "This deck has no version yet, so there is nothing to compare it against. Committing " +
       "freezes the list exactly as it stands and starts using copies from your collection. " +
@@ -169,14 +169,14 @@ export const deckVersioningCopy = {
 
     // The phone's Coming in / Going out tablist, named for a screen reader.
     groupSwitch: "Cards coming in or going out",
-    groupIn: (n: number) => `Coming in · ${n}`,
-    groupOut: (n: number) => `Going out · ${n}`,
+    groupIn: (cardCount: number) => `Coming in · ${cardCount}`,
+    groupOut: (cardCount: number) => `Going out · ${cardCount}`,
     // The fourth term is absent at zero, which is every deck that prints
     // nothing — so this line is byte-for-byte what it was until a proxy exists.
     // Ruling 9: a breakdown that does not account for every row in its group
     // reads as a rendering fault, and the word is the row chip's own.
-    groupInBreakdown: (free: number, sleeved: number, buy: number, proxied = 0) =>
-      `${free} free · ${sleeved} sleeved · ${buy} to buy`
+    groupInBreakdown: (free: number, sleeved: number, buyCount: number, proxied = 0) =>
+      `${free} free · ${sleeved} sleeved · ${buyCount} to buy`
       + (proxied > 0 ? ` · ${proxied} proxied` : ""),
 
     heldBy: (deck: string) => `in ${deck}`,
@@ -186,14 +186,14 @@ export const deckVersioningCopy = {
     // 2+ sources that can be chosen (addendum R1, "Pull it picks its source deck") — replaces
     // `heldBy(deck)` only in that case. The count is the picker's own candidate count, never
     // `claims.length`, which also counts guarded rows the control cannot act on.
-    heldByMany: (n: number) => `in ${n} decks`,
+    heldByMany: (deckCount: number) => `in ${deckCount} decks`,
     // After the pull, in the same held-by slot — linked to the source deck (`update-diff-row.tsx`).
     pulledFrom: (deck: string) => `pulled from ${deck}`,
     pull: "Pull it",
     pulling: "Pulling…",
     // The visible label stays "Pull it" when 2+ sources exist too — the caret beside it is a
     // glyph, `aria-hidden`, and this is what a reader tabbing to it hears instead.
-    pullManyA11y: (card: string, n: number) => `Pull ${card}: choose from ${n} decks.`,
+    pullManyA11y: (card: string, deckCount: number) => `Pull ${card}: choose from ${deckCount} decks.`,
     // Never rendered — the button's accessible name, for the same reason the two
     // guards carry one. "Pull it" is two words repeated down a column of changed
     // rows, and a reader tabbing through them cannot tell which card leaves which
@@ -214,7 +214,7 @@ export const deckVersioningCopy = {
       // reads unfinished on a pill, and "Pull it" reads as an action.
       backLabel: "Which deck to pull from",
       order: "In the order they committed it",
-      leaves: (n: number) => `→ ${n} cards`,
+      leaves: (cardCount: number) => `→ ${cardCount} cards`,
       newDraft: "new draft",
       joinsDraft: "joins its draft",
       lockedReason: "locked there, so Pull it passes it by",
@@ -241,8 +241,8 @@ export const deckVersioningCopy = {
     // not twenty-two, and why the heading keeps the `flex-none` that sweep gave
     // it. The handoff writes this in its plural head only — the singular arm is
     // kept, because "all 1 go back in the pool" is not a sentence.
-    outNote: (n: number) =>
-      `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit. ` +
+    outNote: (cardCount: number) =>
+      `${cardCount === 1 ? "it goes" : `all ${cardCount} go`} back in the pool when you commit. ` +
       "Put one back and it never left.",
 
     // The breakdown and the footer each carry a purchase figure, and a failed
@@ -337,13 +337,13 @@ export const deckVersioningCopy = {
       [unowned > 0 ? `${unowned} not owned` : null,
        sleeved > 0 ? `${sleeved} still sleeved elsewhere` : null]
         .filter(Boolean).join(" · "),
-    buyBackLink: (n: number) =>
-      `the ${plural(n, "row")} ${n === 1 ? "is" : "are"} on the review page ↑`,
+    buyBackLink: (rowCount: number) =>
+      `the ${plural(rowCount, "row")} ${rowCount === 1 ? "is" : "are"} on the review page ↑`,
     // The only link-out in this feature. See OVERLAPS.md, call 1. A whole-list link, so drawn only for a store
     // with a cart (store choice, call 6).
     linkOut: (s: StoreInfo) => `Open in ${s.name}`,
 
-    pullHeading: (n: number) => `Back in the pool · ${n}`,
+    pullHeading: (cardCount: number) => `Back in the pool · ${cardCount}`,
     // The same label without its count, for the width that draws the figure
     // beneath it at 24px rather than inside the label (§Surfaces 3, desktop).
     pullHeadingPlain: "Back in the pool",
@@ -401,7 +401,7 @@ export const deckVersioningCopy = {
     // draft that moved only basic lands and so named no card; those lands are
     // rows now, and `hasChanges` is `changeCount > 0`, so a sheet that is up has
     // at least one change to count.
-    question: (n: number) => `Discard ${plural(n, "change")}?`,
+    question: (changeCount: number) => `Discard ${plural(changeCount, "change")}?`,
     consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
       const back = `The deck goes back to v${version} as committed on ${date}: ` +
         `${plural(cards, "card")}. `;
@@ -417,11 +417,11 @@ export const deckVersioningCopy = {
       return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +
         `${single === 1 ? "is" : "are"} not stored anywhere, so this can’t be undone.`;
     },
-    confirm: (n: number) => `Discard ${plural(n, "change")}`,
+    confirm: (changeCount: number) => `Discard ${plural(changeCount, "change")}`,
     cancel: "Keep editing",
     pending: "Discarding…",
-    announced: (n: number, version: number) =>
-      `${plural(n, "change")} discarded. Back to v${version}.`,
+    announced: (changeCount: number, version: number) =>
+      `${plural(changeCount, "change")} discarded. Back to v${version}.`,
     refused: "We couldn’t discard those. The draft is unchanged.",
     // The same distinction the commit sheet draws, and it matters more here: the
     // restore may have committed before the reply was lost, so "nothing has
@@ -436,9 +436,9 @@ export const deckVersioningCopy = {
     tab: "Versions",
     // The count beside the label is aria-hidden, so the cell's whole accessible
     // name is composed here. There is no zero branch: at zero the cell is absent.
-    tabAria: (n: number) => `Versions, ${plural(n, "version")} committed`,
-    heading: (n: number) => plural(n, "version"),
-    manaValue: (mv: string) => `mv ${mv}`,
+    tabAria: (versionCount: number) => `Versions, ${plural(versionCount, "version")} committed`,
+    heading: (versionCount: number) => plural(versionCount, "version"),
+    manaValue: (manaValue: string) => `mv ${manaValue}`,
     current: "current",
     committed: (date: string, cards: number) =>
       `committed ${date} · ${plural(cards, "card")}`,
@@ -451,18 +451,18 @@ export const deckVersioningCopy = {
     // was already there; ninety-nine decisions were not taken that day.
     initial: "initial",
     noNote: "no note",
-    gamesHeld: (n: number) => `held ${plural(n, "game")}`,
+    gamesHeld: (gameCount: number) => `held ${plural(gameCount, "game")}`,
     // The opened panel's second stat box, which the canvas labels `Held` and
     // fills with `3 games`. `gamesHeld` cannot serve it: a box labelled `Held`
     // holding `held 3 games` says the verb twice. The label sits beside the
     // figure rather than inside it, exactly as `Mana value` does.
     heldLabel: "Held",
-    heldValue: (n: number) => plural(n, "game"),
+    heldValue: (gameCount: number) => plural(gameCount, "game"),
 
     // The phone's In / Out tablist, named for a screen reader; the segments carry the words.
     diffSwitch: "Cards in or out",
-    diffIn: (n: number) => `In · ${n}`,
-    diffOut: (n: number) => `Out · ${n}`,
+    diffIn: (cardCount: number) => `In · ${cardCount}`,
+    diffOut: (cardCount: number) => `Out · ${cardCount}`,
     // H31: the rows draw today's ownership and price, so the line above them says the figures
     // are today's. Drawn only when the In column has rows.
     todayNote: (version: number) => `ownership and prices are today’s, not v${version}’s`,
@@ -486,7 +486,7 @@ export const deckVersioningCopy = {
     initialHeading: "Initial",
     initialBody: "the first list, with nothing before it to compare against.",
 
-    commanderChange: (from: string, to: string) => `${from} → ${to}`,
+    commanderChange: (from: string, newCommanderName: string) => `${from} → ${newCommanderName}`,
     /** One side of that arrow when the version was piloted by a pair. A partner
      *  swap changes who is at the helm as much as a commander swap does, and
      *  naming only the primary would render `Korvold → Korvold`. */
@@ -504,12 +504,12 @@ export const deckVersioningCopy = {
     manaValue: "Mana value",
     manaValueDown: "the curve comes down",
     manaValueUp: "the curve goes up",
-    clears: (rec: number) => `clears rec ${rec}`,
-    under: (rec: number) => `still under rec ${rec}`,
+    clears: (recommendedCount: number) => `clears rec ${recommendedCount}`,
+    under: (recommendedCount: number) => `still under rec ${recommendedCount}`,
     body: "Body",
-    bodyOver: (n: number) => `${n} over, not blocked`,
+    bodyOver: (overCount: number) => `${overCount} over, not blocked`,
     shapeHeading: "How the deck’s shape moves",
-    delta: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0"),
+    delta: (deltaCount: number) => (deltaCount > 0 ? `+${deltaCount}` : deltaCount < 0 ? `−${Math.abs(deltaCount)}` : "0"),
   },
 
   /* ---- §Surfaces 5 · the game log stamp ---- */
@@ -524,7 +524,7 @@ export const deckVersioningCopy = {
   todoCard: {
     /** The head's eyebrow. The word is what the next step is fixing (`deckTodo`'s `word`). */
     head: (deck: string, word: "complete" | "legal" | "ready" | "built") => `Before ${deck} is ${word}`,
-    count: (n: number) => `${n} to do`,
+    count: (todoCount: number) => `${todoCount} to do`,
     /** The foot's first segment on a brew, where a committed deck says `v2 · committed …` (deck messages, A9 and A17). */
     noVersion: "No version yet",
     /** The one label that marks the filled press. */
@@ -563,7 +563,7 @@ export const historyOriginCopy = {
       : `v0 is ${precon}’s list as the box lists it. It’s history only: this deck is sleeved as ${current}.`,
   originOpen: (precon: string) => `Open ${precon} ›`,
   againstOrigin: (precon: string) => `against v0 · ${precon}, as the box lists it`,
-  kept: (kept: number, of: number) => `${kept} of the precon’s ${of} cards kept`,
+  kept: (kept: number, cardCount: number) => `${kept} of the precon’s ${cardCount} cards kept`,
   brewLine: "Not committed yet. Your first commit is v1, and it diffs against v0.",
   /** The tab's name with v0 in the rail: v0 is not a committed version, so it is named apart. */
   tabAria: (committed: number) =>

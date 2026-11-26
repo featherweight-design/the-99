@@ -35,8 +35,8 @@ export const deckTuningCopy = {
     again: "Suggest again",
     // A counted word, as the canvas writes it: "Nine games in, and cards in hand has been marked
     // against you in 7 of 9."
-    readyLead: (gamesWord: string, axis: string, marked: number, games: number) =>
-      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five cards to add and five to cut, each with its own reason.`,
+    readyLead: (gamesWord: string, axis: string, marked: number, gameCount: number) =>
+      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${gameCount}. We will read everything below and suggest up to five cards to add and five to cut, each with its own reason.`,
     /** Strategy focus: the one sentence the never-run lead gains (handoff Call 2). */
     focusLead: (name: string) => `They aim at ${name}, the deck\u2019s focus.`,
     noGamesLead:
@@ -47,13 +47,13 @@ export const deckTuningCopy = {
     loadingLead:
       "Reading your deck. This takes a few seconds, and the list below stays on screen when the suggestions arrive.",
     reading: "Reading\u2026",
-    resultsLead: (nWord: string) =>
-      `${nWord} swaps, each a card out and a card in. Nothing moves until you apply one.`,
+    resultsLead: (swapCountWord: string) =>
+      `${swapCountWord} swaps, each a card out and a card in. Nothing moves until you apply one.`,
     // Eng-written: the singular the canvas does not draw.
     resultsLeadOne: "One swap, a card out and a card in. Nothing moves until you apply it.",
     // Replaces `resultsLead` when the checks dropped some: the count is never padded back.
-    fewerLead: (nWord: string, droppedWord: string) =>
-      `${nWord} swaps this time. ${droppedWord} more didn’t hold up to checking.`,
+    fewerLead: (swapCountWord: string, droppedWord: string) =>
+      `${swapCountWord} swaps this time. ${droppedWord} more didn’t hold up to checking.`,
     fewerLeadOne: (droppedWord: string) =>
       `One swap this time. ${droppedWord} more didn’t hold up to checking.`,
     allDoneLead: (totalWord: string, applied: number, rejected: number) =>
@@ -61,21 +61,21 @@ export const deckTuningCopy = {
     allDoneLeadOne: (applied: boolean) =>
       `Answered: ${applied ? "applied" : "rejected"}. Suggest again for a new set, read from the deck as it is now.`,
     // Eng-written for a deck with no version when the set was read.
-    retiredLead: (from: number | null, to: number) =>
+    retiredLead: (from: number | null, newVersion: number) =>
       from === null
-        ? `Your last suggestions were read before this deck had a version. Committing version ${to} cleared them, so a new set reads the list you committed.`
-        : `Your last suggestions were for version ${from}. Committing version ${to} cleared them, so a new set reads the list you committed.`,
+        ? `Your last suggestions were read before this deck had a version. Committing version ${newVersion} cleared them, so a new set reads the list you committed.`
+        : `Your last suggestions were for version ${from}. Committing version ${newVersion} cleared them, so a new set reads the list you committed.`,
     tally: (applied: number, total: number, rejected: number) =>
       rejected > 0 ? `${applied} of ${total} applied · ${rejected} rejected` : `${applied} of ${total} applied`,
     // State 5, rewritten count-neutral. A successful run with an honest answer, in ordinary ink.
     unchanged: (when: string) =>
       `Nothing has changed since ${when}: no new game, no edit to the list or to what this deck is for, so asking again would only repeat these.`,
     unchangedReasonGamesKey: "games",
-    unchangedReasonGames: (n: number, when: string) =>
-      n === 0 ? "none logged yet" : `${n} of ${n} already read, none logged since ${when}`,
+    unchangedReasonGames: (gameCount: number, when: string) =>
+      gameCount === 0 ? "none logged yet" : `${gameCount} of ${gameCount} already read, none logged since ${when}`,
     unchangedReasonAxisKey: "weakest axis",
-    unchangedReasonAxis: (axis: string, hurt: number, games: number) =>
-      `${axis}, marked against you in ${hurt} of ${games}`,
+    unchangedReasonAxis: (axis: string, hurt: number, gameCount: number) =>
+      `${axis}, marked against you in ${hurt} of ${gameCount}`,
     unchangedReasonIntentKey: "this deck is for",
     unchangedReasonIntent: "unchanged since you wrote it",
     unchangedReasonIntentEmpty: "still blank",
@@ -87,16 +87,16 @@ export const deckTuningCopy = {
   // ── The manifest: what a run reads, one row per read, ticked when the read lands ──
   manifest: {
     games: "Your games",
-    gamesCount: (n: number) => (n === 1 ? "1 game" : `${n} games`),
-    gamesUnmarked: (n: number) => (n === 1 ? "1 game · no marks" : `${n} games · no marks`),
+    gamesCount: (gameCount: number) => (gameCount === 1 ? "1 game" : `${gameCount} games`),
+    gamesUnmarked: (gameCount: number) => (gameCount === 1 ? "1 game · no marks" : `${gameCount} games · no marks`),
     noneLogged: "none logged",
     logGame: "Log a game \u2192",
     notes: "Notes on your games",
-    notesCount: (m: number, n: number) => `on ${m} of ${n} games`,
+    notesCount: (notedGameCount: number, gameCount: number) => `on ${notedGameCount} of ${gameCount} games`,
     // C1 names the list alone; the no-games and unmarked frames (D1, E5) name the mix beside it.
     list: "This list",
     listVsMix: "This list, against the recommended mix",
-    listCount: (n: number) => `${n} cards`,
+    listCount: (cardCount: number) => `${cardCount} cards`,
     // Eng-written: r2 gives the intent its own row and no label (README :88).
     intent: "What you said this deck is for",
     intentCount: "your words",
@@ -109,9 +109,9 @@ export const deckTuningCopy = {
     progress: (done: number, total: number) => `${done} of ${total} read`,
     // The collapsed form above results: parts joined with " · ".
     readFrom: (parts: readonly string[]) => `read from ${parts.join(" · ")}`,
-    readGames: (n: number) => (n === 1 ? "1 game" : `${n} games`),
-    readNotes: (n: number) => (n === 1 ? "1 game note" : `${n} game notes`),
-    readCards: (n: number) => `${n} cards`,
+    readGames: (gameCount: number) => (gameCount === 1 ? "1 game" : `${gameCount} games`),
+    readNotes: (noteCount: number) => (noteCount === 1 ? "1 game note" : `${noteCount} game notes`),
+    readCards: (cardCount: number) => `${cardCount} cards`,
     readMix: "the recommended mix",
     readCollection: "your collection",
     readNoGames: "no games logged",
@@ -170,8 +170,8 @@ export const deckTuningCopy = {
     additions: "Additions",
     cuts: "Cuts",
     count: (into: number, out: number) => `${into} in, ${out} out`,
-    tally: (into: number, out: number, total: number, now: number) =>
-      `+${into} in \u00b7 \u2212${out} out \u00b7 ${total === now ? `stays at ${total}` : `the deck goes to ${total}`}`,
+    tally: (into: number, out: number, total: number, currentCardCount: number) =>
+      `+${into} in \u00b7 \u2212${out} out \u00b7 ${total === currentCardCount ? `stays at ${total}` : `the deck goes to ${total}`}`,
     applyAll: "Apply all",
     applyRest: "Apply the rest",
     applying: "Applying\u2026",
@@ -258,7 +258,7 @@ export const deckTuningCopy = {
   announce: {
     started: "Reading your deck",
     unchanged: "No new suggestions. Nothing has changed since the last run.",
-    ready: (n: number) => (n === 1 ? "One suggested swap is ready." : `${n} suggested swaps are ready.`),
+    ready: (swapCount: number) => (swapCount === 1 ? "One suggested swap is ready." : `${swapCount} suggested swaps are ready.`),
     // The two lists (sub-project 8): a run answers in cards to add and cards to cut.
     readyLists: (into: number, out: number) => `${into} to add and ${out} to cut are ready.`,
     addedCard: (name: string) => `Added. ${name} is in the deck.`,

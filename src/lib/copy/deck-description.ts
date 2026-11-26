@@ -18,7 +18,7 @@ export const deckDescriptionCopy = {
     placeholder: "e.g. Grind a four-player table out and win late with big fliers. No infinite combos.",
     placeholderPhone: "e.g. Grind a four-player table out and win late with big fliers.",
     // Always drawn, from '0 / 240', at the help text's end.
-    counter: (n: number, max: number) => `${n} / ${max}`,
+    counter: (charCount: number, max: number) => `${charCount} / ${max}`,
     maxLength: 240,
     warnAt: 220,
     tooLong: "Keep it to 240 characters.",
@@ -80,7 +80,7 @@ export const deckDescriptionCopy = {
     placeholder: "Anything for this run? e.g. more removal, swap out Sol Ring, nothing over $5",
     placeholderPhone: "Anything for this run? e.g. more removal",
     maxLength: 500,
-    counter: (n: number, max: number) => `${n} / ${max}`,
+    counter: (charCount: number, max: number) => `${charCount} / ${max}`,
     // The box takes the Notes `[[` card tag (card-tags plan, PR 2). A tag only names the card for this run.
     tagHelp: {
       infoAria: "How card tags work",
@@ -101,8 +101,8 @@ export const deckDescriptionCopy = {
       `${name} is this deck’s commander, so nothing cuts it. The rest of your notes are answered below.`,
     locked: (name: string) =>
       `${name} is locked, so nothing cuts it. The rest of your notes are answered below.`,
-    lockedMany: (n: number) =>
-      `${n} of the cards you named are locked, so nothing cuts them. The rest of your notes are answered below.`,
+    lockedMany: (cardCount: number) =>
+      `${cardCount} of the cards you named are locked, so nothing cuts them. The rest of your notes are answered below.`,
     overCap: (name: string, cap: string) =>
       `${name} costs more than this deck’s ${cap} a card, so it was not suggested. The rest of your notes are answered below.`,
     tooMany:
@@ -112,7 +112,7 @@ export const deckDescriptionCopy = {
     ownedNone:
       "Nothing in your collection fits these needs, so the additions are cards to buy.",
     // The credit came back though suggestions are shown: too few held up (`refundsCredit`). Hugh, 2026-10-11.
-    refunded: (nWord: string) => `Only ${nWord} held up, so this one’s on us.`,
+    refunded: (countWord: string) => `Only ${countWord} held up, so this one’s on us.`,
     nothingLeft:
       "Nothing in your notes could be done within this deck’s rules, so these suggestions come from the list alone.",
   },

@@ -140,7 +140,7 @@ export const deckAnalysisCopy = {
     /** `analyzed {when}`: relative under an hour, then the deck page's short date (`Sep 18`). */
     analyzed: (when: string) => `analyzed ${when}`,
     justNow: "a moment ago",
-    minutesAgo: (n: number) => `${n} ${n === 1 ? "minute" : "minutes"} ago`,
+    minutesAgo: (minutes: number) => `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`,
     /** Spoken once, when a reading settles (§E). */
     settled: (range: string) => `Analysis ready. Your cards permit ${range}.`,
     /** The date line's two other forms (handoff copy `analyzed.committed` / `.stale`). */
@@ -277,11 +277,11 @@ export const deckAnalysisCopy = {
      * a list of nine card names is not a sentence a reader takes in — and it is phrased as a
      * fact about the limit, never as advice. Nothing here tells a player what to play.
      */
-    dropNamed: (cards: string, bracket: string) => `Cut ${cards}: ${bracket} allows none.`,
-    dropCount: (n: number, rule: string, bracket: string) =>
-      `Cut ${numberWord(n)} ${rule}: ${bracket} allows none.`,
-    dropCountAllowing: (n: number, rule: string, bracket: string, allowed: number) =>
-      `Cut ${numberWord(n)} ${rule}, only ${numberWord(allowed)} allowed at ${bracket}.`,
+    dropNamed: (cardNames: string, bracket: string) => `Cut ${cardNames}: ${bracket} allows none.`,
+    dropCount: (cutCount: number, rule: string, bracket: string) =>
+      `Cut ${numberWord(cutCount)} ${rule}: ${bracket} allows none.`,
+    dropCountAllowing: (cutCount: number, rule: string, bracket: string, allowed: number) =>
+      `Cut ${numberWord(cutCount)} ${rule}, only ${numberWord(allowed)} allowed at ${bracket}.`,
     /**
      * The same three sentences, split so the thing to CUT carries the emphasis the canvas gives
      * it — the cards or the count in `--fg` at 600, the rest of the clause muted.
@@ -296,14 +296,14 @@ export const deckAnalysisCopy = {
         { text: cards, strong: true },
         { text: `: ${bracket} allows none.` },
       ] as { text: string; strong?: boolean }[],
-      count: (n: number, rule: string, bracket: string) => [
+      count: (cutCount: number, rule: string, bracket: string) => [
         { text: "Cut " },
-        { text: `${numberWord(n)} ${rule}`, strong: true },
+        { text: `${numberWord(cutCount)} ${rule}`, strong: true },
         { text: `: ${bracket} allows none.` },
       ] as { text: string; strong?: boolean }[],
-      countAllowing: (n: number, rule: string, bracket: string, allowed: number) => [
+      countAllowing: (cutCount: number, rule: string, bracket: string, allowed: number) => [
         { text: "Cut " },
-        { text: `${numberWord(n)} ${rule}`, strong: true },
+        { text: `${numberWord(cutCount)} ${rule}`, strong: true },
         { text: `, only ${numberWord(allowed)} allowed at ${bracket}.` },
       ] as { text: string; strong?: boolean }[],
     },
@@ -328,7 +328,7 @@ export const deckAnalysisCopy = {
 
     /** Beside the figure, in `--fg-faint`. Short on purpose - the rung already names the
      *  bracket, so `3 allowed` cannot mean anything else. */
-    allowed: (n: number) => `${n} allowed`,
+    allowed: (allowedCount: number) => `${allowedCount} allowed`,
     /** Where the rule reports a figure without capping it: extra turns at 2 and 3. */
     noCap: "no cap",
 
@@ -401,11 +401,11 @@ export const deckAnalysisCopy = {
     /** Never a bare `+3`: the names come first, and the tail says how many are not shown. */
     names: (shown: string[], rest: number) =>
       rest > 0 ? `${shown.join(" · ")} · +${rest}` : shown.join(" · "),
-    comboPair: (a: string, b: string) => `${a} + ${b}`,
+    comboPair: (firstCard: string, secondCard: string) => `${firstCard} + ${secondCard}`,
     /** An arrow, not a caret: it opens a modal, and a caret promises an expand in place. */
-    open: (n: number) => (n === 1 ? "see the card" : "see the cards"),
-    openCombo: (n: number) => (n === 1 ? "see the combo" : "see the combos"),
-    openAria: (n: number, label: string) => `Show the ${n} ${label.toLowerCase()} in this deck`,
+    open: (cardCount: number) => (cardCount === 1 ? "see the card" : "see the cards"),
+    openCombo: (comboCount: number) => (comboCount === 1 ? "see the combo" : "see the combos"),
+    openAria: (itemCount: number, label: string) => `Show the ${itemCount} ${label.toLowerCase()} in this deck`,
   },
 
   /**
@@ -429,7 +429,7 @@ export const deckAnalysisCopy = {
     spellbook: "Commander Spellbook",
     /** Two distinct names, because on a phone both sheets are on screen at once. */
     closeAria: (label: string) => `Close ${label.toLowerCase()}`,
-    opened: (n: number, label: string) => `${n} ${label.toLowerCase()} shown.`,
+    opened: (itemCount: number, label: string) => `${itemCount} ${label.toLowerCase()} shown.`,
   },
 
   /**
@@ -445,35 +445,35 @@ export const deckAnalysisCopy = {
     // tutor, and it still covers a land half (Crop Rotation finds Dark Depths). The finder is
     // named in the reasoning; this sentence says what is found, which is true of either kind.
     // `oneHalf` below already said it this way.
-    reachable: (a: string, b: string) =>
-      `This deck can find both halves of ${a} + ${b}, so the pair is part of the plan rather `
+    reachable: (firstCard: string, secondCard: string) =>
+      `This deck can find both halves of ${firstCard} + ${secondCard}, so the pair is part of the plan rather `
       + `than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
     /** The same sentence in parts, so the two names can be pressed. Joined, it is `reachable`. */
-    reachableParts: (a: string, b: string) =>
-      ["This deck can find both halves of ", a, " + ", b,
+    reachableParts: (firstCardName: string, secondCardName: string) =>
+      ["This deck can find both halves of ", firstCardName, " + ", secondCardName,
         `, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
-    drawOnly: (a: string, b: string) =>
-      `This deck holds ${a} + ${b}, and nothing in it searches for either half. The pair is a `
+    drawOnly: (firstCard: string, secondCard: string) =>
+      `This deck holds ${firstCard} + ${secondCard}, and nothing in it searches for either half. The pair is a `
       + `draw away, and that is what keeps this at ${BRACKET_NAMES[3]}.`,
-    drawOnlyParts: (a: string, b: string) =>
-      ["This deck holds ", a, " + ", b,
+    drawOnlyParts: (firstCardName: string, secondCardName: string) =>
+      ["This deck holds ", firstCardName, " + ", secondCardName,
         `, and nothing in it searches for either half. The pair is a draw away, and that is what keeps this at ${BRACKET_NAMES[3]}.`],
     /**
      * Reachable with a commander half: the command zone covers it, so crediting "your tutors" with
      * both halves would be false. Written here, like the next two; `/copy-review` owns them.
      */
-    reachableCommander: (a: string, b: string) =>
-      `Your commander is one half of ${a} + ${b}, and this deck can find the other, so the pair `
+    reachableCommander: (firstCard: string, secondCard: string) =>
+      `Your commander is one half of ${firstCard} + ${secondCard}, and this deck can find the other, so the pair `
       + `is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
-    reachableCommanderParts: (a: string, b: string) =>
-      ["Your commander is one half of ", a, " + ", b,
+    reachableCommanderParts: (firstCardName: string, secondCardName: string) =>
+      ["Your commander is one half of ", firstCardName, " + ", secondCardName,
         `, and this deck can find the other, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
     /** Both halves are commanders — a partner pair — so no tutor is involved at all. */
-    reachableZone: (a: string, b: string) =>
-      `Both halves of ${a} + ${b} are in your command zone, so the pair is there every game. `
+    reachableZone: (firstCard: string, secondCard: string) =>
+      `Both halves of ${firstCard} + ${secondCard} are in your command zone, so the pair is there every game. `
       + `That is what puts this past ${BRACKET_NAMES[3]}.`,
-    reachableZoneParts: (a: string, b: string) =>
-      ["Both halves of ", a, " + ", b,
+    reachableZoneParts: (firstCardName: string, secondCardName: string) =>
+      ["Both halves of ", firstCardName, " + ", secondCardName,
         ` are in your command zone, so the pair is there every game. That is what puts this past ${BRACKET_NAMES[3]}.`],
     /**
      * A draw-only lean where ONE half is covered — by a tutor, or by the command zone. `leanFor`
@@ -481,11 +481,11 @@ export const deckAnalysisCopy = {
      * leave this case saying "nothing searches for either half" over a modal listing the tutor
      * that finds one. Written here; `/copy-review` owns the wording.
      */
-    oneHalf: (a: string, b: string) =>
-      `This deck can find one half of ${a} + ${b}, and the other is a draw away. That is what `
+    oneHalf: (firstCard: string, secondCard: string) =>
+      `This deck can find one half of ${firstCard} + ${secondCard}, and the other is a draw away. That is what `
       + `keeps this at ${BRACKET_NAMES[3]}.`,
-    oneHalfParts: (a: string, b: string) =>
-      ["This deck can find one half of ", a, " + ", b,
+    oneHalfParts: (firstCardName: string, secondCardName: string) =>
+      ["This deck can find one half of ", firstCardName, " + ", secondCardName,
         `, and the other is a draw away. That is what keeps this at ${BRACKET_NAMES[3]}.`],
     open: "see the reasoning",
   },
@@ -493,7 +493,7 @@ export const deckAnalysisCopy = {
   /** The receipt modal's third body: the reasoning behind a lean, grouped by the half found. */
   reasoning: {
     /** The number in the heading, because this is the one bracket reference with no mark. */
-    title: (n: Bracket) => `How we determined bracket ${n}`,
+    title: (bracketNumber: Bracket) => `How we determined bracket ${bracketNumber}`,
     qualifierReachable: (n: Bracket) => `${BRACKET_NAMES[n]} · both halves findable`,
     qualifierDrawOnly: (n: Bracket) => `${BRACKET_NAMES[n]} · neither half findable`,
     qualifierOneHalf: (n: Bracket) => `${BRACKET_NAMES[n]} · one half findable`,
@@ -503,9 +503,9 @@ export const deckAnalysisCopy = {
       + "one card that finds both halves, or two that each find a different one.",
     /** After the threshold, where a half is a commander: the zone covers it with no tutor. */
     thresholdCommander: "A commander counts as covered, because it is in the zone every game.",
-    piece: (i: number) => `half ${i === 1 ? "one" : "two"} · in this list`,
+    piece: (halfNumber: number) => `half ${halfNumber === 1 ? "one" : "two"} · in this list`,
     /** A commander is in the zone every game, so it is covered with no tutor at all. */
-    pieceCommander: (i: number) => `half ${i === 1 ? "one" : "two"} · your commander`,
+    pieceCommander: (halfNumber: number) => `half ${halfNumber === 1 ? "one" : "two"} · your commander`,
     foundBy: "found by",
     /** An empty slot reads as a clean deck; this sentence does not. */
     foundByNone: "nothing in this deck searches for it",

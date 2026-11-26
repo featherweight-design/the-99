@@ -21,7 +21,7 @@ export const deckStatsCopy = {
     results: "Results",
   },
   colors: {
-    denom: (pips: number, sources: number) => `${pips} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"}`,
+    denom: (pips: number, sourceCount: number) => `${pips} ${pips === 1 ? "pip" : "pips"} · ${sourceCount} ${sourceCount === 1 ? "source" : "sources"}`,
     pips: "PIPS",
     sources: "SOURCES",
     infoLabel: "How this is counted",
@@ -42,23 +42,23 @@ export const deckStatsCopy = {
     },
   },
   jobs: {
-    denom: (n: number) => `${n} nonland ${n === 1 ? "card" : "cards"}`,
+    denom: (cardCount: number) => `${cardCount} nonland ${cardCount === 1 ? "card" : "cards"}`,
     rows: { ramp: "Ramp", draw: "Card draw", removal: "Removal", wipes: "Board wipes", protection: "Protection", finisher: "Win conditions" },
-    overlap: (n: number) => `${n} ${n === 1 ? "card does" : "cards do"} two or more of these jobs, so the rows add up to more than the cards in them.`,
-    none: (n: number) => `${n} nonland ${n === 1 ? "card does" : "cards do"} none of these jobs.`,
+    overlap: (cardCount: number) => `${cardCount} ${cardCount === 1 ? "card does" : "cards do"} two or more of these jobs, so the rows add up to more than the cards in them.`,
+    none: (cardCount: number) => `${cardCount} nonland ${cardCount === 1 ? "card does" : "cards do"} none of these jobs.`,
   },
   curve: {
     title: "The curve, by card type",
     denom: (cast: number) => `${cast} cast`,
     ceiling: "7+",
-    column: (label: string, n: number, parts: string[]) =>
-      n === 0 ? `Mana value ${label}: no cards` : `Mana value ${label}: ${n} ${n === 1 ? "card" : "cards"}, ${parts.join(", ")}`,
+    column: (label: string, cardCount: number, parts: string[]) =>
+      cardCount === 0 ? `Mana value ${label}: no cards` : `Mana value ${label}: ${cardCount} ${cardCount === 1 ? "card" : "cards"}, ${parts.join(", ")}`,
     // No average to name at zero cast: a deck of nothing but lands has none, and 0.0 would read as one.
     noAverage: "none",
-    caption: (avg: string, lands: number) =>
-      `Counts the commander · average mana value ${avg} · ${lands} ${lands === 1 ? "land" : "lands"}, not on the curve · tap a type to light its cards`,
-    lit: (type: string, n: number, cast: number) =>
-      `${type} lit: ${n} of ${cast} cast. Tap it again to clear.`,
+    caption: (avg: string, landCount: number) =>
+      `Counts the commander · average mana value ${avg} · ${landCount} ${landCount === 1 ? "land" : "lands"}, not on the curve · tap a type to light its cards`,
+    lit: (type: string, litCount: number, cast: number) =>
+      `${type} lit: ${litCount} of ${cast} cast. Tap it again to clear.`,
     types: {
       creature: "Creature",
       instant: "Instant",
@@ -81,10 +81,10 @@ export const deckStatsCopy = {
     },
   },
   results: {
-    denom: (n: number) => (n === 1 ? "1 game" : `${n} games`),
+    denom: (gameCount: number) => (gameCount === 1 ? "1 game" : `${gameCount} games`),
     denomNone: "no games",
     recordKey: "wins · losses · draws",
-    span: (n: number, from: string, to: string) => (n === 1 ? `1 game, ${to}` : `${n} games, ${from} to ${to}`),
+    span: (gameCount: number, from: string, toDate: string) => (gameCount === 1 ? `1 game, ${toDate}` : `${gameCount} games, ${from} to ${toDate}`),
     every: "EVERY GAME, OLDEST FIRST",
     lastFive: (record: string) => `Underlined, the last five: ${record}.`,
     lastFiveSoon: "The last-five line starts at the sixth game.",
@@ -102,35 +102,35 @@ export const deckStatsCopy = {
     beadTip: (letter: string, date: string) => `${letter} · ${date}`,
   },
   money: {
-    denom: (n: number) => `${n} ${n === 1 ? "card" : "cards"}`,
+    denom: (copyCount: number) => `${copyCount} ${copyCount === 1 ? "card" : "cards"}`,
     value: "DECK VALUE",
     valueSub: "every priced copy",
-    valuePartial: (priced: number, of: number) => `${priced} of ${of} copies priced`,
+    valuePartial: (priced: number, copyCount: number) => `${priced} of ${copyCount} copies priced`,
     owned: "OWNED",
-    ownedSub: (n: number, basics: number) => `${n} ${n === 1 ? "copy" : "copies"}, plus ${basics} ${basics === 1 ? "basic" : "basics"}`,
+    ownedSub: (copyCount: number, basics: number) => `${copyCount} ${copyCount === 1 ? "copy" : "copies"}, plus ${basics} ${basics === 1 ? "basic" : "basics"}`,
     // A group with some copies unpriced says so beside its figure, so a part-total never reads as the whole.
-    ownedPartial: (priced: number, n: number, basics: number) => `${priced} of ${n} copies priced, plus ${basics} ${basics === 1 ? "basic" : "basics"}`,
-    toBuyPartial: (priced: number, n: number) => `${priced} of ${n} copies priced, after the ones you own`,
+    ownedPartial: (priced: number, copyCount: number, basics: number) => `${priced} of ${copyCount} copies priced, plus ${basics} ${basics === 1 ? "basic" : "basics"}`,
+    toBuyPartial: (priced: number, copyCount: number) => `${priced} of ${copyCount} copies priced, after the ones you own`,
     toBuy: "TO BUY",
-    toBuySub: (n: number) => `${n} ${n === 1 ? "copy" : "copies"}, after the ones you own`,
+    toBuySub: (copyCount: number) => `${copyCount} ${copyCount === 1 ? "copy" : "copies"}, after the ones you own`,
     toBuyNone: "Nothing",
     toBuyNoneSub: "every copy is in your collection",
     // A group with copies and no price at all: the count stands in for the figure, never $0.00.
-    copiesFig: (n: number) => `${n} ${n === 1 ? "copy" : "copies"}`,
+    copiesFig: (copyCount: number) => `${copyCount} ${copyCount === 1 ? "copy" : "copies"}`,
     noPrice: "no price",
     legend: { owned: "Owned", basic: "Basic land, not priced", toBuy: "To buy" },
     priciest: "PRICIEST CARDS",
     tagOwned: "owned",
     tagToBuy: "to buy",
-    shopLink: (n: number) => (n === 1 ? "See it in Shopping" : `See the ${n} in Shopping`),
+    shopLink: (copyCount: number) => (copyCount === 1 ? "See it in Shopping" : `See the ${copyCount} in Shopping`),
     // N3 (discovery R3): some to-buy rows are over the deck's stand-in limit. `n` counts copies, as the line above
     // does, and `over` counts the rows the limit marks; a row over the limit is never a basic, so the two agree.
     // The name says only that they are over the limit: an over row need not have a cheaper stand-in (R3 gap 10). It
     // keeps the visible words whole and adds what the limit is, so a reader speaking the label still matches it.
-    shopOver: (n: number, over: number, limit: string) =>
-      n === 1 ? `See it in Shopping, over ${limit}` : `See the ${n} in Shopping, ${over} over ${limit}`,
-    shopOverAria: (n: number, over: number, limit: string) =>
-      `${n === 1 ? `See it in Shopping, over ${limit}` : `See the ${n} in Shopping, ${over} over ${limit}`}, your stand-in limit`,
+    shopOver: (copyCount: number, over: number, limit: string) =>
+      copyCount === 1 ? `See it in Shopping, over ${limit}` : `See the ${copyCount} in Shopping, ${over} over ${limit}`,
+    shopOverAria: (cardCount: number, over: number, limit: string) =>
+      `${cardCount === 1 ? `See it in Shopping, over ${limit}` : `See the ${cardCount} in Shopping, ${over} over ${limit}`}, your stand-in limit`,
   },
   average: {
     // Counts the body (99, or 98 for a pair), as the Curve card says it counts the commander: EDHREC's type counts sum to the body.
@@ -140,14 +140,14 @@ export const deckStatsCopy = {
     counts: (body: number) => (body === 99 ? "Counts the 99, not the commander." : `Counts the ${body}, not the commanders.`),
     basisCommander: (name: string, decks: number | null) =>
       `Each bar is this deck’s figure minus the average ${name} deck’s${decks === null ? "." : `, from EDHREC’s ${decks.toLocaleString("en-US")} decks.`}`,
-    basisPair: (a: string, b: string, decks: number | null) =>
-      `Each bar is this deck’s figure minus the average ${a} and ${b} deck’s${decks === null ? "." : `, from EDHREC’s ${decks.toLocaleString("en-US")} decks.`}`,
+    basisPair: (firstCommanderName: string, secondCommanderName: string, decks: number | null) =>
+      `Each bar is this deck’s figure minus the average ${firstCommanderName} and ${secondCommanderName} deck’s${decks === null ? "." : `, from EDHREC’s ${decks.toLocaleString("en-US")} decks.`}`,
     basisColors: (label: string) => `Each bar is this deck’s figure minus the average ${label} deck’s.`,
     basisBaseline: (name: string) =>
       `${name} has no average yet: not for the commander, a pair, or its colors. Each bar is this deck’s figure minus The 99’s starting mix.`,
     baselineNote: "The starting mix has jobs only, so lands, the curve and card types don’t draw here. They return once this commander has an average.",
-    thinNote: (n: number, of: number) =>
-      `${n} of ${of} cards so far. A bar that runs past its end is cut off with a mark; the figures on the right are always whole.`,
+    thinNote: (cardCount: number, deckSize: number) =>
+      `${cardCount} of ${deckSize} cards so far. A bar that runs past its end is cut off with a mark; the figures on the right are always whole.`,
     fewer: "FEWER",
     more: "MORE",
     youAvg: "YOU · AVG",
@@ -168,10 +168,10 @@ export const deckStatsCopy = {
       removal: "Removal",
       wipes: "Board wipes",
     },
-    diffMore: (n: string) => `${n} more`,
-    diffFewer: (n: string) => `${n} fewer`,
-    diffHigher: (n: string) => `${n} higher`,
-    diffLower: (n: string) => `${n} lower`,
+    diffMore: (amount: string) => `${amount} more`,
+    diffFewer: (amount: string) => `${amount} fewer`,
+    diffHigher: (amount: string) => `${amount} higher`,
+    diffLower: (amount: string) => `${amount} lower`,
     same: "the same",
     row: (name: string, you: string, avg: string, diff: string) => `${name}: this deck ${you}, average ${avg}, ${diff}`,
     miniColumn: (label: string, diff: number) =>

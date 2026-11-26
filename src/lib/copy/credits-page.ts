@@ -68,7 +68,7 @@ export const creditsPageCopy = {
     after: " within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
   },
   bal: {
-    total: (n: number) => (n === 1 ? "credit to spend" : "credits to spend"),
+    total: (creditCount: number) => (creditCount === 1 ? "credit to spend" : "credits to spend"),
     order: "Spent in this order",
     free: "Free",
     welcome: "Welcome",
@@ -80,7 +80,7 @@ export const creditsPageCopy = {
     freeFull: (limit: number) => `all ${limit} ready`,
     planSub: "roll over",
     packsSub: "never expire",
-    added: (units: number) => `+${units}`,
+    added: (creditCount: number) => `+${creditCount}`,
     /** P5: from 15 lot-funded runs today up to one under the player's paid limit (20 unless their group sets one). `time` is the reader's clock, absent before hydration.
      *  "banked", not "paid": the limit counts every run a held lot funds, welcome and gift included (welcome credits D2, Hugh 2026-10-21). */
     near: (used: number, limit: number, time: string | null) =>
@@ -92,12 +92,12 @@ export const creditsPageCopy = {
   pack: {
     k: "Credit pack",
     heading: "Get more credits",
-    title: (units: number) => `${units} credits`,
+    title: (creditCount: number) => `${creditCount} credits`,
     fine: "Pack credits never expire. They’re forfeited if you delete your account.",
     /** The card already says the count and the price, so the button does not (Hugh, 2026-10-17). */
     buy: "Buy pack",
     /** The button's accessible name: with more than one pack on sale, "Buy pack" alone names none of them; the visible words stay inside the name (label in name). */
-    buyAria: (units: number, price: string) => `Buy pack: ${units} credits · ${price}`,
+    buyAria: (creditCount: number, price: string) => `Buy pack: ${creditCount} credits · ${price}`,
     via: "Checkout on Stripe · US cards",
   },
   /** Why a Buy press did nothing, one line each. Placeholders: not in the handoff's strings file. */
@@ -115,7 +115,7 @@ export const creditsPageCopy = {
   plan: {
     heading: "Your plan",
     k: "Monthly plan",
-    title: (units: number) => `${units} credits a month`,
+    title: (creditCount: number) => `${creditCount} credits a month`,
     price: (price: string) => `${price} a month`,
     fine: [
       "Unused plan credits roll over, with no cap, while you stay subscribed.",
@@ -125,24 +125,24 @@ export const creditsPageCopy = {
     ],
     subscribe: (price: string) => `Subscribe · ${price} a month`,
     via: "Checkout on Stripe · US cards",
-    active: (on: string | null, price: string) => (on ? `Renews ${on} · ${price}` : price),
-    activeLeft: (n: number) => `${creditWord(n)}, rolling over`,
+    active: (renewDate: string | null, price: string) => (renewDate ? `Renews ${renewDate} · ${price}` : price),
+    activeLeft: (creditCount: number) => `${creditWord(creditCount)}, rolling over`,
     cancel: "Cancel plan",
-    cancelSays: (n: number, on: string | null) => `Canceling keeps your ${creditWord(n)} until ${on ?? "the end of your paid month"}, then they expire. Pack credits aren’t affected.`,
+    cancelSays: (creditCount: number, renewDate: string | null) => `Canceling keeps your ${creditWord(creditCount)} until ${renewDate ?? "the end of your paid month"}, then they expire. Pack credits aren’t affected.`,
     updateCard: "Update card",
-    ended: (on: string | null) => (on ? `Ends ${on}` : "Ends with your paid month"),
-    endedSays: (n: number, on: string | null) => `Your ${creditWord(n)} expire on ${on ?? "the last day of your paid month"}. You won’t be charged again.`,
+    ended: (renewDate: string | null) => (renewDate ? `Ends ${renewDate}` : "Ends with your paid month"),
+    endedSays: (creditCount: number, renewDate: string | null) => `Your ${creditWord(creditCount)} expire on ${renewDate ?? "the last day of your paid month"}. You won’t be charged again.`,
     /** Past due and cancelling: the expiry and the non-renewal only, since Stripe is still retrying the payment. */
-    dueEndsSays: (n: number, on: string | null) => `Your ${creditWord(n)} expire on ${on ?? "the last day of your paid month"}. The plan will not renew.`,
-    soon: (n: number, days: number, on: string | null) =>
-      `Your ${creditWord(n)} expire ${days <= 0 ? "today" : `in ${days} ${days === 1 ? "day" : "days"}`}${on ? `, on ${on}` : ""}.`,
+    dueEndsSays: (creditCount: number, renewDate: string | null) => `Your ${creditWord(creditCount)} expire on ${renewDate ?? "the last day of your paid month"}. The plan will not renew.`,
+    soon: (creditCount: number, days: number, renewDate: string | null) =>
+      `Your ${creditWord(creditCount)} expire ${days <= 0 ? "today" : `in ${days} ${days === 1 ? "day" : "days"}`}${renewDate ? `, on ${renewDate}` : ""}.`,
     keep: "Keep my plan",
-    keepSays: (on: string | null) => `Keeps your credits and renews${on ? ` on ${on}` : ""}, as before.`,
-    cancelledLive: (n: number, on: string | null) => `Plan canceled. Your ${creditWord(n)} last until ${on ?? "the end of your paid month"}.`,
-    keptLive: (on: string | null) => `Plan kept.${on ? ` It renews on ${on}.` : ""}`,
+    keepSays: (renewDate: string | null) => `Keeps your credits and renews${renewDate ? ` on ${renewDate}` : ""}, as before.`,
+    cancelledLive: (creditCount: number, renewDate: string | null) => `Plan canceled. Your ${creditWord(creditCount)} last until ${renewDate ?? "the end of your paid month"}.`,
+    keptLive: (renewDate: string | null) => `Plan kept.${renewDate ? ` It renews on ${renewDate}.` : ""}`,
     /** Never names a date: the subscription's period end is not the failed invoice's date. */
     dueTitle: "Your payment didn’t go through",
-    dueSays: (n: number) => `Your ${creditWord(n)} still work for now. Update your card to keep the plan going; if it ends, they expire.`,
+    dueSays: (creditCount: number) => `Your ${creditWord(creditCount)} still work for now. Update your card to keep the plan going; if it ends, they expire.`,
     /** A cancel or keep that was accepted but whose new state has not reached the page yet, and the line when it never does. */
     working: "Updating your plan",
     slow: "Still updating your plan. Reload in a moment to see it.",
@@ -158,8 +158,8 @@ export const creditsPageCopy = {
       alreadyKept: "Your plan was already set to renew.",
     },
     /** The return band after a plan Checkout (R3). */
-    added: (units: number) => `Plan started: ${units} credits added`,
-    addedSays: (on: string) => `Renews ${on}. Cancel any time below.`,
+    added: (creditCount: number) => `Plan started: ${creditCount} credits added`,
+    addedSays: (renewDate: string) => `Renews ${renewDate}. Cancel any time below.`,
   },
   hist: {
     title: "Purchase history",
@@ -170,7 +170,7 @@ export const creditsPageCopy = {
     planMonth: "Monthly plan",
     planFirst: "Monthly plan, first month",
     pack: "Credit pack",
-    units: (units: number) => `${units} credits`,
+    units: (creditCount: number) => `${creditCount} credits`,
   },
   read: {
     failed: "We couldn’t load your credits.",
@@ -183,9 +183,9 @@ export const creditsPageCopy = {
     after: " and we’ll sort it out. Your free credits and everything else work as usual.",
   },
   ret: {
-    procTitle: (units: number) => `Adding your ${units} credits`,
+    procTitle: (creditCount: number) => `Adding your ${creditCount} credits`,
     procSays: "Payment received. Credits usually land in a second or two.",
-    addedPack: (units: number) => `${units} pack credits added`,
+    addedPack: (creditCount: number) => `${creditCount} pack credits added`,
     slowTitle: "Still adding your credits",
     /** Around the address, like `refunds`. */
     slowSays: {
