@@ -116,8 +116,17 @@ function Key({ patterned }: { patterned: boolean }) {
 
 export function GameTiles({ summary, tuned = false, onOpenTuning }: { summary: GameSummary; tuned?: boolean; onOpenTuning?: () => void }) {
   const [open, setOpen] = useState(false);
-  // Case 4 of the ladder: games logged, no mark ever made. There is nothing to read, so no box.
-  if (summary.axes.length === 0) return null;
+  const pointer =
+    tuned && onOpenTuning ? (
+      <p data-games-pointer className="m-0 flex min-h-[44px] flex-wrap items-center gap-x-[6px] px-[14px] text-[13px] leading-[1.5] text-fg-body md:px-[16px]">
+        {deckTuningGamesCopy.gamesLine.lead}{" "}
+        <button type="button" onClick={onOpenTuning} className="font-semibold text-[color:var(--accent-text)] hover:underline">
+          {deckTuningGamesCopy.gamesLine.link}
+        </button>
+      </p>
+    ) : null;
+  // Case 4 of the ladder: games logged, no mark ever made. There is nothing to read, so no box; the pointer still stands alone.
+  if (summary.axes.length === 0) return pointer ? <div className="mt-[10px] md:mt-[14px]">{pointer}</div> : null;
   const tiles = tilesOf(summary);
   const headline = deriveHeadline(summary);
   const line = leadLine(summary) ?? (summary.count < PATTERN_MIN ? headline?.sub : null);
@@ -146,14 +155,7 @@ export function GameTiles({ summary, tuned = false, onOpenTuning }: { summary: G
           <Key patterned={patterned} />
         </div>
       </div>
-      {tuned && onOpenTuning ? (
-        <p data-games-pointer className="m-0 flex min-h-[44px] flex-wrap items-center gap-x-[6px] px-[14px] text-[13px] leading-[1.5] text-fg-body [border-top:1px_solid_var(--border)] md:px-[16px]">
-          {deckTuningGamesCopy.gamesLine.lead}{" "}
-          <button type="button" onClick={onOpenTuning} className="font-semibold text-[color:var(--accent-text)] hover:underline">
-            {deckTuningGamesCopy.gamesLine.link}
-          </button>
-        </p>
-      ) : null}
+      {pointer ? <div className="[border-top:1px_solid_var(--border)]">{pointer}</div> : null}
     </GameBox>
   );
 }

@@ -57,7 +57,7 @@ describe("GamesPanel — how it's playing", () => {
   it("prints every count with its denominator", () => {
     mount(MOCK);
     expect(screen.getByText(gameLogCopy.tiles.down("3", "3"))).toBeInTheDocument();
-    expect(screen.getByText(gameLogCopy.tiles.up("2", "3"))).toBeInTheDocument();
+    expect(screen.getAllByText(gameLogCopy.tiles.up("2", "3"))).toHaveLength(2);
     expect(screen.getByText(gameLogCopy.cell.sub("1", "1"))).toBeInTheDocument();
   });
 
