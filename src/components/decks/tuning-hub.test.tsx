@@ -351,6 +351,7 @@ describe("TuningHub opening a tool", () => {
     const trigger = () => document.querySelector<HTMLElement>("[data-tool-picker]")!;
     expect(trigger().textContent).toContain(copy.tools.cuts.name);
     fireEvent.click(trigger());
+    expect(trigger().getAttribute("aria-expanded")).toBe("true");
     const sheet = screen.getByRole("dialog");
     expect(within(sheet).getByRole("heading", { name: copy.picker.sheetTitle })).toBeTruthy();
     expect(within(sheet).getByText(copy.picker.allToolsLine)).toBeTruthy();

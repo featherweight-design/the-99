@@ -54,7 +54,7 @@ export function ToolPickerSheet({ views, openTool, onPick, onDismiss }: {
   const panelRef = useRef<HTMLDivElement | null>(null);
   useDialogA11y(panelRef, onDismiss);
   return (
-    <Sheet open portal onDismiss={onDismiss} ariaLabel={copy.picker.sheetLabel} panelRef={panelRef} header={<SheetHeader title={copy.picker.sheetTitle} closeLabel={copy.picker.close} onDismiss={onDismiss} />}>
+    <Sheet open portal frameClassName="md:hidden" onDismiss={onDismiss} ariaLabel={copy.picker.sheetLabel} panelRef={panelRef} header={<SheetHeader title={copy.picker.sheetTitle} closeLabel={copy.picker.close} onDismiss={onDismiss} />}>
       <ul className="m-0 flex min-h-0 list-none flex-col overflow-y-auto p-0 pb-[12px]">
         <li>
           <PickerRow name={copy.allTools} line={copy.picker.allToolsLine} onPress={() => onPick(null)} />
@@ -98,7 +98,7 @@ function PickerRow({ mark, name, line, on = false, inert = false, running = fals
   );
   if (inert) {
     return (
-      <div aria-disabled="true" className="mx-[12px] my-[6px] flex min-h-[60px] items-center gap-[12px] rounded-[10px] border border-dashed border-[var(--border-dashed)] px-[12px] py-[8px]">{body}</div>
+      <div role="group" aria-disabled="true" className="mx-[12px] my-[6px] flex min-h-[60px] items-center gap-[12px] rounded-[10px] border border-dashed border-[var(--border-dashed)] px-[12px] py-[8px]">{body}</div>
     );
   }
   return (
