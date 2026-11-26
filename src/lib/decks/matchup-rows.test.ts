@@ -4,6 +4,7 @@ import { named } from "../person-name/mint";
 import type { Matchups } from "./matchups";
 import type { GameSummary } from "./games";
 import { gameMatchupsCopy } from "../copy/game-matchups";
+import { summarizeMatchups } from "./matchups";
 
 const summary = (wins: number, losses: number, draws = 0): GameSummary =>
   ({ count: wins + losses + draws, record: { wins, losses, draws }, axes: [], fix: [], keep: [], mixed: [] }) as unknown as GameSummary;
@@ -47,6 +48,16 @@ describe("squares and counts", () => {
   it("adds draws to the counts only when there are some", () => {
     const [row] = matchupRows({ ...base, commanders: [{ ...cell("y", summary(6, 4, 2)), commander: yuriko, partner: null }] }, "commanders");
     expect(row.counts).toBe("W 6 · L 4 · D 2");
+  });
+});
+
+describe("rows from the real tally", () => {
+  it("one lost game gives the winner an L square and the other opponent a dash square", () => {
+    const games = [{ id: "g", result: "loss", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [] }] as unknown as Parameters<typeof summarizeMatchups>[0];
+    const opp = (over: object) => ({ seat: 1, friend: null, deckName: null, commander: null, partner: null, colorIdentity: [], label: null, won: false, ...over }) as Parameters<typeof summarizeMatchups>[1] extends ReadonlyMap<string, readonly (infer O)[]> ? O : never;
+    const m = summarizeMatchups(games, new Map([["g", [opp({ commander: yuriko, won: true }), opp({ seat: 2, commander: thrasios })]]]));
+    const rows = matchupRows(m, "commanders");
+    expect(Object.fromEntries(rows.map((r) => [r.name, r.squares]))).toEqual({ [yuriko.name]: ["L"], [thrasios.name]: ["-"] });
   });
 });
 

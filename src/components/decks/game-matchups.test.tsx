@@ -69,6 +69,20 @@ describe("by commander", () => {
     expect(within(section).getByText(copy.games(1))).toBeInTheDocument();
   });
 
+  it("draws a dashed dash for the opponent who did not win a lost game, and the key under the rows", () => {
+    const lost = [game("g1", "loss")];
+    mount(lost, wire(lost, { g1: [
+      seat({ commander: yuriko, colorIdentity: ["U", "B"], won: true }),
+      seat({ seat: 2, commander: tymna, colorIdentity: ["W", "U", "B", "G"] }),
+    ] }));
+    const section = screen.getByRole("heading", { name: copy.heading }).closest("section")!;
+    const marks = [...section.querySelectorAll("[data-mark]")].map((m) => [m.getAttribute("data-mark"), m.textContent]);
+    expect(marks).toEqual([["L", "L"], ["-", "–"]]);
+    const key = section.querySelector("[data-matchups-key]")!;
+    expect(key.children).toHaveLength(3);
+    expect(key.textContent).toContain("–");
+  });
+
   it("prints no percentage anywhere in the section", () => {
     mount(games, wire(games, by));
     const section = screen.getByRole("heading", { name: copy.heading }).closest("section")!;
