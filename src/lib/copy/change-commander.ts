@@ -82,17 +82,17 @@ export const changeCommanderCopy = {
     cardStays: (body: number) => `into the ${body}`,
     cardReleased: "leaves the deck",
     cardFromBody: (body: number) => `from the ${body}`,
-    sentence: (newCommander: string, old: string, body: number) =>
-      `${newCommander} takes the command zone. ${old} leaves the deck, and the ${body} stay exactly as they are.`,
+    sentence: (newCommander: string, oldCommander: string, body: number) =>
+      `${newCommander} takes the command zone. ${oldCommander} leaves the deck, and the ${body} stay exactly as they are.`,
     sentencePair: (newCommanderA: string, newCommanderB: string, oldCommanderA: string, oldCommanderB: string, body: number) =>
       `${newCommanderA} and ${newCommanderB} take the command zone. ${oldCommanderA} and ${oldCommanderB} leave the deck, and the ${body} stay exactly as they are.`,
-    trade: (newCommander: string, old: string, body: number) =>
-      `The two trade places. ${newCommander} leaves the ${body} for the command zone, and ${old} takes its slot. The deck stays at ${body}.`,
+    trade: (newCommander: string, oldCommander: string, body: number) =>
+      `The two trade places. ${newCommander} leaves the ${body} for the command zone, and ${oldCommander} takes its slot. The deck stays at ${body}.`,
     buy: (short: string) => `You don’t own ${short} yet. It joins this draft’s buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
     // A single becoming a pair (Hugh, 2026-10-26): the deck stays at 100, now led by two.
-    pairTrade: (newCommanderA: string, newCommanderB: string, old: string) =>
-      `${newCommanderA} and ${newCommanderB} leave the 99 for the command zone, and ${old} takes one of their slots. The deck stays at 100 cards.`,
+    pairTrade: (newCommanderA: string, newCommanderB: string, oldCommander: string) =>
+      `${newCommanderA} and ${newCommanderB} leave the 99 for the command zone, and ${oldCommander} takes one of their slots. The deck stays at 100 cards.`,
     pairUp: (arrive: string, joins: string, old: string) =>
       `${arrive} leaves the 99 for the command zone, and ${joins} joins it there. ${old} leaves the deck. The deck stays at 100 cards.`,
     pairUpKeep: (arrive: string, kept: string) =>

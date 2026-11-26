@@ -223,10 +223,10 @@ export const collectionEditCopy = {
       pickFile: "File",
       // The printing is named too: conflicts are per printing and finish, and two holdings of one card would
       // otherwise sound the same.
-      rowAria: (card: string, printing: string, since: string, baselineQty: string, appQty: string, fileQty: string) =>
-        `${card}, printing ${printing}, at ${since} ${baselineQty}, app ${appQty}, file ${fileQty}`,
+      rowAria: (card: string, printing: string, since: string, baselineQuantityText: string, appQuantityText: string, fileQuantityText: string) =>
+        `${card}, printing ${printing}, at ${since} ${baselineQuantityText}, app ${appQuantityText}, file ${fileQuantityText}`,
       rowPrinting: (set: string, number: string, finish: string) => `${set} ${number}, ${finish}`,
-      rowWas: (since: string, baselineQty: string) => `at ${since} ${baselineQty}`,
+      rowWas: (since: string, baselineQuantityText: string) => `at ${since} ${baselineQuantityText}`,
       bulkApp: (k: number) => `Keep the app’s for all ${n(k)}`,
       bulkFile: (k: number) => `Take the file’s for all ${n(k)}`,
       bulkDoneApp: (k: number) => `Kept the app’s count for all ${n(k)}. You can still change any one.`,

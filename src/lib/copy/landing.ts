@@ -133,10 +133,10 @@ export const landingCopy = {
     /** The section's header, as on the board: it stays through the start, every step and the end. */
     eyebrow: "Try it",
     title: "See it work before you join",
-    lead: (toolCount: string) => `A made-up player\u2019s cards and ${toolCount} of the tools, working the way they do for members.`,
+    lead: (toolCountText: string) => `A made-up player\u2019s cards and ${toolCountText} of the tools, working the way they do for members.`,
     /** The start card, inside the frame: its heading, its paragraph and its button. */
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
-    startBody: (player: string, toolCount: string) => `${player} is a made-up player with a real-looking binder. Step through ${toolCount} of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
+    startBody: (player: string, toolCountText: string) => `${player} is a made-up player with a real-looking binder. Step through ${toolCountText} of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
     start: "Start",
     /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
     loading: "Loading",

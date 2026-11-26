@@ -231,8 +231,8 @@ export const adminCopy = {
       composite: "a composite run from before the parts table, not split",
     },
     split: "Player against system",
-    splitLine: (systemPercent: string, month: string) => `System is ${systemPercent}% of ${month}.`,
-    splitLineAtLeast: (systemPercent: string, month: string) => `System is at least ${systemPercent}% of ${month}, with some of its spend not in yet.`,
+    splitLine: (systemPercentText: string, month: string) => `System is ${systemPercentText}% of ${month}.`,
+    splitLineAtLeast: (systemPercentText: string, month: string) => `System is at least ${systemPercentText}% of ${month}, with some of its spend not in yet.`,
     series: { player: "Player runs", labels: "Card labels", rewrites: "Free rewrites and prose" },
     evalsApart: {
       title: "Evals (all environments, from the repo)",
@@ -259,8 +259,8 @@ export const adminCopy = {
     effortUnknown: "not recorded",
     callsRow: "Model calls",
     runsCell: (n: number) => plural(n, "run", "runs"),
-    featureMeta: (model: string, effort: string, runs: number, perRun: string, p90Cost: string) =>
-      `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run, p90 ${p90Cost}`,
+    featureMeta: (model: string, effort: string, runs: number, perRun: string, p90Spend: string) =>
+      `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run, p90 ${p90Spend}`,
     byFeatureNote: "Effort is recorded per call from the parts table on. An earlier run reads not recorded rather than a guess.",
     refunds: "Refunds",
     refundsMeta: (refundedSpend: string, refundedPercent: number) => `${refundedSpend} · ${refundedPercent}% of model calls`,
@@ -271,7 +271,7 @@ export const adminCopy = {
     reserved: "Reserved against spent",
     reservedMeta: "the worst case a run is held at, against its mean",
     reservedOnly: (reservedSpend: string) => `${reservedSpend} reserved`,
-    reservedShare: (reservedPercent: string) => `${reservedPercent}% of the reservation`,
+    reservedShare: (reservedPercentText: string) => `${reservedPercentText}% of the reservation`,
     noPress: "no run yet",
     noCostYet: (runs: number) => `${plural(runs, "run", "runs")}, none priced yet`,
     perAccount: "Per account",
@@ -392,8 +392,8 @@ export const adminCopy = {
       created: (who: string, name: string) => `${who} created ${name}`,
       renamed: (who: string, from: string, newName: string) => `${who} renamed ${from} to ${newName}`,
       described: (who: string, description: string | null) => (description === null ? `${who} cleared the description` : `${who} set the description to “${description}”`),
-      credits: (who: string, from: string, newCredits: string) => `${who} set daily credits: ${from} → ${newCredits}`,
-      paidLimit: (who: string, from: string, newLimit: string) => `${who} set daily paid runs: ${from} → ${newLimit}`,
+      credits: (who: string, from: string, newCreditsText: string) => `${who} set daily credits: ${from} → ${newCreditsText}`,
+      paidLimit: (who: string, from: string, newLimitText: string) => `${who} set daily paid runs: ${from} → ${newLimitText}`,
       creditsDefault: "default",
       added: (who: string, account: string) => `${who} added ${account}`,
       removed: (who: string, account: string) => `${who} removed ${account}`,
@@ -571,8 +571,8 @@ export const adminCopy = {
     topUp: "Top up",
     /** History lines, on an account's page and a group's. (new, for /copy-review) */
     history: {
-      set: (who: string, name: string, from: string, newInvites: string) => `${who} set ${name}’s invites: ${from} → ${newInvites}`,
-      topUp: (who: string, group: string, inviteTarget: string, raised: string) => `${who} topped up ${group} to ${inviteTarget}: ${raised} raised`,
+      set: (who: string, name: string, from: string, newInvitesText: string) => `${who} set ${name}’s invites: ${from} → ${newInvitesText}`,
+      topUp: (who: string, group: string, inviteTargetText: string, raised: string) => `${who} topped up ${group} to ${inviteTargetText}: ${raised} raised`,
       revoked: (who: string, name: string) => `${who} revoked a waiting invite of ${name}’s`,
       joined: (name: string, inviter: string) => `${name} joined on ${inviter}’s invite`,
       sent: (name: string) => `${name} sent an invitation: 1 waiting`,
