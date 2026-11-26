@@ -99,21 +99,22 @@ describe("GamesView: the list", () => {
     // A game with no version and no marks reads as complete: the dashes, and the loss in the neutral square.
     expect(within(second).getByText(gameHistoryCopy.row.result.loss)).toBeInTheDocument();
     // Your tile carries the stamp, or its dash for a game logged before versioning.
-    expect(within(second).getAllByText(deckVersioningCopy.stamp.absent)).toHaveLength(1);
+    expect(within(within(second).getByRole("list", { name: gameHistoryCopy.row.seats }).firstElementChild as HTMLElement).getByText(deckVersioningCopy.stamp.absent)).toBeInTheDocument();
     expect(within(second).getAllByText(gameLogCopy.history.noMarks).length).toBeGreaterThan(0);
   });
 
-  // The deck's art is an art_crop and takes ArtWash's top trim (#2890): the 26px box is a size container clipping the
-  // layer's lift of 3% of the crop. The layer keeps its 50% 25%, which places the crop in the grown layer's slack and
+  // The deck's art is an art_crop and takes ArtWash's top trim (#2890): the tile is a size container clipping the
+  // layer's lift of 3% of the crop. The layer keeps its 50% 20%, which places the crop in the grown layer's slack and
   // can only add to the trim (none here: a square box holds a height-bound crop, so exactly 3%).
   it("trims the top of the deck's art_crop", () => {
     draw(payload([game("g1", "2026-10-30T12:00:00Z", { deck: { ...DECK, commanderArtCropUri: "crop.jpg" } })]));
-    const box = document.querySelector("[data-deck-art]") as HTMLElement;
+    // Your seat tile draws the deck's art_crop (the first tile of the Seats list).
+    const box = screen.getByRole("list", { name: gameHistoryCopy.row.seats }).firstElementChild as HTMLElement;
     expect(box).toHaveClass(ART_CROP_TRIM.box);
     const layer = box.firstElementChild as HTMLElement;
     expect(layer.style.backgroundImage).toContain("crop.jpg");
     expect(layer.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
-    expect(layer.style.backgroundPosition).toBe("50% 25%");
+    expect(layer.style.backgroundPosition).toBe("50% 20%");
   });
 
   it("makes the whole row one press: the deck's Games tab at that game", () => {

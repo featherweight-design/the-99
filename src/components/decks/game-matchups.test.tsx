@@ -163,7 +163,8 @@ describe("the History Seats", () => {
     mount(games, wire(games, by));
     const row = rowOf("g2");
     expect(within(row).getAllByText(gameHistoryCopy.row.someone)).toHaveLength(3);
-    expect(within(row).queryByText(gameHistoryCopy.row.won)).toBeNull();
+    // The winner tag lives in the Seats list; the row's own result pill reads Won for a won game.
+    expect(within(within(row).getByRole("list", { name: gameHistoryCopy.row.seats })).queryByText(gameHistoryCopy.row.won)).toBeNull();
   });
 
   it("keeps both commanders of a recorded pair on the vs line", () => {

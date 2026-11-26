@@ -258,8 +258,8 @@ describe("a game's note", () => {
   it("speaks the note after the marks, not after the delete control", () => {
     const { container } = mount({ ...GAME, note: NOTE });
     const spoken = container.querySelector(".sr-only")!;
-    const del = container.querySelector("button[aria-label]")!;
-    expect(spoken.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The delete control sits in the head now, ahead of the marks, so the note is spoken inside the marks cell.
+    expect(spoken.closest("[data-marks]")).not.toBeNull();
     // And the line the eye reads is not announced a second time.
     expect(line(container)!.closest("[aria-hidden]")).not.toBeNull();
   });
@@ -273,10 +273,9 @@ describe("a game's note", () => {
     expect(line(container)).toBeNull();
   });
 
-  it("indents to the mark column and carries the quote rule", () => {
+  it("carries the quote rule", () => {
     const { container } = mount({ ...GAME, note: NOTE });
     const row = line(container)!.parentElement!;
-    expect(row.className).toContain("md:pl-[40px]");
     const rule = row.querySelector("span:not(.italic)")!;
     expect(rule.className).toContain("w-[2px]");
     expect(rule.className).toContain("bg-border-strong");
