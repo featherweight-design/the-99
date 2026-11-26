@@ -230,7 +230,7 @@ export function PodsPane({
   return (
     <section aria-labelledby="pods-head" className={PANEL} data-testid="pods-pane">
       <div className={BAND}>
-        <h2 id="pods-head" className="m-0 font-normal"><BandText text={copy.head(shown.length)} /></h2>
+        <h2 id="pods-head" className="m-0 text-[length:inherit] font-[inherit] leading-[inherit]"><BandText text={copy.head(shown.length)} /></h2>
         <button
           ref={newPodRef}
           type="button"
