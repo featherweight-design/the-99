@@ -75,7 +75,7 @@ function Tile({ tally, status, count, hiddenOnPhone }: { tally: AxisTally; statu
         <StatusDot status={status} patterned={patterned} />
         <span className="truncate text-[13px] text-fg">{axisCopy[tally.key].label}</span>
       </div>
-      <div className="mt-[8px] flex flex-col gap-[6px] md:flex-row md:items-center md:justify-between md:gap-[8px]">
+      <div className="mt-[8px] flex flex-col gap-[6px] md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-[8px]">
         <Dots marks={tally.recent} patterned={patterned} />
         <span className={`whitespace-nowrap font-mono text-[11px] font-semibold tabular-nums ${countInk(status, patterned)}`}>
           {countText(tally, status, count)}
