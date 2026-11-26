@@ -21,15 +21,15 @@
       "steps": [
         {
           "goto": "/decks/${DECK_ID}",
-          "settle": 2500
+          "settle": 9000
         },
         {
           "click": "[role=tab]:has-text(\"Tuning\")",
-          "settle": 2500
+          "settle": 9000
         },
         {
           "click": "[data-tool-tile=history]",
-          "settle": 2500
+          "settle": 9000
         }
       ]
     },
@@ -45,11 +45,11 @@
       "steps": [
         {
           "goto": "/decks/${DECK_ID}",
-          "settle": 2500
+          "settle": 9000
         },
         {
           "click": "[role=tab]:has-text(\"Versions\")",
-          "settle": 2500
+          "settle": 9000
         }
       ]
     }
