@@ -35,6 +35,14 @@ describe("ManaBalanceView draws from props alone", () => {
     expect(document.querySelector("[data-mana-patterns]")).toBeNull();
   });
 
+  it("draws Colors, Hardest costs and Lands as three boxes with a band each", () => {
+    render(<ManaBalanceView data={data()} isOpen={() => false} onToggle={vi.fn()} />);
+    expect(screen.getByRole("heading", { level: 3, name: new RegExp(copy.sections.colors.label) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: new RegExp(copy.sections.hardest.label) }).getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByRole("button", { name: new RegExp(copy.sections.lands.label) }).getAttribute("aria-expanded")).toBe("false");
+    expect(document.querySelectorAll("[data-mana-section]")).toHaveLength(2);
+  });
+
   it("reports a section's toggle to the handler, and draws it open when told it is", () => {
     const onToggle = vi.fn();
     const { rerender } = render(<ManaBalanceView data={data()} isOpen={() => false} onToggle={onToggle} />);
