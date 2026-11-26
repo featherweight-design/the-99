@@ -21,7 +21,7 @@ const NAMES_SHOWN = 3;
 export function ManaSection({ id, label, count, clause, open, onToggle, children }: {
   id: string;
   label: string;
-  /** The mono count in the band (cards in Hardest costs, lands in Lands). */
+  /** The mono count in the band (cost patterns in Hardest costs, lands in Lands). */
   count: number;
   clause: string;
   open: boolean;
