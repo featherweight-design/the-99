@@ -401,7 +401,7 @@ export const deckAnalysisCopy = {
     /** Never a bare `+3`: the names come first, and the tail says how many are not shown. */
     names: (shown: string[], rest: number) =>
       rest > 0 ? `${shown.join(" · ")} · +${rest}` : shown.join(" · "),
-    comboPair: (firstCard: string, secondCard: string) => `${firstCard} + ${secondCard}`,
+    comboPair: (firstCardName: string, secondCardName: string) => `${firstCardName} + ${secondCardName}`,
     /** An arrow, not a caret: it opens a modal, and a caret promises an expand in place. */
     open: (cardCount: number) => (cardCount === 1 ? "see the card" : "see the cards"),
     openCombo: (comboCount: number) => (comboCount === 1 ? "see the combo" : "see the combos"),
@@ -445,15 +445,15 @@ export const deckAnalysisCopy = {
     // tutor, and it still covers a land half (Crop Rotation finds Dark Depths). The finder is
     // named in the reasoning; this sentence says what is found, which is true of either kind.
     // `oneHalf` below already said it this way.
-    reachable: (firstCard: string, secondCard: string) =>
-      `This deck can find both halves of ${firstCard} + ${secondCard}, so the pair is part of the plan rather `
+    reachable: (firstCardName: string, secondCardName: string) =>
+      `This deck can find both halves of ${firstCardName} + ${secondCardName}, so the pair is part of the plan rather `
       + `than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
     /** The same sentence in parts, so the two names can be pressed. Joined, it is `reachable`. */
     reachableParts: (firstCardName: string, secondCardName: string) =>
       ["This deck can find both halves of ", firstCardName, " + ", secondCardName,
         `, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
-    drawOnly: (firstCard: string, secondCard: string) =>
-      `This deck holds ${firstCard} + ${secondCard}, and nothing in it searches for either half. The pair is a `
+    drawOnly: (firstCardName: string, secondCardName: string) =>
+      `This deck holds ${firstCardName} + ${secondCardName}, and nothing in it searches for either half. The pair is a `
       + `draw away, and that is what keeps this at ${BRACKET_NAMES[3]}.`,
     drawOnlyParts: (firstCardName: string, secondCardName: string) =>
       ["This deck holds ", firstCardName, " + ", secondCardName,
@@ -462,15 +462,15 @@ export const deckAnalysisCopy = {
      * Reachable with a commander half: the command zone covers it, so crediting "your tutors" with
      * both halves would be false. Written here, like the next two; `/copy-review` owns them.
      */
-    reachableCommander: (firstCard: string, secondCard: string) =>
-      `Your commander is one half of ${firstCard} + ${secondCard}, and this deck can find the other, so the pair `
+    reachableCommander: (firstCardName: string, secondCardName: string) =>
+      `Your commander is one half of ${firstCardName} + ${secondCardName}, and this deck can find the other, so the pair `
       + `is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
     reachableCommanderParts: (firstCardName: string, secondCardName: string) =>
       ["Your commander is one half of ", firstCardName, " + ", secondCardName,
         `, and this deck can find the other, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
     /** Both halves are commanders — a partner pair — so no tutor is involved at all. */
-    reachableZone: (firstCard: string, secondCard: string) =>
-      `Both halves of ${firstCard} + ${secondCard} are in your command zone, so the pair is there every game. `
+    reachableZone: (firstCardName: string, secondCardName: string) =>
+      `Both halves of ${firstCardName} + ${secondCardName} are in your command zone, so the pair is there every game. `
       + `That is what puts this past ${BRACKET_NAMES[3]}.`,
     reachableZoneParts: (firstCardName: string, secondCardName: string) =>
       ["Both halves of ", firstCardName, " + ", secondCardName,
@@ -481,8 +481,8 @@ export const deckAnalysisCopy = {
      * leave this case saying "nothing searches for either half" over a modal listing the tutor
      * that finds one. Written here; `/copy-review` owns the wording.
      */
-    oneHalf: (firstCard: string, secondCard: string) =>
-      `This deck can find one half of ${firstCard} + ${secondCard}, and the other is a draw away. That is what `
+    oneHalf: (firstCardName: string, secondCardName: string) =>
+      `This deck can find one half of ${firstCardName} + ${secondCardName}, and the other is a draw away. That is what `
       + `keeps this at ${BRACKET_NAMES[3]}.`,
     oneHalfParts: (firstCardName: string, secondCardName: string) =>
       ["This deck can find one half of ", firstCardName, " + ", secondCardName,

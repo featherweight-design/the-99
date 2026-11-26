@@ -78,7 +78,7 @@ export const deckVersioningCopy = {
      * too. A pair is different and stays: `6 → 8` is a move, and no count says
      * that.
      */
-    tilePair: (from: number, newCount: number) => `${from} → ${newCount}`,
+    tilePair: (oldCount: number, newCount: number) => `${oldCount} → ${newCount}`,
     // A recounted row prints `Sol Ring 1 → 2` beside the name, but the name's
     // accessible label is the card's whole printed name and carries no count, so
     // the pair would never be spoken. It rides the same description as the word.
@@ -486,7 +486,7 @@ export const deckVersioningCopy = {
     initialHeading: "Initial",
     initialBody: "the first list, with nothing before it to compare against.",
 
-    commanderChange: (from: string, newCommanderName: string) => `${from} → ${newCommanderName}`,
+    commanderChange: (oldCommanderName: string, newCommanderName: string) => `${oldCommanderName} → ${newCommanderName}`,
     /** One side of that arrow when the version was piloted by a pair. A partner
      *  swap changes who is at the helm as much as a commander swap does, and
      *  naming only the primary would render `Korvold → Korvold`. */

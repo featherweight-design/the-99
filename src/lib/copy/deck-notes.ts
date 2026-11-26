@@ -92,11 +92,11 @@ export const deckNotesCopy = {
     refused: "We couldn’t delete that. The note is unchanged.",
   },
   done: {
-    toggle: (doneCount: string) => `Done (${doneCount})`,
+    toggle: (doneCountText: string) => `Done (${doneCountText})`,
   },
   more: {
-    open: (noteCount: string) => `Show all ${noteCount}`,
-    done: (noteCount: string) => `Show all ${noteCount} done`,
+    open: (noteCountText: string) => `Show all ${noteCountText}`,
+    done: (noteCountText: string) => `Show all ${noteCountText} done`,
   },
   announce: {
     added: "Note added.",

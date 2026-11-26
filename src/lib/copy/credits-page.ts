@@ -128,17 +128,17 @@ export const creditsPageCopy = {
     active: (renewDate: string | null, price: string) => (renewDate ? `Renews ${renewDate} · ${price}` : price),
     activeLeft: (creditCount: number) => `${creditWord(creditCount)}, rolling over`,
     cancel: "Cancel plan",
-    cancelSays: (creditCount: number, renewDate: string | null) => `Canceling keeps your ${creditWord(creditCount)} until ${renewDate ?? "the end of your paid month"}, then they expire. Pack credits aren’t affected.`,
+    cancelSays: (creditCount: number, endDate: string | null) => `Canceling keeps your ${creditWord(creditCount)} until ${endDate ?? "the end of your paid month"}, then they expire. Pack credits aren’t affected.`,
     updateCard: "Update card",
-    ended: (renewDate: string | null) => (renewDate ? `Ends ${renewDate}` : "Ends with your paid month"),
-    endedSays: (creditCount: number, renewDate: string | null) => `Your ${creditWord(creditCount)} expire on ${renewDate ?? "the last day of your paid month"}. You won’t be charged again.`,
+    ended: (endDate: string | null) => (endDate ? `Ends ${endDate}` : "Ends with your paid month"),
+    endedSays: (creditCount: number, endDate: string | null) => `Your ${creditWord(creditCount)} expire on ${endDate ?? "the last day of your paid month"}. You won’t be charged again.`,
     /** Past due and cancelling: the expiry and the non-renewal only, since Stripe is still retrying the payment. */
-    dueEndsSays: (creditCount: number, renewDate: string | null) => `Your ${creditWord(creditCount)} expire on ${renewDate ?? "the last day of your paid month"}. The plan will not renew.`,
-    soon: (creditCount: number, days: number, renewDate: string | null) =>
-      `Your ${creditWord(creditCount)} expire ${days <= 0 ? "today" : `in ${days} ${days === 1 ? "day" : "days"}`}${renewDate ? `, on ${renewDate}` : ""}.`,
+    dueEndsSays: (creditCount: number, endDate: string | null) => `Your ${creditWord(creditCount)} expire on ${endDate ?? "the last day of your paid month"}. The plan will not renew.`,
+    soon: (creditCount: number, days: number, endDate: string | null) =>
+      `Your ${creditWord(creditCount)} expire ${days <= 0 ? "today" : `in ${days} ${days === 1 ? "day" : "days"}`}${endDate ? `, on ${endDate}` : ""}.`,
     keep: "Keep my plan",
     keepSays: (renewDate: string | null) => `Keeps your credits and renews${renewDate ? ` on ${renewDate}` : ""}, as before.`,
-    cancelledLive: (creditCount: number, renewDate: string | null) => `Plan canceled. Your ${creditWord(creditCount)} last until ${renewDate ?? "the end of your paid month"}.`,
+    cancelledLive: (creditCount: number, endDate: string | null) => `Plan canceled. Your ${creditWord(creditCount)} last until ${endDate ?? "the end of your paid month"}.`,
     keptLive: (renewDate: string | null) => `Plan kept.${renewDate ? ` It renews on ${renewDate}.` : ""}`,
     /** Never names a date: the subscription's period end is not the failed invoice's date. */
     dueTitle: "Your payment didn’t go through",

@@ -84,7 +84,7 @@ export const deckStatsCopy = {
     denom: (gameCount: number) => (gameCount === 1 ? "1 game" : `${gameCount} games`),
     denomNone: "no games",
     recordKey: "wins · losses · draws",
-    span: (gameCount: number, from: string, toDate: string) => (gameCount === 1 ? `1 game, ${toDate}` : `${gameCount} games, ${from} to ${toDate}`),
+    span: (gameCount: number, fromDate: string, toDate: string) => (gameCount === 1 ? `1 game, ${toDate}` : `${gameCount} games, ${fromDate} to ${toDate}`),
     every: "EVERY GAME, OLDEST FIRST",
     lastFive: (record: string) => `Underlined, the last five: ${record}.`,
     lastFiveSoon: "The last-five line starts at the sixth game.",
@@ -123,14 +123,14 @@ export const deckStatsCopy = {
     tagOwned: "owned",
     tagToBuy: "to buy",
     shopLink: (copyCount: number) => (copyCount === 1 ? "See it in Shopping" : `See the ${copyCount} in Shopping`),
-    // N3 (discovery R3): some to-buy rows are over the deck's stand-in limit. `n` counts copies, as the line above
+    // N3 (discovery R3): some to-buy rows are over the deck's stand-in limit. `copyCount` counts copies, as the line above
     // does, and `over` counts the rows the limit marks; a row over the limit is never a basic, so the two agree.
     // The name says only that they are over the limit: an over row need not have a cheaper stand-in (R3 gap 10). It
     // keeps the visible words whole and adds what the limit is, so a reader speaking the label still matches it.
     shopOver: (copyCount: number, over: number, limit: string) =>
       copyCount === 1 ? `See it in Shopping, over ${limit}` : `See the ${copyCount} in Shopping, ${over} over ${limit}`,
-    shopOverAria: (cardCount: number, over: number, limit: string) =>
-      `${cardCount === 1 ? `See it in Shopping, over ${limit}` : `See the ${cardCount} in Shopping, ${over} over ${limit}`}, your stand-in limit`,
+    shopOverAria: (copyCount: number, over: number, limit: string) =>
+      `${copyCount === 1 ? `See it in Shopping, over ${limit}` : `See the ${copyCount} in Shopping, ${over} over ${limit}`}, your stand-in limit`,
   },
   average: {
     // Counts the body (99, or 98 for a pair), as the Curve card says it counts the commander: EDHREC's type counts sum to the body.
@@ -168,10 +168,10 @@ export const deckStatsCopy = {
       removal: "Removal",
       wipes: "Board wipes",
     },
-    diffMore: (amount: string) => `${amount} more`,
-    diffFewer: (amount: string) => `${amount} fewer`,
-    diffHigher: (amount: string) => `${amount} higher`,
-    diffLower: (amount: string) => `${amount} lower`,
+    diffMore: (amountText: string) => `${amountText} more`,
+    diffFewer: (amountText: string) => `${amountText} fewer`,
+    diffHigher: (amountText: string) => `${amountText} higher`,
+    diffLower: (amountText: string) => `${amountText} lower`,
     same: "the same",
     row: (name: string, you: string, avg: string, diff: string) => `${name}: this deck ${you}, average ${avg}, ${diff}`,
     miniColumn: (label: string, diff: number) =>

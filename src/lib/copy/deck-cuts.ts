@@ -105,8 +105,8 @@ export const deckCutsCopy = {
     undo: "Undo",
     showAgain: "Show it again",
     suggestion: "Suggestion",
-    neverCut: (commander: string, locked: number, keyCardCount: number) =>
-      `Never named: ${commander}${locked > 0 ? `, the ${locked} ${locked === 1 ? "card" : "cards"} you locked` : ""}${keyCardCount > 0 ? `${locked > 0 ? " and" : ", and"} the ${keyCardCount} Key ${keyCardCount === 1 ? "card" : "cards"}` : ""}.`,
+    neverCut: (commander: string, lockedCount: number, keyCardCount: number) =>
+      `Never named: ${commander}${lockedCount > 0 ? `, the ${lockedCount} ${lockedCount === 1 ? "card" : "cards"} you locked` : ""}${keyCardCount > 0 ? `${lockedCount > 0 ? " and" : ", and"} the ${keyCardCount} Key ${keyCardCount === 1 ? "card" : "cards"}` : ""}.`,
     done: {
       // The count only when cuts were made from a result: a deck that reached the line some other way
       // (trimmed elsewhere while the tool was open) did not cut anything here (Hugh, 2026-10-15).
