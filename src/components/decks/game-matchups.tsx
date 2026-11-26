@@ -4,7 +4,7 @@
 // Friend; one list at a time), and a row per opponent: a face, a name, one square per game and a count.
 // Never a ratio. The rules are `lib/decks/matchup-rows.ts`; this draws them.
 //
-// Games exist and none has an opponent: the heading, `recorded in 0 of N games` and one dashed line, no switch.
+// Games exist and none has an opponent: the heading, `Matchups · 0 of N games` and one dashed line, no switch.
 // The section is absent with no games (the shipped empty state) and with the switch off (the panel is not given
 // a `matchups`).
 

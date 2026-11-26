@@ -7,7 +7,7 @@
  *   that game get a dashed dash. At one game a row is one square and cannot be read as 100%. Past ten games the
  *   squares give way to counts;
  * - never a ratio: no percentage, no `net`. A row's denominator is its `N games`, the section's is
- *   `recorded in X of N games`;
+ *   `Matchups · X of N games`;
  * - rows keep `summarizeMatchups`' own order (games, then key), never record;
  * - a color identity is named as `colorLabel` names it (Izzet, Jeskai); what it does not name (none, four,
  *   five colors) comes from the copy, and four colors name the missing one beneath.
