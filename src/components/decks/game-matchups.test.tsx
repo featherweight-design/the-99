@@ -77,7 +77,8 @@ describe("by commander", () => {
     ] }));
     const section = screen.getByRole("heading", { name: copy.heading }).closest("section")!;
     const marks = [...section.querySelectorAll("[data-mark]")].map((m) => [m.getAttribute("data-mark"), m.textContent]);
-    expect(marks).toEqual([["L", "L"], ["-", "–"]]);
+    // Cells with equal games order by key, so the rows' order is not the claim: one L and one dash, whichever row holds them.
+    expect(marks.sort()).toEqual([["-", "–"], ["L", "L"]]);
     const key = section.querySelector("[data-matchups-key]")!;
     expect(key.children).toHaveLength(3);
     expect(key.textContent).toContain("–");
