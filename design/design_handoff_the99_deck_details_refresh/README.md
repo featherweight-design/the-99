@@ -1,4 +1,4 @@
-# Deck details refresh (approved by Hugh 2026-11-26 after R1c, account 2)
+# Deck details refresh · R1c (2026-11-26, account 2)
 
 Hugh's ask: bring Deck details in line with Home's section heads and the approved Games tabs redesign. Audit doc:
 https://claude.ai/artifact/FBvcSC119ac2v6jKcyoxr7 (approved, then "mock these up").
@@ -25,3 +25,18 @@ tiles), the ◆ head sits bare with no box and no hairline (open call for Hugh).
 
 Fixture: Ashen Banner Parade (Ashling, the Limitless), from Hugh's About captures. Card images from small_items_2 art.
 Generator: scratch-gen/gen_dd.py OUT_DIR (exec's kit_games.py = Games handoff gen_games.py lines 1-506); render check with shoot.js.
+
+## R4 — heading sweep beyond Deck details (2026-11-26, awaiting review)
+
+Boards `R4-*.dc.html` (shots in `art/r4/`). Unlike R1–R3 these are the SHIPPED components server-rendered with shipped CSS, with the proposal applied in source, so everything not named below is exactly as shipped. `scratch-gen/r4/proposal.diff` is that source change against main (23 files); `r4.tsx` holds the fixtures and frames.
+
+- Precons: Announced and each release year become deck boxes (`DeckBox`/`DeckBoxBand`); pick view the same; open precon's Overview label becomes a band with View full overview at the foot.
+- Decks › All cart: the deck-select label becomes a ◆ Decks band with `N of M selected`. Checkout total box unchanged (open question: unify with the R3 Shopping summary box).
+- Export: tabs = shipped `SegmentedSwitch`; Shopping rows = shipped `DecklistRow readOnly`; i-callout → one plain line; footer drops the line the subtitle repeats; bare ✕.
+- Friends/Pods: section-panel `BAND` moves to the display face; `BandText` splits "Title · N".
+- Home at zero decks: No decks yet uses `HomeSectionHead`. Ready to build is not redrawn: it left Home with What's new (Direction B).
+- Analysis before a read: Overview becomes a box band.
+- Help me choose results: ◆ heads, divider hairline dropped; after a read the rest head replaces More commanders.
+- Settings: `SECTION_HEAD` (all sections + Open links on /friends) and Kept back move to the ◆ display head.
+
+R4b (Hugh 2026-11-26): every board shows BEFORE (shipped main, `art/r4/before/`) above AFTER; Home redrawn as the full shipped Dashboard at zero decks with the feed on.
