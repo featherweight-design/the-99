@@ -29,9 +29,9 @@ export function ShoppingKey({ shoppingCount }: { shoppingCount: number }) {
   return (
     <div
       data-testid="shopping-key"
-      // Phone: a two-column grid with 10px above and 10px below. From lg (where the Shopping row
-      // goes to one line): one wrapping row, 6px above.
-      className="mt-[10px] grid grid-cols-2 items-center gap-x-[12px] gap-y-[6px] px-0 pb-[10px] lg:mt-[6px] lg:flex lg:flex-wrap lg:gap-x-[22px] lg:px-[4px] lg:pb-0"
+      // Phone: a two-column grid. From lg (where the Shopping row goes to one line): one wrapping row. It sits in
+      // the keys' box at the foot of the list (R3-YourDeck), which owns the spacing.
+      className="grid grid-cols-2 items-center gap-x-[12px] gap-y-[6px] lg:flex lg:flex-wrap lg:gap-x-[22px]"
     >
       {gotIt && tools ? (
         <span className={ITEM}>

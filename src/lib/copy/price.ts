@@ -63,6 +63,21 @@ export const priceCopy = {
     // Last on the line, and only beside a figure: why the cart the link builds can cost more than it. Mana Pool's
     // cart optimizes for fewer packages, and adds shipping; daily drift is small (median $0.39 a deck over 6h).
     cartNote: "a cart with shipping or fewer packages can cost more",
+    // The To buy box (R3-YourDeck): its band, and the three cells under it. The cells' notes are the strip's own
+    // clauses above, split across the cells rather than run together on one line.
+    box: {
+      title: "To buy",
+      count: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
+      total: "Total",
+      /** The Total cell's figure when no row on the list has a price. */
+      unpriced: "No prices",
+      lastChecked: "Last checked",
+      /** The Over cell's label, naming the deck's limit (`$10` by default). */
+      over: (figure: string) => `Over ${figure}`,
+      /** The foot link that opens the limit editor, naming the current mark. */
+      changeMark: (figure: string) => `Change the ${figure} mark`,
+      overValue: (n: number) => (n === 0 ? "none" : n === 1 ? "1 card" : `${n} cards`),
+    },
   },
 
   // ── The cheapest-printing line ────────────────────────────────────────

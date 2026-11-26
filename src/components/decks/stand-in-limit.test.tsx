@@ -66,3 +66,25 @@ describe("the Shopping limit line", () => {
     expect(setShoppingLimitAction).toHaveBeenCalledWith(DECK, null);
   });
 });
+
+describe("the limit editor under the To buy box", () => {
+  const boxed = (open: boolean) =>
+    render(
+      <SwapToolsProvider deckId={DECK} deckName="Test deck" storedLimitCents={800}>
+        <StandInLimit shoppingCount={9} overCount={4} countInBox open={open} onClose={() => {}} />
+      </SwapToolsProvider>,
+    );
+
+  it("draws no limit line while closed", () => {
+    boxed(false);
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByText(copy.limit.lead)).toBeNull();
+  });
+
+  it("opens straight into the field, with Save, cancel and reset", () => {
+    boxed(true);
+    expect(screen.getByRole("textbox", { name: copy.limit.fieldAria })).toHaveValue("8");
+    expect(screen.getByRole("button", { name: copy.limit.save })).toBeTruthy();
+    expect(screen.getByRole("button", { name: copy.limit.reset("$10") })).toBeTruthy();
+  });
+});

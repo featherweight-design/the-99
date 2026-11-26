@@ -1,0 +1,109 @@
+{
+  "feature": "Deck details refresh PR 7: Your deck All and Shopping heads (diamond, count, no hairline), keys at the foot, the To buy summary box (handoff design_handoff_the99_deck_details_refresh, R3-YourDeck)",
+  "note": "Needs the HD - Brago fixture deck with rows on Shopping and the swap tools on, so the Over cell draws.",
+  "out": "contact-sheets/deck-refresh-7",
+  "shares": [
+    {
+      "binding": "DeckBox",
+      "module": "src/components/decks/deck-box.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "all-heads",
+      "label": "Your deck: All, diamond heads and the keys box at the foot",
+      "view": "src/components/decks/price-strip.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 9000
+        },
+        {
+          "scrollTo": "[data-keys-foot]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "shopping-box",
+      "label": "Your deck: Shopping, the To buy box",
+      "view": "src/components/decks/price-strip.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 9000
+        },
+        {
+          "click": "[data-shopping-filter]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-price-strip]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "shopping-keys",
+      "label": "Your deck: Shopping, keys box at the foot",
+      "view": "src/components/decks/price-strip.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 9000
+        },
+        {
+          "click": "[data-shopping-filter]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-keys-foot]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "shopping-limit-open",
+      "label": "Your deck: Shopping, Change the mark pressed, editor open under the box",
+      "view": "src/components/decks/price-strip.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 9000
+        },
+        {
+          "click": "[data-shopping-filter]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-price-strip]",
+          "settle": 800
+        },
+        {
+          "click": "[data-price-strip] button[aria-expanded]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}

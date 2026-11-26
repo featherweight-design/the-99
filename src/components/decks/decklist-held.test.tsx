@@ -99,8 +99,8 @@ afterEach(() => {
 });
 
 describe("I got it's Shopping key", () => {
-  // The wiring `buildMarkKeyEntries` is told about: with I got it mounted, the Shopping key above the
-  // list decodes the buy mark and the mark key under it must not say `to buy` again. Mutation: pass
+  // The wiring `buildMarkKeyEntries` is told about: with I got it mounted, the Shopping key in the keys box
+  // at the foot of the list decodes the buy mark and the mark key under it must not say `to buy` again. Mutation: pass
   // `shoppingKeyDraws: false` in `Decklist` and the first assertion fails.
   it("is the only place Shopping says `to buy`, and the All view's key still does", () => {
     const { rerender } = render(tree([signet, talisman], "shopping"));

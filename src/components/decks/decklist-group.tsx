@@ -99,6 +99,7 @@ export function DecklistGroup({
         noteColor={noteColor}
         noteEveryWidth={noteEveryWidth}
         autoCount={autoCount}
+        diamond
       />
 
       {view === "card" ? (
