@@ -1,9 +1,12 @@
 {
   "feature": "Deck details refresh PR 3: the Tuning landing, Strategy box over a bare Tools head, and the Suggested changes FOCUS line (handoff design_handoff_the99_deck_details_refresh, R2-Tuning, R2-Focus)",
-  "note": "Needs a signed-in fixture account with a deck (DECK_ID). The focus row presses the first legend row, which sets that deck's strategy focus.",
+  "note": "Needs a signed-in fixture account with a deck that has a stored reading (DECK_ID), so the Suggested changes tile is live. The focus rows press the first legend row, which sets that deck's strategy focus.",
   "out": "contact-sheets/deck-refresh-3",
   "shares": [
-    { "binding": "DeckBox", "module": "src/components/decks/deck-box.tsx" }
+    {
+      "binding": "DeckBox",
+      "module": "src/components/decks/deck-box.tsx"
+    }
   ],
   "rows": [
     {
@@ -11,10 +14,18 @@
       "label": "Tuning landing at phone: Strategy box over the Tools head and tiles",
       "view": "src/components/decks/strategy-block.tsx",
       "binding": "DeckBox",
-      "widths": ["phone"],
+      "widths": [
+        "phone"
+      ],
       "steps": [
-        { "goto": "/decks/${DECK_ID}", "settle": 2500 },
-        { "click": "[role=tab]:has-text(\"Tuning\")", "settle": 2500 }
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        }
       ]
     },
     {
@@ -22,10 +33,18 @@
       "label": "Tuning landing at desktop: Strategy box over the Tools head and tiles",
       "view": "src/components/decks/strategy-block.tsx",
       "binding": "DeckBox",
-      "widths": ["desktop"],
+      "widths": [
+        "desktop"
+      ],
       "steps": [
-        { "goto": "/decks/${DECK_ID}", "settle": 2500 },
-        { "click": "[role=tab]:has-text(\"Tuning\")", "settle": 2500 }
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        }
       ]
     },
     {
@@ -33,12 +52,53 @@
       "label": "Suggested changes at phone after a focus pick: the FOCUS line",
       "view": "src/components/decks/strategy-block.tsx",
       "binding": "DeckBox",
-      "widths": ["phone"],
+      "widths": [
+        "phone"
+      ],
       "steps": [
-        { "goto": "/decks/${DECK_ID}", "settle": 2500 },
-        { "click": "[role=tab]:has-text(\"Tuning\")", "settle": 2500 },
-        { "click": "[data-strategy]:first-of-type", "settle": 1500 },
-        { "click": "[data-tool-tile=suggested]", "settle": 2500 }
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        },
+        {
+          "click": "[data-strategy]:first-of-type",
+          "settle": 1500
+        },
+        {
+          "click": "[data-tool-tile=suggested]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "focus-desktop",
+      "label": "Suggested changes at desktop after a focus pick: the FOCUS line",
+      "view": "src/components/decks/strategy-block.tsx",
+      "binding": "DeckBox",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DECK_ID}",
+          "settle": 2500
+        },
+        {
+          "click": "[role=tab]:has-text(\"Tuning\")",
+          "settle": 2500
+        },
+        {
+          "click": "[data-strategy]:first-of-type",
+          "settle": 1500
+        },
+        {
+          "click": "[data-tool-tile=suggested]",
+          "settle": 2500
+        }
       ]
     }
   ]
