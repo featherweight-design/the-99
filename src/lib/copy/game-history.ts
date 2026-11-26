@@ -60,8 +60,8 @@ export const gameHistoryCopy = {
     anyShort: "Any",
     /** DRAFT: the Deck panel's search field. */
     deckSearch: "Find a deck",
-    /** DRAFT: the Deck panel's foot, for decks with no game under the other filters. */
-    deckLeftOut: (k: number) => `${k} ${k === 1 ? "deck" : "decks"} left out: no games logged`,
+    /** DRAFT: the Deck panel's foot, for decks with no game under the other filters (so "match", not "logged"). */
+    deckLeftOut: (k: number) => `${k} ${k === 1 ? "deck" : "decks"} left out: no games match`,
     /** DRAFT: the Deck list when the search matches nothing. */
     noDeck: "No deck matches.",
     /** DRAFT: the ✕ on the Played against trigger. */
