@@ -64,6 +64,16 @@ describe("TuningHub landing", () => {
     expect(tile("cuts").getAttribute("aria-label")).toBe(`${copy.tools.cuts.name}, ${copy.tools.cuts.over(6)}`);
   });
 
+  it("draws the strategy over a bare Tools head that counts the tiles, and hands it the way into Suggested changes", async () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} strategy={(openSuggested) => <button type="button" onClick={openSuggested}>strategy-slot</button>} />);
+    await waitFor(() => expect(read).toHaveBeenCalledWith("d"));
+    const group = screen.getByRole("group", { name: new RegExp(copy.toolsHead) });
+    expect(group.textContent).toContain("2");
+    expect(within(group).queryByText("strategy-slot")).toBeNull();
+    fireEvent.click(screen.getByText("strategy-slot"));
+    await waitFor(() => expect(document.querySelector('[data-tuning-tool="suggested"]')).toBeTruthy());
+  });
+
   it("keeps Proposed cuts present and inert at 100: not a button, its reason as the purpose line", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
     expect(tile("cuts").tagName).toBe("DIV");

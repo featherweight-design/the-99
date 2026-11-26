@@ -64,9 +64,17 @@ export const strategyFocusCopy = {
   cards: (cardCount: number) => (cardCount === 1 ? "card" : "cards"),
   /** Marks the focus's own row when its strategy is outside the top five. */
   outsideTop: "your focus",
-  focusLine: { lead: "Focus", tail: ": Suggested changes builds toward it." },
-  keepBalanced: "Keep it balanced",
-  noFocus: "No focus yet. Pick one and Suggested changes will build toward it.",
+  /** The box's band: how many themes the ring holds, and (desktop) where the pick stands. */
+  themes: (n: number) => `${n} ${n === 1 ? "theme" : "themes"}`,
+  noFocusClause: "no focus yet",
+  focusClause: (name: string) => `Focus · ${name}`,
+  /** The box's foot: what the pick does, and the one press that goes with it. */
+  footNone: "Pick a focus and Suggested changes builds toward it.",
+  footFocus: (name: string) => `Suggested changes builds toward ${name}.`,
+  openSuggested: "Open Suggested changes ›",
+  clearFocus: "Clear focus",
+  /** The Suggested changes intake's focus row (phone): the pick, its card count, and the way back to the pick. */
+  intakeRow: { label: "Focus", change: "Change ›" },
   /** Read aloud for the ring, which is drawn for the eye alone. */
   ringLabel: (names: string[]) => `Strategies by card count: ${names.join(", ")}.`,
   refused: "That didn’t save. Try again.",

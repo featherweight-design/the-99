@@ -45,6 +45,7 @@ import { useDeclaration } from "./use-declaration";
 import { useStrategyFocus } from "./use-strategy-focus";
 import { StrategyBlock } from "./strategy-block";
 import type { StrategyRead } from "@/lib/strategy/load";
+import type { StrategyKey } from "@/lib/strategy/score";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip } from "./arrival-strip";
 import { DeckUpgradeHost } from "./precons/upgrade/deck-upgrade";
@@ -176,6 +177,16 @@ function scrollToUnresolved() {
 /** Immutable omit of one key, for the per-card receipt maps (H29): returns the
  *  same object when the key is already absent, so a `setState` call built on
  *  this never schedules a render that changes nothing. */
+/** How many cards the deck holds of its focus: the ring's own count, else the sixth row the read keeps for a focus outside the top five. */
+function focusCopiesOf(read: StrategyRead, focus: StrategyKey | null): number | null {
+  if (!focus) return null;
+  if (read.strategy.state === "ok") {
+    const hit = read.strategy.axes.find((a) => a.key === focus);
+    if (hit) return hit.copies;
+  }
+  return read.focus && read.focus.key === focus ? read.focus.axis.copies : null;
+}
+
 function dropKey<T>(map: Record<string, T>, key: string): Record<string, T> {
   if (!(key in map)) return map;
   const next = { ...map };
@@ -1638,6 +1649,7 @@ export function BuilderShell({
         // The focus the server holds, not the press in flight: the panel re-reads its gate when it moves.
         focus: strategyFocus.settled,
         focusRevision: strategyFocus.settledRevision,
+        focusCopies: strategy ? focusCopiesOf(strategy, strategyFocus.settled) : null,
         declared: declaration.declared,
       }}
       printedInSets={printedInSets}
@@ -1996,9 +2008,6 @@ export function BuilderShell({
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   description={deck.intent ?? null}
                   onSaveDescription={saveDescription}
-                  strategy={strategy ? (
-                    <StrategyBlock read={strategy} focus={strategyFocus.focus} refused={strategyFocus.refused} onPick={strategyFocus.setFocus} />
-                  ) : undefined}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
@@ -2064,6 +2073,9 @@ export function BuilderShell({
                     // tiles and first-read latch belong to the deck they were read for.
                     key={deck.id}
                     deckId={deck.id}
+                    strategy={strategy ? (openSuggested) => (
+                      <StrategyBlock read={strategy} focus={strategyFocus.focus} refused={strategyFocus.refused} onPick={strategyFocus.setFocus} onOpenSuggested={openSuggested} />
+                    ) : undefined}
                     drawn
                     request={hubRequest}
                     onRequestAnswered={onHubRequestAnswered}

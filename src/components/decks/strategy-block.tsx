@@ -1,14 +1,14 @@
 "use client";
 
-// The deck's strategy on Analysis (handoff `design_handoff_the99_strategy_focus`, R2g): a ring of up to five strategies,
-// the legend that counts them and is the press for a free FOCUS pick, and one line under it. Last in the reading, above
-// Tuning. No model call: the read is `loadDeckStrategy`, the pick is `setStrategyFocus`, held by the shell.
+// The deck's strategy on the Tuning landing (handoff `design_handoff_the99_strategy_focus`, R2g): a ring of up to five strategies,
+// the legend that counts them and is the press for a free FOCUS pick, and one line under it. Drawn as a box above the tool tiles. No model call: the read is `loadDeckStrategy`, the pick is `setStrategyFocus`, held by the shell.
 import { useRef } from "react";
 
 import { strategyFocusCopy as copy, strategyName } from "@/lib/copy/strategy-focus";
 import type { StrategyRead } from "@/lib/strategy/load";
 import { MIN_NONLAND, type StrategyKey } from "@/lib/strategy/score";
 import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
+import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
 import { StrategyIcon } from "./strategy-icon";
 import { RING, arcPath, legendCount, ringArcs, type RingRow, type RingSize } from "./strategy-ring";
 
@@ -23,38 +23,56 @@ const GROWTH_INK = "color-mix(in oklab, var(--accent-hover) 66%, white)";
 
 type Row = { key: StrategyKey; copies: number; outside: boolean };
 
-const HEAD = "m-0 font-mono font-medium uppercase text-[10.5px] tracking-[0.16em] text-[color:var(--fg-faint)]";
+const FOOT_PRESS = `${TOUCH_HIT_INLINE} w-fit font-mono text-[11.5px] text-[color:var(--accent-text)] underline decoration-[color:var(--accent-shadow)] underline-offset-4`;
 
 export function StrategyBlock({
   read,
   focus,
   refused,
   onPick,
+  onOpenSuggested,
 }: {
   read: StrategyRead;
   /** The shell's held focus (`useStrategyFocus`): drawn at once on a press. */
   focus: StrategyKey | null;
   refused: boolean;
   onPick: (key: StrategyKey | null) => void;
+  /** The hub's way to Suggested changes, for the foot's press while no focus is picked. */
+  onOpenSuggested?: () => void;
 }) {
   const { strategy, pending } = read;
+  const name = focus ? strategyName(focus) : null;
   return (
-    <section data-strategy-block className="flex flex-col gap-[12px]">
-      <div className="flex flex-wrap items-baseline gap-[12px]">
-        <h3 className={HEAD}>{copy.heading}</h3>
-      </div>
+    <DeckBox data-strategy-block aria-labelledby="strategy-heading" className="!mt-0">
+      <DeckBoxBand
+        as="h3"
+        id="strategy-heading"
+        title={copy.heading}
+        count={strategy.state === "ok" ? copy.themes(strategy.axes.length) : undefined}
+        aside={strategy.state === "ok" ? (
+          <span className="hidden font-mono text-[11.5px] font-normal text-[color:var(--fg-faint)] md:inline">{name ? copy.focusClause(name) : copy.noFocusClause}</span>
+        ) : undefined}
+      />
       {strategy.state === "ok" ? (
-        <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] [text-wrap:pretty]">{copy.sub}</p>
-      ) : null}
-      {strategy.state === "ok" ? (
-        <Reading read={read} focus={focus} refused={refused} onPick={onPick} pending={pending} />
+        <>
+          <p className="sr-only">{copy.sub}</p>
+          <Reading read={read} focus={focus} refused={refused} onPick={onPick} pending={pending} />
+          <DeckBoxFoot>
+            <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{name ? copy.footFocus(name) : copy.footNone}</p>
+            {focus ? (
+              <button type="button" onClick={() => onPick(null)} className={FOOT_PRESS}>{copy.clearFocus}</button>
+            ) : onOpenSuggested ? (
+              <button type="button" onClick={onOpenSuggested} className={FOOT_PRESS}>{copy.openSuggested}</button>
+            ) : null}
+          </DeckBoxFoot>
+        </>
       ) : (
-        <p data-strategy-empty={strategy.state} className="m-0 rounded-[10px] border border-dashed border-[color:var(--border-dashed)] px-[16px] py-[14px] text-[13px] leading-[1.6] text-[color:var(--fg-body)]">
+        <p data-strategy-empty={strategy.state} className="m-0 px-[14px] py-[14px] text-[13px] leading-[1.6] text-[color:var(--fg-body)] md:px-[16px]">
           <b className="font-semibold text-[color:var(--fg)]">{strategy.state === "none" ? copy.none.lead : copy.tooSmall.lead}</b>{" "}
           {strategy.state === "none" ? copy.none.body : copy.tooSmall.body(strategy.nonland, MIN_NONLAND)}
         </p>
       )}
-    </section>
+    </DeckBox>
   );
 }
 
@@ -81,31 +99,14 @@ function Reading({
 
   return (
     <>
-      <div className="grid grid-cols-1 justify-items-center gap-[14px] rounded-[11px] border border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[12px] py-[14px] md:grid-cols-[auto_minmax(0,380px)] md:items-center md:justify-center md:gap-[40px] md:rounded-[12px] md:px-[20px] md:py-[18px]">
+      <div className="grid grid-cols-1 justify-items-center gap-[14px] px-[14px] py-[14px] md:grid-cols-[auto_minmax(0,380px)] md:items-center md:justify-center md:gap-[40px] md:px-[16px] md:py-[18px]">
         <figure className="m-0" aria-label={copy.ringLabel(top.map((r) => strategyName(r.key)))}>
           <div className="md:hidden"><Ring size={RING.phone} rows={ring} focus={focus} /></div>
           <div className="hidden md:block"><Ring size={RING.desktop} rows={ring} focus={focus} /></div>
         </figure>
         <Legend rows={rows} focus={focus} pending={pending} onPick={onPick} />
       </div>
-      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] md:text-center">
-        {focus ? (
-          <>
-            {copy.focusLine.lead} <b className="font-semibold text-[color:var(--fg)]">{strategyName(focus)}</b>
-            {copy.focusLine.tail}
-            <button
-              type="button"
-              onClick={() => onPick(null)}
-              className={`${TOUCH_HIT_INLINE} ml-[6px] font-mono text-[11px] text-[color:var(--accent-text)] underline decoration-[color:var(--accent-shadow)] underline-offset-4`}
-            >
-              {copy.keepBalanced}
-            </button>
-          </>
-        ) : (
-          copy.noFocus
-        )}
-      </p>
-      {refused ? <p role="status" className="m-0 text-[12px] text-[color:var(--fg-muted)] md:text-center">{copy.refused}</p> : null}
+      {refused ? <p role="status" className="m-0 px-[14px] pb-[12px] text-[12px] text-[color:var(--fg-muted)] md:px-[16px] md:text-center">{copy.refused}</p> : null}
     </>
   );
 }
