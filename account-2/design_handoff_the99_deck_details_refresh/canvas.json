@@ -21,74 +21,90 @@
    "x": 0,
    "y": 1020,
    "w": 1770,
-   "h": 2369,
+   "h": 1738,
    "title": "R1 Consider · desktop + phone"
   },
   "R1-Mana.dc.html": {
    "x": 1850,
    "y": 1020,
    "w": 1770,
-   "h": 1324,
+   "h": 1334,
    "title": "R1 Mana Balance · desktop + phone"
   },
   "R2-Tuning.dc.html": {
    "x": 0,
-   "y": 3509,
+   "y": 2878,
    "w": 1770,
    "h": 1702,
    "title": "R2 Tuning landing with The deck’s strategy"
   },
   "R2-Focus.dc.html": {
    "x": 1850,
-   "y": 3509,
+   "y": 2878,
    "w": 1770,
    "h": 929,
    "title": "R2 Focus picked + Suggested changes focus line"
   },
   "R2-History.dc.html": {
    "x": 3700,
-   "y": 3509,
+   "y": 2878,
    "w": 1770,
-   "h": 1113,
+   "h": 1123,
    "title": "R2 History · month boxes"
   },
   "R3-Mix.dc.html": {
    "x": 0,
-   "y": 5331,
+   "y": 4700,
    "w": 1770,
-   "h": 900,
-   "title": "R3 Recommended mix"
+   "h": 1241,
+   "title": "R3 Recommended mix · over state + Why open on phone"
   },
   "R3-YourDeck.dc.html": {
-   "x": 1850,
-   "y": 5331,
+   "x": 3700,
+   "y": 4700,
    "w": 1770,
    "h": 2250,
    "title": "R3 Your deck › All and Shopping"
   },
   "R3-Analysis.dc.html": {
-   "x": 3700,
-   "y": 5331,
+   "x": 5550,
+   "y": 4700,
    "w": 1770,
-   "h": 2026,
+   "h": 1929,
    "title": "R3 Analysis"
   },
   "R3-Versions.dc.html": {
-   "x": 5550,
-   "y": 5331,
+   "x": 7400,
+   "y": 4700,
    "w": 1770,
    "h": 929,
    "title": "R3 Versions"
+  },
+  "R1-ToolPicker.dc.html": {
+   "x": 3700,
+   "y": 1020,
+   "w": 1000,
+   "h": 900,
+   "title": "R1 Phone tool picker · replaces ‹ Tuning"
+  },
+  "R3-MixWhy.dc.html": {
+   "x": 1850,
+   "y": 4700,
+   "w": 1770,
+   "h": 929,
+   "title": "R3 Why these numbers? open · desktop"
   }
  },
  "order": [
   "Main.dc.html",
   "R1-Consider.dc.html",
   "R1-Mana.dc.html",
+  "R1-ToolPicker.dc.html",
   "R2-Tuning.dc.html",
   "R2-Focus.dc.html",
   "R2-History.dc.html",
   "R3-Mix.dc.html",
+  "R3-MixWhy.dc.html",
   "R3-YourDeck.dc.html",
   "R3-Analysis.dc.html",
   "R3-Versions.dc.html"

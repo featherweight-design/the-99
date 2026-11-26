@@ -118,6 +118,24 @@ CSS_DD = '''
 .P .cell{padding:9px 4px;align-items:center;gap:5px}
 .P .cell .l{font-size:8.5px;letter-spacing:.08em}.P .cell .v{font-size:15px}.P .cell .bar{display:none}
 .P .cell .f{flex-direction:column;align-items:center;gap:4px;font-size:9.5px}
+.tp{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px 0 14px;margin:4px 0 2px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated)}
+.tp .mk{color:var(--accent);display:flex}.tp b{font-size:14.5px;font-weight:600}.tp .cv3{color:var(--fg-muted);display:flex}
+.tp .st2{margin-left:auto;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.tsr{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 16px;border-top:1px solid var(--border)}
+.tsr .ic2{width:36px;height:36px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);flex:none}
+.tsr .tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.tsr .tt b{font-size:14px;font-weight:600}.tsr .tt span{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.tsr.on{background:var(--surface-raised)}.tsr.on .ic2{color:var(--accent)}.tsr .ck{color:var(--accent);display:flex}
+.tsr.off b{color:var(--fg-muted)}.tsr.off .tt span{font-family:"IBM Plex Sans",sans-serif;font-size:12px;color:var(--fg-muted)}
+.cell .v.over{color:var(--warning)}.cell .bar.over{background:linear-gradient(90deg,var(--success) 0 var(--t),var(--warning) var(--t) 100%)}
+.cell .f .o{color:var(--warning)}
+.why3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:14px 16px 16px;border-top:1px solid var(--border);background:var(--surface-sunken)}
+.wy{display:flex;flex-direction:column;gap:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:12px 14px 14px}
+.wy .pic{height:74px;border-radius:8px;background:var(--surface-inset);display:flex;align-items:center;justify-content:center;color:var(--fg-muted)}
+.wy .hd{display:flex;align-items:baseline;gap:8px;white-space:nowrap}.wy .hd b{font-size:14px}.wy .hd .n{font:500 13px "IBM Plex Mono",monospace;color:var(--fg)}
+.wy .hd .y{margin-left:auto;font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}.wy .hd .y.o{color:var(--warning)}
+.wy p{font-size:12.5px;line-height:1.5;color:var(--fg-body)}
+.P .why3{grid-template-columns:1fr;gap:10px;padding:12px}
+.P .wy{gap:8px;padding:10px 12px 12px}.P .wy .pic{height:66px}.P .wy .hd{flex-wrap:wrap;row-gap:2px}
 .why2{display:flex;flex-direction:column;gap:10px;padding:14px 16px 16px;border-top:1px solid var(--border);background:var(--surface-sunken)}
 .why2 p{font-size:12.5px;line-height:1.55;color:var(--fg-body)}.why2 b{color:var(--fg)}
 /* decklist */
@@ -209,7 +227,14 @@ def W(name, title, body, w): board(name, title, body, w)
 TOOLS = ['Consider', 'Suggested changes', 'Mana Balance', 'Proposed cuts', 'History']
 def hubtabs(on, tb=''):
     return '<div class="hubtabs"><span>All tools</span>' + ''.join(f'<span class="{"on" if t==on else ""}">{t}</span>' for t in TOOLS) + (f'<span class="tb">{tb}</span>' if tb else '') + '</div>'
-def phback(name, i): return f'<div class="phback"><b>‹ Tuning</b><span>{name} · {i} of 5 tools</span></div>'
+TST = {'Consider': '47 own · 22 to buy', 'Suggested changes': '1 credit', 'Mana Balance': 'free', 'Proposed cuts': 'at 99', 'History': '7 runs'}
+def phback(name, i=0): return f'<div class="tp"><span class="mk">{tmark(TMK[name])}</span><b>{name}</b><span class="cv3">{caret(14)}</span><span class="st2">{TST[name]}</span></div>'
+def toolsheet(on):
+    rows = [('All tools', 'the strategy and every tool', None, False)] + [(n, c if c else p, TMK[n], d) for n, p, c, d in TT]
+    rows[4] = ('Proposed cuts', 'Offered once the deck passes 100 cards. This one is at 99.', 'C', True)
+    def ic(m): return tmark(m) if m else '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1"/><rect x="9" y="9" width="4.5" height="4.5" rx="1"/></svg>'
+    body = ''.join(f'<div class="tsr{" on" if n==on else ""}{" off" if d else ""}"><span class="ic2">{ic(m)}</span><span class="tt"><b>{n}</b><span>{s}</span></span>{f"<span class=ck>{check()}</span>" if n==on else ""}</div>' for n, s, m, d in rows)
+    return (f'<div class="scrim"></div><div class="sheet"><div class="grab"></div><div class="sh-h"><h3>Tuning</h3><span class="gs-x">{xic(18)}</span></div>{body}<div style="height:18px"></div></div>')
 
 # ======================= R1: Consider =======================
 TILE = {
@@ -228,7 +253,7 @@ def stile(c, phone=False):
 def shelf(t, clause, ct, cards, phone=False, fold=False, yours=''):
     end = (yours + (f'<a>Show all {ct.split()[0]} ›</a>' if not fold else ''))
     if phone and not fold: end = yours
-    body = '' if fold else f'<div class="tiles">{"".join(stile(c, phone) for c in (cards[:4] if phone else cards))}</div>'
+    body = '' if fold else f'<div class="tiles">{"".join(stile(c, phone) for c in (cards[:2] if phone else cards))}</div>'
     pfoot = (f'<div class="foot"><a class="l">Show all {ct.split()[0]} ›</a></div>' if (phone and not fold) else '')
     return box(bnd(t, ct, end, fold=fold, clause=('' if phone else clause)) + (f'<div style="padding:8px 14px 0;font:500 11px IBM Plex Mono,monospace;color:var(--fg-faint)">{clause}</div>' if phone and not fold else '') + body + pfoot)
 KEY_C = ('<div class="keyrow box" style="border-top:1px solid var(--border)"><span><span class="dot"></span>you own it</span><span><span class="dot buy"></span>to buy</span>'
@@ -359,10 +384,29 @@ def history(phone=False):
 MIX = [('Ramp', 28, 10, 'rec 10', 'cards →'), ('Draw', 10, 6, 'rec 6', 'cards →'), ('Removal', 9, 7, 'rec 7', 'cards →'), ('Wipes', 3, 1, 'rec 1', 'cards →'), ('Land', 38, 37, 'was 39', 'balance mana →')]
 WHY = [('Ramp 10', '— you want your commander out a turn early, every game.'), ('Draw 6', '— a four-player table runs you out of cards before it runs you out of life.'),
        ('Removal 7, Wipes 1', '— three opponents means three threats you didn’t plan for.'), ('Land 37', '— advisory: a cheap curve wants fewer, a heavy one wants more.')]
+def _svg(w, h, inner): return f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" fill="none" aria-hidden="true" style="font:500 8.5px IBM Plex Mono,monospace">{inner}</svg>'
+CROWN = '<path d="M-6 3 -6 -4 -3 -1 0 -5 3 -1 6 -4 6 3Z" fill="var(--accent)"/>'
+PIC_RAMP = _svg(150, 60, ''.join(f'<rect x="{6+i*28}" y="30" width="24" height="16" rx="3" stroke="var(--border-strong)"/><text x="{18+i*28}" y="56" text-anchor="middle" fill="var(--fg-faint)">T{i+1}</text>' for i in range(5))
+    + '<g transform="translate(74,38)">' + CROWN + '</g><g transform="translate(102,38)" opacity=".35">' + CROWN + '</g>'
+    + '<path d="M98 18 C92 10 82 10 78 20" stroke="var(--accent)" stroke-width="1.4"/><path d="M76 16 78 21 82 18" stroke="var(--accent)" stroke-width="1.4"/><text x="88" y="9" text-anchor="middle" fill="var(--accent)">a turn early</text>')
+def _seat(x, y, c='var(--border-strong)', f='none'): return f'<circle cx="{x}" cy="{y}" r="7" stroke="{c}" fill="{f}" stroke-width="1.4"/>'
+PIC_DRAW = _svg(150, 60, '<rect x="52" y="14" width="46" height="32" rx="7" stroke="var(--border)"/>' + _seat(75, 7) + _seat(40, 30) + _seat(110, 30) + _seat(75, 53, 'var(--accent)', 'color-mix(in srgb,var(--accent) 25%,transparent)')
+    + ''.join(f'<rect x="{62+i*9}" y="25" width="7" height="10" rx="1.5" stroke="var(--fg-faint)"/>' for i in range(3)) + '<text x="128" y="56" fill="var(--fg-faint)">you</text>')
+PIC_REM = _svg(150, 60, ''.join(_seat(x, 12) + f'<path d="M{x} 21 L75 43" stroke="var(--danger)" stroke-width="1.2" stroke-dasharray="3 3"/>' for x in (30, 75, 120)) + _seat(75, 50, 'var(--accent)', 'color-mix(in srgb,var(--accent) 25%,transparent)')
+    + ''.join(f'<path d="M{x-3} 9l6 6M{x+3} 9l-6 6" stroke="var(--danger)" stroke-width="1.2"/>' for x in (30, 75, 120)))
+_cv = [2, 9, 12, 10, 6, 3, 1]
+PIC_LAND = _svg(150, 60, ''.join(f'<rect x="{14+i*18}" y="{46-h*3}" width="13" height="{h*3}" rx="2" fill="color-mix(in srgb,var(--fg-muted) 45%,transparent)"/><text x="{20.5+i*18}" y="57" text-anchor="middle" fill="var(--fg-faint)">{i+1}</text>' for i, h in enumerate(_cv))
+    + '<path d="M56 12V48" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="3 2"/><text x="62" y="9" fill="var(--accent)">avg 3.00</text>')
+WHY3 = [('Ramp', '10', 'you have 28', ' o', PIC_RAMP, 'You want your commander out a turn early, every game.'),
+        ('Draw', '6', 'you have 10', ' o', PIC_DRAW, 'A four-player table runs you out of cards before it runs you out of life.'),
+        ('Removal · Wipes', '7 · 1', 'you have 9 · 3', '', PIC_REM, 'Three opponents means three threats you didn’t plan for.'),
+        ('Land', '37', 'you have 38', '', PIC_LAND, 'Advisory: a cheap curve wants fewer, a heavy one wants more.')]
 def mixbox(phone=False, open_=False):
-    cells = ''.join(f'<div class="cell"><span class="l">{l}</span><span class="v">{v}<span> / {t}</span></span><span class="bar"></span><span class="f"><span>{r}</span><a>{a}</a></span></div>' for l, v, t, r, a in MIX)
-    if phone: cells = ''.join(f'<div class="cell"><span class="l">{l}</span><span class="v">{v}</span><span class="f"><span>{r}</span><a>{a.split()[0]} →</a></span></div>' for l, v, t, r, a in MIX)
-    why = (f'<div class="why2">{"".join(f"<p><b>{h}</b> {b}</p>" for h, b in WHY)}</div>' if open_ else '')
+    def ov(v, t): return v - t > 2
+    def fl(l, v, t, r): return f'<span class="o">{v - t} over</span>' if ov(v, t) else (f'<span>{v - t} over</span>' if v > t and l != 'Land' else f'<span>{r}</span>')
+    cells = ''.join(f'<div class="cell"><span class="l">{l}</span><span class="v{" over" if ov(v,t) else ""}">{v}<span> / {t}</span></span><span class="bar{" over" if ov(v,t) else ""}" style="--t:{round(100*t/v)}%"></span><span class="f">{fl(l,v,t,r)}<a>{a}</a></span></div>' for l, v, t, r, a in MIX)
+    if phone: cells = ''.join(f'<div class="cell"><span class="l">{l}</span><span class="v{" over" if ov(v,t) else ""}">{v}</span><span class="f">{fl(l,v,t,r)}</span></div>' for l, v, t, r, a in MIX)
+    why = (f'<div class="why3">{"".join(f"<div class=wy><span class=pic>{pic}</span><span class=hd><b>{h}</b><span class=n>{n}</span><span class=\"y{yo}\">{y}</span></span><p>{b}</p></div>" for h, n, y, yo, pic, b in WHY3)}</div>' if open_ else '')
     foot = f'<div class="foot">{"Hide" if open_ else "Why these numbers?"}<a>{"" if open_ else ""}</a></div>'
     foot = f'<div class="foot"><a class="l">{"Hide" if open_ else "Why these numbers?"}</a></div>'
     return box(bnd('Recommended mix', '', '<span>A common starting point · <a>reading pending changes</a></span>' if not phone else '') + (f'<div style="padding:8px 14px 0;font:500 11px IBM Plex Mono,monospace;color:var(--fg-faint)">A common starting point · <span style="color:var(--accent)">reading pending changes</span></div>' if phone else '') + f'<div class="mix">{cells}</div>' + why + foot)
@@ -427,7 +471,9 @@ def analysis(phone=False):
             '<div style="border-top:1px solid var(--border);padding-top:12px;font-size:13px;color:var(--fg-body);line-height:1.6">Of the <b>5,257</b> Ashling decks that declared a bracket, <b>2,775</b> said Upgraded.</div></div>')
     wcs = [('2', 'Game changers', 'Gamble · Jeska’s Will', True), ('0', 'Mass land denial', 'nothing in the list', False), ('0', 'Extra turns', 'nothing in the list', False),
            ('0', 'Two-card infinites', 'nothing in the list', False), ('2', 'Tutors', 'Flamekin Harbinger · Gamble', True)]
-    what = box(bnd('What is in this deck', '', '') + '<div class="wt">' + ''.join(f'<div class="wc{"" if a else " z"}"><span class="n">{n}</span><b>{t}</b><span>{s}</span>{"<a>see the cards</a>" if a else ""}</div>' for n, t, s, a in (wcs[:4] if phone else wcs)) + '</div>'
+    nz = [w for w in wcs if w[3]]
+    zl = '<div style="display:flex;gap:10px;align-items:center;padding:0 16px 14px;font-size:12.5px;color:var(--fg-muted)"><span class="mono faint" style="font-size:10px;letter-spacing:.14em">NONE</span>mass land denial · extra turns · two-card infinites</div>'
+    what = box(bnd('What is in this deck', '', '') + '<div class="wt" style="grid-template-columns:repeat(2,minmax(0,1fr))">' + ''.join(f'<div class="wc"><span class="n">{n}</span><b>{t}</b><span>{s}</span><a>see the cards</a></div>' for n, t, s, a in nz) + '</div>' + zl
                + '<div class="foot"><a class="l">How we make these decisions →</a></div>')
     hps = [('Mana velocity', 'High', 4, 'Early ramp 9.25 · average spell 3 mana', 'see the 28 cards'), ('Card flow', 'Modest', 2, '3 repeating engines, 7 one-time draws', 'see the 10 cards'),
            ('Interaction', 'High', 4, '13 answers · 7 cheap and instant', 'see the 13 cards'), ('Win speed', 'No combo line', 0, 'Nothing in this list puts a combo together.', '')]
@@ -457,13 +503,13 @@ def dp(lab, d, p): return pair(labelled(lab + ' · DESKTOP', desk(d)), labelled(
 # Main
 was_head = '<div style="display:flex;flex-direction:column;gap:14px"><span class="was">Today</span><span style="font:500 10.5px IBM Plex Mono,monospace;letter-spacing:.16em;color:var(--fg-faint)">WHAT IS IN THIS DECK</span><span style="font:600 17px IBM Plex Sans;display:flex;gap:10px;align-items:center;border-top:1px solid var(--border-strong);padding-top:12px">⌄ Removal <span class="mono faint" style="font-size:11.5px;font-weight:500">you have 9 · 2 over · 14 to consider</span></span><span class="disp" style="font-size:16px;border-bottom:1px solid var(--border);padding-bottom:8px">Creatures <span class="mono faint" style="font-size:12px;font-variant:normal">10</span></span></div>'
 now_head = '<div style="display:flex;flex-direction:column;gap:14px"><span class="was">Proposed, everywhere</span>' + box(bnd('Removal', '14 to consider', '<a>your 9 →</a><a>Show all 14 ›</a>', fold=False, clause='you have 9 · 2 over') + '<div style="height:28px"></div><div class="keyrow"><span>key at the bottom of the box</span></div><div class="foot">“why” and cross-links in the footer band<a>Open Tuning ›</a></div>') + '</div>'
-idx = [('R1 · Consider', 'Each shelf becomes a box: ◆ role, mono count, coverage clause, Show all at the band’s end. A folded shelf collapses to its band with the chevron at the far end, so it still reads as a closed box. The key moves to the bottom.'),
+idx = [('R1 · Consider', 'Each shelf becomes a box: ◆ role, mono count, coverage clause, Show all at the band’s end. A folded shelf collapses to its band with the chevron at the far end, so it still reads as a closed box. The key moves to the bottom. On phone, a tool picker replaces ‹ Tuning, and shelves show 2 tiles.'),
        ('R1 · Mana Balance', 'Same shelf boxes for Colors, Hardest costs and Lands. “What Needs means” moves into the Colors box footer. One tool-title weight across Tuning.'),
        ('R2 · Tuning landing', 'The deck’s strategy moves here from Analysis, first box above the tools, shown for every deck (its read is free). Suggested changes shows the focus as one line with Change.'),
        ('R2 · History', 'Month boxes from Games replace the faint sticky labels; the 420px inner scroll box goes, Show 20 more sits in the last box’s footer.'),
-       ('R3 · Recommended mix', 'One box with band, five cells and Why these numbers? in its footer, opening inside the box.'),
+       ('R3 · Recommended mix', 'One box; a role well over target shows N over in amber. Why these numbers? opens inside the box as one picture per role.'),
        ('R3 · Your deck', 'All and Shopping group heads take ◆ + count with no hairline (rows are already tiles, so no box). Keys move to the foot. Shopping’s four stacked strips become one summary box.'),
-       ('R3 · Analysis', 'Five 10px mono labels become ◆ boxes; links move to footers. Strategy is gone from the bottom.'),
+       ('R3 · Analysis', 'Five 10px mono labels become ◆ boxes; links move to footers; zero counts fold into one None line. Strategy is gone from the bottom.'),
        ('R3 · Versions', 'A visible ◆ Versions head with the changes count at its end (Review stays in the to-do above, one control); Built from a precon? becomes the box’s footer row.')]
 main = ('<div style="width:1400px;padding:56px 64px 64px;box-sizing:border-box;background:var(--bg);font-family:IBM Plex Sans,sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:30px;' + ns['TOK'] + '">'
         '<div style="display:flex;flex-direction:column;gap:10px"><span class="was">The 99 · Deck details refresh · R1 · 2026-11-26</span><h1 class="disp" style="font-size:34px">Deck details, on the Home and Games pattern</h1>'
@@ -479,6 +525,9 @@ W('R2-Focus.dc.html', 'R2 Focus picked + Suggested changes line', pair(labelled(
 W('R2-History.dc.html', 'R2 History', dp('TUNING › HISTORY', history(), history(True)), BW)
 W('R3-Mix.dc.html', 'R3 Recommended mix', pair(labelled('DECK HEADER + RECOMMENDED MIX · DESKTOP', f'<div class="D"><img src="art/d-head.png" alt="" style="display:block;width:1300px;height:290px;grid-column:1/3"><div class="rail"></div><div class="main" style="padding-top:20px">{TODO}{mixbox()}{dtabs("Your deck")}</div></div>'),
       labelled('WHY THESE NUMBERS? OPEN · PHONE', phone(mixbox(True, True) + dtabs('Your deck')))), BW)
+W('R3-MixWhy.dc.html', 'R3 Why these numbers? open', labelled('WHY THESE NUMBERS? OPEN · DESKTOP', desk(mixbox(False, True))), BW)
+W('R1-ToolPicker.dc.html', 'R1 Phone tool picker (replaces ‹ Tuning)', '<div style="display:flex;gap:60px;align-items:flex-start">' + labelled('PICKER CLOSED · CONSIDER · PHONE', phone(dtabs('Tuning') + phback('Consider') + mana_table(True)[:0] + '<div style="height:6px"></div>' + shelf('Threats & synergy', 'no target · this is the deck’s plan', '18 to consider', TILE['synergy'], True)))
+  + labelled('PICKER OPEN · PHONE', phone(dtabs('Tuning') + phback('Consider') + '<div style="height:6px"></div>' + shelf('Threats & synergy', 'no target · this is the deck’s plan', '18 to consider', TILE['synergy'], True) + toolsheet('Consider')).replace('class="P"', 'class="P" style="position:relative"', 1)) + '</div>', 1000)
 W('R3-YourDeck.dc.html', 'R3 Your deck › All and Shopping', '<div style="display:flex;flex-direction:column;gap:60px">' + dp('YOUR DECK › ALL', yourdeck(), yourdeck(True)) + dp('YOUR DECK › SHOPPING', shopping(), shopping(True)) + '</div>', BW)
 W('R3-Analysis.dc.html', 'R3 Analysis', dp('ANALYSIS', analysis(), analysis(True)), BW)
 W('R3-Versions.dc.html', 'R3 Versions', dp('VERSIONS', versions(), versions(True)), BW)
