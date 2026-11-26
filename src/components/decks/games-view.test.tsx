@@ -408,7 +408,10 @@ describe("GamesView: the filters", () => {
     const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
     fireEvent.click(within(sheet).getByRole("radio", { name: gameHistoryCopy.filter.results.loss }));
     expect(more.read).toHaveBeenCalledWith({ result: "loss" });
-    fireEvent.click(within(sheet).getByRole("radio", { name: gameHistoryCopy.filter.anyShort }));
+    const any = within(sheet).getByRole("radio", { name: gameHistoryCopy.filter.anyShort });
+    expect(any).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(any);
+    expect(any).toHaveAttribute("aria-checked", "true");
     expect(more.read).toHaveBeenLastCalledWith(expect.not.objectContaining({ result: "loss" }));
   });
 

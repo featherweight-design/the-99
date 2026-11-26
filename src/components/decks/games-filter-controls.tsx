@@ -275,7 +275,7 @@ function WidePanel({ label, on, trigger, clear, children }: {
           <Chevron open={open} />
         </button>
         {clear ? (
-          <button type="button" aria-label={clear.label} onClick={clear.onClear} className="flex cursor-pointer items-center border-0 bg-transparent py-[9px] pl-[4px] pr-[12px] text-[13px] leading-none text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]">
+          <button type="button" aria-label={clear.label} onClick={() => { clear.onClear(); triggerRef.current?.focus(); }} className="flex cursor-pointer items-center border-0 bg-transparent py-[9px] pl-[4px] pr-[12px] text-[13px] leading-none text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]">
             <span aria-hidden>✕</span>
           </button>
         ) : null}
@@ -286,6 +286,11 @@ function WidePanel({ label, on, trigger, clear, children }: {
           ref={panelRef}
           role="dialog"
           aria-label={label}
+          onBlur={(e) => {
+            // Tabbing out of the non-modal panel closes it; a blur to nothing (a click on the page) is the mousedown handler's.
+            const to = e.relatedTarget as Node | null;
+            if (to && !e.currentTarget.contains(to) && !triggerRef.current?.contains(to)) setOpen(false);
+          }}
           className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col gap-[8px] p-[8px]`}
           style={{ background: "var(--surface-raised)", width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
         >
