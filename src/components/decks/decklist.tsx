@@ -29,8 +29,6 @@ import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/groupi
 // Moved to `mark-key-entries.tsx` so the landing demo can draw the same key; re-exported for the callers and tests that import it here.
 export { buildMarkKeyEntries };
 
-/** The keys' box at the foot of a list (R3-YourDeck): a hairline box that vanishes when no key draws. */
-const KEYS_FOOT = "mt-[14px] flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
 import { printedNameOf } from "../../lib/collection/browse";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
@@ -75,6 +73,9 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useGotIt } from "./got-it";
 import { reveal } from "../../lib/ui/reveal";
+
+/** The keys' box at the foot of a list (R3-YourDeck): a hairline box that vanishes when no key draws. */
+const KEYS_FOOT = "mt-[14px] flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [

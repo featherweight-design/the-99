@@ -39,7 +39,7 @@ export function buildMarkKeyEntries({
   inCardView: boolean;
   /** The commanders' Shopping rows (`commanderShoppingRows`), glossed under Shopping alone. */
   commanderRows?: DeckDetailCard[];
-  /** `ShoppingKey` is drawn above the list (I got it on). It decodes the buy mark itself, so under
+  /** `ShoppingKey` is drawn in the keys box at the foot of the list (I got it on). It decodes the buy mark itself, so under
    *  Shopping, where every row carries it, this key does not say `to buy` a second time (Hugh, 2026-10-11). */
   shoppingKeyDraws?: boolean;
   /** Draw the `locked` entry as though a card were locked: the key as it will read after the first lock, so the

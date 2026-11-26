@@ -20,7 +20,7 @@ import {
   DECK_GROUPING_ARIA,
   DECK_GROUPING_LABELS,
 } from "../../lib/copy/deck-sort";
-import { PriceStrip } from "./price-strip";
+import { PriceStrip, stripDate } from "./price-strip";
 import { useDeckTokens } from "./deck-tokens-context";
 import { tokenShopping } from "../../lib/tokens/shopping";
 import { StandInLimit } from "./stand-in-limit";
@@ -503,7 +503,7 @@ export function GroupToggle({
       )}
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then, with its own `N over` count (the box's Over cell carries it otherwise). */}
-      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} countInBox={Boolean(priceSummary && (provenance || deckTokens?.ownProvenance))} />}
+      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} countInBox={priceSummary !== null && stripDate(priceSummary, provenance, joinedTokens, deckTokens?.provenance ?? null, deckTokens?.ownProvenance ?? null) !== null} />}
     </div>
   );
 }

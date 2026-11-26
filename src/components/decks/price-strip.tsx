@@ -28,6 +28,41 @@ import { StoreDoor } from "../stores/store-door";
 import { StorePasteRow } from "../stores/store-paste-row";
 import { useStoreInfo } from "../stores/store-provider";
 
+/**
+ * The date the To buy box carries, or null when the box is not drawn: no readable price date, or nothing to shop for.
+ * One rule for the box and for the limit editor under it, which keeps the `N over` count when the box is absent.
+ */
+export function stripDate(
+  summary: PriceSummary,
+  provenance: ProvenanceForm | null,
+  tokens: TokenShopping | null,
+  tokenProvenance: ProvenanceForm | null,
+  tokenOwnProvenance: ProvenanceForm | null,
+): ProvenanceForm | null {
+  // The figure includes priced tokens, so it is as old as the oldest price in it. A deck whose card prices are
+  // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
+  // Which feeds the figure draws on: the rows that carry a price when any does, else the rows themselves.
+  const anyPriced = summary.pricedCopies > 0 || (tokens?.priced ?? 0) > 0;
+  const cardsIn = anyPriced ? summary.pricedCopies > 0 : summary.totalCopies > 0;
+  const tokensIn = tokens !== null && (anyPriced ? tokens.priced > 0 : tokens.rows.length > 0);
+  const dated = tokensIn
+    // Tokens alone: their own feed's date, even when it is the newer one. Both: the older of the two (the
+    // page supplies `tokenProvenance` only when the tokens' is the older).
+    ? (cardsIn ? tokenProvenance ?? provenance ?? tokenOwnProvenance : tokenOwnProvenance ?? provenance)
+    : provenance;
+  if (!dated) return null;
+
+  const tokenN = tokens?.rows.length ?? 0;
+
+  // Nothing to shop for is not a total of nothing. Every line the strip renders
+  // is a claim about a list, and a provenance line above an empty one dates a
+  // list with nothing in it. The rule lives here rather than at the call site so
+  // it holds wherever the strip is mounted. A deck with nothing to buy but a joined token still has
+  // something to buy.
+  if (summary.totalCopies === 0 && tokenN === 0) return null;
+  return dated;
+}
+
 export function PriceStrip({
   summary,
   provenance,
@@ -62,17 +97,7 @@ export function PriceStrip({
   const store = useStoreInfo();
   const tools = useSwapTools();
   const headingId = useId();
-  // The figure includes priced tokens, so it is as old as the oldest price in it. A deck whose card prices are
-  // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
-  // Which feeds the figure draws on: the rows that carry a price when any does, else the rows themselves.
-  const anyPriced = summary.pricedCopies > 0 || (tokens?.priced ?? 0) > 0;
-  const cardsIn = anyPriced ? summary.pricedCopies > 0 : summary.totalCopies > 0;
-  const tokensIn = tokens !== null && (anyPriced ? tokens.priced > 0 : tokens.rows.length > 0);
-  const dated = tokensIn
-    // Tokens alone: their own feed's date, even when it is the newer one. Both: the older of the two (the
-    // page supplies `tokenProvenance` only when the tokens' is the older).
-    ? (cardsIn ? tokenProvenance ?? provenance ?? tokenOwnProvenance : tokenOwnProvenance ?? provenance)
-    : provenance;
+  const dated = stripDate(summary, provenance, tokens, tokenProvenance, tokenOwnProvenance);
   if (!dated) return null;
 
   const tokenN = tokens?.rows.length ?? 0;
@@ -82,7 +107,6 @@ export function PriceStrip({
   // list with nothing in it. The rule lives here rather than at the call site so
   // it holds wherever the strip is mounted. A deck with nothing to buy but a joined token still has
   // something to buy.
-  if (summary.totalCopies === 0 && tokenN === 0) return null;
 
   // Both figures drop rather than render as zero. No price at all is not
   // "$0.00", and a denominator that names nothing missing is a third copy of a

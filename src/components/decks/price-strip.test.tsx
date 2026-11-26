@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { PriceStrip } from "./price-strip";
+import { PriceStrip, stripDate } from "./price-strip";
 import { priceCopy } from "../../lib/copy/price";
 import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
 import type { ProvenanceForm } from "../../lib/decks/price";
@@ -267,5 +267,18 @@ describe("PriceStrip by store (store choice)", () => {
     expect(container.querySelector("[data-no-cart]")).toBeNull();
     expect(container.querySelector("[data-store-paste]")).toBeNull();
     expect(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeTruthy();
+  });
+});
+
+describe("stripDate: when the To buy box is drawn", () => {
+  const some = { totalCents: 1240, pricedCopies: 6, totalCopies: 8 };
+  it("returns the card date when cards are priced", () => {
+    expect(stripDate(some, fresh, null, null, null)).toBe(fresh);
+  });
+  it("returns null with no readable date, so the limit editor keeps its own count", () => {
+    expect(stripDate(some, null, null, null, null)).toBeNull();
+  });
+  it("returns null when there is nothing to shop for", () => {
+    expect(stripDate({ totalCents: 0, pricedCopies: 0, totalCopies: 0 }, fresh, null, null, null)).toBeNull();
   });
 });
