@@ -15,10 +15,14 @@ export const tuningHubCopy = {
   otherTools: "Other tools",
   /** The bare head over the landing's tiles (deck refresh R2-Tuning). */
   toolsHead: "Tools",
-  back: "‹ Tuning",
-  /** The phone's header beside the open tool's mark. Engineering: counts the tools this
-   *  deployment draws, so a hub with two tools says `1 of 2`. */
-  toolOf: (toolNumber: number, total: number) => `${toolNumber} of ${total} tools`,
+  /** The phone's tool picker (deck refresh R1-ToolPicker): the row that replaces `‹ Tuning`, and the sheet it opens. */
+  picker: {
+    sheetTitle: "Tuning",
+    allToolsLine: "The strategy and every tool",
+    close: "Close",
+    /** The sheet's label for screen readers; the visible title stays `Tuning`. */
+    sheetLabel: "Tuning tools",
+  },
   tools: {
     /** The hub's first tile (tool discovery B2, the handoff's `tuningTabCopy.consider`): the shipped Consider list, opened in place. */
     consider: {
@@ -50,8 +54,8 @@ export const tuningHubCopy = {
       purpose: "Counts where the deck runs long. Name the cuts to see which cards.",
       cost: "free · name the cuts 1 credit",
       over: (cardCount: number) => `this deck is ${cardCount} over`,
-      /** The inert tile. `total` is the spine's figure, commanders included (ruling 4). */
-      notOffered: (total: number) => `Offered once the deck passes 100 cards. This one is at ${total}.`,
+      /** The inert tile and the picker's inert row (deck refresh R1c): the one line, with no count. */
+      notOffered: "Offered once the deck passes 100 cards.",
     },
     history: {
       name: "History",
