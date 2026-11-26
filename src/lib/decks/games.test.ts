@@ -99,6 +99,19 @@ describe("summarizeGames", () => {
       game({ hurt: ["mana"] }),
       game({ worked: ["mana"] }),
     ]);
-    expect(s.axes[0]).toEqual({ key: "mana", worked: 2, hurt: 1, net: 1 });
+    expect(s.axes[0]).toMatchObject({ key: "mana", worked: 2, hurt: 1, net: 1 });
+  });
+
+  // The tiles' dot row: games arrive newest first, the row reads oldest first.
+  it("reads each axis across the last ten games, oldest first", () => {
+    const s = summarizeGames([game({ hurt: ["mana"] }), game(), game({ worked: ["mana"] })]);
+    expect(s.axes[0].recent).toEqual(["worked", null, "hurt"]);
+  });
+
+  it("stops the sequence at ten games while the totals keep counting", () => {
+    const games = Array.from({ length: 12 }, () => game({ hurt: ["mana"] }));
+    const s = summarizeGames(games);
+    expect(s.axes[0].recent).toHaveLength(10);
+    expect(s.axes[0].hurt).toBe(12);
   });
 });

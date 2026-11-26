@@ -1,7 +1,10 @@
 // Split out of games.ts so the aggregation is importable from a client bundle: games.ts holds the database read,
 // and a client component that reached it through `summarizeMatchups` dragged `src/db` into the browser.
 import { GAME_AXIS_KEYS, type GameAxisKey } from "./game-axes";
-import type { AxisTally, DeckGame, GameSummary } from "./games";
+import type { AxisMark, AxisTally, DeckGame, GameSummary } from "./games";
+
+/** How many games the tiles' dot row shows. */
+export const RECENT_GAMES = 10;
 import { playRecord } from "./stats";
 
 /**
@@ -28,7 +31,13 @@ export function summarizeGames(games: DeckGame[]): GameSummary {
     for (const key of g.hurt) tally(tallies, key).hurt += 1;
   }
 
-  const axes = [...tallies.values()].map((t) => ({ ...t, net: t.worked - t.hurt }));
+  // `games` arrives newest first; the tiles read the last ten oldest first.
+  const lastTen = games.slice(0, RECENT_GAMES).reverse();
+  const axes = [...tallies.values()].map((t) => ({
+    ...t,
+    net: t.worked - t.hurt,
+    recent: lastTen.map((g): AxisMark => (g.worked.includes(t.key) ? "worked" : g.hurt.includes(t.key) ? "hurt" : null)),
+  }));
 
   return {
     count: games.length,
@@ -44,7 +53,7 @@ export function summarizeGames(games: DeckGame[]): GameSummary {
 function tally(map: Map<GameAxisKey, AxisTally>, key: GameAxisKey): AxisTally {
   const existing = map.get(key);
   if (existing) return existing;
-  const created = { key, worked: 0, hurt: 0, net: 0 };
+  const created = { key, worked: 0, hurt: 0, recent: [], net: 0 };
   map.set(key, created);
   return created;
 }

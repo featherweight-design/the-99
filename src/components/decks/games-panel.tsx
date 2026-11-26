@@ -6,20 +6,19 @@
 import { useEffect, useRef, useState } from "react";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { GAME_PARAM, LANDING_RING_MS } from "../../lib/games/landing";
-import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
+import type { DeckGame, GameSummary } from "../../lib/decks/games";
 import type { Headline } from "../../lib/decks/game-headline";
 import { gameHistoryCopy } from "../../lib/copy/game-history";
 import { formatPlayed } from "../../lib/decks/format";
 import { groupByMonth, MonthBox, recordOf, SummaryBox, type SummaryCell } from "./game-boxes";
 import { spanText } from "./lineup/recency-card";
 import { useZone } from "../zone-context";
-import { GameAxisCell } from "./game-axis-cell";
+import { GameTiles } from "./game-tiles";
 import { GameHistoryRow } from "./game-history-row";
 import { GameLogForm, type GameLogFormProps, type GameResult } from "./game-log-form";
 import { GameMatchups } from "./game-matchups";
 import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
-import { deckTuningGamesCopy } from "../../lib/copy/deck-tuning-games";
-import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
+import { gameLogCopy } from "../../lib/copy/game-log";
 
 export interface GamesPanelProps {
   deckId: string;
@@ -69,9 +68,6 @@ function recordSaid(record: GameRecord): string {
 
 const recordKey = (record: GameRecord) => `${record.wins}-${record.losses}-${record.draws}`;
 
-const BUCKET_HEADING = "font-mono uppercase text-[10px] tracking-[0.14em]";
-const CELL_STRIP = "flex flex-col md:flex-row md:flex-wrap gap-[6px] md:gap-[12px]";
-
 // The sub-line's record figure and denominator carry their own ink, but the
 // sentence around them is one string from the copy module. Splitting on the two
 // substrings keeps the wording there rather than reassembling it here.
@@ -100,118 +96,6 @@ function subFragments(
   }
   if (cursor < text.length) out.push({ text: text.slice(cursor), ink: null });
   return out;
-}
-
-function Bucket({
-  heading,
-  gloss,
-  colour,
-  tallies,
-  gameCount,
-  bucket,
-  first,
-}: {
-  heading: string;
-  gloss: string;
-  colour: string;
-  tallies: AxisTally[];
-  gameCount: number;
-  bucket: "fix" | "keep";
-  /** The first bucket drawn carries no top margin — the panel's padding does. */
-  first: boolean;
-}) {
-  if (tallies.length === 0) return null;
-  return (
-    <section className={first ? "" : "mt-[15px] md:mt-[20px]"}>
-      <div className="md:flex md:items-baseline md:gap-[9px] mb-[9px] md:mb-[11px]">
-        {/* Below PATTERN_MIN the heading is named but neutral — see LOW-N-summary. */}
-        <h4 className={BUCKET_HEADING + (gameCount >= PATTERN_MIN ? " " + colour : " text-fg-faint")}>
-          {heading}
-        </h4>
-        <span className="hidden md:inline font-mono text-[10px] text-fg-locked">{gloss}</span>
-      </div>
-      <div className={CELL_STRIP}>
-        {tallies.map((t) => (
-          <GameAxisCell key={t.key} tally={t} gameCount={gameCount} bucket={bucket} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// One clause per mixed axis, joined into the single sentence the copy module
-// closes with. Each clause carries its own two counts, so a run of three mixed
-// axes still reads as three separate readings rather than one blurred one.
-function mixedSentence(mixed: AxisTally[]): string {
-  const clauses = mixed
-    .map((t) =>
-      gameLogCopy.buckets.mixedClause(axisCopy[t.key].label, String(t.worked), String(t.hurt)),
-    )
-    .join(" ");
-  return gameLogCopy.buckets.mixedLine(clauses);
-}
-
-/**
- * The aggregate readings — the Fix and Keep buckets, and the Mixed line under
- * them.
- *
- * Extracted from the panel's own render so `/about` can draw it. It takes the
- * summary and nothing else, which is what made the extraction safe: the panel
- * around it holds a deck id, a form, announcements and a history, and none of
- * them reach in here.
- */
-export function GameFindings({ summary }: { summary: GameSummary }) {
-  return (
-    <>
-    {/* Case 4 of the ladder — games logged, no axis ever marked — draws no
-        aggregate at all. The headline has already said everything there is. */}
-    {summary.axes.length > 0 && (
-      <div className="mt-[18px] md:mt-[24px] rounded-[10px] md:rounded-[11px] px-[14px] py-[13px] md:px-[18px] md:py-[16px] bg-surface-sunken border border-border">
-        {summary.count === 1 ? (
-          <section>
-            <h4 className={BUCKET_HEADING + " text-fg-faint mb-[10px] md:mb-[12px]"}>
-              {gameLogCopy.buckets.oneGameHeading}
-            </h4>
-            <div className={CELL_STRIP}>
-              {summary.axes.map((t) => (
-                <GameAxisCell key={t.key} tally={t} gameCount={summary.count} />
-              ))}
-            </div>
-          </section>
-        ) : (
-          <>
-            <Bucket
-              heading={gameLogCopy.buckets.fix}
-              gloss={gameLogCopy.buckets.fixNote}
-              colour="text-warning"
-              tallies={summary.fix}
-              gameCount={summary.count}
-              bucket="fix"
-              first
-            />
-            <Bucket
-              heading={gameLogCopy.buckets.keep}
-              gloss={gameLogCopy.buckets.keepNote}
-              colour="text-success"
-              tallies={summary.keep}
-              gameCount={summary.count}
-              bucket="keep"
-              first={summary.fix.length === 0}
-            />
-          </>
-        )}
-        {summary.mixed.length > 0 && (
-          <div className="md:flex md:flex-wrap md:items-baseline md:gap-[10px] mt-[14px] md:mt-[18px] pt-[12px] md:pt-[14px] border-t border-border">
-            <span className={BUCKET_HEADING + " text-fg-faint"}>{gameLogCopy.buckets.mixed}</span>{" "}
-            <span className="font-mono text-[10.5px] md:text-[11px] text-fg-muted">
-              {mixedSentence(summary.mixed)}
-            </span>
-          </div>
-        )}
-      </div>
-    )}
-    </>
-  );
 }
 
 /**
@@ -387,19 +271,7 @@ export function GamesPanel({ deckId, deck, games, summary, tuned = false, onOpen
         {announcement}
       </span>
 
-      <GameFindings summary={summary} />
-
-      {/* The pointer to what reads these games (addendum r1, C1/C2): only over a reading, and
-          only with a game to read. The second half needs no clause here: a deck with no game
-          returns the empty state above, before this point. */}
-      {tuned && onOpenTuning ? (
-        <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
-          {deckTuningGamesCopy.gamesLine.lead}{" "}
-          <button type="button" onClick={onOpenTuning} className="font-semibold text-[color:var(--accent-text)] hover:underline">
-            {deckTuningGamesCopy.gamesLine.link}
-          </button>
-        </p>
-      ) : null}
+      <GameTiles summary={summary} tuned={tuned} onOpenTuning={onOpenTuning} />
 
       {gameOpponents && <GameMatchups matchups={gameOpponents.matchups} />}
 

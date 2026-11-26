@@ -171,25 +171,28 @@ export const gameLogCopy = {
     recordLongOne: (record: string) => `${record} across 1 game`,
   },
 
-  // ── The aggregate panel (§8.2) ────────────────────────────────────────
-  buckets: {
-    fix: 'Fix',
-    // The gloss says what the bucket MEANS, so the heading does not have to be
-    // an instruction.
-    fixNote: 'marked against you more often than for you',
-    keep: 'Keep',
-    keepNote: 'marked for you more often than against',
-    // §8.2 — shown, always, as one line under a rule. Never a third group.
-    mixed: 'Mixed',
-    // One clause per mixed axis, and the sentence they are joined into. Split
-    // this way so a clause's whole wording lives here, rather than half here and
-    // half in whichever component does the joining.
-    mixedClause: (axis: string, up: string, down: string) =>
-      `${axis}: ${up} up, ${down} down.`,
-    mixedLine: (clauses: string) => `${clauses} Cut both ways so far.`,
-
-    // N = 1 only. A true title for a panel that is not a finding.
-    oneGameHeading: 'What that one game said',
+  // ── How it's playing: the tiles (DRAFT, for /copy-review) ──────────────
+  tiles: {
+    title: "How it\u2019s playing",
+    // The lead's second line. The denominator is in the sentence.
+    leadHurt: (hurt: string, count: string) => `Marked against you in ${hurt} of ${count} games.`,
+    leadHurtRecent: (hurt: string, count: string, recent: string, last: string) =>
+      `Marked against you in ${hurt} of ${count} games, and in ${recent} of the last ${last}.`,
+    leadHelp: (worked: string, count: string) => `Marked for you in ${worked} of ${count} games.`,
+    leadHelpRecent: (worked: string, count: string, recent: string, last: string) =>
+      `Marked for you in ${worked} of ${count} games, and in ${recent} of the last ${last}.`,
+    hurting: "Hurting",
+    helping: "Helping",
+    both: "Both ways",
+    // The count under a tile's dots. A both-ways tile reads `cell.sub`.
+    down: (n: string, count: string) => `down ${n} of ${count}`,
+    up: (n: string, count: string) => `up ${n} of ${count}`,
+    showMore: (n: string) => `Show ${n} more`,
+    showFewer: "Show fewer",
+    keyHelped: "helped",
+    keyHurt: "hurt",
+    keyNone: "not marked",
+    keyNote: "last 10 games, oldest first",
   },
 
   // ── The axis cell ─────────────────────────────────────────────────────
