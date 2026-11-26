@@ -3615,7 +3615,7 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
 
 ## probe:strategy-focus
 
-A deck's strategy focus is picked from the strategy block's legend on Analysis and cleared by Keep it balanced, in a real
+A deck's strategy focus is picked from the strategy block's legend on the Tuning landing and cleared by Clear focus, in a real
 browser at 390 and 1300, and each press survives a reload: the write landed, not only the optimistic draw. Needs
 `SF_DECK` naming an analyzed deck of the signed-in account
 with a strategy. It WRITES that deck's `strategy_focus` and puts back what it found in a `finally`, verified. It refuses

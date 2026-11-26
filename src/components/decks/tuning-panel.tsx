@@ -40,8 +40,8 @@ import { SuggestedChangesRun, type RunFigures, type SuggestionSetActions } from 
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
-import { useOpenHistory, useOpenRun, useReviewRun } from "./review-run";
-import { clampCount, DriftLine, IntakeReads, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
+import { useOpenHistory, useOpenLanding, useOpenRun, useReviewRun } from "./review-run";
+import { clampCount, DriftLine, IntakeFocusLine, IntakeReads, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { localDay } from "../../lib/copy/credits";
 import { bracketCard, noticedChips, pickIndex, usualFor, type BracketPick, type NoticedFacts } from "../../lib/tuning/v2/intake";
@@ -165,6 +165,8 @@ export type TuningFacts = {
   /** Moves each time the shell's focus write settles (`useHeldPick`'s `revision`), even onto the value it already
    *  held; the panel re-reads its gate on it. Absent, the panel follows `focus` alone. */
   focusRevision?: number;
+  /** How many cards the deck holds of the focus, for the intake's FOCUS line; absent or null draws no count. */
+  focusCopies?: number | null;
   /** The bracket the player declared for the deck (`useDeclaration`); absent or null with none. */
   declared?: Bracket | null;
 };
@@ -332,6 +334,8 @@ export function TuningPanel({
   const openRun = useOpenRun();
   // History, for the intake foot's `Last run Oct 26 · History ›`. Null outside the Tuning hub.
   const openHistory = useOpenHistory();
+  // The Tuning landing, for the FOCUS line's `Change ›` (the Strategy box is where the pick is made). Null outside the hub.
+  const openLanding = useOpenLanding();
   // The absent description row's own "Describing in place" editor (STATES §3 state 2).
   const [describing, setDescribing] = useState(false);
   const [descDraft, setDescDraft] = useState("");
@@ -1521,6 +1525,7 @@ export function TuningPanel({
           box as step 3. Hidden while reading, as the two it replaces are. */}
       {reading || !v2 || v2RunView ? null : (
         <div className="mt-[14px] md:mt-[16px]">
+          {facts.focus && openLanding ? <IntakeFocusLine focus={facts.focus} copies={facts.focusCopies ?? null} onChange={openLanding} /> : null}
           <SuggestedChangesIntake
             count={count}
             onCount={(n) => changeIntake({ count: n })}

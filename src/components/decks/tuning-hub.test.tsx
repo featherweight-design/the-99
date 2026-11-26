@@ -64,6 +64,21 @@ describe("TuningHub landing", () => {
     expect(tile("cuts").getAttribute("aria-label")).toBe(`${copy.tools.cuts.name}, ${copy.tools.cuts.over(6)}`);
   });
 
+  it("draws the strategy over a bare Tools head that counts the tiles, and hands it the way into Suggested changes", async () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} strategy={(openSuggested) => <button type="button" onClick={openSuggested}>strategy-slot</button>} />);
+    await waitFor(() => expect(read).toHaveBeenCalledWith("d"));
+    const group = screen.getByRole("group", { name: new RegExp(copy.toolsHead) });
+    const headId = group.getAttribute("aria-labelledby") ?? "";
+    const head = document.getElementById(headId)?.textContent ?? "";
+    expect(head).toContain(copy.toolsHead);
+    expect(head.replace(copy.toolsHead, "")).toMatch(/2/);
+    const slot = screen.getByText("strategy-slot");
+    expect(group.contains(slot)).toBe(false);
+    expect(slot.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByText("strategy-slot"));
+    await waitFor(() => expect(document.querySelector('[data-tuning-tool="suggested"]')).toBeTruthy());
+  });
+
   it("keeps Proposed cuts present and inert at 100: not a button, its reason as the purpose line", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
     expect(tile("cuts").tagName).toBe("DIV");
@@ -189,8 +204,8 @@ describe("TuningHub opening a tool", () => {
   // back; a tab press remounts the panel so the new tool arrives gently too.
   it("draws the opened tool, and the tiles it returns to, on the shared gentle motion", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
-    const grid = tile("cuts").parentElement!;
-    expect(grid.className.split(/\s+/)).toContain("anim-gentle-in");
+    // The landing's wrapper carries the motion: the Strategy box and the Tools group sit inside it, over the tile grid.
+    expect(tile("cuts").closest(".anim-gentle-in")).not.toBeNull();
     fireEvent.click(tile("cuts"));
     await screen.findByRole("heading", { name: copy.tools.cuts.name });
     const panel = () => document.getElementById("tuning-tool-panel")!;

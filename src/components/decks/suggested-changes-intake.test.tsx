@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { bracketCard, noticedChips, type NoticedChip } from "../../lib/tuning/v2/intake";
 import type { Bracket } from "../../lib/profile/types";
-import { clampCount, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
+import { strategyFocusCopy } from "../../lib/copy/strategy-focus";
+import { clampCount, IntakeFocusLine, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }));
 
@@ -160,5 +161,17 @@ describe("SameRequestConfirm: what a new run costs (2 credits for more than 10 c
     const { container, unmount } = render(<SameRequestConfirm at={at} count={11} onAgain={() => {}} onOpen={null} />);
     expect(container.textContent).toContain("A new run uses 2 credits");
     unmount();
+  });
+});
+
+describe("IntakeFocusLine", () => {
+  it("names the focus with its card count, and Change goes back to the Strategy box", () => {
+    const onChange = vi.fn();
+    render(<IntakeFocusLine focus="tokens" copies={11} onChange={onChange} />);
+    const line = document.querySelector("[data-sc-focus-line]")!;
+    expect(line.textContent).toContain(strategyFocusCopy.intakeRow.label);
+    expect(line.textContent).toContain(`11 ${strategyFocusCopy.cards(11)}`);
+    fireEvent.click(screen.getByRole("button", { name: strategyFocusCopy.intakeRow.change }));
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

@@ -25,18 +25,30 @@ describe("StrategyBlock", () => {
     const rows = within(group()).getAllByRole("radio");
     expect(rows.map((r) => r.textContent)).toEqual(["Allies22 cards", "Spells matter14 cards", "Tokens11 cards"]);
     expect(rows.every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
-    expect(screen.getByText(/No focus yet/)).toBeTruthy();
+    expect(screen.getByText(strategyFocusCopy.noFocusClause)).toBeTruthy();
+    expect(screen.getByText(strategyFocusCopy.footNone)).toBeTruthy();
     expect(document.querySelectorAll('[data-centre="empty"]').length).toBeGreaterThan(0);
   });
 
-  it("picks a focus by its legend row, and Keep it balanced clears it", () => {
+  it("picks a focus by its legend row, and Clear focus clears it", () => {
     const { group, onPick } = draw(ok(), "tokens");
     expect(within(group()).getByRole("radio", { name: /Tokens/ }).getAttribute("aria-checked")).toBe("true");
     expect(document.querySelectorAll('[data-centre="medallion"]').length).toBeGreaterThan(0);
     fireEvent.click(within(group()).getByRole("radio", { name: /Allies/ }));
     expect(onPick).toHaveBeenLastCalledWith("typal:Ally");
-    fireEvent.click(screen.getByRole("button", { name: strategyFocusCopy.keepBalanced }));
+    fireEvent.click(screen.getByRole("button", { name: strategyFocusCopy.clearFocus }));
     expect(onPick).toHaveBeenLastCalledWith(null);
+  });
+
+  it("names the focus in the band and the foot, and opens Suggested changes from the foot when none is picked", () => {
+    const onOpen = vi.fn();
+    const { rerender } = render(<StrategyBlock read={ok()} focus={null} refused={false} onPick={vi.fn()} onOpenSuggested={onOpen} />);
+    fireEvent.click(screen.getByRole("button", { name: strategyFocusCopy.openSuggested }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(strategyFocusCopy.themes(3))).toBeTruthy();
+    rerender(<StrategyBlock read={ok()} focus="tokens" refused={false} onPick={vi.fn()} onOpenSuggested={onOpen} />);
+    expect(screen.getByText(strategyFocusCopy.footFocus("Tokens"))).toBeTruthy();
+    expect(screen.queryByRole("button", { name: strategyFocusCopy.openSuggested })).toBeNull();
   });
 
   it("counts pending changes since the last commit, and grows the focus arc", () => {
@@ -67,7 +79,7 @@ describe("StrategyBlock", () => {
     expect(screen.getByText(strategyFocusCopy.none.lead)).toBeTruthy();
     expect(document.querySelector('[data-strategy-empty="none"]')).toBeTruthy();
     expect(screen.queryByRole("radiogroup")).toBeNull();
-    expect(screen.queryByText(/No focus yet/)).toBeNull();
+    expect(screen.queryByText(strategyFocusCopy.noFocusClause)).toBeNull();
   });
 
   it("names the count's noun by the figure drawn first", () => {

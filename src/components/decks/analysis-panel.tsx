@@ -49,7 +49,6 @@ export function AnalysisPanel({
   art = EMPTY_ART,
   locked = NO_LOCKS,
   legality,
-  strategy,
   opening = "off",
   overview,
   hold = null,
@@ -85,8 +84,6 @@ export function AnalysisPanel({
    * reads them, to list a locked candidate last; they never enter the stored profile.
    */
   locked?: ReadonlySet<string>;
-  /** The deck's strategy block: drawn last in the reading, above Tuning, and only over one. */
-  strategy?: ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -191,7 +188,6 @@ export function AnalysisPanel({
             onStats={onStats}
             compact={compact}
           />
-          {strategy}
         </div>
       ) : null}
       {!held || behind ? (hold || state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (

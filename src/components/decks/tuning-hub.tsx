@@ -16,7 +16,8 @@ import { reveal } from "../../lib/ui/reveal";
 import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
 import { historyPress, type HistoryRow, type HistoryTool } from "../../lib/tuning/history";
-import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun, type ReviewRun } from "./review-run";
+import { BandTitle } from "./deck-box";
+import { OpenHistoryProvider, OpenLandingProvider, OpenRunProvider, ReviewRunProvider, type OpenRun, type ReviewRun } from "./review-run";
 import { historyDate, summaryText, TuningHistory, v2RunningWords } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 import { useTarget } from "../discovery/targets-provider";
@@ -174,6 +175,7 @@ export function TuningHub({
   drawn,
   request,
   onRequestAnswered,
+  strategy,
 }: {
   deckId: string;
   tools: HubToolSpec[];
@@ -184,6 +186,8 @@ export function TuningHub({
   /** Told when a request has been answered, so its owner can drop it: the hub remounts on every
    *  visit to the tab, and a request still held then would reopen the tool over the landing. */
   onRequestAnswered?: (nonce: number) => void;
+  /** The Strategy box drawn above the tiles on the landing; it is handed the press that opens Suggested changes. */
+  strategy?: (openSuggested: () => void) => ReactNode;
 }) {
   // What is open, and how it was opened: a tile or a shortcut moves focus to the tool's heading,
   // a shortcut also brings the Tuning heading to the top, and a tab keeps focus on the tab row so
@@ -404,6 +408,7 @@ export function TuningHub({
   const openedTool = openTool;
   const otherToolsRef = useRef<HTMLDivElement>(null);
   const otherToolsLabelId = useId();
+  const toolsHeadId = useId();
   useLayoutEffect(() => {
     const panel = toolRef.current;
     const section = sectionRef.current;
@@ -476,6 +481,7 @@ export function TuningHub({
   }, []);
   // A tool's own way to History (Suggested changes v2's footer link): the History tab, as its tab press opens it.
   const openHistory = useCallback(() => open("history", { focus: true, scroll: false }), [open]);
+  const openLanding = useCallback(() => open(null, { focus: true, scroll: true }), [open]);
   const backToHistory = () => {
     const from = review?.row.id ?? null;
     setReview(null);
@@ -613,7 +619,9 @@ export function TuningHub({
                     ...(reviewing.v2 ? { past: { at: reviewing.row.at, tier: reviewing.row.tier, back: backToHistory } } : {}),
                   } : null}>
                     <OpenRunProvider value={openRun}>
-                      <OpenHistoryProvider value={openHistory}>{opened.panel}</OpenHistoryProvider>
+                      <OpenHistoryProvider value={openHistory}>
+                        <OpenLandingProvider value={openLanding}>{opened.panel}</OpenLandingProvider>
+                      </OpenHistoryProvider>
                     </OpenRunProvider>
                   </ReviewRunProvider>
                 </Fragment>
@@ -630,11 +638,18 @@ export function TuningHub({
           ) : null}
         </>
       ) : (
-        <div className="anim-gentle-in grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
+        <div className="anim-gentle-in flex flex-col gap-[12px] md:gap-[14px]">
+          {strategy?.(() => open("suggested", { focus: true, scroll: true }))}
+          <div role="group" aria-labelledby={toolsHeadId} className="flex flex-col gap-[10px]">
+            {/* The bare head over the tiles: a diamond, the word and the count, with no box (R2-Tuning). */}
+            <h3 id={toolsHeadId} className="m-0 mt-[10px] flex items-center px-[2px] md:mt-[14px]"><BandTitle title={copy.toolsHead} count={String(views.length)} /></h3>
+            <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
           {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
               bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11), smoothly unless the
               reader asks for reduced motion (`reveal`). */}
           {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
+            </div>
+          </div>
         </div>
       )}
     </section>

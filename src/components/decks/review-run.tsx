@@ -60,3 +60,12 @@ export const OpenHistoryProvider = OpenHistoryContext.Provider;
 export function useOpenHistory(): (() => void) | null {
   return useContext(OpenHistoryContext);
 }
+
+/** The hub's way back to its landing, for the intake's `Change ›` on the FOCUS line. Null outside the hub. */
+const OpenLandingContext = createContext<(() => void) | null>(null);
+
+export const OpenLandingProvider = OpenLandingContext.Provider;
+
+export function useOpenLanding(): (() => void) | null {
+  return useContext(OpenLandingContext);
+}

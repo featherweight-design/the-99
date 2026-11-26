@@ -13,6 +13,8 @@ export const tuningHubCopy = {
   allTools: "All tools",
   /** Engineering addition (Small items 7, item 4): the label over the tile row that fills a short tool's held space. Owed to /copy-review. */
   otherTools: "Other tools",
+  /** The bare head over the landing's tiles (deck refresh R2-Tuning). */
+  toolsHead: "Tools",
   back: "‹ Tuning",
   /** The phone's header beside the open tool's mark. Engineering: counts the tools this
    *  deployment draws, so a hub with two tools says `1 of 2`. */

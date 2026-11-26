@@ -47,7 +47,7 @@ same in the average as in the deck it is compared with.
 
 ## The focus
 
-- Stored on `decks.strategy_focus` (null is no focus, "Keep it balanced") and copied to `deck_versions.strategy_focus` at
+- Stored on `decks.strategy_focus` (null is no focus, "Clear focus") and copied to `deck_versions.strategy_focus` at
   commit, as the bracket declaration is. Values are a label theme, a fixed axis or `typal:<Type>`; `parseStrategyKey`
   (`focus.ts`) is the one check, and a stored key it no longer names reads as no focus.
 - `setStrategyFocus` (`src/app/decks/strategy-actions.ts`) is the one writer: free, switch-checked, any named strategy
@@ -66,10 +66,10 @@ same in the average as in the deck it is compared with.
   handoff's drawings; the rest are drawn to match (24 grid, 1.6 stroke, round caps). A new theme owes a glyph:
   `strategy-icon.test.tsx` fails until it has one.
 
-## The block on Analysis
+## The block on Tuning
 
-`StrategyBlock` (`src/components/decks/strategy-block.tsx`) draws last in the reading, above Tuning, and only over a
-reading (`AnalysisPanel`'s `strategy` slot); the page reads `loadDeckStrategy` per request, uncached. The ring's geometry
+`StrategyBlock` (`src/components/decks/strategy-block.tsx`) draws at the head of the Tuning landing (`TuningHub`'s `strategy` render prop), above the Tools head, and only over a
+reading; the page reads `loadDeckStrategy` per request, uncached. The ring's geometry
 is pure in `strategy-ring.ts` (arcs from 12 o'clock by live count, the focus pulled out, its pending growth split off;
 other strategies' changes are said by the legend alone). The shell holds the focus (`useStrategyFocus`, over
 `useHeldPick`, the declaration's ordering rules), so Suggested changes can read the same pick (PR 4). Rank colours derive per

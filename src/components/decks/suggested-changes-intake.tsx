@@ -11,6 +11,8 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { localDay } from "../../lib/copy/credits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { strategyFocusCopy, strategyName } from "../../lib/copy/strategy-focus";
+import type { StrategyKey } from "../../lib/strategy/score";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { plainText } from "../../lib/decks/notes-body";
 import { countCharacters } from "../../lib/text/count-characters";
@@ -286,6 +288,29 @@ export function SameRequestConfirm({ at, count, onAgain, onOpen, againOff = fals
           </button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The deck's picked focus as one line over the intake (deck refresh R2-Focus): FOCUS, its name, how many cards the deck
+ * holds of it, and the way back to the Strategy box where it is changed.
+ */
+export function IntakeFocusLine({ focus, copies, onChange }: { focus: StrategyKey; copies: number | null; onChange: () => void }) {
+  return (
+    <div
+      data-sc-focus-line=""
+      role="group"
+      aria-label={strategyFocusCopy.intakeRow.label}
+      className="mb-[14px] flex min-h-[44px] items-center gap-[10px] rounded-[10px] px-[14px] py-[8px] md:mb-[16px]"
+      style={{ background: "var(--surface-rail)", border: "1px solid var(--border)" }}
+    >
+      <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{strategyFocusCopy.intakeRow.label}</span>
+      <span className="min-w-0 truncate text-[13px] font-semibold" style={{ color: "var(--fg)" }}>{strategyName(focus)}</span>
+      {copies !== null ? (
+        <span className="whitespace-nowrap font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}>{copies} {strategyFocusCopy.cards(copies)}</span>
+      ) : null}
+      <button type="button" onClick={onChange} className={`ml-auto whitespace-nowrap font-mono text-[11.5px] ${LINK}`}>{strategyFocusCopy.intakeRow.change}</button>
     </div>
   );
 }
