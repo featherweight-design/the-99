@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import { exportLinkOutCopy, exportShoppingCopy, ownedStateCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import type { Store } from "../../lib/stores/rows";
 import { StoreProvider } from "../stores/store-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import type { ExportShoppingCard } from "../../lib/decks/export-data";
 import { ExportDialog } from "./export-dialog";
 
@@ -31,6 +32,7 @@ function shoppingCard(name: string, quantity: number, owned: boolean): ExportSho
 function openShoppingTab(store: Store = "manapool") {
   render(
     <StoreProvider store={store}>
+    <CardDetailProvider>
     <ExportDialog
       deckName="Kykar, Wind's Fury"
       commanderName="Kykar, Wind's Fury"
@@ -40,6 +42,7 @@ function openShoppingTab(store: Store = "manapool") {
       open
       onClose={vi.fn()}
     />
+    </CardDetailProvider>
     </StoreProvider>,
   );
   // Both the mobile and the desktop subtree mount; the tab is switched on the
