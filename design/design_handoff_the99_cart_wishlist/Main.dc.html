@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cart on your wishlist · R1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#e8a25b}a:hover{color:#f2bd85}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1180px; box-sizing: border-box; padding: 64px 72px; background: #161412; color: #e9e3d8; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; letter-spacing: .12em; color: #e8a25b">THE 99 · ACCOUNT 2 · R1c · 2026-11-27</p>
+<h1 style="margin: 0; font-size: 44px; font-weight: 700">Cart on your wishlist</h1>
+<p style="margin: 0; font-size: 18px; line-height: 1.55; color: #c9c1b3; max-width: 1150px">An opt-in switch puts the cards your decks need onto your wishlist and keeps them in step. Friends already read your wishlist, so their "You have it", Offer and trade matches pick these cards up with no new friend-side UI. You see where each card came from; friends see one list.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 14px; font-size: 15.5px; line-height: 1.55; color: #d9d2c4">
+<h2 style="margin: 0; font-size: 20px; color: #e9e3d8">Calls</h2>
+<p style="margin: 0"><b>1. One switch, in Settings › Wishlist</b> (new section after Spares): "Keep my shopping on my wishlist" puts Shopping's cards on your wishlist. Under it, "From 22 decks" opens the shipped searchable deck picker (the one Kept for this deck uses), so it stays one line at 5 decks or 50. Every deck starts in and new decks join by themselves. A deck's ⋯ menu has the same choice, "Keep off my wishlist". Board S (R1c).</p>
+<p style="margin: 0"><b>2. Offered once on the Wishlist tab</b> while the switch is off and your decks need cards: the collected strip's own shell, "Add them" turns the switch on, ✕ hides the offer for good. Board O.</p>
+<p style="margin: 0"><b>3. Your tab is split by source</b>: an "Added by you" box first, then one box per deck, "For Saltmarsh Reclamation · 4" with Open deck ›. The boxes are the deck tabs' shipped DeckBox; the tiles are the shipped Wishlist tiles. A card two decks need sits in both boxes (Sai). Board W.</p>
+<p style="margin: 0"><b>4. Deck cards follow their decks</b>: each wants what you own plus what the decks still need, so the shipped collected sweep removes it when you buy it (I got it, Back from Mana Pool). Cutting it from the deck, or unticking the deck, removes it too. Lines you added are never touched.</p>
+<p style="margin: 0"><b>5. A deck card becomes yours when you change it</b>: moving its stepper in card details moves it to Added by you. Remove keeps it off until you add it back yourself.</p>
+<p style="margin: 0"><b>6. Friends see one list</b>, exactly as shipped: no boxes, no deck names, "wants N". Board F.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; font-size: 15.5px; line-height: 1.55; color: #d9d2c4">
+<h2 style="margin: 0; font-size: 20px; color: #e9e3d8">Keeping it quiet</h2>
+<p style="margin: 0"><b>Q1. Trade matches roll up per friend per day.</b> "Colin has spares of 4 cards you want", the first cards fanned in the picture, the press to Colin's spares. One match stays the shipped row. Board N.</p>
+<p style="margin: 0"><b>Q2. Turning the switch on is silent.</b> The matches it finds land as one rolled row per friend, never a push. The cart already shows them with the spare mark.</p>
+<p style="margin: 0"><b>Q3. At most one trade-match push a day</b>, using the shipped words ("Colin has 4 spares you want", or "7 spares you want / From Colin, Peter and Max."), inside the shipped overnight hold.</p>
+<p style="margin: 0"><b>Q4. Deck cards never start price-drop notices.</b> The cart already shows their prices; only Added by you lines keep a price baseline.</p>
+<p style="margin: 0"><b>Q5. Friends are never notified</b> when your wishlist grows. They find it through "You have it" and the Friends chip, as now.</p>
+<h2 style="margin: 12px 0 0; font-size: 20px; color: #e9e3d8">Decided (approved with the recommendations)</h2>
+<p style="margin: 0"><b>A.</b> Q1 and Q3 also change how matches from your own picks arrive. I'd apply them to every trade match, so the feed reads one way.</p>
+<p style="margin: 0"><b>B.</b> A deck tile reads the shipped "have 0 of 2". It's the copies wanted in all, across your decks. I'd keep it, since a per-deck count would disagree with the box beside it.</p>
+<p style="margin: 0"><b>C.</b> Brews (drafts) count, because the cart counts them. Untick a brew in Settings to leave it out.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
