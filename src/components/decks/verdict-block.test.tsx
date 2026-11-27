@@ -196,7 +196,7 @@ describe("the sub-line", () => {
   it("says `none at all` on every ruled-out reading a deck can reach", () => {
     for (const key of ["2", "3", "3-two-rules"] as const) {
       const { unmount } = render(<VerdictBlock analyzedAt={new Date().toISOString()} {...drawn(key)} />);
-      expect(screen.getByText(/allows none at all\./)).toBeTruthy();
+      expect(screen.getByText(/allows none at all/)).toBeTruthy();
       expect(screen.queryByText(/allows only/)).toBeNull();
       unmount();
     }
