@@ -74,8 +74,9 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useGotIt } from "./got-it";
 import { reveal } from "../../lib/ui/reveal";
 
-/** The keys' box at the foot of a list (R3-YourDeck): a hairline box that vanishes when no key draws. */
-const KEYS_FOOT = "mt-[14px] flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
+/** The keys' box at the TOP of a list (Hugh 2026-11-27: a long page's key is met before its first row; only a
+ *  small in-view section keeps its key at the foot). A hairline box that vanishes when no key draws. */
+const KEYS_HEAD = "flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -488,6 +489,7 @@ export function Decklist({
   // with no key at all holds the slot too, blank outside the mode: that is the one layout where
   // the rule costs a line, and a list that jumps under the press is the defect being fixed.
   // All only: Shopping has no Lock cards mode, so it keeps its own key and empty-state sizing.
+  // The line is drawn in the keys box that OPENS each list (`KEYS_HEAD`): a long page meets its key first.
   const keyLine = onLockModeChange && filter === "all" ? (
     <div className="grid">
       <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
@@ -1009,6 +1011,7 @@ export function Decklist({
             {...lockProps}
           />
           <DeckBarPanel value={filter}>
+          <div data-keys-head="" className={`${KEYS_HEAD} mx-[16px] md:mx-[26px] mt-[12px] md:mt-[14px]`}>{keyLine}</div>
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
           </div>
@@ -1044,7 +1047,6 @@ export function Decklist({
           <div className="px-[16px] pb-[4px] md:px-[26px]">
             <TokensShoppingGroup />
           </div>
-          <div data-keys-foot="" className={`${KEYS_FOOT} mx-[16px] md:mx-[26px] mb-[14px]`}>{keyLine}</div>
           </DeckBarPanel>
         </div>
       );
@@ -1112,6 +1114,11 @@ export function Decklist({
         <DeckBarPanel value={filter}>
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
+          {/* The keys open the list: the buy and over marks, then the marks the rows draw. */}
+          <div data-keys-head="" className={`${KEYS_HEAD} mb-[14px]`}>
+            <ShoppingKey shoppingCount={shoppingCount} />
+            {keyLine}
+          </div>
           {autoBanner}
 
           {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
@@ -1203,12 +1210,6 @@ export function Decklist({
           {/* The tokens joined to this deck: last, and not the deck's (they move none of the figures above). */}
           <TokensShoppingGroup />
 
-          {/* The keys close the list (R3-YourDeck): the buy and over marks, then the marks the rows draw. */}
-          <div data-keys-foot="" className={KEYS_FOOT}>
-            <ShoppingKey shoppingCount={shoppingCount} />
-            {keyLine}
-          </div>
-
           {/* Footer — above a 1px --border rule */}
           <div
             className="pt-[10px] mt-[4px] font-mono text-[10.5px]"
@@ -1270,6 +1271,8 @@ export function Decklist({
           actually draws `P` had nothing to decode it. */}
       {/* Grouped card rows */}
       <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
+        {/* The key opens the list, in its own box: met before the first row, on a page too long to scroll to a foot. */}
+        <div data-keys-head="" className={`${KEYS_HEAD} mb-[14px]`}>{keyLine}</div>
         {/* A refused sweep, keep-all or undo. Each message names its own write:
             the sweep and the keep leave the deck as it was, an undo does not. */}
         {autoError && (
@@ -1363,9 +1366,6 @@ export function Decklist({
         {/* The tokens these cards make: not the deck, after every group of it. Draws nothing without the
             provider, so the list is exactly itself wherever the switch is off. */}
         <TokensGroup />
-
-        {/* The key closes the list (R3-YourDeck), in its own box. */}
-        <div data-keys-foot="" className={KEYS_FOOT}>{keyLine}</div>
       </HoverPreviewProvider>
       </DeckBarPanel>
     </div>
