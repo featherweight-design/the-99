@@ -41,3 +41,15 @@ build, not code to apply blindly.
 - 🟡 **Help me choose results:** ◆ heads and no divider hairline. After a read, when the rest divider comes first, More
   commanders is not drawn, so two heads never stack (a test asserting both heads would change).
 - ✅ No new data, tokens or migrations.
+
+## R5 — large-page keys back at the top (approved 2026-11-27)
+
+Hugh 2026-11-27: keys sit at the foot only in small sections that fit in view; large pages (Decks, Deck details, Collections) keep the key at the top. Refresh 1 (#3375) and 7 (#3387) moved three large-page keys to the foot; R5 moves them back. Boards `R5-*.dc.html` show shipped main (6f2c90e2) beside the change, both SSR'd from the shipped components. `scratch-gen/r5/proposal.diff` is the whole source change (2 files).
+
+- 🟢 **Your deck › All and card view:** `KEYS_FOOT` becomes `KEYS_HEAD` (same box, `mb` for `mt`); it opens the list above the first group. The Lock cards swap keeps its one slot.
+- 🟢 **Shopping:** the keys box (`ShoppingKey` + mark key) opens the list, under the To buy box; the empty Shopping list's key moves to the top too.
+- 🟢 **Tuning › Consider:** the panel key `DeckBox` moves from below the last shelf to above the first.
+- 🟡 Tests that find the key at the foot (`data-keys-foot`, order assertions) change to expect it first.
+- ✅ No copy, data, tokens or migrations. Decks and Collections keys were never moved.
+
+Build prompt: `/mnt/project-files/build-prompts/deck-details-keys-top.md` (project files).
