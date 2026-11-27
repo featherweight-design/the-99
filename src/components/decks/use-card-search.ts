@@ -6,6 +6,7 @@
 // staleness rules below would drift, and the whole point of `stale` is that
 // Enter can never act on rows the user has typed past.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { searchCards, type SearchResult } from "../../app/decks/[id]/search-action";
 
@@ -147,6 +148,7 @@ export function useCardSearch({
           // user typing another character is no reason to stop saying so — a
           // guarded log would hide a wholly broken action behind fast typing.
           console.error(err);
+          captureClientError("builder.search", err);
           if (deadline !== null) clearTimeout(deadline);
           // Back to "no search has happened", never to "no results". An empty
           // list makes a claim a failed request has not earned.

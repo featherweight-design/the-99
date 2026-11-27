@@ -16,6 +16,7 @@
  *
  * Absent (null) outside a deck page, and every surface reading null draws nothing of the lock.
  */
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { setCardLocked } from "../../app/decks/actions";
@@ -120,10 +121,10 @@ export function useCardLocks({
         return copy;
       });
       void (async () => {
-        const result = await setCardLocked(forDeck, id, next).catch(() => ({
-          ok: false as const,
-          message: lockedCardsCopy.mode.refused,
-        }));
+        const result = await setCardLocked(forDeck, id, next).catch((e) => {
+          captureClientError("locks.set", e);
+          return { ok: false as const, message: lockedCardsCopy.mode.refused };
+        });
         inFlight.current.delete(key);
         setWriting(new Set(inFlight.current));
         if (!result.ok) {

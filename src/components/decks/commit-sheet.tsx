@@ -15,6 +15,7 @@
 // itself returns, not this prop: between the page's read and the click, the deck
 // can have moved.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { commitDeckVersion, type CommitResult } from "../../app/decks/actions";
@@ -339,7 +340,8 @@ export function CommitSheet({
                 let result: CommitResult;
                 try {
                   result = await commitDeckVersion(deckId, note);
-                } catch {
+                } catch (e) {
+                  captureClientError("commit.version", e);
                   // NOT `refused`, which promises the changes are still here. A
                   // throw can be the version having been written and its reply
                   // lost, and this sheet would then offer to commit a draft that

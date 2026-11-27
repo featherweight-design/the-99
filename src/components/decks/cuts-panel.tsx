@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -155,7 +156,8 @@ export function CutsPanelView({
         setLoadFailed(false);
       }
       return next;
-    } catch {
+    } catch (e) {
+      captureClientError("cuts.read", e);
       // A failed read leaves nothing trustworthy to draw: the old count or offer may describe a deck
       // the server has since changed, or hide a run that did finish. Draw the count-failed state.
       if (mine === asked.current) { setLoadFailed(true); setPanel(null); }
@@ -225,7 +227,10 @@ export function CutsPanelView({
     setRefused(null);
     setAnnounced(copy.announce.started);
     const request = deps.run(deckId, { runId }).catch(
-      (): DeckMutationResult => ({ ok: false, message: deckCutsCopy.run.refused }),
+      (e): DeckMutationResult => {
+        captureClientError("cuts.run", e);
+        return { ok: false, message: deckCutsCopy.run.refused };
+      },
     );
     const result = await request;
     // The action returns once the run is reserved; the server finishes it after the response. Read

@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
 
 import type { ApplySetActionResult } from "../../app/decks/tuning-v2-actions";
@@ -275,7 +276,7 @@ export function SuggestedChangesRun({
     // newer choice the server holds (review round 2).
     const mine = (pickRev.get(l.id) ?? 0) + 1;
     pickRev.set(l.id, mine);
-    const r = await actions.pick(l.id, !was).catch(() => ({ ok: false }));
+    const r = await actions.pick(l.id, !was).catch((e) => { captureClientError("suggested.pick", e); return { ok: false }; });
     if (!r.ok && pickRev.get(l.id) === mine) {
       setOverrides((m) => new Map(m).set(l.id, was));
       setPickError(sc.run.pickRefused);
@@ -293,7 +294,7 @@ export function SuggestedChangesRun({
     });
     const r = await actions
       .apply(runId, pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id), setId, ...(pulls.length > 0 ? [pulls] : []))
-      .catch((): ApplySetActionResult => ({ ok: false, message: deckTuningCopy.lists.applyRefused }));
+      .catch((e): ApplySetActionResult => { captureClientError("suggested.apply", e); return { ok: false, message: deckTuningCopy.lists.applyRefused }; });
     setConfirming(false);
     if (!r.ok) {
       setBusy(null);
@@ -333,7 +334,7 @@ export function SuggestedChangesRun({
     setBusy("undo");
     setUndoError(null);
     const r = await actions.undo(undoTarget)
-      .catch((): ApplySetActionResult => ({ ok: false, message: deckTuningCopy.lists.undoRefused }));
+      .catch((e): ApplySetActionResult => { captureClientError("suggested.undo", e); return { ok: false, message: deckTuningCopy.lists.undoRefused }; });
     if (!r.ok) {
       setBusy(null);
       setUndoError(r.message);

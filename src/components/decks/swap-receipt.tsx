@@ -5,6 +5,7 @@
  * `…, your free copy`, or `one copy → Rugged Prairie` under a row that keeps copies. UndoRow's shell,
  * with `Undo swap` (H2) as its action. A refused undo says so under it (F4), and the receipt stays.
  */
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { ROW_GAP } from "../ui/row-shell";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { useState } from "react";
@@ -114,7 +115,8 @@ export function SwapReceiptRow({ receipt }: { receipt: SwapReceipt }) {
       } else {
         setRefused(true);
       }
-    } catch {
+    } catch (e) {
+      captureClientError("swap.undo", e);
       setRefused(true);
     } finally {
       setBusy(false);

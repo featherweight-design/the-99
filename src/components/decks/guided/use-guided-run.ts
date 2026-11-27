@@ -4,6 +4,7 @@
 // this hook never runs anything, it reads that row every few seconds while it is going. No Overview is written for a run (Hugh,
 // 2026-11-21): the player writes it with the Overview button. A retry is one press of `startGuidedAction` with the
 // failed run's own picks.
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readGuidedStateAction, startGuidedAction } from "../../../app/decks/guided-actions";
 import type { GuidedState } from "../../../lib/guided/store";
@@ -44,7 +45,7 @@ export function useGuidedRun(deckId: string, initial: GuidedState): GuidedRun {
     const began = Date.now();
     const t = setInterval(async () => {
       if (Date.now() - began > GUIDED_WATCH_CAP_MS) { clearInterval(t); return; }
-      const next = await readGuidedStateAction(deckId).catch(() => null);
+      const next = await readGuidedStateAction(deckId).catch((e) => { captureClientError("guided.poll", e); return null; });
       if (alive.current && next && (next.id !== runId || next.state !== "running")) setRun(next);
     }, GUIDED_POLL_MS);
     return () => clearInterval(t);
@@ -57,12 +58,12 @@ export function useGuidedRun(deckId: string, initial: GuidedState): GuidedRun {
     startGuidedAction(deckId, picksOfRun(run))
       .then(async (r) => {
         // A started run is never called refused: a read that fails after `ok` is tried once more, and the run's own poll takes over.
-        const read = () => readGuidedStateAction(deckId).catch(() => null);
+        const read = () => readGuidedStateAction(deckId).catch((e) => { captureClientError("guided.read", e); return null; });
         const next = r.ok ? (await read()) ?? (await read()) : null;
         if (!alive.current) return;
         if (next) { setRun(next); } else if (!r.ok) setRefused(true);
       })
-      .catch(() => { if (alive.current) setRefused(true); })
+      .catch((e) => { captureClientError("guided.start", e); if (alive.current) setRefused(true); })
       .finally(() => { if (alive.current) setStarting(false); });
   }, [deckId, run, starting]);
 

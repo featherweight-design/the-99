@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useContext } from "react";
 
 import type { BasicQuantityOutcome } from "../../lib/decks/set-basic-quantity";
@@ -112,7 +113,8 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
           let outcome: BasicQuantityOutcome;
           try {
             outcome = await deps.save(oracleId, saved, entry.expected);
-          } catch {
+          } catch (e) {
+            captureClientError("basics.save", e);
             result = { kind: "thrown" };
             break;
           }
