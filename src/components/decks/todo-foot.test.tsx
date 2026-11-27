@@ -353,6 +353,9 @@ describe("the phone short forms", () => {
     const tokens = document.querySelector("[data-tokens-segment]")!;
     expect(short(combos)).toBe(combosCloseCopy.segmentShort(5));
     expect(short(tokens)).toBe(tokensCopy.statusLine.segmentShort(4));
+    // The full form is hidden below `md` and drawn from it: the CSS toggle itself, which jsdom cannot evaluate.
+    const full = screen.getByText(tokensCopy.statusLine.segment(4, 7));
+    expect(full).toHaveClass("hidden", "md:inline");
     expect(combos).toHaveAttribute("aria-label", combosCloseCopy.segment(5));
     expect(tokens).toHaveAttribute("aria-label", tokensCopy.statusLine.segment(4, 7));
   });

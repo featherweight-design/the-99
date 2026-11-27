@@ -157,6 +157,7 @@ async function leg(browser, size, deckA) {
     const tokensOk = phone ? /^\d+ tokens? ›$/.test(read.tokens ?? "") : /^\d+ tokens? from \d+ cards? ›$/.test(read.tokens ?? "");
     report(`${tag}: the tokens segment draws ${phone ? "the short form" : "the full wording"}`, tokensOk, `"${read.tokens}"`);
     report(`${tag}: the tokens press is named by the full sentence`, /^\d+ tokens? from \d+ cards?$/.test(read.tokensName ?? ""), `"${read.tokensName}"`);
+    report(`${tag}: the deck draws a combos segment and a version, so those legs are exercised`, read.combos !== null && read.version !== null, `combos ${read.combos !== null}, version ${read.version !== null}`);
     if (read.combos !== null) {
       report(`${tag}: the combos segment draws ${phone ? "the short form" : "the full wording"}`, phone ? /^\d+ near combos? ›$/.test(read.combos) : /^\d+ combos? one piece away ›$/.test(read.combos), `"${read.combos}"`);
       report(`${tag}: the combos press is named by the full sentence`, /^\d+ combos? one piece away$/.test(read.combosName ?? ""), `"${read.combosName}"`);
