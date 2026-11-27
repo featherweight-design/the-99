@@ -10,9 +10,16 @@ const db = vi.hoisted(() => ({
   updateRows: [] as unknown[],
   selectWhere: [] as unknown[],
   updates: [] as { set: Record<string, unknown>; where: unknown }[],
+  // `startUpgrade`'s transaction: each `execute` is recorded, and answers the lock, then the `seen` read, from `seen`.
+  executed: [] as unknown[],
+  seen: { pending: false, current: false },
 }));
 vi.mock("../../../db", () => ({
   db: {
+    transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({
+      execute: async (q: unknown) => { db.executed.push(q); return { rows: db.executed.length === 2 ? [db.seen] : [] }; },
+      insert: () => ({ values: () => ({ returning: async () => [{ id: "run-new" }] }) }),
+    }),
     select: () => {
       const b: Record<string, unknown> = {};
       b.from = () => b;
@@ -30,15 +37,16 @@ vi.mock("../../../db", () => ({
     },
   },
 }));
-vi.mock("../../model/allowance", () => ({ AllowanceSpentError: class extends Error {}, reserveModelCall: vi.fn(), settleModelCall: vi.fn() }));
+vi.mock("../../model/allowance", () => ({ AllowanceSpentError: class extends Error {}, reserveModelCall: vi.fn(async () => ({ id: "call-1" })), settleModelCall: vi.fn() }));
 vi.mock("../../tuning/run-store", () => ({ recordLate: vi.fn(), RunSupersededError: class extends Error {} }));
 
-const { markSeen, setPick } = await import("./store");
+const { markSeen, setPick, startUpgrade } = await import("./store");
+const { UPGRADE_CURRENT_MS } = await import("./constants");
 
 const RUN = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
-  db.selectRows = []; db.updateRows = []; db.selectWhere.length = 0; db.updates.length = 0;
+  db.selectRows = []; db.updateRows = []; db.selectWhere.length = 0; db.updates.length = 0; db.executed.length = 0; db.seen = { pending: false, current: false };
 });
 
 describe("markSeen (fresh start 1/4)", () => {
@@ -103,5 +111,24 @@ describe("setPick (fresh start 1/4)", () => {
     const set = render(db.updates[0].set.unpicked);
     expect(set.sql).toMatch(/"unpicked" - \$\d+::text/);
     expect(set.params).toEqual(["a-add-1"]);
+  });
+});
+
+describe("startUpgrade's repeat guard", () => {
+  const strategy = { key: "c/3/landfall", label: "Landfall", bracketTarget: 3, listFp: "fp" };
+  const now = new Date("2026-11-27T12:00:00Z");
+
+  it("counts a kept run of the same picks as current only when it finished within UPGRADE_CURRENT_MS", async () => {
+    await startUpgrade("u1", "boss.json", strategy, "m", now);
+    const seen = render(db.executed[1]);
+    expect(seen.sql).toContain("finished_at >");
+    expect(seen.params).toContainEqual(new Date(now.getTime() - UPGRADE_CURRENT_MS));
+  });
+
+  it("refuses a press that lost the race to a run that just finished, and starts a new run for an older repeat", async () => {
+    db.seen = { pending: false, current: true };
+    expect(await startUpgrade("u1", "boss.json", strategy, "m", now)).toEqual({ kind: "current" });
+    db.seen = { pending: false, current: false };
+    expect(await startUpgrade("u1", "boss.json", strategy, "m", now)).toEqual({ kind: "started", runId: "run-new", callId: "call-1" });
   });
 });

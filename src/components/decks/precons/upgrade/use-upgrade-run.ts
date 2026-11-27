@@ -100,8 +100,9 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
         return;
       }
       const next = await refresh(true);
-      if (res.reason === "short") {
-        // Under 12 held up: refunded, kept, and still startable (R2). The run is the one stored under these picks, never an older one.
+      if (res.reason === "short" || res.reason === "current") {
+        // Under 12 held up: refunded, kept, and still startable (R2). `current`: a press that lost a race to one that has since finished,
+        // so the result is already there. The run is the one stored under these picks, never an older one.
         const key = runKey(picks.commander, picks.bracket, picks.strategy);
         const kept = next?.runs.find((r) => r.status === "done" && r.strategyKey === key);
         settle(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
