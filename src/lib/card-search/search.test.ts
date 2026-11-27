@@ -29,10 +29,13 @@ describe("cardSignalsSql", () => {
   it("scopes every table it reads to the reader", () => {
     expect(sql).toMatch(/from collection_items ci\s+where ci\.user_id = \$1/);
     expect(sql).toMatch(/from decks d\s+where d\.user_id = \$2/);
-    expect(sql).toMatch(/from wishlist_items w\s+where w\.user_id = \$3/);
-    // The wishlist's "still unmet" test is the line's own `heldCopies`, tied to the line's columns (no second bound id).
-    expect(sql.replace(/\s+/g, " ")).toContain("ci.user_id = w.user_id and ci.oracle_id = w.oracle_id and (w.scryfall_id::uuid is null");
-    expect(params.slice(0, 3)).toEqual(["user_1", "user_1", "user_1"]);
+    // Both sides of the wishlist (cart on your wishlist): the hand lines and the synced lines, each the reader's own.
+    expect(sql).toMatch(/from wishlist_items hw where hw\.user_id in \(select \$3::text\)/);
+    expect(sql).toMatch(/from wishlist_synced sw where sw\.user_id in \(select \$4::text\)/);
+    // Each side's "still unmet" test is its own `heldCopies`, tied to the line's columns (no extra bound id).
+    expect(sql.replace(/\s+/g, " ")).toContain("ci.user_id = hw.user_id and ci.oracle_id = hw.oracle_id and (hw.scryfall_id::uuid is null");
+    expect(sql.replace(/\s+/g, " ")).toContain("ci.user_id = sw.user_id and ci.oracle_id = sw.oracle_id and (null::uuid is null");
+    expect(params.slice(0, 4)).toEqual(["user_1", "user_1", "user_1", "user_1"]);
   });
 
   it("correlates on the outer card by alias, and counts the commander and the partner", () => {
@@ -40,7 +43,8 @@ describe("cardSignalsSql", () => {
     expect(sql).toContain("d.commander_oracle_id = c.oracle_id");
     expect(sql).toContain("d.partner_oracle_id = c.oracle_id");
     expect(sql).toContain("dc.deck_id = d.id and dc.oracle_id = c.oracle_id");
-    expect(sql).toContain("w.oracle_id = c.oracle_id");
+    expect(sql).toContain("hw.oracle_id = c.oracle_id");
+    expect(sql).toContain("sw.oracle_id = c.oracle_id");
   });
 
   // A holding may be up to 2^31 - 1 copies, so a sum across printings can pass an int: no cast, or the read fails.
@@ -50,12 +54,15 @@ describe("cardSignalsSql", () => {
   });
 
   it("marks a wish only while it is unmet", () => {
-    expect(sql.replace(/\s+/g, " ")).toMatch(/w\.quantity > \(\s*select coalesce\(sum\(ci\.quantity\), 0\)::int from collection_items ci/);
+    // The union keeps only still-wanted lines (`lines.ts`): held below the want, on either side.
+    expect(sql).toContain("hs.owned < hs.quantity as wanted");
+    expect(sql).toContain("ss.owned < ss.quantity as wanted");
+    expect(sql).toContain("where uh.wanted or us.wanted");
   });
 
   it("asks for exactly the cards named", () => {
-    expect(sql).toMatch(/where c\.oracle_id in \(\$4::uuid, \$5::uuid\)/);
-    expect(params.slice(3)).toEqual([A, B]);
+    expect(sql).toMatch(/where c\.oracle_id in \(\$5::uuid, \$6::uuid\)/);
+    expect(params.slice(4)).toEqual([A, B]);
   });
 
   it("reads no wishlist row while the wishlist is off", () => {

@@ -1,8 +1,8 @@
 /**
  * The wishlist as one set of lines (cart on your wishlist, G1): the lines the player added by hand (`wishlist_items`)
  * and the lines their decks put there (`wishlist_synced`), one row per card. Readers of wanted lines move onto this
- * union instead of `wishlist_items` alone (card search, spares, spare offers, trade match and card details follow in
- * later PRs, before anything writes a synced line); the owner through `ownerLinesQuery` here, a friend through
+ * union instead of `wishlist_items` alone (trade match follows in the next PR; `readers.test.ts` names every other
+ * reader of `wishlist_items` and why it stays); the owner through `ownerLinesQuery` here, a friend through
  * `src/lib/social/wishlist.ts`, which supplies its own synced side (only the decks that friend can see, H1) and the
  * friendship grant.
  *
@@ -24,9 +24,13 @@ import { heldCopies } from "./held";
  */
 export type LineSide = SQL;
 
-/** Narrows a side to the cards `oracleIds` names, inside the side so the planner never builds the whole union. */
-export function oracleFilter(column: SQL, oracleIds?: readonly string[]): SQL {
+/**
+ * Narrows a side to some cards, inside the side so the planner never builds the whole union: a list of oracle ids, or
+ * one SQL value (a correlated column, as `spare-offers.ts` reads one asker's line per offer).
+ */
+export function oracleFilter(column: SQL, oracleIds?: readonly string[] | SQL): SQL {
   if (!oracleIds) return sql``;
+  if (!Array.isArray(oracleIds)) return sql` and ${column} = ${oracleIds}`;
   // An empty list matches nothing (`in ()` is not valid SQL).
   if (oracleIds.length === 0) return sql` and false`;
   return sql` and ${column} in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
@@ -36,19 +40,19 @@ export function oracleFilter(column: SQL, oracleIds?: readonly string[]): SQL {
  * The hand-added lines of the owners `owners` selects (a subquery yielding user ids), optionally only `oracleIds`.
  * `wishlist_items.created_at` is a naive UTC timestamp; it is read as UTC so it orders with the synced side's timestamptz.
  */
-export function handSide(owners: SQL, oracleIds?: readonly string[]): LineSide {
+export function handSide(owners: SQL, oracleIds?: readonly string[] | SQL): LineSide {
   return sql`select hw.user_id, hw.oracle_id, hw.scryfall_id, hw.quantity, hw.created_at at time zone 'UTC' as created_at,
       ${heldCopies(sql`hw.user_id`, sql`hw.oracle_id`, sql`hw.scryfall_id`)} as owned, null::text[] as deck_ids
     from ${wishlistItems} hw where hw.user_id in (${owners})${oracleFilter(sql`hw.oracle_id`, oracleIds)}`;
 }
 
-/** The owner's own synced lines: every deck that put the line there, whoever could see it. */
-export function ownerSyncedSide(owners: SQL): LineSide {
+/** The owner's own synced lines: every deck that put the line there, whoever could see it. Optionally only `oracleIds`. */
+export function ownerSyncedSide(owners: SQL, oracleIds?: readonly string[] | SQL): LineSide {
   return sql`select sw.user_id, sw.oracle_id, null::uuid as scryfall_id, sw.quantity, sw.created_at,
       ${heldCopies(sql`sw.user_id`, sql`sw.oracle_id`, sql`null`)} as owned,
       (select array_agg(sd.deck_id::text order by sd.deck_id) from ${wishlistSyncedDecks} sd
         where sd.user_id = sw.user_id and sd.oracle_id = sw.oracle_id) as deck_ids
-    from ${wishlistSynced} sw where sw.user_id in (${owners})`;
+    from ${wishlistSynced} sw where sw.user_id in (${owners})${oracleFilter(sql`sw.oracle_id`, oracleIds)}`;
 }
 
 /**
@@ -82,10 +86,10 @@ export type UnionRow = {
   source: LineSource; deck_ids: string[];
 };
 
-/** One owner's still-wanted lines, newest first. Apart so a test can render it. */
-export function ownerLinesQuery(ownerId: string): SQL {
+/** One owner's still-wanted lines, newest first, optionally only `oracleIds`. Apart so a test can render it. */
+export function ownerLinesQuery(ownerId: string, oracleIds?: readonly string[]): SQL {
   const owners = sql`select ${ownerId}::text`;
   return sql`select ul.oracle_id, ul.scryfall_id, ul.quantity, ul.owned, ul.added_at, ul.source, ul.deck_ids
-    from (${unionLines(handSide(owners), ownerSyncedSide(owners))}) ul
+    from (${unionLines(handSide(owners, oracleIds), ownerSyncedSide(owners, oracleIds))}) ul
     order by ul.added_at desc, ul.oracle_id`;
 }

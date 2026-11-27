@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
-import { heldCopies } from "../wishlist/held";
+import { handSide, ownerSyncedSide, unionLines } from "../wishlist/lines";
 import { isGameCardWhere } from "../cards/game-card-where";
 import { nameSearch } from "../cards/name-search";
 
@@ -89,9 +89,7 @@ export function cardSignalsSql(userId: string, oracleIds: string[], wishlist: bo
           )
       ), '{}') as decks,
       ${wishlist ? sql`exists (
-        select 1 from wishlist_items w
-        where w.user_id = ${userId} and w.oracle_id = c.oracle_id
-          and w.quantity > ${heldCopies(sql`w.user_id`, sql`w.oracle_id`, sql`w.scryfall_id`)}
+        select 1 from (${unionLines(handSide(sql`select ${userId}::text`, sql`c.oracle_id`), ownerSyncedSide(sql`select ${userId}::text`, sql`c.oracle_id`))}) wl
       )` : sql`false`} as wishlist
     from cards c
     where c.oracle_id in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})

@@ -8,7 +8,8 @@
  * The chokepoints: `applyCollectionChange` (every ledger write: an upload's Add and Sync, Add cards, an edited
  * count, a precon add, a deck imported as owned, a Revert) and `replaceCollection` (an upload's Replace). A want SET
  * at or below what is held (`setWishlistQuantity`) leaves no line either, but is not recorded here: the player made
- * that change themselves, and the strip names what was collected since they last looked.
+ * that change themselves, and the strip names what was collected since they last looked. Synced lines (cart on your
+ * wishlist) are swept by the same statement, by their own any-printing test.
  */
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
@@ -22,17 +23,35 @@ type Executor = Pick<typeof db, "execute">;
  * `wishlist_collected` (a card collected again re-dates its row). Run INSIDE the collection write's transaction,
  * after its rows are written, so the line leaves exactly when the copies arrive and a rolled-back write takes the
  * delete back with it. Answers the cards that left.
+ *
+ * Both sides of the wishlist (`lines.ts`), each by its own held test: a hand line by its printing, a synced line by
+ * any printing (its `wishlist_synced_decks` rows leave with it, by the cascade). A card is recorded once, at the larger
+ * want of the sides that left (one `on conflict` cannot touch a row twice), and a synced line that leaves while the
+ * card's hand line still stands records nothing: the card is still on the list.
  */
 export async function sweepCollectedIn(tx: Executor, userId: string): Promise<string[]> {
   const { rows } = await tx.execute<{ oracle_id: string }>(sql`
-    with gone as (
+    with gone_hand as (
       delete from wishlist_items w
       where w.user_id = ${userId}
         and w.quantity <= ${heldCopies(sql`w.user_id`, sql`w.oracle_id`, sql`w.scryfall_id`)}
       returning w.oracle_id, w.quantity
+    ), gone_synced as (
+      delete from wishlist_synced s
+      where s.user_id = ${userId}
+        and s.quantity <= ${heldCopies(sql`s.user_id`, sql`s.oracle_id`, sql`null`)}
+      returning s.oracle_id, s.quantity
+    ), gone as (
+      select gh.oracle_id, gh.quantity from gone_hand gh
+      union all
+      select gs.oracle_id, gs.quantity from gone_synced gs
+      where not exists (
+        select 1 from wishlist_items sw where sw.user_id = ${userId} and sw.oracle_id = gs.oracle_id
+          and not exists (select 1 from gone_hand gh2 where gh2.oracle_id = gs.oracle_id)
+      )
     )
     insert into wishlist_collected (user_id, oracle_id, quantity)
-    select ${userId}, g.oracle_id, g.quantity from gone g
+    select ${userId}, g.oracle_id, max(g.quantity) from gone g group by g.oracle_id
     on conflict (user_id, oracle_id) do update set quantity = excluded.quantity, collected_at = now()
     returning oracle_id
   `);

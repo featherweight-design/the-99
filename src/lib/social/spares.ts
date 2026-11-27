@@ -19,7 +19,8 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, collectionItems, friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps, wishlistItems } from "../../db/schema";
+import { ownerLinesQuery } from "../wishlist/lines";
+import { cards, collectionItems, friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { resolveFriend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
@@ -353,7 +354,8 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
   const [info, wanted] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, typeLine: cards.typeLine, colorIdentity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, ids)),
     wishlist
-      ? db.select({ oracleId: wishlistItems.oracleId }).from(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), inArray(wishlistItems.oracleId, ids)))
+      // The viewer's own still-wanted lines, both sides (cart on your wishlist): a card a deck put there counts too.
+      ? db.execute<{ oracle_id: string }>(ownerLinesQuery(viewerId, ids)).then((r) => r.rows.map((w) => ({ oracleId: w.oracle_id })))
       : Promise.resolve([]),
   ]);
   const byId = new Map(info.map((c) => [c.oracleId, c]));
