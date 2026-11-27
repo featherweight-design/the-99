@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { CopyLines } from "../copy-lines";
 import { landingCopy } from "../../lib/copy/landing";
 import type { LandingClaims } from "../../lib/public/landing-claims";
 import { CountUp } from "../ui/count-up";
@@ -129,12 +129,7 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
       </div>
       {(sentence.length > 0 || buying) && (
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">
-          {sentence.map((line, i) => (
-            <Fragment key={i}>
-              {i > 0 && " "}
-              <span>{line}</span>
-            </Fragment>
-          ))}
+          <CopyLines lines={sentence} />
           {buying && <> <CostSheet buying={buying} /></>}
         </p>
       )}
