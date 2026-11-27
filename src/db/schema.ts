@@ -4587,7 +4587,7 @@ export const trades = pgTable("trades", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   /** The Yes or No. */
   answeredAt: timestamp("answered_at", { withTimezone: true }),
-  /** When it ended (declined, withdrawn, rescinded, traded), and by whom. */
+  /** When it ended by a press (declined, withdrawn, rescinded), and by whom: both set exactly then. */
   endedAt: timestamp("ended_at", { withTimezone: true }),
   endedByUserId: text("ended_by_user_id"),
   proposerMarkedAt: timestamp("proposer_marked_at", { withTimezone: true }),
@@ -4607,6 +4607,7 @@ export const trades = pgTable("trades", {
   check("trades_offered_by_check", sql`${t.offeredByUserId} = case when ${t.round} % 2 = 1 then ${t.proposerUserId} else ${t.recipientUserId} end`),
   check("trades_round_check", sql`${t.round} >= 1`),
   check("trades_ended_by_check", sql`${t.endedByUserId} is null or ${t.endedByUserId} in (${t.proposerUserId}, ${t.recipientUserId})`),
+  check("trades_ended_check", sql`(${t.status} in ('declined', 'withdrawn', 'rescinded')) = (${t.endedAt} is not null) and (${t.endedAt} is null) = (${t.endedByUserId} is null)`),
   check("trades_traded_check", sql`(${t.status} = 'traded') = (${t.proposerMarkedAt} is not null and ${t.recipientMarkedAt} is not null)`),
   check("trades_answered_check", sql`${t.status} not in ('accepted', 'traded', 'declined') or ${t.answeredAt} is not null`),
   // A mark is a promise kept: only an accepted trade takes one, and a rescinded one keeps whichever was set.
@@ -4620,29 +4621,32 @@ export const trades = pgTable("trades", {
 /**
  * A trade's offers, one row per round, every round kept: a counter reads against the round it replaces (Added, Taken
  * out, `was`, "Replaces your offer of Nov 24"). `offered_at` is when the round was sent, or last revised by its author.
+ * Its author follows from the round's parity (`trades_offered_by_check`), so it is not stored here. No account column:
+ * the account purge reaches rounds and their cards by cascade from `trades`. The trade's current `round` always has a
+ * row: `trades.ts` inserts both in one transaction (a circular foreign key would need a deferred constraint).
  */
 export const tradeRounds = pgTable("trade_rounds", {
   tradeId: uuid("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
   round: integer("round").notNull(),
-  offeredByUserId: text("offered_by_user_id").notNull(),
   offeredAt: timestamp("offered_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.tradeId, t.round] }),
   check("trade_rounds_round_check", sql`${t.round} >= 1`),
 ]);
 
-/** A round's cards. The owner is whose spare the card is. One copy each in v1 (D3). */
+/**
+ * A round's cards. `side` is whose spare the card is, as a party to the trade (never a third account), so the holder
+ * follows from the trade row. One copy of each card (D3), so a row is a card and there is no count to store.
+ */
 export const tradeCards = pgTable("trade_cards", {
   tradeId: uuid("trade_id").notNull(),
   round: integer("round").notNull(),
-  ownerUserId: text("owner_user_id").notNull(),
+  side: text("side").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
-  copies: integer("copies").notNull().default(1),
 }, (t) => [
-  primaryKey({ columns: [t.tradeId, t.round, t.ownerUserId, t.oracleId] }),
+  primaryKey({ columns: [t.tradeId, t.round, t.side, t.oracleId] }),
   foreignKey({ name: "trade_cards_round_fk", columns: [t.tradeId, t.round], foreignColumns: [tradeRounds.tradeId, tradeRounds.round] }).onDelete("cascade"),
-  check("trade_cards_copies_check", sql`${t.copies} = 1`),
-  index("trade_cards_owner_idx").on(t.ownerUserId, t.oracleId),
+  check("trade_cards_side_check", sql`${t.side} in ('proposer', 'recipient')`),
 ]);
 
 /**

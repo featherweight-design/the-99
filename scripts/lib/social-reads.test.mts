@@ -41,6 +41,9 @@ describe("socialReadsIn", () => {
     expect(socialReadsIn("sql`select 1 from trade_cards where owner_user_id = ${id}`").map((f) => f.why)).toEqual(["names trade_cards in SQL"]);
     expect(socialReadsIn("sql`select 1 from trade_rounds where offered_by_user_id = ${id}`").map((f) => f.why)).toEqual(["names trade_rounds in SQL"]);
     expect(socialReadsIn('sql`update "trades" set status = \'open\'`').map((f) => f.why)).toEqual(['names update "trades" in SQL']);
+    // Schema-qualified, quoted or not, and `only`, for both words matched by position.
+    expect(socialReadsIn("sql`select 1 from public.trades t`").map((f) => f.why)).toEqual(["names from public.trades in SQL"]);
+    expect(socialReadsIn('sql`delete from only "public"."pods"`').map((f) => f.why)).toEqual(['names from only "public"."pods" in SQL']);
     // Deck tuning's "trades" (a swap of one card for another) is a word in copy and comments, never a table.
     expect(socialReadsIn(`const line = "Three trades would fix the curve.";`)).toEqual([]);
   });

@@ -1,5 +1,5 @@
 {
-  "id": "522de77f-5dfe-4c45-93d8-1d69269e2ece",
+  "id": "85699cc9-e0b3-44b2-a830-6e2a832ff8ea",
   "prevId": "e331c8ae-1b12-421c-8f86-3b64b8b58acc",
   "version": "7",
   "dialect": "postgresql",
@@ -13990,8 +13990,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "owner_user_id": {
-          "name": "owner_user_id",
+        "side": {
+          "name": "side",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -14001,38 +14001,9 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
-        },
-        "copies": {
-          "name": "copies",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
         }
       },
-      "indexes": {
-        "trade_cards_owner_idx": {
-          "name": "trade_cards_owner_idx",
-          "columns": [
-            {
-              "expression": "owner_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "oracle_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "trade_cards_oracle_id_cards_oracle_id_fk": {
           "name": "trade_cards_oracle_id_cards_oracle_id_fk",
@@ -14064,12 +14035,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "trade_cards_trade_id_round_owner_user_id_oracle_id_pk": {
-          "name": "trade_cards_trade_id_round_owner_user_id_oracle_id_pk",
+        "trade_cards_trade_id_round_side_oracle_id_pk": {
+          "name": "trade_cards_trade_id_round_side_oracle_id_pk",
           "columns": [
             "trade_id",
             "round",
-            "owner_user_id",
+            "side",
             "oracle_id"
           ]
         }
@@ -14077,9 +14048,9 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "trade_cards_copies_check": {
-          "name": "trade_cards_copies_check",
-          "value": "\"trade_cards\".\"copies\" = 1"
+        "trade_cards_side_check": {
+          "name": "trade_cards_side_check",
+          "value": "\"trade_cards\".\"side\" in ('proposer', 'recipient')"
         }
       },
       "isRLSEnabled": false
@@ -14097,12 +14068,6 @@
         "round": {
           "name": "round",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "offered_by_user_id": {
-          "name": "offered_by_user_id",
-          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -14346,6 +14311,10 @@
         "trades_ended_by_check": {
           "name": "trades_ended_by_check",
           "value": "\"trades\".\"ended_by_user_id\" is null or \"trades\".\"ended_by_user_id\" in (\"trades\".\"proposer_user_id\", \"trades\".\"recipient_user_id\")"
+        },
+        "trades_ended_check": {
+          "name": "trades_ended_check",
+          "value": "(\"trades\".\"status\" in ('declined', 'withdrawn', 'rescinded')) = (\"trades\".\"ended_at\" is not null) and (\"trades\".\"ended_at\" is null) = (\"trades\".\"ended_by_user_id\" is null)"
         },
         "trades_traded_check": {
           "name": "trades_traded_check",

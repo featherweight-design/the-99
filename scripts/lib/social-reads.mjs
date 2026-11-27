@@ -14,7 +14,7 @@ export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites"
 const RAW = [
   // Case-insensitive: Postgres folds an unquoted identifier, so `FROM FRIEND_LINKS` names the same table.
   /\b(?:social_profiles|friend_links|friend_invites|pod_members|pod_spare_shares|rule_zero_tables|rule_zero_seats|rule_zero_seen|rule_zero_log_hidden|rule_zero_result_seats|feed_items|spare_requests|friend_link_keys|friend_requests|trade_rounds|trade_cards)\b/i,
-  /\b(?:from|join|into|update|table)\s+"?(?:pods|trades)\b"?/i,
+  /\b(?:from|join|into|update|table)\s+(?:only\s+)?(?:"?public"?\.)?"?(?:pods|trades)\b"?/i,
 ];
 
 const ALLOWED = (path) => path.startsWith("src/lib/social/") || path === "src/db/schema.ts";
