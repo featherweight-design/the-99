@@ -60,8 +60,9 @@ export function useDeckComboMap(
       // clause, which is exactly what a card with no combo looks like, and never breaks the bar.
       // Cleared rather than left alone: see rule 4.
       .catch((e) => {
+        if (cancelled) return;
         captureClientError("deck.combo-map", e);
-        if (!cancelled) setHeld(null);
+        setHeld(null);
       });
     return () => {
       cancelled = true;

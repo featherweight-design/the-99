@@ -73,7 +73,7 @@ function useCommanderSearch(query: string, run: (q: string) => Promise<OpponentC
       setSearch({ state: "busy" });
       run(q)
         .then((items) => { if (asked.current === ticket) setSearch({ state: "done", items }); })
-        .catch((e) => { captureClientError("seat.commander-search", e); if (asked.current === ticket) setSearch({ state: "failed" }); });
+        .catch((e) => { if (asked.current !== ticket) return; captureClientError("seat.commander-search", e); setSearch({ state: "failed" }); });
     }, KEYSTROKE_MS);
     return () => window.clearTimeout(timer);
   }, [query, run]);
@@ -174,7 +174,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
     let live = true;
     listFriendDecksAction(friend.publicId)
       .then((items) => { if (live) setDecks({ state: "done", items }); })
-      .catch((e) => { captureClientError("seat.friend-decks", e); if (live) setDecks({ state: "failed" }); });
+      .catch((e) => { if (!live) return; captureClientError("seat.friend-decks", e); setDecks({ state: "failed" }); });
     return () => { live = false; };
   }, [friend.publicId]);
   const who = asFriend(friend);
@@ -365,7 +365,7 @@ function Body({
     let live = true;
     listPickerFriendsAction()
       .then((items) => { if (live) setFriends({ state: "done", items }); })
-      .catch((e) => { captureClientError("seat.friends", e); if (live) setFriends({ state: "failed" }); });
+      .catch((e) => { if (!live) return; captureClientError("seat.friends", e); setFriends({ state: "failed" }); });
     return () => { live = false; };
   }, []);
 

@@ -361,8 +361,9 @@ export function VersionDiff({
         if (live) setDiff(result ?? "unavailable");
       })
       .catch((e) => {
+        if (!live) return;
         captureClientError("deck.version-diff", e);
-        if (live) setDiff("unavailable");
+        setDiff("unavailable");
       });
     return () => {
       live = false;

@@ -144,7 +144,7 @@ export function TuningHistory({
         if (ticket !== asked.current) return;
         setState(page ? { kind: "ok", rows: page.rows, nextCursor: page.nextCursor, more: "idle" } : { kind: "failed" });
       })
-      .catch((e) => { captureClientError("tuning.history-read", e); if (ticket === asked.current) setState({ kind: "failed" }); });
+      .catch((e) => { if (ticket !== asked.current) return; captureClientError("tuning.history-read", e); setState({ kind: "failed" }); });
   }, [deckId]);
 
   // The first page, on mount. The filter starts at All, and a chip press reads its own page.
@@ -211,8 +211,9 @@ export function TuningHistory({
           : { ...s, more: "failed" }));
       })
       .catch((e) => {
+        if (ticket !== asked.current) return;
         captureClientError("tuning.history-more", e);
-        if (ticket === asked.current) setState((s) => (s.kind === "ok" ? { ...s, more: "failed" } : s));
+        setState((s) => (s.kind === "ok" ? { ...s, more: "failed" } : s));
       });
   };
 
@@ -497,7 +498,7 @@ export function PastRunView({ deckId, row, onBack }: { deckId: string; row: Hist
         setRun(r ?? "failed");
         if (r && "outcome" in r && r.outcome === "running") again = setTimeout(() => setReads((n) => n + 1), HISTORY_WATCH_MS);
       })
-      .catch((e) => { captureClientError("tuning.history-run", e); if (live) setRun("failed"); });
+      .catch((e) => { if (!live) return; captureClientError("tuning.history-run", e); setRun("failed"); });
     return () => { live = false; clearTimeout(again); };
   }, [deckId, row.id, reads]);
 
