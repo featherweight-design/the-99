@@ -9,12 +9,12 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 
 /** Drizzle bindings for the social tables. A new table joins both lists in the PR that adds it. */
-export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites", "pods", "podMembers", "podSpareShares", "ruleZeroTables", "ruleZeroSeats", "ruleZeroSeen", "ruleZeroLogHidden", "feedItems", "spareRequests", "friendLinkKeys", "friendRequests"];
-/** The tables' SQL names. `pods` is matched only where SQL would name a table, never as a word in copy. */
+export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites", "pods", "podMembers", "podSpareShares", "ruleZeroTables", "ruleZeroSeats", "ruleZeroSeen", "ruleZeroLogHidden", "feedItems", "spareRequests", "friendLinkKeys", "friendRequests", "trades", "tradeRounds", "tradeCards"];
+/** The tables' SQL names. `pods` and `trades` are matched only where SQL would name a table, never as a word in copy. */
 const RAW = [
   // Case-insensitive: Postgres folds an unquoted identifier, so `FROM FRIEND_LINKS` names the same table.
-  /\b(?:social_profiles|friend_links|friend_invites|pod_members|pod_spare_shares|rule_zero_tables|rule_zero_seats|rule_zero_seen|rule_zero_log_hidden|rule_zero_result_seats|feed_items|spare_requests|friend_link_keys|friend_requests)\b/i,
-  /\b(?:from|join|into|update|table)\s+"?pods\b"?/i,
+  /\b(?:social_profiles|friend_links|friend_invites|pod_members|pod_spare_shares|rule_zero_tables|rule_zero_seats|rule_zero_seen|rule_zero_log_hidden|rule_zero_result_seats|feed_items|spare_requests|friend_link_keys|friend_requests|trade_rounds|trade_cards)\b/i,
+  /\b(?:from|join|into|update|table)\s+"?(?:pods|trades)\b"?/i,
 ];
 
 const ALLOWED = (path) => path.startsWith("src/lib/social/") || path === "src/db/schema.ts";

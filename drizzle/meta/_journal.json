@@ -1912,6 +1912,13 @@
       "when": 1795792373864,
       "tag": "0274_cart_wishlist",
       "breakpoints": true
+    },
+    {
+      "idx": 276,
+      "version": "7",
+      "when": 1795816246904,
+      "tag": "0276_friend_trades",
+      "breakpoints": true
     }
   ]
 }
