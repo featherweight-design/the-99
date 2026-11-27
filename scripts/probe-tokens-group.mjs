@@ -37,7 +37,7 @@ if (!branch || branch === PRODUCTION || branch === STAGING) throw new Error(`ref
 
 const FOLD_KEY = "the99:deck-tokens-fold";
 const VIEW_KEY = "the99:deck-view";
-const WIDTHS = [{ width: 1300, height: 900 }, { width: 390, height: 844 }];
+const WIDTHS = [{ width: 1300, height: 900 }, { width: 768, height: 900 }, { width: 390, height: 844 }];
 let failures = 0;
 function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
@@ -159,6 +159,16 @@ async function leg(browser, size, deckA, deckB, makerName) {
     report(`${tag}: the heading folds the group and writes the one preference`, (await toggle.getAttribute("aria-expanded")) === "false" && (await rows(page)) === 0 && folded === "closed", `expanded ${await toggle.getAttribute("aria-expanded")}, rows ${await rows(page)}, stored ${folded}`);
     const noteShown = await page.locator("main").getByText(/not in the 99 · from/).count();
     report(`${tag}: a folded group still says what it is`, noteShown > 0, `${noteShown} note(s)`);
+    // The box: the group is one deck box whose band folds; folded, the band fans 1 to 4 token pictures (aria-hidden) before the chevron.
+    const box = await page.evaluate(() => {
+      const b = document.querySelector("[data-tokens-box]");
+      const btn = b?.querySelector("#deck-tokens-heading button");
+      const fan = [...(btn?.querySelectorAll("img") ?? [])];
+      const r = btn?.getBoundingClientRect();
+      const inside = fan.every((i) => { const q = i.getBoundingClientRect(); return r && q.left >= r.left - 1 && q.right <= r.right + 1; });
+      return { box: !!b, fan: fan.length, hidden: fan.every((i) => i.closest("[aria-hidden='true']")), inside, wide: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+    });
+    report(`${tag}: the group is a deck box and its folded band fans the token pictures inside the band`, box.box && box.fan >= 1 && box.fan <= 4 && box.hidden && box.inside && !box.wide, JSON.stringify(box));
 
     await page.goto(`${BASE}/decks/${deckB}`, { waitUntil: "domcontentloaded" });
     await page.locator(HEADING).first().waitFor({ timeout: 60_000 });

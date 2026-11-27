@@ -77,6 +77,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   status and the roll-up stay the cards' alone (pinned in `decklist.test.tsx`). The buy tag on a token row is the shipped tag as a
   button of its own: one press marks the token held, no confirm. A joined token whose maker has left the deck stays joined and
   says `from no card in this deck`, with only its remove press (a hand mark on it could be unmarked from nowhere, since the unmark holds the same maker rule).
+  **The Tokens box** (deck-tokens surfacing, handoff `design/design_handoff_the99_deck_tokens/`): on `/decks/[id]` the group is a deck box
+  (`DeckBox` plus the Announced group's folding band, `tokens-group.tsx`): `◆ Tokens N`, the note at the band's end (under the title on a
+  phone), the chevron last. Folded, the band fans up to four token pictures (`HydratedImg`, `imageUriSmall`, `aria-hidden`; none means no fan);
+  the count always says how many there are. The "not read yet" prompt is the box's foot band, shown only while open. A failed read stays the
+  bare header and line. Heading id `deck-tokens-heading`, `tabIndex={-1}`, the fold key and the landing are unchanged.
   **Card details and About** (PR 6): from a deck, a card that makes one of the deck's tokens gets one line at the foot of the
   `In this deck` box (`TokenCardLine`, passed to `ProxyControl` as its `footer`): `Makes an Ally token · In Shopping`
   (or `· in your collection` when every token it makes is held) and a `Tokens ›` press that closes the sheet and scrolls to the
