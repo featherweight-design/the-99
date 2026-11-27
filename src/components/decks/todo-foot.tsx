@@ -187,44 +187,34 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
  */
 // 11px at line-height 1.7 is ~18.7px; 13px above and below makes the button itself 44 tall.
 const CARD_FOOT_TOUCH = "[@media(pointer:coarse)]:py-[13px]";
-function NearCombosSegment({ count, onOpen, className, quiet }: { count: number; onOpen: () => void; className: string; quiet: boolean }) {
+function LinkSegment({ glyph, label, caret, onOpen, className, quiet, marker, popup }: { glyph: ReactNode; label: string; caret: string; onOpen: () => void; className: string; quiet: boolean; marker: string; popup?: boolean }) {
   return (
     <button
       type="button"
-      aria-haspopup="dialog"
+      aria-haspopup={popup ? "dialog" : undefined}
       onClick={onOpen}
-      data-combos-close
+      {...{ [marker]: "" }}
       className={`${className} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
     >
       <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
-        <ComboGlyph size={13} />
-        <span>{combosCloseCopy.segment(count)}</span>
-        <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{combosCloseCopy.caret}</span>
+        {glyph}
+        <span>{label}</span>
+        <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{caret}</span>
       </span>
     </button>
   );
 }
 
+function NearCombosSegment({ count, onOpen, className, quiet }: { count: number; onOpen: () => void; className: string; quiet: boolean }) {
+  return <LinkSegment glyph={<ComboGlyph size={13} />} label={combosCloseCopy.segment(count)} caret={combosCloseCopy.caret} onOpen={onOpen} className={className} quiet={quiet} marker="data-combos-close" popup />;
+}
+
 /**
- * `◎ 4 tokens from 7 cards ›`: after the combos, drawn like them (the glyph, body ink, a faint caret, one dotted rule) with the
- * same hit rules. A link, not a figure: its press lands on the Tokens group (`landOnDeckTokens`) from any panel, and it moves
- * no count or status.
+ * `◎ 4 tokens from 7 cards ›`: after the combos, drawn like them (`LinkSegment`). A link, not a figure: its press
+ * lands on the Tokens group (`landOnDeckTokens`) from any panel, and it moves no count or status.
  */
 function TokensSegment({ count, makers, onOpen, className, quiet }: { count: number; makers: number; onOpen: () => void; className: string; quiet: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      data-tokens-segment
-      className={`${className} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
-    >
-      <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
-        <TokenGlyph />
-        <span>{tokensCopy.statusLine.segment(count, makers)}</span>
-        <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{tokensCopy.statusLine.caret}</span>
-      </span>
-    </button>
-  );
+  return <LinkSegment glyph={<TokenGlyph />} label={tokensCopy.statusLine.segment(count, makers)} caret={tokensCopy.statusLine.caret} onOpen={onOpen} className={className} quiet={quiet} marker="data-tokens-segment" />;
 }
 
 /** The committed version line, and where a commit lands. Focusable but not a tab stop

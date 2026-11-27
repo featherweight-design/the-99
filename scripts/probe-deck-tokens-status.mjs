@@ -73,21 +73,19 @@ async function signIn(page) {
 const made = { tokens: [], reads: false };
 let userId = null;
 
-/** Two of the account's decks sharing at least one card, and three cards (the shared one first) to make tokens. */
+/** One of the account's decks, and three of its cards to make tokens. */
 async function pickDecks() {
   const rows = await sql`
-    select a.deck_id as a, b.deck_id as b, a.oracle_id as shared
-    from deck_cards a join deck_cards b on b.oracle_id = a.oracle_id and b.deck_id <> a.deck_id
-    join decks da on da.id = a.deck_id and da.user_id = ${userId}
-    join decks db on db.id = b.deck_id and db.user_id = ${userId}
-    where (select count(*) from deck_cards x where x.deck_id = a.deck_id) >= 3
-    order by a.deck_id, b.deck_id limit 1`;
-  if (rows.length === 0) throw new Error("no two decks of this account share a card");
-  const { a, b, shared } = rows[0];
+    select dc.deck_id as a, dc.oracle_id as shared
+    from deck_cards dc join decks d on d.id = dc.deck_id and d.user_id = ${userId}
+    where (select count(*) from deck_cards x where x.deck_id = dc.deck_id) >= 3
+    order by dc.deck_id, dc.oracle_id limit 1`;
+  if (rows.length === 0) throw new Error("no deck of this account holds three cards");
+  const { a, shared } = rows[0];
   const more = await sql`select dc.oracle_id from deck_cards dc where dc.deck_id = ${a} and dc.oracle_id <> ${shared} order by dc.oracle_id limit 2`;
   if (more.length < 2) throw new Error("the first deck needs two more cards");
   const [art] = await sql`select image_uri from cards where image_uri is not null limit 1`;
-  return { a, b, makers: [shared, ...more.map((r) => r.oracle_id)], art: art.image_uri };
+  return { a, makers: [shared, ...more.map((r) => r.oracle_id)], art: art.image_uri };
 }
 
 async function seed(makers, art, deckA) {
@@ -182,10 +180,11 @@ async function leg(browser, size, deckA) {
     await page.waitForTimeout(300);
     const foldedStored = await page.evaluate((k) => localStorage.getItem(k), FOLD_KEY);
     await page.evaluate(() => window.scrollTo(0, 0));
+    const stillFolded = (await page.locator(HEADING).first().getAttribute("aria-expanded")) === "false";
     await page.locator(SEGMENT).first().click();
     await page.waitForTimeout(1200);
     const fromFolded = await landed(page);
-    report(`${tag}: pressed with the box folded, it opens for the visit, focuses the heading and leaves the preference folded`, foldedStored === "closed" && fromFolded.open === "true" && fromFolded.focus === "deck-tokens-heading" && fromFolded.stored === "closed" && fromFolded.top >= 0 && fromFolded.top < size.height, JSON.stringify({ foldedStored, ...fromFolded }));
+    report(`${tag}: pressed with the box folded, it opens for the visit, focuses the heading and leaves the preference folded`, stillFolded && foldedStored === "closed" && fromFolded.open === "true" && fromFolded.focus === "deck-tokens-heading" && fromFolded.stored === "closed" && fromFolded.top >= 0 && fromFolded.top < size.height, JSON.stringify({ stillFolded, foldedStored, ...fromFolded }));
   } finally {
     await context.close();
   }
