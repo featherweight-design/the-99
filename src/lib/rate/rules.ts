@@ -135,6 +135,12 @@ export const RATE_RULES = {
    */
   "friend-code": { limit: 10, windowMs: 3_600_000 },
   "friend-code-day": { limit: 30, windowMs: 86_400_000 },
+  /**
+   * A trade offer or counter sent (friend trades), per player, ENFORCED: 60 a day. Each one writes the friend a feed
+   * item and a push, so this bounds what one player can send; the cap (one unanswered offer per friend) and the round
+   * limit bound it per friend. An honest player sends a handful.
+   */
+  "trade-offer": { limit: 60, windowMs: 86_400_000 },
   /** Friend requests sent, by link or code, per player, ENFORCED: 20 a day. Opening a link already asked sends nothing and is not counted. */
   "friend-request-day": { limit: 20, windowMs: 86_400_000 },
   /** The admin "send every email template to me" button, per admin, ENFORCED: one press (three emails) in five minutes, so a held key cannot spend the day's mail cap. */

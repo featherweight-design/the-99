@@ -85,7 +85,8 @@ describe("the Trades rows", () => {
     expect(rowState(trade({ status: "accepted", proposerMarkedAt: NOW }), P, NOW, false)).toEqual({ state: "youMarked", waitsOnYou: false, byYou: true });
     expect(rowState(trade({ status: "declined", endedByUserId: R }), R, NOW, false)).toEqual({ state: "declined", waitsOnYou: false, byYou: true });
     expect(rowState(trade({ status: "rescinded", endedByUserId: R }), P, NOW, false)).toEqual({ state: "rescinded", waitsOnYou: false, byYou: false });
-    expect(rowState(trade({ createdAt: daysAgo(15) }), R, NOW, false).state).toBe("expired");
+    expect(rowState(trade({ createdAt: daysAgo(15) }), R, NOW, false)).toEqual({ state: "expired", waitsOnYou: false, byYou: true });
+    expect(rowState(trade({ createdAt: daysAgo(15) }), P, NOW, false)).toEqual({ state: "expired", waitsOnYou: false, byYou: false });
   });
 
   it("sorts what waits on you first, in the boards' order, then the rest newest first", () => {

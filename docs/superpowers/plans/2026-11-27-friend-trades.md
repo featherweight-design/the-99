@@ -82,8 +82,8 @@ Each write follows `spare-requests.ts`:
 | Write | Who | Statement and refusals |
 | --- | --- | --- |
 | `proposeTrade(viewer, friendPublicId, sides, fromRequestId?)` | anyone | `cleanSides`. Every card must be spare now, as its receiver sees it. The cap (Q10, `held`). `fromRequestId` is stored only for a request with status `yes`, `initiated_by = 'asker'`, the viewer its holder and the friend its asker, and its card is forced onto the viewer's side; a second trade from it is refused by the unique index. Inserts the trade, round 1 and its cards. Feed `offer`. |
-| `counterTrade(viewer, id, seenRound, seenAt, sides)` | the non-author of an open, unexpired trade, below the round cap | `round + 1`, `offered_by = viewer`, the new round and its cards. Never held by the cap. Feed `counter`. |
-| `reviseTrade(viewer, id, seenRound, sides)` | the author, only while `lookYours` | Rewrites the current round's cards and `offered_at` in place, keeping the round, with no feed item: the other side was never answered. Because the round keeps its number, a counter and an answer also match the round's `offered_at` the reader saw (`seenAt`), so neither acts on revised cards the reader never saw. |
+| `counterTrade(viewer, id, seenRound, seenAt, sides)` | the non-author of an open, unexpired trade, below the round cap | `round + 1`, `offered_by = viewer`, the new round and its cards. A counter with exactly the cards of the round it counters is refused (`unchanged`), so it cannot push the friend or spend the cap for nothing. Never held by the cap. Feed `counter`. |
+| `reviseTrade(viewer, id, seenRound, seenAt, sides)` | the author, only while `lookYours` | Rewrites the current round's cards and `offered_at` in place, keeping the round, with no feed item: the other side was never answered. Its own statement matches the `offered_at` the author saw, so a second tab's revise lands nothing once the first has. Because the round keeps its number, a counter and an answer also match the round's `offered_at` the reader saw (`seenAt`), so neither acts on revised cards the reader never saw. |
 | `answerTrade(viewer, id, seenRound, seenAt, yes/no)` | the non-author | Yes re-checks every card (`gone`) and writes `accepted`. No writes `declined`. Feed `accept` or `decline` to the author. |
 | `withdrawTrade` | the author of an open trade | `withdrawn`. Nobody is told, as an ask's withdraw. |
 | `rescindTrade` | either side of an accepted trade | `rescinded` and `ended_by`. Nobody is pushed. The row reads Withdrawn / `rescinded`. |
@@ -96,7 +96,7 @@ Feed items: `dedupeKey` is `<id>:<round>:<event>`, and `data` is `{ trade, round
 
 ## Reads and actions (PR 4)
 
-The reads, in `src/lib/social/trades.ts`:
+The reads, in `src/lib/social/trade-reads.ts` (split from `trades.ts`, which keeps the writes, so neither file passes ~600 lines):
 - `loadTrade(viewer, id)`: the sheet's whole view. It carries:
   - both sides' cards with name and art (`TradeCard`), and the previous round for `was` and its marks;
   - the derived state and `gone` per card;

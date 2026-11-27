@@ -1,7 +1,7 @@
 /**
  * Friend trades' writes (plan `2026-11-27-friend-trades.md`, "Writes (PR 3)"). The rules are `trade-rules.ts`; this
  * module is every write of `trades`, `trade_rounds` and `trade_cards`, and it lives here because each one reaches
- * another account (`check:social-reads`). The reads land in PR 4.
+ * another account (`check:social-reads`). The reads are `trade-reads.ts`.
  *
  * Every write follows `spare-requests.ts`:
  * - Outside the transaction: the friend (`resolveFriend`, or the trade's own row joined to the live friendship), and
@@ -34,10 +34,10 @@ import {
 
 export type ProposeOutcome = { ok: true; id: string } | { ok: false; reason: "not-friend" | "not-spare" | "held" | "used" | "gone" };
 export type TradeOutcome = { ok: true } | { ok: false; reason: "not-friend" | "not-spare" | "gone" };
-export type CounterOutcome = { ok: true; round: number } | { ok: false; reason: "not-friend" | "not-spare" | "gone" };
+export type CounterOutcome = { ok: true; round: number } | { ok: false; reason: "not-friend" | "not-spare" | "unchanged" | "gone" };
 
-type Party = { userId: string; publicId: string };
-type StoredCard = { side: TradeRole; oracleId: string };
+export type Party = { userId: string; publicId: string };
+export type StoredCard = { side: TradeRole; oracleId: string };
 
 const other = (r: TradeRole): TradeRole => (r === "proposer" ? "recipient" : "proposer");
 const landed = (r: { rowCount?: number | null; rows: unknown[] }) => (r.rowCount ?? r.rows.length) > 0;
@@ -60,23 +60,28 @@ export function sidesOf(role: TradeRole, cards: readonly StoredCard[]): TradeSid
 }
 
 /**
- * Is any card on the offer no longer spare, each as its receiver sees it? `theirs` go to the viewer, so they are read
- * as the viewer sees the friend's spares; `yours` go to the friend, so they are read as the friend sees the viewer's
- * (the share is the viewer's grant to the friend, and the friend's own read decides it, never the viewer's).
+ * The cards on the offer that are no longer spare, each as its receiver sees it. `theirs` go to the viewer, so they are
+ * read as the viewer sees the friend's spares; `yours` go to the friend, so they are read as the friend sees the
+ * viewer's (the share is the viewer's grant to the friend, and the friend's own read decides it, never the viewer's).
  */
-export async function anyGone(viewer: Party, friend: Party, sides: TradeSides): Promise<boolean> {
-  const spareFrom = async (receiverId: string, holderPublicId: string, ids: readonly string[]) => {
-    if (ids.length === 0) return true;
+export async function goneCards(viewer: Party, friend: Party, sides: TradeSides): Promise<Set<string>> {
+  const goneFrom = async (receiverId: string, holderPublicId: string, ids: readonly string[]) => {
+    if (ids.length === 0) return [];
     const offered = new Set(
       (await loadFriendSpares(receiverId, ids)).filter((s) => s.friend.publicId === holderPublicId && s.spare > 0).map((s) => s.oracleId),
     );
-    return ids.every((id) => offered.has(id));
+    return ids.filter((id) => !offered.has(id));
   };
   const [theirs, yours] = await Promise.all([
-    spareFrom(viewer.userId, friend.publicId, sides.theirs),
-    spareFrom(friend.userId, viewer.publicId, sides.yours),
+    goneFrom(viewer.userId, friend.publicId, sides.theirs),
+    goneFrom(friend.userId, viewer.publicId, sides.yours),
   ]);
-  return !(theirs && yours);
+  return new Set([...theirs, ...yours]);
+}
+
+/** Is any card on the offer no longer spare (`goneCards`)? */
+export async function anyGone(viewer: Party, friend: Party, sides: TradeSides): Promise<boolean> {
+  return (await goneCards(viewer, friend, sides)).size > 0;
 }
 
 /** The pair's lock: every trade write between two people is decided one at a time, whoever writes it. */
@@ -86,7 +91,7 @@ export function tradeLockQuery(a: string, b: string): SQL {
 }
 
 /** The other party of a trade row aliased `t`, for the viewer: the friend the statement must still be friends with. */
-const otherParty = (t: string, viewerId: string) =>
+export const otherParty = (t: string, viewerId: string) =>
   sql`case when ${sql.raw(t)}.proposer_user_id = ${viewerId} then ${sql.raw(t)}.recipient_user_id else ${sql.raw(t)}.proposer_user_id end`;
 
 /** The live friendship, viewer to the other party, held FOR SHARE until the write commits. */
@@ -94,7 +99,7 @@ const friendsStill = (t: string, fl: string, viewerId: string) =>
   sql`exists (select 1 from ${friendLinks} ${sql.raw(fl)}
         where ${sql.raw(fl)}.user_id = ${viewerId} and ${sql.raw(fl)}.friend_user_id = ${otherParty(t, viewerId)} for share)`;
 
-const isParty = (t: string, viewerId: string) =>
+export const isParty = (t: string, viewerId: string) =>
   sql`(${sql.raw(t)}.proposer_user_id = ${viewerId} or ${sql.raw(t)}.recipient_user_id = ${viewerId})`;
 
 /**
@@ -330,7 +335,12 @@ export async function counterTrade(
   const head = await loadHead(viewerId, tradeId);
   if (!head || head.round !== seenRound || head.offeredByUserId === viewerId) return { ok: false, reason: "gone" };
   const p = partiesOf(head, viewerId);
-  if (await anyGone(p.viewer, p.friend, sides)) return { ok: false, reason: "not-spare" };
+  // A counter must change the offer: an identical one would advance the round, push the friend and spend the round
+  // cap for nothing. The round's cards are read outside the transaction; the statement's `roundSeen` refuses the
+  // counter if a revise rewrote them since.
+  const [current, gone] = await Promise.all([loadRoundCards(tradeId, seenRound), anyGone(p.viewer, p.friend, sides)]);
+  if (sameSides(sidesOf(p.role, current), sides)) return { ok: false, reason: "unchanged" };
+  if (gone) return { ok: false, reason: "not-spare" };
   return inTradeTransaction(viewerId, p.friend.userId, async (tx): Promise<CounterOutcome> => {
     const [row] = (await tx.execute<{ id: string; round: number }>(counterQuery(viewerId, tradeId, seenRound, seenAt, now))).rows;
     if (!row) return { ok: false, reason: "gone" };
@@ -341,13 +351,23 @@ export async function counterTrade(
   });
 }
 
-/** The revise's statement: the author's own open, unexpired offer at the round they saw gets a new `offered_at`. */
-export function reviseRoundQuery(viewerId: string, tradeId: string, seenRound: number, now: Date): SQL {
+/** Both sides hold the same cards, in any order. */
+function sameSides(a: TradeSides, b: TradeSides): boolean {
+  const same = (x: readonly string[], y: readonly string[]) => x.length === y.length && x.every((id) => y.includes(id));
+  return same(a.yours, b.yours) && same(a.theirs, b.theirs);
+}
+
+/**
+ * The revise's statement: the author's own open, unexpired offer, at the round AND `offered_at` they saw, gets a new
+ * `offered_at`. Keyed on the time too, so a second tab's revise of the same round lands nothing once the first has.
+ */
+export function reviseRoundQuery(viewerId: string, tradeId: string, seenRound: number, seenAt: string, now: Date): SQL {
   return sql`update ${tradeRounds} rvr set offered_at = ${now.toISOString()}::timestamptz
     from ${trades} rtr
     where rvr.trade_id = rtr.id and rvr.round = rtr.round
       and rtr.id = ${tradeId} and rtr.offered_by_user_id = ${viewerId} and ${isParty("rtr", viewerId)}
       and ${openNow("rtr", now)} and rtr.round = ${seenRound}
+      and date_trunc('milliseconds', rvr.offered_at) = date_trunc('milliseconds', ${seenAt}::timestamptz)
       and ${friendsStill("rtr", "rfl", viewerId)}
     returning rvr.round`;
 }
@@ -365,9 +385,11 @@ export function roundCardsInsertQuery(tradeId: string, round: number, cards: rea
  * The author mends their own offer while a card on it is no longer spare (`lookYours`): the round's cards are
  * rewritten in place and the round keeps its number. Nobody is told, as the other side never answered it.
  */
-export async function reviseTrade(viewerId: string, tradeId: unknown, seenRound: unknown, rawSides: unknown, now = new Date()): Promise<TradeOutcome> {
+export async function reviseTrade(
+  viewerId: string, tradeId: unknown, seenRound: unknown, seenAt: unknown, rawSides: unknown, now = new Date(),
+): Promise<TradeOutcome> {
   const sides = cleanSides(rawSides);
-  if (!sides || !isUuid(tradeId) || !isRound(seenRound)) return { ok: false, reason: "gone" };
+  if (!sides || !isUuid(tradeId) || !isRound(seenRound) || !isSeenAt(seenAt)) return { ok: false, reason: "gone" };
   const head = await loadHead(viewerId, tradeId);
   if (!head || head.round !== seenRound || head.offeredByUserId !== viewerId) return { ok: false, reason: "gone" };
   const p = partiesOf(head, viewerId);
@@ -379,7 +401,7 @@ export async function reviseTrade(viewerId: string, tradeId: unknown, seenRound:
   if (!oldGone) return { ok: false, reason: "gone" };
   if (newGone) return { ok: false, reason: "not-spare" };
   return inTradeTransaction(viewerId, p.friend.userId, async (tx): Promise<TradeOutcome> => {
-    if (!landed(await tx.execute(reviseRoundQuery(viewerId, tradeId, seenRound, now)))) return { ok: false, reason: "gone" };
+    if (!landed(await tx.execute(reviseRoundQuery(viewerId, tradeId, seenRound, seenAt, now)))) return { ok: false, reason: "gone" };
     await tx.execute(roundCardsDeleteQuery(tradeId, seenRound));
     await tx.execute(roundCardsInsertQuery(tradeId, seenRound, storedCards(p.role, sides)));
     return { ok: true };

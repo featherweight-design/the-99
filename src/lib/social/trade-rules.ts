@@ -142,7 +142,8 @@ export function rowState(t: TradeFacts, viewerId: string, now: Date, gone: boole
     case "rescinded":
       return { state: "rescinded", waitsOnYou: false, byYou: t.endedByUserId === viewerId };
     case "expired":
-      return { state: "expired", waitsOnYou: false, byYou: false };
+      // Nobody pressed: the reader's "move" is the answer they did not give, when the offer was the friend's.
+      return { state: "expired", waitsOnYou: false, byYou: author !== viewerId };
   }
 }
 
