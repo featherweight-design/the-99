@@ -257,6 +257,19 @@ describe("FeedItemRow", () => {
     expect(onOther).not.toHaveBeenCalled();
   });
 
+  it("hands a combo row's open the callback that runs when the combo is closed, and a card row's open none", () => {
+    open.mockClear();
+    const onComboClosed = vi.fn();
+    list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation", variantId: "1-2" } })} now={NOW} onComboClosed={onComboClosed} />);
+    fireEvent.click(screen.getByRole("button", { name: /See the combo/ }));
+    expect(open.mock.calls[0][3].onComboClosed).toBe(onComboClosed);
+    cleanup();
+    open.mockClear();
+    list(<FeedItemRow item={view({ opens: "a", name: "Secrets", setSize: 288 })} now={NOW} onComboClosed={onComboClosed} />);
+    fireEvent.click(screen.getAllByRole("button").find((b) => b.hasAttribute("data-feed-press"))!);
+    expect(open.mock.calls[0][3].onComboClosed).toBeUndefined();
+  });
+
   it("reads 'just now' for an item under an hour old", () => {
     list(<FeedItemRow item={view({ at: "2026-10-22T11:30:00Z", href: "/x" })} now={NOW} />);
     expect(screen.getAllByText(refreshCopy.home.elapsed.justNow)).toHaveLength(1);

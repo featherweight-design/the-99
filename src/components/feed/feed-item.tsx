@@ -209,11 +209,14 @@ export function FeedPress({
   describedBy,
   filled = false,
   onComboOpen,
+  onComboClosed,
 }: {
   item: FeedView;
   label: string | PersonParts;
   /** Called after a combo row's press has opened its combo view: the Show all sheet gives way to it (#3371). */
   onComboOpen?: () => void;
+  /** The reader closed that combo view: the sheet comes back. */
+  onComboClosed?: () => void;
   className: string;
   /** The lead's filled button: a Requested or Accepted label takes the button's ink (`TradeAskLabel`). */
   filled?: boolean;
@@ -289,7 +292,7 @@ export function FeedPress({
       type="button"
       data-feed-press
       onClick={(e) => {
-        detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget, ...(item.kind === "combo" ? comboSheetOpenOpts(item.combo?.variantId, item.combo?.added) : {}) });
+        detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget, ...(item.kind === "combo" ? { ...comboSheetOpenOpts(item.combo?.variantId, item.combo?.added), onComboClosed } : {}) });
         if (item.kind === "combo") onComboOpen?.();
       }}
       className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
@@ -381,12 +384,14 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
   );
 }
 
-export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, when, zone = null, compact = false }: {
+export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, onComboClosed, when, zone = null, compact = false }: {
   item: FeedView;
   /** The phone grid at any width (What's new in the rail and its Show all sheet, G17): the picture beside the text, the press under it. */
   compact?: RowCompact;
   /** A combo row's press opened its combo view: the Show all sheet closes so the view is not left under a held page (#3371). */
   onComboOpen?: () => void;
+  /** The reader closed the combo view that press opened: the Show all sheet comes back, where it was. */
+  onComboClosed?: () => void;
   now: string;
   /** The reader's IANA zone (the zone cookie), or null: a drop's sale lines then read in the store's zone, labelled. */
   zone?: string | null;
@@ -433,6 +438,7 @@ export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, when, zon
   return (
     <li
       data-feed-item={item.kind}
+      data-feed-key={item.key}
       data-unseen={item.unseen || undefined}
       className={`relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] ${rowMd(compact, "md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]", "md:max-[1179px]:grid-cols-[46px_minmax(0,1fr)_auto] md:max-[1179px]:items-center md:max-[1179px]:gap-x-[14px] md:max-[1179px]:px-[16px]")}`}
     >
@@ -495,6 +501,7 @@ export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, when, zon
                 label={withChevron(text.press)}
                 describedBy={titleId}
                 onComboOpen={onComboOpen}
+                onComboClosed={onComboClosed}
                 stretch="after:absolute after:inset-0 after:content-['']"
                 className={`flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
               />
@@ -513,6 +520,7 @@ export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, when, zon
             <FeedPress
               item={item}
               onComboOpen={onComboOpen}
+                onComboClosed={onComboClosed}
               // An outbound press ends in its link-out icon (`FeedPress`), not the in-app ›.
               label={item.outbound ? text.press : withChevron(text.press)}
               describedBy={titleId}
