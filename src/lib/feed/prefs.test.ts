@@ -72,27 +72,27 @@ describe("nextFeedPrefs (the map after a save)", () => {
 describe("a default-on kind (spare-request, G4; Wizards' three)", () => {
   const none = { map: {}, declined: [] as FeedKind[] };
   it("is on for a reader who never chose, and only those", () => {
-    expect(effectiveKinds(none)).toEqual([...POSTS, "spare-request"]);
-    expect(effectiveKinds({ map: { combo: EARLIER }, declined: [] })).toEqual([...POSTS, "spare-request", "combo"]);
-    expect(effectiveKinds({ map: {}, declined: ["spare-request"] })).toEqual([...POSTS]);
+    expect(effectiveKinds(none)).toEqual([...POSTS, "spare-request", "trade"]);
+    expect(effectiveKinds({ map: { combo: EARLIER }, declined: [] })).toEqual([...POSTS, "spare-request", "trade", "combo"]);
+    expect(effectiveKinds({ map: {}, declined: ["spare-request"] })).toEqual([...POSTS, "trade"]);
     expect(effectiveKinds({ map: {}, declined: [...DEFAULT_ON_KINDS] })).toEqual([]);
   });
 
   it("left alone by a save, writes nothing for it", () => {
-    expect(nextFeedPrefs(none, ["spare-request"], NOW, noPosts)).toBeNull();
-    expect(nextFeedPrefs(none, ["spare-request", "combo"], NOW, noPosts)).toEqual({ map: { combo: NOW.toISOString() }, declined: [] });
-    expect(nextFeedPrefs(none, [...POSTS, "spare-request"], NOW)).toBeNull();
+    expect(nextFeedPrefs(none, ["spare-request", "trade"], NOW, noPosts)).toBeNull();
+    expect(nextFeedPrefs(none, ["spare-request", "trade", "combo"], NOW, noPosts)).toEqual({ map: { combo: NOW.toISOString() }, declined: [] });
+    expect(nextFeedPrefs(none, [...POSTS, "spare-request", "trade"], NOW)).toBeNull();
   });
 
   it("turned off: off the map and onto the declined list", () => {
-    expect(nextFeedPrefs(none, [], NOW, noPosts)).toEqual({ map: {}, declined: ["spare-request"] });
-    expect(nextFeedPrefs({ map: { "spare-request": EARLIER }, declined: [] }, [], NOW, noPosts)).toEqual({ map: {}, declined: ["spare-request"] });
+    expect(nextFeedPrefs(none, [], NOW, noPosts)).toEqual({ map: {}, declined: ["spare-request", "trade"] });
+    expect(nextFeedPrefs({ map: { "spare-request": EARLIER }, declined: [] }, ["trade"], NOW, noPosts)).toEqual({ map: {}, declined: ["spare-request"] });
     // A form that offers them (the switch on) and leaves them unticked declines Wizards' three too, in FEED_KINDS order.
-    expect(nextFeedPrefs(none, ["spare-request"], NOW)).toEqual({ map: {}, declined: [...POSTS] });
+    expect(nextFeedPrefs(none, ["spare-request", "trade"], NOW)).toEqual({ map: {}, declined: [...POSTS] });
   });
 
   it("turned on again: off the declined list and stamped NOW, so what arrived while off never comes back", () => {
-    expect(nextFeedPrefs({ map: {}, declined: ["spare-request"] }, ["spare-request"], NOW, noPosts)).toEqual({
+    expect(nextFeedPrefs({ map: {}, declined: ["spare-request"] }, ["spare-request", "trade"], NOW, noPosts)).toEqual({
       map: { "spare-request": NOW.toISOString() }, declined: [],
     });
     expect(nextFeedPrefs({ map: {}, declined: ["secret-lair"] }, ["secret-lair"], NOW, ["secret-lair"])).toEqual({
@@ -124,7 +124,7 @@ describe("parseChosenKinds (the action's input)", () => {
     expect(parseChosenKinds(["combo", "news"], available)).toBeNull();
     expect(parseChosenKinds(["trade-match"], available)).toBeNull();
     expect(parseChosenKinds("combo", available)).toBeNull();
-    expect(parseChosenKinds(Array(20).fill("combo"), available)).toBeNull();
+    expect(parseChosenKinds(Array(FEED_KINDS.length * 2 + 1).fill("combo"), available)).toBeNull();
   });
 });
 
@@ -162,7 +162,7 @@ describe("setFeedKinds", () => {
 
   it("inserts the reader's row when there is none", async () => {
     const { q, writes } = fake(undefined);
-    expect(await setFeedKinds("u", ["new-set", "spare-request"], NOW, undefined, q)).toBe(true);
+    expect(await setFeedKinds("u", ["new-set", "spare-request", "trade"], NOW, undefined, q)).toBe(true);
     // The whole set offered, Wizards' three unticked: declined.
     expect(writes).toEqual([{ userId: "u", feedKinds: { "new-set": NOW.toISOString() }, feedKindsDeclined: [...POSTS] }]);
   });
@@ -230,6 +230,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
       { kind: "price-drop", on: true },
       { kind: "trade-match", on: true },
       { kind: "spare-request", on: true },
+      { kind: "trade", on: true },
       { kind: "combo", on: true },
     ]);
   });
@@ -237,7 +238,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
   it("offers trade matches and spare requests (SOCIAL_FRIENDS_ENABLED is retired)", async () => {
     const { q } = reader({});
     const rows = await loadNewsSettings("u", env(), q);
-    expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
+    expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "trade", "combo"]);
   });
 
   it("lists New precon with its stored choice", async () => {
@@ -248,6 +249,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
       { kind: "price-drop", on: false },
       { kind: "trade-match", on: false },
       { kind: "spare-request", on: true },
+      { kind: "trade", on: true },
       { kind: "combo", on: true },
     ]);
   });

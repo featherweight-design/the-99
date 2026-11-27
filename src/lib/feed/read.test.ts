@@ -72,7 +72,7 @@ describe("feedUnion", () => {
   });
 
   it("reads only the stored kinds asked for, and only the branches asked for", () => {
-    expect(params).toContainEqual(["price-drop", "trade-match", "spare-request", "combo"]);
+    expect(params).toContainEqual(["price-drop", "trade-match", "spare-request", "trade", "combo"]);
     const sets = flat(render(feedUnion("u", ["new-set"], NOW)).sql);
     expect(sets).not.toContain("precons");
     expect(sets).not.toContain("feed_items");

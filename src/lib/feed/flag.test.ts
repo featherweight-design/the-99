@@ -9,7 +9,7 @@ describe("the kinds available to a reader", () => {
   const feed = env();
 
   it("offers sets, new precons, price drops, trade matches, spare requests and combos with nothing else on", () => {
-    expect(availableFeedKinds(feed)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
+    expect(availableFeedKinds(feed)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "trade", "combo"]);
     expect(feedKindAvailable("new-precon", env())).toBe(true);
   });
 
@@ -29,6 +29,6 @@ describe("the kinds available to a reader", () => {
     for (const k of kinds) expect(feedKindAvailable(k, env({ ANNOUNCEMENTS_ENABLED: "1" }))).toBe(false);
     const on = env({ ...feed, ANNOUNCEMENTS_ENABLED: "true" });
     for (const k of kinds) expect(feedKindAvailable(k, on)).toBe(true);
-    expect(availableFeedKinds(on)).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "price-drop", "trade-match", "spare-request", "combo"]);
+    expect(availableFeedKinds(on)).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "price-drop", "trade-match", "spare-request", "trade", "combo"]);
   });
 });
