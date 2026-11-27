@@ -1,0 +1,115 @@
+--- a/src/components/decks/decklist.tsx
++++ b/src/components/decks/decklist.tsx
+@@ -74,8 +74,9 @@
+ import { useGotIt } from "./got-it";
+ import { reveal } from "../../lib/ui/reveal";
+ 
+-/** The keys' box at the foot of a list (R3-YourDeck): a hairline box that vanishes when no key draws. */
+-const KEYS_FOOT = "mt-[14px] flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
++/** The keys' box at the TOP of a list (Hugh 2026-11-27: a long page's key is met before its first row; only a
++ *  small in-view section keeps its key at the foot). A hairline box that vanishes when no key draws. */
++const KEYS_HEAD = "mb-[2px] flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
+ 
+ // Role order for Shopping groups — matches ROLE_TARGETS keys.
+ const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
+@@ -1009,6 +1010,7 @@
+             {...lockProps}
+           />
+           <DeckBarPanel value={filter}>
++          <div data-keys-head="" className={`${KEYS_HEAD} mx-[16px] md:mx-[26px] mt-[12px] md:mt-[14px]`}>{keyLine}</div>
+           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+             {autoBanner}
+           </div>
+@@ -1044,7 +1046,6 @@
+           <div className="px-[16px] pb-[4px] md:px-[26px]">
+             <TokensShoppingGroup />
+           </div>
+-          <div data-keys-foot="" className={`${KEYS_FOOT} mx-[16px] md:mx-[26px] mb-[14px]`}>{keyLine}</div>
+           </DeckBarPanel>
+         </div>
+       );
+@@ -1112,6 +1113,11 @@
+         <DeckBarPanel value={filter}>
+ 
+         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
++          {/* The keys open the list: the buy and over marks, then the marks the rows draw. */}
++          <div data-keys-head="" className={`${KEYS_HEAD} mb-[14px]`}>
++            <ShoppingKey shoppingCount={shoppingCount} />
++            {keyLine}
++          </div>
+           {autoBanner}
+ 
+           {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
+@@ -1203,11 +1209,6 @@
+           {/* The tokens joined to this deck: last, and not the deck's (they move none of the figures above). */}
+           <TokensShoppingGroup />
+ 
+-          {/* The keys close the list (R3-YourDeck): the buy and over marks, then the marks the rows draw. */}
+-          <div data-keys-foot="" className={KEYS_FOOT}>
+-            <ShoppingKey shoppingCount={shoppingCount} />
+-            {keyLine}
+-          </div>
+ 
+           {/* Footer — above a 1px --border rule */}
+           <div
+@@ -1270,6 +1271,8 @@
+           actually draws `P` had nothing to decode it. */}
+       {/* Grouped card rows */}
+       <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
++        {/* The key opens the list, in its own box: met before the first row, on a page too long to scroll to a foot. */}
++        <div data-keys-head="" className={`${KEYS_HEAD} mb-[14px]`}>{keyLine}</div>
+         {/* A refused sweep, keep-all or undo. Each message names its own write:
+             the sweep and the keep leave the deck as it was, an undo does not. */}
+         {autoError && (
+@@ -1364,8 +1367,6 @@
+             provider, so the list is exactly itself wherever the switch is off. */}
+         <TokensGroup />
+ 
+-        {/* The key closes the list (R3-YourDeck), in its own box. */}
+-        <div data-keys-foot="" className={KEYS_FOOT}>{keyLine}</div>
+       </HoverPreviewProvider>
+       </DeckBarPanel>
+     </div>
+--- a/src/components/decks/consider-panel.tsx
++++ b/src/components/decks/consider-panel.tsx
+@@ -596,6 +596,20 @@
+             />
+           </div>
+ 
++          {/* THE KEY, once for the panel rather than once per shelf: the marks are one vocabulary and a
++              reader learns it once. A box ABOVE the shelves (Hugh 2026-11-27): met before the first glyph, on a page too long to scroll to a foot.
++
++              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
++              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
++              candidates". See `AddSurfaceMarkKey`. */}
++          <DeckBox className="!mt-0 mb-[14px]">
++            <div className="flex flex-col gap-[8px] px-[14px] py-[12px] md:px-[16px]">
++              <AddSurfaceMarkKey />
++              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyAdd}</p>
++              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyFolded}</p>
++            </div>
++          </DeckBox>
++
+           {shelves.map((shelf, i) => (
+             <ShelfSection
+               // Keyed on deckId too, not just the shelf key: `BuilderShell` is
+@@ -635,19 +649,6 @@
+               onSeeCards={onSeeCards}
+             />
+           ))}
+-          {/* THE KEY, once for the panel rather than once per shelf: the marks are one vocabulary and a
+-              reader learns it once. A box below the shelves, as the board draws it.
+-
+-              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
+-              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
+-              candidates". See `AddSurfaceMarkKey`. */}
+-          <DeckBox className="!mt-[16px] md:!mt-[20px]">
+-            <div className="flex flex-col gap-[8px] px-[14px] py-[12px] md:px-[16px]">
+-              <AddSurfaceMarkKey />
+-              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyAdd}</p>
+-              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyFolded}</p>
+-            </div>
+-          </DeckBox>
+         </>
+       )}
+     </section>

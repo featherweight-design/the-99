@@ -40,3 +40,13 @@ Boards `R4-*.dc.html` (shots in `art/r4/`). Unlike R1–R3 these are the SHIPPED
 - Settings: `SECTION_HEAD` (all sections + Open links on /friends) and Kept back move to the ◆ display head.
 
 R4b (Hugh 2026-11-26): every board shows BEFORE (shipped main, `art/r4/before/`) above AFTER; Home redrawn as the full shipped Dashboard at zero decks with the feed on.
+
+## R5 — large-page keys back at the top (2026-11-27, approved)
+
+Hugh 2026-11-27: "be consistent about key placement" meant small sections in view only. Large pages (Decks, Deck details, Collections) keep their key at the TOP. R1 and R3 moved three large-page keys to the foot; R5 moves them back. Small boxes (a shelf, the To buy box) are unaffected.
+
+- R5-All: Your deck › All keys box moves from the list's foot to the top, above the first group (same box; the Lock cards swap keeps its slot). Card view: same move.
+- R5-Shopping: Shopping keys box (ShoppingKey + mark key) moves to the top, under the To buy box; the empty Shopping list's key goes to the top too.
+- R5-Consider: the one panel key box (marks + Add / Folded lines) moves from below the last shelf to above the first.
+
+Every board: BEFORE (shipped main 6f2c90e2, `art/r5/before/`) beside AFTER (`art/r5/`), both SSR'd from the shipped components. `scratch-gen/r5/proposal.diff` is the whole source change (decklist.tsx, consider-panel.tsx); recipe in `scratch-gen/r5/README.md`. Decks and Collections were checked: the refresh never moved their keys.
