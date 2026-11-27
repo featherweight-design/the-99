@@ -130,7 +130,7 @@ function List({
         <ul className="m-0 flex list-none flex-col gap-[10px] p-0 md:gap-[6px]">
           <ArrivalOrder>{rows.map((line) => (
             <li key={line.id}>
-              <SuggestionLine item={line} permits={permits} newestPriceAsOf={newestPriceAsOf} actions={actions} onSettled={onSettled} readOnly={readOnly} />
+              <SuggestionLine item={line} siblings={rows} permits={permits} newestPriceAsOf={newestPriceAsOf} actions={actions} onSettled={onSettled} readOnly={readOnly} />
             </li>
           ))}</ArrivalOrder>
         </ul>

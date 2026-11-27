@@ -43,8 +43,11 @@ export function SuggestionLine({
   actions,
   onSettled,
   readOnly = false,
+  siblings,
 }: {
   item: LineItem;
+  /** The list this line sits in, in drawn order: card details pages through it. */
+  siblings?: readonly LineItem[];
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
@@ -153,7 +156,7 @@ export function SuggestionLine({
         </span>
         <Thumb item={item} />
         {isAdd ? <OwnershipDot owned={item.owned} size={7} /> : null}
-        <Name item={item} />
+        <Name item={item} siblings={siblings} />
         {addMark ? <span className="hidden md:inline-flex">{addMark}</span> : null}
         {readOnly ? null : <span className="ml-auto hidden gap-[7px] md:flex">{yes}{no}</span>}
       </div>
@@ -239,14 +242,20 @@ function brokenLine(item: LineItem): string {
   return item.side === "add" ? copy.addAlreadyIn(item.cardName) : copy.cutGone(item.cardName);
 }
 
-function useOpen(item: LineItem) {
+/** A list's cards in the shape card details pages through: Prev/Next and the phone swipe walk the list in its drawn order. */
+function lineSiblings(items: readonly LineItem[]) {
+  return items.map((i) => ({ oracleId: i.cardOracleId, name: i.cardName, imageUri: i.cardImageUri }));
+}
+
+/** `siblings`: the list this line sits in. Absent, the card opens alone. */
+function useOpen(item: LineItem, siblings?: readonly LineItem[]) {
   const { open } = useCardDetail();
   const preview = usePreviewRow(item.cardImageUri);
   const intent = useCardIntent(item.cardOracleId);
   return {
     onClick: (event: React.MouseEvent<HTMLElement>) => open(
       item.cardOracleId,
-      [{ oracleId: item.cardOracleId, name: item.cardName, imageUri: item.cardImageUri }],
+      siblings ? lineSiblings(siblings) : lineSiblings([item]),
       undefined,
       { opener: event.currentTarget },
     ),
@@ -257,8 +266,8 @@ function useOpen(item: LineItem) {
 
 /** `strike={false}`: a cut not yet made reads plain (Suggested changes v2's pending rows); every other caller strikes. */
 /** `describedBy`: text that qualifies the card in its row (the confirmation's held row: why no Pull is offered). */
-export function Name({ item, strike = true, describedBy }: { item: LineItem; strike?: boolean; describedBy?: string }) {
-  const trigger = useOpen(item);
+export function Name({ item, strike = true, describedBy, siblings }: { item: LineItem; strike?: boolean; describedBy?: string; siblings?: readonly LineItem[] }) {
+  const trigger = useOpen(item, siblings);
   const add = item.side === "add";
   return (
     <button

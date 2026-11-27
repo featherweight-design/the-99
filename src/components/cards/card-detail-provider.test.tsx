@@ -1999,8 +1999,8 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     mount("o-b");
     await press();
     await screen.findByRole("dialog");
-    const prevPlate = screen.getByRole("button", { name: "Previous card: Card A" });
-    const nextPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    const prevPlate = screen.getByRole("button", { name: cardCarouselCopy.neighborAria("previous", "Card A") });
+    const nextPlate = screen.getByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card C") });
     expect(within(prevPlate).getByText("Card A")).toBeInTheDocument();
     expect(within(nextPlate).getByText("Card C")).toBeInTheDocument();
   });
@@ -2011,7 +2011,7 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     mount("o-b");
     await press();
     await screen.findByRole("dialog");
-    for (const [name, glyph] of [["Previous card: Card A", "‹"], ["Next card: Card C", "›"]] as const) {
+    for (const [name, glyph] of [[cardCarouselCopy.neighborAria("previous", "Card A"), "‹"], [cardCarouselCopy.neighborAria("next", "Card C"), "›"]] as const) {
       const plate = screen.getByRole("button", { name });
       const art = plate.firstElementChild as HTMLElement;
       expect(art).toHaveClass("rounded-[9px]");
@@ -2049,8 +2049,8 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     // the backdrop outside it, is what must be absent.
     const dialog = screen.getByRole("dialog");
     const plates = (name: string) => screen.queryAllByRole("button", { name }).filter((el) => !dialog.contains(el));
-    expect(plates("Previous card: Card A")).toHaveLength(0);
-    expect(plates("Next card: Card C")).toHaveLength(0);
+    expect(plates(cardCarouselCopy.neighborAria("previous", "Card A"))).toHaveLength(0);
+    expect(plates(cardCarouselCopy.neighborAria("next", "Card C"))).toHaveLength(0);
   });
 
   it("pages when a neighbor plate is pressed", async () => {
@@ -2059,7 +2059,7 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     await press();
     await screen.findByRole("dialog");
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Next card: Card C" }));
+      fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card C") }));
     });
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
   });
@@ -2073,8 +2073,8 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     mount("o-b");
     await press();
     await screen.findByRole("dialog");
-    const prevPlate = screen.getByRole("button", { name: "Previous card: Card A" });
-    const nextPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    const prevPlate = screen.getByRole("button", { name: cardCarouselCopy.neighborAria("previous", "Card A") });
+    const nextPlate = screen.getByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card C") });
     expect(prevPlate.className).toContain("absolute");
     expect(nextPlate.className).toContain("absolute");
     expect(prevPlate.style.left).toContain("calc(50% -");
@@ -2090,15 +2090,15 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     mount("o-b");
     await press();
     const dialog = await screen.findByRole("dialog");
-    expect(screen.getByRole("button", { name: "Next card: Card C" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card C") })).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(within(dialog).getAllByRole("button", { name: /^Look at /i })[0]);
     });
     // Named with the neighbor's own title — only a plate ever carries that form, so this
     // cannot collide with the footer's bare "Previous card"/"Next card" buttons, which stay
     // mounted (inert behind the zoom) regardless.
-    expect(screen.queryByRole("button", { name: "Previous card: Card A" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Next card: Card C" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: cardCarouselCopy.neighborAria("previous", "Card A") })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card C") })).not.toBeInTheDocument();
   });
 
   // Pre-open review, round 1: the arrow-key listener lived on the dialog element alone, so
@@ -2109,14 +2109,14 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     mount("o-a");
     await press();
     await screen.findByRole("dialog");
-    const nextPlate = screen.getByRole("button", { name: "Next card: Card B" });
+    const nextPlate = screen.getByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card B") });
     await act(async () => { fireEvent.click(nextPlate); });
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
     // The remounted instance restores focus to its own peek plate (H23 PR 2), which jsdom's
     // zero-rect layout can't exercise through the real focus-restoration path here — moved
     // by hand instead, to put document.activeElement on an element OUTSIDE the dialog, the
     // exact condition the old dialog-only listener went deaf under.
-    const arrivedPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    const arrivedPlate = screen.getByRole("button", { name: cardCarouselCopy.neighborAria("next", "Card C") });
     arrivedPlate.focus();
     expect(arrivedPlate).toHaveFocus();
     fireEvent.keyDown(arrivedPlate, { key: "ArrowRight" });

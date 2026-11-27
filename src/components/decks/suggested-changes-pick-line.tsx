@@ -22,8 +22,10 @@ const cardCopy = deckTuningCopy.card;
  * `new` mark, for a beat after the line lands.
  */
 export function SuggestedChangesPickLine({
-  item, permits, newestPriceAsOf, picked, off, onToggle, fresh = false, aim, readOnly = false, ownedFromOtherDecks = false,
+  item, permits, newestPriceAsOf, picked, off, onToggle, fresh = false, aim, readOnly = false, ownedFromOtherDecks = false, siblings,
 }: {
+  /** The side this line sits in, in drawn order: card details pages through it. */
+  siblings?: readonly LineItem[];
   /** The run offered copies held in the player's other decks (Small items 4, item 2): a held addition is marked, never
    *  tagged to buy, since the player asked for cards they own. */
   ownedFromOtherDecks?: boolean;
@@ -124,7 +126,7 @@ export function SuggestedChangesPickLine({
         {isAdd ? <OwnershipDot owned={item.owned} size={8} /> : null}
         <span className="flex min-w-0 flex-wrap items-center gap-[8px]">
           {/* Only a cut that is made strikes its name (Wait `.ln2.apd .nm.c`); a pending cut reads plain. */}
-          <Name item={item} strike={applied} />
+          <Name item={item} strike={applied} siblings={siblings} />
           {addMark ? <span className="hidden md:inline-flex">{addMark}</span> : null}
         </span>
         {toggle}
