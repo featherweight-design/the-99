@@ -1,100 +1,90 @@
-# Friend trades · R1 (account 2, 2026-11-27)
+# Friend trades · handoff
 
-Brief: `docs/superpowers/design-briefs/2026-11-27-friend-trades.md` (PR #3395), locked D1 to D7.
-Canvas (Design type): https://claude.ai/artifact/An3LAJziyAdcGsTuc2oj1G — Main, AskBack, Propose, AskBackTrade, Answer,
-Counter, Accepted, Look, Trades, Feed, Empty, Settings. Every frame is rendered from main with the shipped components and
-the shipped CSS, with `scratch-gen/proposal.diff` applied; card art from account-2 friend_decks. Friends: Colin, Peter, Max, Chris.
-Status: R1, awaiting Hugh's review. Not for main until approved (then `design/design_handoff_the99_friend_trades/`,
-mirroring `design_handoff_the99_social_r3/`).
+Approved by Hugh on 2026-11-27 after eleven rounds (R1 to R11). Brief: `docs/superpowers/design-briefs/2026-11-27-friend-trades.md`
+(D1 to D7 locked). Open `Main.dc.html` (or any board) from disk; `canvas.json` lays the boards out.
 
-## Calls (brief § Open for Design, 1 to 7)
+Every frame is rendered from main with `scratch-gen/proposal.diff` applied: the shipped shell, components and CSS at
+1300 and 390 css px. Sheets are drawn whole, cropped under the sheet. `proposal.diff` is the design's reference
+implementation of every string and layout call. It is not tested code: the plan rebuilds it with data, tests and the
+real handlers. R1's boards (a Trade tab, drawn on another account) are in this folder's git history only. The review
+canvas with every round is https://claude.ai/artifact/C6h8vk5x8WfuP4Y5hPQsa8 (private to Hugh).
 
-1. **Page, not sheet.** A friend page's fourth strip tab, **Trade** (`/friends/{id}/trade`), after Spares, always drawn.
-   One live trade per friend at a time (Q2), so the tab is that trade: composed when there is none, else the live trade
-   in its state. Ask back, pushes, What's new rows and Trades rows all land here.
-2. **Picking.** One `DeckBox` holds both sides: two cells drawn as the To buy box's (`price-strip.tsx`): mono label
-   (`From Colin`, `From you`), the cards as Spares-tab tiles (63/88, open card details), the 17px total, `N cards`, the
-   `1 of 2 priced` clause when it applies. Under the cells, the store provenance line. The foot holds the presses.
-   Composing or countering, a second box below is the **picker**: its band is the Requests box's `SegmentedSwitch`
-   (`Colin's spares · 12`, `Your spares · 6`), its body the Spares tab's `SparesChassis` and grid. Tile press = card
-   details (as everywhere); **Add** under the tile is the pick, the same press takes it out (`✓ In the trade`,
-   `aria-pressed`), picked tiles ringed (`RING`). Only spares are listed on both sides (D3).
-   **Send** appears only once each side has a card; until then the foot line says what it waits on.
-3. **Counter.** The same box redraws: a card new to a side is ringed with `ADDED`; one taken out stays, at 45%, with
-   `TAKEN OUT`; under each total, `was $16.99` (that side's total in the offer replaced). Foot: Send counter, Keep their
-   offer, "Your counter replaces Colin's offer. The days left stay as they are." Reading one: Yes/No/Counter plus
-   "Replaces your offer of Nov 24." Days left run from the first offer (D6).
-4. **States**, see the table below. List = the Requests box's third tab, **Trades**.
-5. **Feed** kind `trade` (D7), kicker `Trade`, one row per push kind; the push sends the same title and line.
-6. **Empty states**: the Requests box's `PanelEmpty` with `HandoverMark`.
-7. **Ask back** on the holder's **Yes receipt** (Waiting on you row's action line, Home lead's filled press, What's new
-   row's text press), never on an offer's receipt. Opens the asker's Trade tab, picker on their spares, the yes card on
-   your side marked `ALREADY A YES`. The yes stands whatever they answer.
+States and strings: `STATES.md`. Verdict: `READINESS.md`. Re-rendering: `scratch-gen/HOW.md`.
 
-## States
+## Boards
 
-| State | Trade tab (band · foot) | Trades row (kicker · title · line · action) | Board |
-|---|---|---|---|
-| draft | Propose a trade to Colin · Send offer (both sides filled) + "Colin has 14 days to answer." | none | T1, T1b |
-| ask back | Ask Peter back · Send + "Your yes on Lathliss stands either way." | none | T2 |
-| open, to you | Colin's offer · Yes, No, days left, Counter | TRADE OFFER · Colin offers Ghalta and Sai for your Lathliss · 13 days left · Answer › | T3 |
-| open, yours | Your offer, days left · Withdraw + "Waiting on Max." | OFFERED · You offered Zimone to Max for … · Waiting on Max · 12 days left · Open › | T6 |
-| countered (making) | Your counter · Send counter, Keep their offer | none | T4 |
-| countered (to you) | Peter's counter · Yes, No, Counter + "Replaces your offer of Nov 24." | COUNTERED · Peter countered your trade · Now Miku for your Dina and Zada · 9 days left · See the counter › | T5 |
-| accepted | Accepted · Mark traded, "Hand them over when you meet…", Call it off | ACCEPTED · Chris accepted your trade · Hand them over, then mark it traded. · Mark traded | T7 |
-| traded by them | Accepted · Mark traded + "Colin marked it traded…" | TRADED BY COLIN · Colin marked the trade done · Mark it too… · Mark traded | T8 |
-| traded by you | Accepted · "You marked it traded. Waiting on Colin." | TRADED BY YOU · … · Waiting on Peter to mark it too. · Open › | T8b |
-| traded by both | Traded (success wash) · "Traded Nov 27. Your collection stays as it is until you change it." + Propose a new trade | TRADED · You and Peter traded · Miku for Dina and Zada · Nov 24… · ✕ | T9 |
-| declined | tab composes again | DECLINED · Max declined your trade · Nothing else changes. · ✕ | L1 |
-| withdrawn | tab composes again | WITHDRAWN · Chris withdrew the trade · Nothing else changes. · ✕ | L1 |
-| expired | tab composes again | NO ANSWER · Colin didn't answer your trade · Offered 14 days ago. · ✕ | L1 |
-| needs a look | Needs a look · reason line, Counter, Withdraw, days left; gone card `NO LONGER SPARE` (--warning) | NEEDS A LOOK (--warning) · Giada is no longer spare · Max's trade can't go ahead as it is · 6 days left · Take a look › | T10 |
+| Board | Frames | What it settles |
+|---|---|---|
+| Spares | S0, S0w, S4, S9 | The friend's Spares tab holds trades: Trades with X box, Wanted call-out, All / You want, the two tile chips, the cap |
+| Ask | S1, D1 | The spares sheet: Ask stays primary, Trade quiet beside it, "Offer waiting" |
+| Propose | S2, S3, S3t, S3p | The trade sheet and its picker: Add, the Wants and Offered chips, the Offered popover |
+| Answer | S5, T5, S8, S7 | Offer, counter to you, making a counter, needs a look |
+| Waiting | T6, S6, T8, T8b, T9 | Your offer, accepted, marked traded by one side, traded |
+| FromDeck | D2, D3, D4 | Trading from a deck or All shopping without leaving it |
+| MakeTrade | A0, A1, A2, A3, H1 | Make it a trade from a Yes; days left beside Yes and No |
+| Lists | L1, L2, E3, RH, N2, ST | Friends › Trades, Request history › Trades, Home lead, Settings row |
 
-Trades list order: waiting on you first (offer, counter, needs a look, accepted, traded by them), then the rest, newest
-first. Ended rows stay until ✕ (as Your requests). The tab label takes `--accent-text` while one waits on you.
-Row picture (`TradePicture`): the friend's first card with their face, your first card fanned behind (-9°).
+## Calls (brief § Open for Design)
 
-## Feed rows (one per push kind)
+1. **Where the trade lives: a sheet, on the Spares tab.** No fourth strip tab. Trades live on the friend's Spares tab
+   (`friend-spares-tab.tsx`), headed by **Trades with X** (`trades-head.tsx`, a `DeckBox` of `TradeRows`, only when a
+   trade is live, foot: Propose another trade). Every trade, made or read, opens in one **TradeSheet**
+   (`trade-sheet.tsx`, `ModalChrome`): bottom sheet on a phone, centred at 640px on desktop. The strip's Spares figure
+   takes a dot while a trade waits on you.
+2. **Picking.** The sheet's box has two sides (`From Colin`, `From you`), each its cards, its own total and `N cards`,
+   the store provenance once. Empty side = a card slot with +. Under it the picker: a bare `SegmentedSwitch`
+   (`Colin's spares · 12` / `Your spares · 6`), the wishlist line ("2 are on Colin's wishlist, listed first."), the key
+   line (two-people glyph "wants it", out-arrow "already offered"), then tiles. Each tile: the card, **Add** 10px under
+   it (`✓ In the trade` once picked, ringed, `aria-pressed`), then one line of chips:
+   - **Wants** (fact blue, two-people glyph, the friend's name): only on your side, only this trade's friend.
+   - **Offered** (muted, out-arrow): the one friend's name, or `N friends`. On a phone, a several-friends chip drops
+     its arrow so `N friends` fits whole (chip text 10.5px under 375px wide, 11px above).
+   - Both chips are half width each. Absent chips are filtered out, so a lone Offered sits on the left.
+   - **Offered is a press**: a popover, "Also in your offers to", lists each friend with `Waiting · N days left` and
+     `Open ›` to that trade. The chip's accessible name is the full sentence ("Offered to Peter and Chris").
+   Only spares on both sides (D3). A spare may sit in two offers (Q9).
+3. **Counter.** The same sheet: cards new to a side ringed `ADDED`, cards taken out faded `TAKEN OUT`, `was $N` under
+   each total. Reading one: Yes, No, Counter in one row, then "Replaces your offer of Nov 24." Days left run from the
+   first offer and never reset (D6).
+4. **States:** `STATES.md`. Lists: the Requests box's third tab, **Trades** (five rows, waiting on you first, then a
+   foot naming the rest), and Request history › Trades for all of them.
+5. **Feed** kind `trade` (D7), kicker `Trade`, one row per push (offer, counter, accept, decline), on by default in app
+   and push; Settings row `Trades`.
+6. **Empty states:** the Requests box's `PanelEmpty` (No trades yet); a side with no spares gets its own line
+   (`tradeCopy.empty`).
+7. **Ask back = Make it a trade**, on the holder's Yes receipt ("You're giving Lathliss to Peter"), on Friends' Waiting
+   on you, the Home lead and What's new. It opens the trade sheet with your yes on your side (`YOUR YES`). The yes
+   stands whatever they answer.
 
-| Push | Title | Line | Press |
-|---|---|---|---|
-| offer | Colin offers a trade | Ghalta and Sai for your Lathliss. | See the trade › |
-| counter | Peter countered your trade | Now Miku for your Dina and Zada. | See the counter › |
-| accept | Chris accepted your trade | Hand them over, then mark it traded. | See the trade › |
-| decline | Max declined your trade | Nothing else changes. | See the trade › |
+## Calls beyond the brief (Hugh's rounds)
 
-Offer and counter wait on the reader: `WAITING_KINDS` and `LEAD_PRIORITY` (after `spare-request`). Settings row:
-`Trades` / "A friend offers, counters, accepts or declines a trade with you." `DEFAULT_ON_KINDS` (in app and push).
+- **Asking stays first.** The spares sheet keeps Ask as the primary press; Trade is quiet (outline) beside it, with
+  "Ask and they give it to you. Trade to offer one of your spares for it." A friend with your unanswered offer shows
+  `Offer waiting` instead of Trade.
+- **Trade from a deck or All shopping** opens the trade sheet over the list, the pressed card already on the friend's
+  side. Sent: `Done` stays, `Open the trade ›` goes to the friend's Spares tab with a back link named for where you
+  came from (‹ All shopping, ‹ the deck).
+- **One unanswered offer per friend (Q10).** Accepted trades don't count, counters are never held. Propose another
+  trade is held, with "Resolve your open trade before proposing another."
+- **The Spares tab reuses the Wishlist tab's You have it parts:** the `Wanted` call-out of `TodoRow`s ("Colin has 4
+  cards you want", bookmark; "Colin wants 2 of your spares", two-people glyph in fact blue via the new
+  `TodoRow markTone="fact"`, with a Trade press), the compact radio switch `All 12 / You want 4`, the key line, then the
+  shipped search, Filters and Sort.
+- **Spares tiles: two half-width chips at most.** A gray count with no icon (`1 spare`, Collection's quantity ink,
+  tabular figures), and why you want it: `Wishlist` (bookmark, plus a dashed dot if a deck also needs it) or `A deck`
+  (dashed dot, muted). With Keep my shopping on my wishlist on, a deck's card is a wishlist card, so one reason is the
+  rule. While your ask is open, or after a yes, the count chip reads `Asked` (accent dot) or `Agreed` (success tick).
+- **Friends list:** a `you want` chip (bookmark, accent) beside the shipped `they want` chip, linking to
+  `/friends/{id}/spares?wanted=wishlist,deck`; words on desktop, key line on a phone.
+- **Days left sit right of Yes and No** on every request row and in the sheet, so rows don't grow.
+- **Gone card:** a danger-tint ⊘ badge on the card ("No longer available"), not a line of text.
+- **Ending a trade:** `Withdraw` your own unanswered offer; `Rescind trade` after an accept (beside Mark traded).
+- **Numbers always carry a word:** `2 friends`, `1 spare`, `4 cards`.
 
-## Totals (D4)
+## Files the plan touches (from `proposal.diff`)
 
-Each side's own figure (`summarisePrices` over that side's cards at the price the app already draws), the store's
-provenance line once under both. No difference, no comparison, no verdict colour or copy anywhere. A counter's `was`
-line is that side's own earlier figure, not a comparison between sides.
-
-## Questions for Hugh
-
-- Q1 The brief names `answer-sheet.tsx` for Ask back; that sheet is the asker's view of an answer. Drawn on the
-  holder's Yes receipt instead (recommended).
-- Q2 One live trade per friend at a time (recommended).
-- Q3 One copy per card per trade in v1 (recommended).
-- Q4 Call it off after an accept, either side; the other sees Withdrawn (recommended).
-
-## Gaps for engineering
-
-- G1 `friend_trades` + lines tables; one-live-per-pair unique index; `initiated_by` and `ask_back_of` (the spare request).
-- G2 Needs a look derived on read (a line's card no longer in the holder's spares), as expiry is derived.
-- G3 `AnswerPresses` needs a `trade` flag for its aria labels (as `offer`).
-- G4 Feed kind `trade`: `FEED_KINDS`, `STORED_KINDS`, `PUSH_OUTBOX_KINDS` (append, migration), push copy in `push.ts`.
-- G5 Ended trades in Request history: later round.
-- G6 Copy review on every string in `scratch-gen/trades.ts`.
-
-## Files
-
-`*.dc.html` + `canvas.json` (the canvas as exported), `art/` (frames, webp, 2x), `scratch-gen/`: `trade-tab.tsx`,
-`trade-rows.tsx`, `trades.ts` (the proposal as code), `proposal.diff` (all source changes: friend strip tab, Requests box
-third tab, Ask back on receipts, feed kind, copy), `render.tsx` + `fx.tsx` (frames), `boards.py` (boards).
-SSR recipe (friends_link): copy main, drop `@fwd-stack/*`, `npm install --ignore-scripts`, `tsconfig.scratch.json` +
-`stubs/`, apply the diff, `node css.mjs`, `DATABASE_URL=postgres://x:y@localhost/z npx tsx --tsconfig tsconfig.scratch.json dz/render.tsx`,
-`FULL=1 node dz/shoot.cjs`. Render-only switches (not in the diff): `HydratedImg` draws src on the server; `__TAB`,
-`__RECEIPTS`, `__ANSWERED`, `__DEVICE` set initial client state.
+New: `src/components/social/{trade-sheet,trade-tab,trade-rows,trades-head}.tsx`, `src/lib/copy/trades.ts`.
+Changed: `friend-spares-tab`, `friend-spares`, `friend-strip`, `friend-head`, `friends-list`, `friends-view`,
+`requests-box`, `request-history`, `waiting-on-you`, `spare-answer`, `spare-key-item` (social);
+`decks/todo-card` (`markTone`), `feed/feed-item`, `home/lead-story`, `settings/news-section`, `place/place-strip`;
+`lib/copy/{social,feed}.ts`, `lib/feed/kinds.ts`.

@@ -1,3 +1,36 @@
+diff --git a/src/components/decks/todo-card.tsx b/src/components/decks/todo-card.tsx
+index 2c2aacf..cb31f1d 100644
+--- a/src/components/decks/todo-card.tsx
++++ b/src/components/decks/todo-card.tsx
+@@ -79,6 +79,8 @@ export interface TodoRowProps {
+   /** Warnings draw a danger mark and an over-colored title; actions an accent mark. */
+   tone: "warning" | "action";
+   mark: ReactNode;
++  /** Friend trades R6: the mark in the fact ink (the two-people "they want" glyph is blue everywhere else). */
++  markTone?: "fact";
+   title: ReactNode;
+   body: ReactNode;
+   /** The next step: the label, the tint, the inset edge and the only filled press. */
+@@ -108,7 +110,7 @@ export interface TodoRowProps {
+ /** The danger tint a warning's mark sits on. Named, because the spoken-for-twice glyph's seam is drawn in it. */
+ export const WARNING_TINT = "color-mix(in srgb, var(--danger) 16%, var(--bg))";
+ 
+-export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleRef }: TodoRowProps) {
++export function TodoRow({ tone, markTone, mark, title, body, next, press, pressRef, titleRef }: TodoRowProps) {
+   const pressClass = [
+     "flex-none flex items-center justify-center gap-[5px] w-[96px] md:w-[132px] h-[36px] rounded-[8px]",
+     "font-sans font-semibold text-[12.5px] whitespace-nowrap no-underline cursor-pointer disabled:cursor-default disabled:opacity-50",
+@@ -147,7 +149,9 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleR
+           "flex-none flex items-center justify-center w-[30px] h-[30px] rounded-[8px] font-mono font-semibold text-[12px]",
+           warning
+             ? "bg-[color:color-mix(in_srgb,var(--danger)_16%,var(--bg))] text-[color:var(--danger)]" // WARNING_TINT
+-            : "bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))] text-[color:var(--accent-text)]",
++            : markTone === "fact"
++              ? "bg-[color:color-mix(in_srgb,var(--fact)_14%,var(--bg))] text-[color:var(--fact)]"
++              : "bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))] text-[color:var(--accent-text)]",
+         ].join(" ")}
+       >
+         {mark}
 diff --git a/src/components/feed/feed-item.tsx b/src/components/feed/feed-item.tsx
 index 29ef70d..970d524 100644
 --- a/src/components/feed/feed-item.tsx
@@ -76,6 +109,32 @@ index d4f7c54..db5a038 100644
          {(text.press || (ask && !receipt)) && (
            <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-start gap-[8px] md:items-center">
              {two && text.press ? (
+diff --git a/src/components/place/place-strip.tsx b/src/components/place/place-strip.tsx
+index 221f021..368eb9a 100644
+--- a/src/components/place/place-strip.tsx
++++ b/src/components/place/place-strip.tsx
+@@ -25,6 +25,8 @@ export type PlaceTab = {
+   label: string;
+   /** A figure drawn small after the label (a friend page's Spares, Wishlist and Decks). Absent draws none. */
+   count?: number;
++  /** Friend trades R2: an accent diamond after the figure while something on the tab waits on the reader, with its words for a screen reader. */
++  waits?: string;
+ };
+ 
+ /** Collection's and Commanders' strip: flush under the place head, padded to the page's gutter. */
+@@ -101,6 +103,12 @@ export function PlaceStrip({
+                 {tab.count.toLocaleString("en-US")}
+               </em>
+             )}
++            {tab.waits ? (
++              <span className="ml-[6px] inline-flex items-center">
++                <i aria-hidden className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
++                <span className="sr-only">, {tab.waits}</span>
++              </span>
++            ) : null}
+             <PendingReporter href={tab.href} />
+           </Link>
+         );
 diff --git a/src/components/settings/news-section.tsx b/src/components/settings/news-section.tsx
 index 6e88bd2..c76e0f7 100644
 --- a/src/components/settings/news-section.tsx
@@ -89,11 +148,322 @@ index 6e88bd2..c76e0f7 100644
    // A subscribe or unsubscribe in flight holds the device box.
    const [deviceBusy, setDeviceBusy] = useState(false);
    const [sheet, setSheet] = useState(false);
+diff --git a/src/components/social/friend-head.tsx b/src/components/social/friend-head.tsx
+index 5532d3e..520e9e9 100644
+--- a/src/components/social/friend-head.tsx
++++ b/src/components/social/friend-head.tsx
+@@ -21,7 +21,11 @@ import { SocialToast, type SocialToastState } from "./social-toast";
+ const p = socialCopy.friendPage;
+ const f = socialCopy.friends;
+ 
+-export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number }) {
++export function FriendHead({ friend, nowMs, back = null }: {
++  friend: Friend; nowMs: number;
++  /** Friend trades R2: opened from a deck or All shopping (`?from=`), the back link goes there, by name, in place of Friends. */
++  back?: { href: string; label: string } | null;
++}) {
+   const router = useRouter();
+   // Days in UTC until hydrated, as the server drew them, and the reader's own after (as `/friends`).
+   const timeZone = useHydrated() ? undefined : "UTC";
+@@ -44,9 +48,9 @@ export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number })
+   const since = f.since(sinceDay(friend.since, new Date(nowMs), timeZone));
+   return (
+     <div>
+-      <Link href="/friends" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">
+-        {p.back}
+-        <PendingReporter href="/friends" />
++      <Link href={back?.href ?? "/friends"} className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">
++        {back ? `‹ ${back.label}` : p.back}
++        <PendingReporter href={back?.href ?? "/friends"} />
+       </Link>
+       <div className="mt-[14px] flex items-center gap-[16px]">
+         <Face name={friend.displayName} commander={friend.commander} size={64} />
+diff --git a/src/components/social/friend-spares-tab.tsx b/src/components/social/friend-spares-tab.tsx
+index 41b8d12..5e626cd 100644
+--- a/src/components/social/friend-spares-tab.tsx
++++ b/src/components/social/friend-spares-tab.tsx
+@@ -10,7 +10,9 @@
+ // modal's words. `?spare={oracleId}` opens that card's modal on landing, or, the spare gone, draws the shared toast; the
+ // parameter is stripped either way.
+ 
+-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
++import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
++import { SegmentedSwitch } from "../ui/segmented-switch";
++import { tradeCopy } from "../../lib/copy/trades";
+ import { useRouter } from "next/navigation";
+ import type { FriendSpare, FriendSpareLine, FriendSpareList } from "../../lib/social/spares";
+ import type { ProfileCommander } from "../../lib/social/commander";
+@@ -25,7 +27,8 @@ import type { PriceFact } from "../../lib/decks/price";
+ import { CardDetailProvider, CardDetailTrigger, cardDetailCopy, type SiblingCard } from "../cards/card-detail-provider";
+ import { HydratedImg } from "../ui/hydrated-art";
+ import { FriendSparesProvider, SparesSheetHost, usePageSpares, type SpareCard } from "./spare-markers";
+-import { rowAsk } from "./friend-spares";
++import { rowAsk, SheetTradeContext } from "./friend-spares";
++import { WishGlyph } from "./spare-key-item";
+ import { SocialToast, type SocialToastState } from "./social-toast";
+ import { SparesChassis } from "./spares-chassis";
+ import { GhostButton, PrimaryButton } from "../ui/button";
+@@ -48,10 +51,27 @@ const EAGER_TILES = 4;
+ 
+ /** The tab's search, filters and order as the address carries them (`?q=`, `?colors=`, `?types=`, `?wanted=`, `?sort=`). */
+ export type SparesView = { filters: SpareFilters; sort: SpareSort };
++
++/**
++ * Friend trades R2 (item b: one tab, not two): the trade the tab holds. Once a trade has a card the tab draws the side
++ * switch (the friend's spares, yours) over the chassis, and every tile a Trade toggle under it; a live trade that is not
++ * the reader's to change (sent, waiting, accepted) keeps the tiles asking only, and the line says how to change it.
++ */
++export type SparesTabTrade = {
++  side: "them" | "you";
++  yours: SpareBrowseLine[];
++  picked: ReadonlySet<string>;
++  /** Composing (a draft, Make it a trade, a counter being made): tiles take the Trade toggle. */
++  composing: boolean;
++  /** The switch shows once the trade has a card (or is live). */
++  started: boolean;
++};
++const TradePick = createContext<SparesTabTrade | null>(null);
+ const NO_NEED: Record<string, number> = {};
+ const REST_VIEW: SparesView = { filters: NO_SPARE_FILTERS, sort: "wanted" };
+ 
+-export function FriendSparesTab({ name, spares, asks, deckNeed = NO_NEED, initial = REST_VIEW }: {
++export function FriendSparesTab({ name, spares, asks, deckNeed = NO_NEED, initial = REST_VIEW, trade = null }: {
++  trade?: SparesTabTrade | null;
+   name: string | ThirdPartyName;
+   spares: FriendSpareList | null;
+   asks?: FriendSparesAsks;
+@@ -97,7 +117,7 @@ export function FriendSparesTab({ name, spares, asks, deckNeed = NO_NEED, initia
+       onClearAll={() => update({ ...view, filters: NO_SPARE_FILTERS })}
+     />
+   ) : null;
+-  if (asks) return <AskTab spares={spares} all={all} lines={visible} frame={frame} none={none} asks={asks} onWishlistWrite={onWishlistWrite} />;
++  if (asks) return <TradePick.Provider value={trade}><AskTab spares={spares} all={all} lines={trade?.side === "you" ? trade.yours : visible} frame={frame} none={none} asks={asks} onWishlistWrite={onWishlistWrite} /></TradePick.Provider>;
+   return (
+     <>
+       {frame}
+@@ -178,16 +198,31 @@ function AskTab({ spares, all, lines, frame, none, asks, onWishlistWrite }: {
+   }, [byId, spares.friend]);
+   const kickerFor = useCallback((id: string) => (byId.get(id)?.onWishlist ? p.spares.onWishlist : null), [byId]);
+   const tiles = useRef(new Map<string, HTMLButtonElement>());
++  const trade = useContext(TradePick);
++  const sheetTrades = useContext(SheetTradeContext);
++  const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
+   return (
+     <>
++      {trade?.started ? (
++        <div className="mt-[22px] flex rounded-[10px] bg-[color:var(--surface-rail)] p-[5px] [border:1px_solid_var(--border)] md:mt-[26px] md:max-w-[440px]">
++          <SegmentedSwitch kind="tabs" ariaLabel="Spares" size="compact" fill value={trade.side} onChange={() => {}}
++            segments={[
++              { value: "them", label: <PersonText text={tradeCopy.pick.theirs(friend.displayName)} />, count: count(all.length) },
++              { value: "you", label: tradeCopy.pick.yours, count: count(trade.yours.length) },
++            ]} />
++        </div>
++      ) : null}
+       {frame}
+       <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
+-        <PersonText text={p.spares.line(spares.pods)} />{p.spares.pressToAsk}
++        {trade?.side === "you" ? tradeCopy.sideNote.yours
++          : trade && trade.started && !trade.composing ? <PersonText text={tradeCopy.liveNote(friend.displayName)} />
++          : <><PersonText text={p.spares.line(spares.pods)} />{trade || sheetTrades ? p.spares.pressToAskOrTrade : p.spares.pressToAsk}</>}
+       </p>
+       {none}
+       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
+         <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
+           <SparesSheetHost first={friend.publicId} kickerFor={kickerFor} fallback={fallback} />
++          {trade?.side === "you" && lines.length === 0 ? <Empty title={tradeCopy.empty.yoursTitle} body={tradeCopy.empty.yoursBody} /> : null}
+           {/* Four columns until xl: at md's narrow end six leave a tile too narrow for its one-line Requested caption. */}
+           <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-4 md:gap-[20px] xl:grid-cols-6">
+             {lines.map((line, i) => (
+@@ -218,6 +253,8 @@ function AskTile({ line, price, eager, friend, tileRef }: {
+   // THIS friend's ask for the card, in the modal's words: Requested while open, Accepted after a yes, else nothing.
+   const ask = ctx?.requests ? rowAsk(ctx.requests.asksFor(line.oracleId), friend).kind : null;
+   const state = ask === "requested" ? spareCopy.request.requested : ask === "accepted" ? spareCopy.request.accepted : null;
++  const trade = useContext(TradePick);
++  const inTrade = trade?.picked.has(line.oracleId) ?? false;
+   const aria = [spareCopy.markerAria(line.name), count, line.onWishlist ? p.spares.onWishlist : null, line.deckNeed > 0 ? sparesSearchCopy.tile.deck(line.deckNeed) : null, state].filter(Boolean).join(", ");
+   return (
+     <li data-testid="spare-tile" className="flex min-w-0 flex-col gap-[6px]">
+@@ -235,34 +272,59 @@ function AskTile({ line, price, eager, friend, tileRef }: {
+           e.currentTarget.focus();
+           ctx?.open(asSpareCard(line, price));
+         }}
+-        className={`${TILE_BOX} ${RING_ON_FOCUS} ${open ? RING : ""}`}
++        className={`${TILE_BOX} ${RING_ON_FOCUS} ${open || inTrade ? RING : ""}`}
+       >
+         <TileArt line={line} eager={eager} />
+       </button>
+-      <span className="flex flex-col gap-[3px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">
+-        <span data-testid="spare-count" className="flex items-center gap-[5px] whitespace-nowrap">
+-          <span>{count}</span>
+-          {state ? (
+-            <>
+-              <span aria-hidden>·</span>
+-              {ask === "requested" ? (
+-                <span data-testid="spare-ask" data-ask="requested" className="inline-flex items-center gap-[6px] text-[color:var(--accent-text)]">
+-                  <i aria-hidden className="size-[7px] rounded-full bg-[color:var(--accent)]" />
+-                  {state}
+-                </span>
+-              ) : (
+-                <span data-testid="spare-ask" data-ask="accepted" className="text-[color:var(--success)]">✓ {state}</span>
+-              )}
+-            </>
+-          ) : null}
+-        </span>
+-        {line.onWishlist && <WishlistMark />}
+-        {line.deckNeed > 0 && <DeckNeedMark need={line.deckNeed} />}
++      {/* R9 (Hugh 2026-11-27): the tile's facts as the picker's chips, two at most, each half the width. One: the count, its
++          glyph carrying this friend's ask (accent dot while requested, success tick once accepted). Two: why you want it.
++          With Keep my shopping on my wishlist on, a deck's card is a wishlist card, so one reason is the rule; without
++          it a card can be both, and the chip keeps one word (Wishlist) and draws both glyphs, which the key names. */}
++      <span className="flex min-w-0 gap-[4px]">
++        {/* R10 (Hugh 2026-11-27): the count is only a card count, so it is gray with no glyph, in Collection's tabular
++            figures; the spare glyph read as "a friend wants it". While this friend's ask is open, or after their yes, the
++            chip says that instead (Asked in accent, Agreed in success): the tile's half width cannot hold both, and the
++            sheet the tile opens still shows the count. */}
++        {ask === "requested" || ask === "accepted" ? (
++          <TileChip tone={ask === "accepted" ? "success" : "accent"} glyph={ask === "accepted" ? <span className="text-[11px] leading-none">✓</span> : <i className="size-[6px] rounded-full bg-current" />}>
++            {ask === "accepted" ? p.spares.chipYours : p.spares.chipAsked}
++          </TileChip>
++        ) : (
++          <TileChip tone="muted" glyph={null}>
++            <span data-testid="spare-count" className="tabular-nums">{count}</span>
++          </TileChip>
++        )}
++        {line.onWishlist || line.deckNeed > 0 ? (
++          <TileChip tone={line.onWishlist ? "accent" : "muted"} glyph={<>
++            {line.onWishlist ? <WishGlyph size={11} /> : null}
++            {line.deckNeed > 0 ? <i aria-hidden className="size-[8px] shrink-0 rounded-full border border-dashed border-current" /> : null}
++          </>}>
++            {line.onWishlist ? p.spares.chipWishlist : p.spares.chipDeck}
++          </TileChip>
++        ) : null}
++        {trade?.composing ? (
++          <button type="button" aria-pressed={inTrade} aria-label={inTrade ? tradeCopy.inAria(line.name) : tradeCopy.addAria(line.name)}
++            className={`ml-auto inline-flex h-[32px] flex-none cursor-pointer items-center gap-[5px] rounded-[7px] px-[10px] font-sans text-[12.5px] font-medium md:h-[28px] ${inTrade ? "bg-[color:color-mix(in_oklab,var(--success)_14%,transparent)] text-[color:var(--success)] [border:1px_solid_color-mix(in_oklab,var(--success)_40%,transparent)]" : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"}`}>
++            {inTrade ? <>✓ {tradeCopy.inPress}</> : <>+ {tradeCopy.addPress}</>}
++          </button>
++        ) : null}
+       </span>
+     </li>
+   );
+ }
+ 
++/** R9: one of a tile's two chips (SpareChip's shape), half the tile's width. Its words are aria-hidden: the tile's press reads them. */
++function TileChip({ tone, glyph, children }: { tone: "fact" | "success" | "accent" | "muted"; glyph: ReactNode; children: ReactNode }) {
++  const ink = { fact: "text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]", success: "text-[color:var(--success)] bg-[color-mix(in_oklab,var(--success)_14%,transparent)]",
++    accent: "text-[color:var(--accent-text)] bg-[color-mix(in_oklab,var(--accent)_14%,transparent)]", muted: "text-[color:var(--fg-muted)] bg-[color-mix(in_oklab,var(--fg-muted)_12%,transparent)]" }[tone];
++  return (
++    <span aria-hidden className={`inline-flex h-[22px] min-w-0 flex-1 basis-0 items-center gap-[4px] rounded-[4px] px-[6px] font-sans text-[11.5px] font-medium ${ink}`}>
++      {glyph ? <span className="inline-flex flex-none items-center gap-[3px]">{glyph}</span> : null}
++      <span className="min-w-0 truncate">{children}</span>
++    </span>
++  );
++}
++
+ function TileArt({ line, eager }: { line: FriendSpareLine; eager: boolean }) {
+   return line.imageUri ? (
+     <HydratedImg eager={eager} src={line.imageUri} alt="" decoding="async" className="absolute inset-0 block h-full w-full object-cover object-center" />
+diff --git a/src/components/social/friend-spares.tsx b/src/components/social/friend-spares.tsx
+index 44a86cf..de54071 100644
+--- a/src/components/social/friend-spares.tsx
++++ b/src/components/social/friend-spares.tsx
+@@ -13,6 +13,7 @@ import type { FriendSpare } from "../../lib/social/spares";
+ import type { AskStateLine } from "../../lib/social/spare-requests";
+ import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
+ import { spareCopy } from "../../lib/copy/social";
++import { tradeCopy, cardList } from "../../lib/copy/trades";
+ import { PersonName, PersonText, compareNames, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
+ import { printedFaceName } from "../../lib/collection/browse";
+ import type { DeckDetailCard } from "../../lib/decks/grouping";
+@@ -20,7 +21,7 @@ import { InfoTip } from "../ui/info-tip";
+ import { Face } from "./face";
+ import { SocialToast, type SocialToastState } from "./social-toast";
+ import { useGotIt } from "../decks/got-it";
+-import { SpareChip, isOpen } from "./spare-key-item";
++import { SpareChip, SpareGlyph, isOpen } from "./spare-key-item";
+ import { useCartGotIt } from "../decks/cart/cart-got-it";
+ 
+ /** One Ask or Ask instead from the modal: the friend, the card and the copies the row is short. */
+@@ -43,6 +44,22 @@ export type RequestsCtx = {
+ /** Provided by `FriendSparesProvider` beside its own context; null outside it or with the switch off. */
+ export const SpareRequestsContext = createContext<RequestsCtx | null>(null);
+ 
++/**
++ * Friend trades R2 (Hugh 2026-11-27): the sheet's rows offer Trade beside Ask, so a trade can start from a deck or All
++ * shopping and be made in the sheet, never leaving the page. A friend already in a live trade with the reader (one per
++ * pair, Q2) draws `Trade open ›` instead, which opens that friend's Spares tab with the way back. Absent, rows are as shipped.
++ */
++export type SheetTrades = {
++  /** R3: live trades per friend. Several may be open with one friend at a time, so Trade is always offered; the count is said. */
++  open: ReadonlyMap<string, number>;
++  /** R3: the reader's spares on each friend's wishlist (names), the nudge a trade answers. */
++  wants: ReadonlyMap<string, readonly string[]>;
++  onTrade: (friendPublicId: string) => void;
++  /** R4b (Q10): friends with an unanswered offer from the reader: Trade is held, the row says why. */
++  waiting?: ReadonlySet<string>;
++};
++export const SheetTradeContext = createContext<SheetTrades | null>(null);
++
+ // The key's glyphs and marks live in `spare-key-item.tsx` (split 5i); re-exported so existing imports keep working.
+ export { MarkedSpareGlyph, SpareGlyph, cardMark, type SpareMark } from "./spare-key-item";
+ 
+@@ -193,6 +210,7 @@ export const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-n
+ /** The rows with Ask (`.fsx2`, `.fsr`): one sub line and one thing on the right per friend, the ⓘ, the state line. */
+ function RequestSection({ spares, card, requests, first }: { spares: readonly FriendSpare[]; card: SectionCard; requests: RequestsCtx; first?: string }) {
+   const tipId = useId();
++  const trades = useContext(SheetTradeContext);
+   const rows = orderSparesFirst(spares, first).map((s) => ({ s, name: s.friend.displayName, ask: rowAsk(requests.asksFor(card.oracleId), s.friend.publicId) }));
+   // Both providers mount only with mark-bought on (the deck page's and the cart's), so either one means a buy press.
+   const deckGotIt = useGotIt();
+@@ -264,12 +282,27 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
+                     ? spareCopy.request.noAnswer(SPARE_REQUEST_DAYS)
+                     : <PersonText text={spareCopy.request.pods(s.friend.pods)} />}
+               </span>
++              {trades && ((trades.wants.get(s.friend.publicId)?.length ?? 0) > 0 || (trades.open.get(s.friend.publicId) ?? 0) > 0) ? (
++                <span data-testid="friend-spare-trade-line" className="flex min-w-0 items-center gap-[6px] truncate font-mono text-[11px] leading-[1.45]">
++                  {(trades.wants.get(s.friend.publicId)?.length ?? 0) > 0 ? (
++                    <span className="inline-flex min-w-0 items-center gap-[5px] truncate text-[color:var(--fact)]">
++                      <SpareGlyph size={12} />
++                      <span className="truncate">{tradeCopy.wantsShort(cardList([...(trades.wants.get(s.friend.publicId) ?? [])]))}</span>
++                    </span>
++                  ) : null}
++                  {(trades.open.get(s.friend.publicId) ?? 0) > 0 ? <span className="flex-none text-[color:var(--fg-faint)]">{(trades.wants.get(s.friend.publicId)?.length ?? 0) > 0 ? "· " : ""}{tradeCopy.openCount(trades.open.get(s.friend.publicId)!)}</span> : null}
++                </span>
++              ) : null}
+             </span>
++            {trades ? (trades.waiting?.has(s.friend.publicId)
++              ? <span data-testid="friend-spare-trade-held" className={`${STATUS} text-[color:var(--fg-muted)]`}>{tradeCopy.capShort}</span>
++              : <TradePress friend={s.friend.displayName} card={cardName} onTrade={() => trades.onTrade(s.friend.publicId)} />) : null}
+             <RowEnd ask={ask} friend={s.friend.displayName} card={cardName} busy={busy === s.friend.publicId} locked={busy !== null}
+               onAsk={() => void press(s, ask.kind === "askInstead" ? ask.fromRequestId : undefined)} />
+           </li>
+         ))}
+       </ul>
++      {trades ? <p data-testid="friend-spares-how" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{tradeCopy.sheet.how}</p> : null}
+       {line ? <p data-testid="friend-spares-line" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]"><PersonText text={line} /></p> : null}
+       <SocialToast toast={toast} onDone={() => setToast(null)} />
+     </section>
+@@ -320,3 +353,15 @@ export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet"
+     </span>
+   );
+ }
++
++/** Friend trades R2: the row's Trade, a quiet press before Ask. R3: always offered (several trades may be open with one
++ *  friend); when the friend wants one of the reader's spares, it takes the accent, since a trade is the better ask. */
++function TradePress({ friend, card, onTrade }: { friend: string | ThirdPartyName; card: string; onTrade: () => void }) {
++  const c = tradeCopy.sheet;
++  return (
++    <button type="button" data-testid="friend-spare-trade" onClick={onTrade}
++      {...personAttrs({ "aria-label": c.pressAria(friend, card) }, `${ASK_PRESS} ${ASK_SIZE.sheet} font-medium text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)]`)}>
++      {c.press}
++    </button>
++  );
++}
 diff --git a/src/components/social/friend-strip.tsx b/src/components/social/friend-strip.tsx
-index 34e6eaa..b205c2b 100644
+index 34e6eaa..4b8c12e 100644
 --- a/src/components/social/friend-strip.tsx
 +++ b/src/components/social/friend-strip.tsx
-@@ -5,11 +5,12 @@
+@@ -5,6 +5,7 @@
  
  import { usePathname } from "next/navigation";
  import { socialCopy } from "../../lib/copy/social";
@@ -101,37 +471,231 @@ index 34e6eaa..b205c2b 100644
  import { PlaceStrip, type PlaceTab } from "../place/place-strip";
  
  const p = socialCopy.friendPage;
- 
--export type FriendTab = "spares" | "wishlist" | "decks";
-+export type FriendTab = "spares" | "wishlist" | "decks" | "trade";
- 
- /** Which tab a path is, for a friend's public id; null for any other path. */
- export function friendTabFromPathname(pathname: string, publicId: string): FriendTab | null {
-@@ -17,6 +18,8 @@ export function friendTabFromPathname(pathname: string, publicId: string): Frien
-   if (pathname === base) return "decks";
-   if (pathname === `${base}/wishlist`) return "wishlist";
-   if (pathname === `${base}/spares`) return "spares";
-+  // Friend trades (proposal): the fourth tab, the live trade with this friend or a new one.
-+  if (pathname === `${base}/trade`) return "trade";
-   return null;
- }
- 
-@@ -37,7 +40,9 @@ export function FriendStrip({
+@@ -26,7 +27,10 @@ const FRIEND_STRIP_FRAME = "mt-[18px] -mx-[14px] pl-[6px] pr-[4px] md:mx-0 md:mt
+ export function FriendStrip({
+   publicId,
+   counts,
++  tradeWaits = false,
+ }: {
++  /** Friend trades R2: the trade with this friend waits on the reader (an offer, a counter, a look, a mark). */
++  tradeWaits?: boolean;
+   publicId: string;
+   /** Each drawn tab's figure; a tab with no entry is not drawn. Decks is first, the page's default (Hugh, 2026-10-30). */
+   counts: Partial<Record<FriendTab, number>>;
+@@ -36,7 +40,9 @@ export function FriendStrip({
+   const all: (PlaceTab & { place: FriendTab })[] = [
      { place: "decks", href: base, label: p.tabs.decks, count: counts.decks },
      { place: "wishlist", href: `${base}/wishlist`, label: p.tabs.wishlist, count: counts.wishlist },
-     { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares },
-+    // Always drawn (a friend with no spares still has your spares to ask about): its figure is the cards in the live trade.
-+    { place: "trade", href: `${base}/trade`, label: tradeCopy.tab, count: counts.trade },
+-    { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares },
++    // Friend trades R2: Spares holds the trade too (one tab, not two), so it is drawn while a trade is live even with no
++    // spare of the friend's left, and takes the waiting diamond.
++    { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares ?? (tradeWaits ? 0 : undefined), waits: tradeWaits ? tradeCopy.tabWaits : undefined },
    ];
--  const tabs = all.filter((t) => t.count !== undefined || t.place === current);
-+  const tabs = all.filter((t) => t.count !== undefined || t.place === current || t.place === "trade");
+   const tabs = all.filter((t) => t.count !== undefined || t.place === current);
    return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} fill />;
+diff --git a/src/components/social/friends-list.tsx b/src/components/social/friends-list.tsx
+index 28c3ae4..42c5997 100644
+--- a/src/components/social/friends-list.tsx
++++ b/src/components/social/friends-list.tsx
+@@ -18,7 +18,7 @@ import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
+ import { useDialogA11y } from "../../lib/a11y/dialog";
+ import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
+ import { Face } from "./face";
+-import { SpareChip } from "./spare-key-item";
++import { SpareChip, WantChip } from "./spare-key-item";
+ import { BAND, PANEL } from "./section-panel";
+ import { BandText } from "../decks/deck-box";
+ import { PendingReporter } from "../shell/pending-reporter";
+@@ -39,6 +39,7 @@ export function FriendsList({
+   linkable = false,
+   emptyBody,
+   sparable,
++  wanted,
+ }: {
+   friends: Friend[];
+   now: Date;
+@@ -57,6 +58,8 @@ export function FriendsList({
+   linkable?: boolean;
+   /** Per friend (`public_id`), how many of their wanted cards the reader can spare (You have it); absent or 0 draws no chip. */
+   sparable?: Readonly<Record<string, number>>;
++  /** Friend trades R4 (Hugh 2026-11-27): per friend, how many of their spares the reader wants (on the wishlist, or a deck needs it). */
++  wanted?: Readonly<Record<string, number>>;
+ }) {
+   // A removal takes its row, its ⋯ and the confirm with it, so the dialog's own return lands on nothing: when
+   // the list shrinks and focus is left on the page itself, it goes to the Friends heading. Effects run after the
+@@ -88,10 +91,17 @@ export function FriendsList({
+               onRemove={() => onRemove(friend)}
+               linkable={linkable}
+               sparable={sparable?.[friend.publicId] ?? 0}
++              wanted={wanted?.[friend.publicId] ?? 0}
+             />
+           ))}
+         </ul>
+       )}
++      {linkable && friends.some((x) => (sparable?.[x.publicId] ?? 0) > 0 || (wanted?.[x.publicId] ?? 0) > 0) ? (
++        <p data-testid="friends-chip-key" className="m-0 flex flex-wrap items-center gap-x-[14px] gap-y-[4px] px-[14px] py-[10px] font-mono text-[10.5px] text-[color:var(--fg-muted)] [border-top:1px_solid_var(--border)] md:hidden">
++          <span className="inline-flex items-center gap-[6px]"><WantChip>{""}</WantChip>{f.keyWant}</span>
++          <span className="inline-flex items-center gap-[6px]"><SpareChip gap={4}>{""}</SpareChip>{f.keySpare}</span>
++        </p>
++      ) : null}
+     </section>
+   );
  }
+@@ -104,6 +114,7 @@ function FriendRow({
+   onRemove,
+   linkable,
+   sparable,
++  wanted = 0,
+ }: {
+   friend: Friend;
+   since: string;
+@@ -112,6 +123,7 @@ function FriendRow({
+   onRemove: () => void;
+   linkable: boolean;
+   sparable: number;
++  wanted?: number;
+ }) {
+   return (
+     <li className="relative flex h-[60px] items-center gap-[12px] pl-[14px] pr-[4px] [border-bottom:1px_solid_var(--border)] md:pl-[16px]" data-friend-row="">
+@@ -138,16 +150,31 @@ function FriendRow({
+       <span className={`flex-none font-mono text-[10.5px] md:text-[11px] ${linkable ? "hidden md:inline" : ""} ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
+         {f.since(since)}
+       </span>
++      {/* Friend trades R4: the two directions side by side. Bookmark (accent) = their spares you want, which opens their
++          Spares tab filtered to Wanted; two people (fact) = your spares they want (You have it), which opens their wishlist.
++          Desktop names each; a phone keeps the figure, and the panel's key names them once. */}
++      {linkable && wanted > 0 ? (
++        <Link
++          href={`/friends/${friend.publicId}/spares?wanted=wishlist,deck`}
++          data-want-chip=""
++          {...personAttrs(
++            { "aria-label": f.wantChipAria(friend.displayName, wanted) },
++            "relative z-10 inline-flex h-[44px] flex-none items-center rounded-[8px] px-[2px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
++          )}
++        >
++          <WantChip>{wanted}<span className="hidden md:inline">{f.wantChipWord}</span></WantChip>
++        </Link>
++      ) : null}
+       {linkable && sparable > 0 ? (
+         <Link
+           href={`/friends/${friend.publicId}/wishlist`}
+           data-spare-chip=""
+           {...personAttrs(
+             { "aria-label": f.spareChipAria(friend.displayName, sparable) },
+-            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[4px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
++            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[2px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
+           )}
+         >
+-          <SpareChip gap={4}>{sparable}</SpareChip>
++          <SpareChip gap={4}>{sparable}<span className="hidden md:inline">{f.spareChipWord}</span></SpareChip>
+           <PendingReporter href={`/friends/${friend.publicId}/wishlist`} />
+         </Link>
+       ) : null}
+diff --git a/src/components/social/friends-view.tsx b/src/components/social/friends-view.tsx
+index 5c3f7fe..e45f31a 100644
+--- a/src/components/social/friends-view.tsx
++++ b/src/components/social/friends-view.tsx
+@@ -88,6 +88,7 @@ export function FriendsView({
+   waiting,
+   friends,
+   sparable,
++  wanted,
+   links,
+   accepted,
+   origin,
+@@ -107,6 +108,8 @@ export function FriendsView({
+   friends: Friend[];
+   /** Per friend, how many of their wanted cards the reader can spare (You have it); drawn as the row's chip. */
+   sparable?: Readonly<Record<string, number>>;
++  /** Friend trades R4: per friend, how many of their spares the reader wants (wishlist, or a deck needs it). */
++  wanted?: Readonly<Record<string, number>>;
+   links: OpenInvite[];
+   /** The friend Accept just made (E10), resolved on the server from the URL's `publicId`; null for none. */
+   accepted: Friend | null;
+@@ -473,6 +476,7 @@ export function FriendsView({
+               onRemove={remove}
+               linkable
+               sparable={sparable}
++              wanted={wanted}
+             />
+           </div>
+           <div data-friends-col="right" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
+diff --git a/src/components/social/request-history.tsx b/src/components/social/request-history.tsx
+index 84d887e..7d438fa 100644
+--- a/src/components/social/request-history.tsx
++++ b/src/components/social/request-history.tsx
+@@ -5,7 +5,7 @@
+ // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
+ import { BandTitle } from "../decks/deck-box";
+ import Link from "next/link";
+-import { useState, useTransition } from "react";
++import React, { useState, useTransition } from "react";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { loadMoreHistoryAction } from "../../app/friends/request-history-actions";
+ import { historyCopy as h } from "../../lib/copy/request-history";
+@@ -124,18 +124,23 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab:
+ 
+ type Side = { entries: HistoryEntry[]; next: HistoryCursor | null };
+ 
+-export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Side; ofYou: Side; hiddenCount: number; nowMs: number }) {
+-  const [tab, setTab] = useState<HistoryTab>("asked");
++export function RequestHistory({ asked, ofYou, hiddenCount, nowMs, trades }: {
++  asked: Side; ofYou: Side; hiddenCount: number; nowMs: number;
++  /** Friend trades R2 (item 6, gap G5): every trade, live and ended, as the Trades tab's rows; the Friends box shows five. */
++  trades?: React.ReactNode;
++}) {
++  const [tab, setTab] = useState<HistoryTab | "trades">((globalThis as any).__RHTAB ?? "asked");
+   const [sides, setSides] = useState<Record<HistoryTab, Side>>({ asked, ofYou });
+   const [failed, setFailed] = useState<Record<HistoryTab, boolean>>({ asked: false, ofYou: false });
+   const [loading, setLoading] = useState<Record<HistoryTab, boolean>>({ asked: false, ofYou: false });
+   const [, startLoading] = useTransition();
+-  const side = sides[tab];
++  const side = sides[tab === "trades" ? "asked" : tab];
+ 
+   function older() {
+     const cursor = side.next;
+     // Per tab, and ignored while that tab's page is out: a second press would fetch the same cursor again.
+     if (cursor === null || loading[tab]) return;
++    if (tab === "trades") return;
+     const at = tab;
+     setFailed((f) => ({ ...f, [at]: false }));
+     setLoading((l) => ({ ...l, [at]: true }));
+@@ -153,7 +158,7 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
+     });
+   }
+ 
+-  const empty = tab === "asked" ? h.emptyAsked : h.emptyOfYou;
++  const empty = tab === "ofYou" ? h.emptyOfYou : h.emptyAsked;
+   return (
+     <div className="mx-auto box-border w-full max-w-[720px] px-[16px] pb-[60px] pt-[22px] md:px-0 md:pt-[36px]">
+       <Link href="/friends" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">{h.back}<PendingReporter href="/friends" /></Link>
+@@ -167,18 +172,18 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
+           fill
+           value={tab}
+           onChange={setTab}
+-          segments={[{ value: "asked", label: h.tabs.asked }, { value: "ofYou", label: h.tabs.ofYou }]}
++          segments={[{ value: "asked", label: h.tabs.asked }, { value: "ofYou", label: h.tabs.ofYou }, ...(trades !== undefined ? [{ value: "trades" as const, label: "Trades" }] : [])]}
+           ids={{ tab: (v) => `rh-tab-${v}`, panel: (v) => `rh-panel-${v}` }}
+         />
+       </div>
+       <div role="tabpanel" id={`rh-panel-${tab}`} aria-labelledby={`rh-tab-${tab}`}>
+-      {side.entries.length === 0 ? (
++      {tab === "trades" ? <div className={`${PANEL} mt-[18px]!`}>{trades}</div> : side.entries.length === 0 ? (
+         <div className={`${PANEL} mt-[18px]!`}>
+           <PanelEmpty size="lg" title={empty.title} body={empty.body} />
+         </div>
+       ) : (
+         <>
+-          <Rows entries={side.entries} tab={tab} nowMs={nowMs} />
++          <Rows entries={side.entries} tab={tab as HistoryTab} nowMs={nowMs} />
+           {side.next !== null && (
+             <div className="mt-[14px] flex flex-col items-center gap-[8px]">
+               <button
 diff --git a/src/components/social/requests-box.tsx b/src/components/social/requests-box.tsx
-index a491c06..dc9bc4b 100644
+index a491c06..5095fcb 100644
 --- a/src/components/social/requests-box.tsx
 +++ b/src/components/social/requests-box.tsx
-@@ -10,11 +10,16 @@ import { historyCopy } from "../../lib/copy/request-history";
+@@ -10,11 +10,18 @@ import { historyCopy } from "../../lib/copy/request-history";
  import { PendingReporter } from "../shell/pending-reporter";
  import { SegmentedSwitch } from "../ui/segmented-switch";
  import { PANEL, PanelEmpty } from "./section-panel";
@@ -142,7 +706,9 @@ index a491c06..dc9bc4b 100644
  const b = historyCopy.box;
  
 -export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnswer, history }: {
-+export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnswer, history, trades, tradesCount = 0, tradeWaits = false }: {
++export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnswer, history, trades, tradesCount = 0, tradeWaits = false, tradesMore = null }: {
++  /** R2 (item 6): the trades past the five shown, and how many of them wait on the reader; the foot says so beside Request history. */
++  tradesMore?: { rest: number; waiting: number } | null;
 +  /** Friend trades (proposal): the third tab, every trade the reader is in. */
 +  trades?: ReactNode; tradesCount?: number;
 +  /** A trade waits on the reader: the tab takes the accent, as Waiting on you's does. */
@@ -150,7 +716,7 @@ index a491c06..dc9bc4b 100644
    waiting: ReactNode;
    mine: ReactNode;
    waitingCount: number;
-@@ -23,7 +28,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
+@@ -23,7 +30,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
    /** The reader has a request history to open. */
    history: boolean;
  }) {
@@ -159,7 +725,7 @@ index a491c06..dc9bc4b 100644
    const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
    return (
      <section aria-label={b.label} data-testid="requests-box" className={PANEL}>
-@@ -47,6 +52,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
+@@ -47,6 +54,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
                ),
                count: count(mineCount),
              },
@@ -167,7 +733,7 @@ index a491c06..dc9bc4b 100644
            ]}
          />
        </div>
-@@ -59,6 +65,11 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
+@@ -59,8 +67,23 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
          <div className="peer">{mine}</div>
          {mineCount === 0 ? <div className="peer-has-[[data-testid=your-requests]]:hidden"><PanelEmpty title={b.mineEmpty.title} body={b.mineEmpty.body} /></div> : null}
        </div>
@@ -177,14 +743,107 @@ index a491c06..dc9bc4b 100644
 +        </div>
 +      ) : null}
        {history ? (
-         <div className="flex justify-end pr-[6px] [border-top:1px_solid_var(--border)]">
+-        <div className="flex justify-end pr-[6px] [border-top:1px_solid_var(--border)]">
++        <div className="flex items-center justify-end gap-[10px] pr-[6px] [border-top:1px_solid_var(--border)]">
++          {tab === "trades" && tradesMore && tradesMore.rest > 0 ? (
++            <span data-testid="trades-more" className="mr-auto flex min-w-0 items-center gap-[7px] pl-[14px] font-sans text-[13px] md:pl-[16px]">
++              {tradesMore.waiting > 0 ? (
++                <>
++                  <i aria-hidden className="block h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />
++                  <span className="font-medium text-[color:var(--accent-text)]">{tradeCopy.row.moreWaiting(tradesMore.waiting, tradesMore.rest)}</span>
++                </>
++              ) : <span className="text-[color:var(--fg-muted)]">{tradeCopy.row.more(tradesMore.rest)}</span>}
++            </span>
++          ) : null}
            <Link href="/friends/requests" className="flex min-h-[44px] items-center px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] no-underline md:min-h-[36px]">{b.history}<PendingReporter href="/friends/requests" /></Link>
+         </div>
+       ) : null}
+diff --git a/src/components/social/spare-answer.tsx b/src/components/social/spare-answer.tsx
+index 6e610aa..4e059fb 100644
+--- a/src/components/social/spare-answer.tsx
++++ b/src/components/social/spare-answer.tsx
+@@ -8,7 +8,7 @@
+ // its receipt, or when a ✕ takes the row away, so focus would fall to <body>. `useLandFocus` puts it on the element
+ // that replaced the press (focusable, `tabIndex={-1}`), unless the reader has already moved on.
+ 
+-import { useEffect, useRef, useState, type RefObject } from "react";
++import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+ import { answerOfferAction, answerSpareAction } from "../../app/friends/spare-actions";
+ import { spareCopy } from "../../lib/copy/social";
+ import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
+@@ -89,7 +89,13 @@ export function useSpareAnswer(shared?: SpareToast) {
+  * Yes, No and the days left (`.ac` with `.yn`, `.yn.y` and `.ex` on Waiting on you's row; `.la` with `.ba` and `.bg`
+  * on the lead story). Yes is the filled press: the answer the ask hopes for. Neither confirms, since neither moves a card.
+  */
+-export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size, offer = false }: {
++export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size, offer = false, extra, yesWaits = false, roomy = false }: {
++  /** Friend trades R4: the trade sheet has room, so the days sit 8px under the presses (rows keep 3px). */
++  roomy?: boolean;
++  /** Friend trades R2: a trade's Counter, in the same row after No (T3, T5, T10). */
++  extra?: ReactNode;
++  /** Friend trades R2 (needs a look): Yes is drawn but held, since the trade can't be accepted as it is. */
++  yesWaits?: boolean;
+   friend: string | ThirdPartyName; card: string; daysLeft: number; busy: Answer | null; locked: boolean;
+   /** `from` is the pressed button, for `useLandFocus`. */
+   onAnswer: (a: Answer, from: Element) => void;
+@@ -108,16 +114,21 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer,
+         `${press} h-[40px] rounded-[10px] px-[14px] text-[14px] font-normal [border:1px_solid_var(--border-strong)] bg-transparent text-[color:var(--fg)] md:h-[36px] md:rounded-[8px] md:text-[12.5px]`,
+       ];
+   return (
+-    <span data-testid="spare-answer" className={`flex min-w-0 flex-wrap items-center gap-[8px] ${size === "row" ? "md:justify-end" : ""}`}>
++    // R4c (Hugh 2026-11-27): the days left sit to the RIGHT of the presses, in the row's spare width (R3 put them UNDER the presses, small, so the row keeps its height: the presses row
++    // loses the days' width, and the line sits in the space the row's picture already holds.
++    <span data-testid="spare-answer" data-roomy={roomy || undefined} className="flex min-w-0 flex-wrap items-center gap-x-[12px] gap-y-[8px]">
++    <span className={`flex min-w-0 flex-wrap items-center gap-[8px] ${size === "row" ? "md:justify-end" : ""}`}>
+       <button type="button" data-testid="spare-yes" {...personAttrs({ "aria-label": (offer ? r.offer.yesAria : r.yesAria)(friend, card) }, yes)} aria-busy={busy === "yes" || undefined}
+-        disabled={locked} onClick={(e) => onAnswer("yes", e.currentTarget)}>
++        disabled={locked || yesWaits} style={yesWaits ? { opacity: 0.4 } : undefined} onClick={(e) => onAnswer("yes", e.currentTarget)}>
+         {r.yes}
+       </button>
+       <button type="button" data-testid="spare-no" {...personAttrs({ "aria-label": (offer ? r.offer.noAria : r.noAria)(friend, card) }, no)} aria-busy={busy === "no" || undefined}
+         disabled={locked} onClick={(e) => onAnswer("no", e.currentTarget)}>
+         {r.no}
+       </button>
+-      <span data-testid="spare-days" className={`whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]`}>
++      {extra}
++    </span>
++      <span data-testid="spare-days" className="whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-muted)]">
+         {r.daysLeft(daysLeft)}
+       </span>
+     </span>
+diff --git a/src/components/social/spare-key-item.tsx b/src/components/social/spare-key-item.tsx
+index 186d7bf..f133cd3 100644
+--- a/src/components/social/spare-key-item.tsx
++++ b/src/components/social/spare-key-item.tsx
+@@ -150,3 +150,22 @@ export function SpareKeyItem({ className, among, reading = false }: {
+   );
+ }
+ 
++
++/** The wishlist bookmark the Spares tab's "on your wishlist" line draws. */
++export function WishGlyph({ size }: { size: number }) {
++  return (
++    <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round">
++      <path d="M6.5 3.5h11v17l-5.5-4-5.5 4z" />
++    </svg>
++  );
++}
++
++/** Friend trades R4: SpareChip's twin for the other direction, a friend's spares the reader wants, in accent on an accent tint. */
++export function WantChip({ children }: { children: ReactNode }) {
++  return (
++    <span className="inline-flex h-[22px] flex-none items-center gap-[4px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--accent-text)] bg-[color-mix(in_oklab,var(--accent)_14%,transparent)]">
++      <WishGlyph size={11} />
++      {children}
++    </span>
++  );
++}
 diff --git a/src/components/social/trade-rows.tsx b/src/components/social/trade-rows.tsx
 new file mode 100644
-index 0000000..84dcb54
+index 0000000..fc3755a
 --- /dev/null
 +++ b/src/components/social/trade-rows.tsx
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,96 @@
 +"use client";
 +// Friend trades R1 (proposal): the Requests box's third tab, Trades. Every trade the reader is in, the ones waiting on
 +// them first, then newest, in Waiting on you's own row (`ASK_ROW`: picture, kicker with the age, title, one line, the
@@ -243,6 +902,10 @@ index 0000000..84dcb54
 +  );
 +}
 +
++/** R2 (item 6): the Trades tab lists five (waiting on you first, then newest); the rest are in Request history, and the
++ *  box's foot says how many, naming the ones that wait on the reader (`RequestsBox`'s `tradesMore`). */
++export const TRADES_SHOWN = 5;
++
 +export function TradeRows({ rows, empty }: { rows: readonly TradeRowView[]; empty?: ReactNode }) {
 +  if (rows.length === 0) return <>{empty}</>;
 +  return (
@@ -277,13 +940,227 @@ index 0000000..84dcb54
 +    </ul>
 +  );
 +}
+diff --git a/src/components/social/trade-sheet.tsx b/src/components/social/trade-sheet.tsx
+new file mode 100644
+index 0000000..7252f87
+--- /dev/null
++++ b/src/components/social/trade-sheet.tsx
+@@ -0,0 +1,206 @@
++"use client";
++// Friend trades R2 (Hugh 2026-11-27, item a): a trade made in the spares sheet over a deck or All shopping, so the reader
++// never leaves the deck. Trade on a friend's row pushes this body inside the same sheet (`ModalChrome`'s `back`, as
++// combos close pushes its body): the trade box as the Spares tab draws it, the card the row was for already on the
++// friend's side, then the side switch and the spares to pick from, three across in the sheet. Send offer turns the body
++// into its receipt: Done closes the sheet (the reader is where they were); Open the trade goes to the friend's Spares tab,
++// whose back link then names the deck.
++import type { ReactNode } from "react";
++import { ModalChrome } from "../decks/receipt-modal";
++import { SegmentedSwitch } from "../ui/segmented-switch";
++import { GhostButton, PrimaryButton, ACTION_SIZE } from "../ui/button";
++import { SpareGlyph } from "./spare-key-item";
++import { HydratedImg } from "../ui/hydrated-art";
++import { PersonName, PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
++import { tradeCopy as t } from "../../lib/copy/trades";
++import { socialCopy } from "../../lib/copy/social";
++import { TradeTab, type TradeCard, type TradeState } from "./trade-tab";
++import type { SpareBrowseLine } from "../../lib/social/spare-browse";
++
++const TILE_BOX = "relative block w-full cursor-pointer overflow-hidden p-0 [aspect-ratio:63/88] [border-radius:4.5%/3.2%] [border:1px_solid_var(--border)] bg-[color:var(--surface-sunken)]";
++const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--accent)]";
++
++export type TradeSheetProps = {
++  friend: ThirdPartyName;
++  fromThem: TradeCard[];
++  fromYou: TradeCard[];
++  side?: "them" | "you";
++  theirs?: SpareBrowseLine[];
++  yours?: SpareBrowseLine[];
++  picked?: ReadonlySet<string>;
++  sent?: boolean;
++  /** R3: the one place a trade is made AND read: any state, from a deck, a friend's Spares tab, a Trades row or a push. */
++  state?: TradeState;
++  daysLeft?: number;
++  was?: { them: number; you: number; day: string };
++  tradedDay?: string;
++  /** Opened from a friend row of the spares sheet: ← Friends' spares goes back to it. Elsewhere the sheet just closes. */
++  fromSpares?: boolean;
++  /** R3: your spares on this friend's wishlist: listed first in Your spares, each tagged. */
++  wanted?: ReadonlySet<string>;
++  /** R4b (Q9): your spares already in an open offer to someone else, by oracle id: tagged, still pickable. */
++  alsoIn?: ReadonlyMap<string, readonly OfferedTo[]>;
++  /** R10: the tile whose Offered chip is pressed open (static render). */
++  openOffered?: string;
++};
++const COMPOSING = new Set<TradeState>(["draft", "askBack", "counterDraft"]);
++
++export function TradeSheet(props: TradeSheetProps) {
++  // The sheet's head names the trade; the picker shows only while composing (a draft, Make it a trade, a counter).
++  const { friend, sent } = props;
++  return (
++    <ModalChrome title="" titleNode={<PersonText text={t.sheet.title(friend)} />} closeLabel={socialCopy.friendPage.back} onClose={() => {}} width={640}
++      back={!sent && props.fromSpares ? { label: t.sheet.back, aria: t.sheet.back, onBack: () => {} } : undefined}
++      eyebrow={sent || !props.fromSpares ? t.feed.kicker : undefined} stand={!sent && COMPOSING.has(props.state ?? "draft")} fit={sent || !COMPOSING.has(props.state ?? "draft")}>
++      {sent ? <Sent {...props} /> : <Compose {...props} />}
++    </ModalChrome>
++  );
++}
++
++function Compose({ friend, fromThem, fromYou, side = "you", theirs = [], yours = [], picked = new Set(), state = "draft", daysLeft = 14, was, tradedDay, wanted = new Set(), alsoIn = new Map(), openOffered }: TradeSheetProps) {
++  const composing = COMPOSING.has(state);
++  const mine = [...yours].sort((a, b) => Number(wanted.has(b.oracleId)) - Number(wanted.has(a.oracleId)));
++  const lines = side === "them" ? theirs : mine;
++  const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
++  return (
++    <div className="flex flex-col px-[14px] pb-[22px] md:px-[18px] md:pb-[18px] [&>div:first-child]:!mt-[12px]">
++      <TradeTab friend={friend} state={state} fromThem={fromThem} fromYou={fromYou} daysLeft={daysLeft} was={was} tradedDay={tradedDay} />
++      {composing ? (
++        <>
++          {/* R4: the shipped switch as the Export dialog draws it (bare, filling), not inside a second rail box. */}
++          <div className="mt-[18px] flex">
++            <SegmentedSwitch kind="tabs" ariaLabel="Spares" fill value={side} onChange={() => {}}
++              segments={[
++                { value: "them", label: <PersonText text={t.pick.theirs(friend)} />, count: count(theirs.length) },
++                { value: "you", label: t.pick.yours, count: count(yours.length) },
++              ]} />
++          </div>
++          <p className="m-0 mt-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{side === "you" ? (wanted.size ? <PersonText text={t.wantsListed(friend, wanted.size)} /> : t.sideNote.yours) : <PersonText text={t.pickTheirs(friend)} />}</p>
++          {side === "you" && (wanted.size > 0 || alsoIn.size > 0) ? (
++            <ul className="m-0 mt-[8px] flex list-none flex-wrap items-center gap-x-[14px] gap-y-[4px] p-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
++              {wanted.size ? <li className="inline-flex items-center gap-[6px]"><span className="inline-flex text-[color:var(--fact)]"><SpareGlyph size={13} /></span>{t.key.wants}</li> : null}
++              {alsoIn.size ? <li className="inline-flex items-center gap-[6px]"><span className="inline-flex text-[color:var(--fg-muted)]"><OfferedGlyph /></span>{t.key.offered}</li> : null}
++            </ul>
++          ) : null}
++          <ul className="m-0 mt-[12px] grid list-none grid-cols-3 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-4 md:gap-x-[12px]">
++            {lines.map((line) => {
++              const inTrade = picked.has(line.oracleId);
++              const want = side === "you" && wanted.has(line.oracleId);
++              return (
++                <li key={line.oracleId} className="flex min-w-0 flex-col">
++                  {/* R6 (Hugh 2026-11-27): card, then the press 10px under it (clear of the picked ring), so every row's presses
++                      line up; the qualifiers sit under the press, where a card without them simply ends. */}
++                  <button type="button" aria-label={line.name} className={`${TILE_BOX} ${inTrade ? RING : ""}`}>
++                    {line.imageUri ? <HydratedImg eager src={line.imageUri} alt="" className="absolute inset-0 block h-full w-full object-cover" /> : null}
++                  </button>
++                  <div className="mt-[10px]">
++                  <button type="button" aria-pressed={inTrade} aria-label={inTrade ? t.inAria(line.name) : t.addAria(line.name)}
++                    className={`inline-flex h-[32px] w-full cursor-pointer items-center justify-center gap-[5px] rounded-[7px] px-[6px] font-sans text-[12.5px] font-medium md:h-[28px] ${inTrade ? "bg-[color:color-mix(in_oklab,var(--success)_14%,transparent)] text-[color:var(--success)] [border:1px_solid_color-mix(in_oklab,var(--success)_40%,transparent)]" : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"}`}>
++                    {inTrade ? <>✓ {t.inPress}</> : <>+ {t.addPress}</>}
++                  </button>
++                  </div>
++                  {/* R7 (Hugh 2026-11-27): the qualifiers as chips in the Friends-row chip's shape (22px, 4px radius, glyph
++                      + words on a tint), the player named in each. A phone tile is too narrow for the words, so it shows the
++                      glyph and the name, and the key above the grid says what each glyph means. */}
++                  {/* R10 (Hugh 2026-11-27): two half-width chips at most, filled from the left (an Offered chip with no
++                      Wants chip takes the first half). "Wants" only names this trade's friend, so on a phone, beside an
++                      Offered chip, it keeps just its glyph and gives the room to Offered ("2 friends"). Offered is a press:
++                      it opens who you offered the card to, with each trade's days left and Open ›. */}
++                  {(() => {
++                    const offered = side === "you" ? alsoIn.get(line.oracleId) : undefined;
++                    const chips = [
++                      want ? <MarkChip key="w" tone="fact" glyph={<SpareGlyph size={12} />} label={<PersonName n={friend} />} full={t.onTheirWishlist(friend)} squeeze={!!offered} /> : null,
++                      offered ? <OfferedChip key="o" offered={offered} open={openOffered === line.oracleId} solo={!want} /> : null,
++                    ].filter(Boolean);
++                    return chips.length ? (
++                      <div className="relative mt-[6px] flex min-w-0 gap-[4px]">
++                        {chips}
++                        {chips.length === 1 ? <span className="flex-1 basis-0" /> : null}
++                      </div>
++                    ) : null;
++                  })()}
++                </li>
++              );
++            })}
++          </ul>
++        </>
++      ) : null}
++    </div>
++  );
++}
++
++function Sent({ friend, fromThem, fromYou }: TradeSheetProps) {
++  return (
++    <div className="flex flex-col gap-[14px] px-[16px] pb-[24px] pt-[14px] md:px-[18px] md:pb-[20px]">
++      <div className="flex items-center gap-[14px] rounded-[10px] px-[14px] py-[14px] [border:1px_solid_color-mix(in_oklab,var(--success)_35%,var(--border))] bg-[color:color-mix(in_oklab,var(--success)_7%,var(--surface-inset))]">
++        <span aria-hidden className="relative h-[64px] w-[52px] flex-none">
++          {fromYou[0]?.imageUri ? <img src={fromYou[0].imageUri} alt="" className="absolute left-0 top-[2px] h-[58px] w-[42px] -rotate-[9deg] rounded-[3px] object-cover opacity-90" /> : null}
++          {fromThem[0]?.imageUri ? <img src={fromThem[0].imageUri} alt="" className="absolute left-[8px] top-0 h-[64px] w-[46px] rotate-[3deg] rounded-[3px] object-cover shadow-[0_2px_8px_rgba(0,0,0,.55)]" /> : null}
++        </span>
++        <span className="flex min-w-0 flex-col gap-[4px]">
++          <span className="font-mono text-[9.5px] font-medium uppercase tracking-[.12em] text-[color:var(--success)]">{t.row.kind.offered}</span>
++          <b className="text-[15px] font-semibold text-[color:var(--fg)]"><PersonText text={t.sheet.sentTitle(friend)} /></b>
++          <span className="text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]"><PersonText text={t.sheet.sentBody(friend)} /></span>
++        </span>
++      </div>
++      <div className="flex flex-wrap items-center gap-[10px]">
++        <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{t.sheet.done}</PrimaryButton>
++        <GhostButton className={`${ACTION_SIZE} font-medium`}>{t.sheet.openTrade} ›</GhostButton>
++      </div>
++    </div>
++  );
++}
++
++/** The out-arrow: a spare already sent in another offer. */
++function OfferedGlyph() {
++  return (
++    <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
++      <path d="M7 17 17 7" /><path d="M9 7h8v8" />
++    </svg>
++  );
++}
++
++export type OfferedTo = { name: ThirdPartyName; daysLeft: number };
++const CHIP = "inline-flex h-[22px] min-w-0 items-center gap-[3px] rounded-[4px] px-[4px] font-sans text-[10.5px] min-[375px]:text-[11px] font-medium";
++const MUTED = "text-[color:var(--fg-muted)] bg-[color-mix(in_oklab,var(--fg-muted)_12%,transparent)]";
++
++/** R10: the Wants chip (half width; beside Offered, just its glyph, which the key names). */
++function MarkChip({ tone, glyph, label, full, squeeze }: { tone: "fact"; glyph: ReactNode; label: ReactNode; full: PersonParts; squeeze: boolean }) {
++  return (
++    <span className={`${CHIP} flex-1 basis-0 text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]`}>
++      <span className="inline-flex flex-none">{glyph}</span>
++      <span aria-hidden className={`min-w-0 truncate `}>{label}</span>
++      <span className="sr-only"><PersonText text={full} /></span>
++    </span>
++  );
++}
++
++/** R10: Offered, a press. One name: the name. Several: the first + N on desktop, "N friends" on a phone. Opens who, and when. */
++function OfferedChip({ offered, open, solo }: { offered: readonly OfferedTo[]; open: boolean; solo: boolean }) {
++  const names = offered.map((o) => o.name);
++  return (
++    <>
++      <button type="button" aria-expanded={open} aria-haspopup="dialog" className={`${CHIP} ${MUTED} flex-1 basis-0 cursor-pointer [border:0] ${open ? "ring-1 ring-[color:var(--border-strong)]" : ""}`}>
++        <span className={`${names.length > 1 ? "hidden md:inline-flex" : "inline-flex"} flex-none`}><OfferedGlyph /></span>
++        {names.length === 1 ? <span aria-hidden className="min-w-0 truncate"><PersonName n={names[0]} /></span> : (
++          <span aria-hidden className="min-w-0 truncate">{t.offeredCount(names.length)}</span>
++        )}
++        <span className="sr-only"><PersonText text={t.alsoOffered(names)} /></span>
++      </button>
++      {open ? (
++        <div role="dialog" aria-label={t.offeredPop.title} className={`absolute top-[28px] z-10 flex w-[232px] flex-col gap-[2px] rounded-[10px] bg-[color:var(--surface-raised,var(--surface-rail))] p-[10px] shadow-[0_10px_28px_rgba(0,0,0,.5)] [border:1px_solid_var(--border-strong)] ${solo ? "left-0" : "right-0"}`}>
++          <p className="m-0 pb-[4px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{t.offeredPop.title}</p>
++          {offered.map((o) => (
++            <div key={String(o.name)} className="flex items-center gap-[8px] py-[5px] [border-top:1px_solid_var(--border)] first-of-type:[border-top:0]">
++              <span className="flex min-w-0 flex-1 flex-col">
++                <b className="truncate text-[13px] font-semibold text-[color:var(--fg)]"><PersonName n={o.name} /></b>
++                <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{t.offeredPop.line(o.daysLeft)}</span>
++              </span>
++              <a href="#" className="flex-none text-[12.5px] font-medium text-[color:var(--accent-text)] no-underline">{t.offeredPop.open}</a>
++            </div>
++          ))}
++        </div>
++      ) : null}
++    </>
++  );
++}
 diff --git a/src/components/social/trade-tab.tsx b/src/components/social/trade-tab.tsx
 new file mode 100644
-index 0000000..5581403
+index 0000000..8578c30
 --- /dev/null
 +++ b/src/components/social/trade-tab.tsx
-@@ -0,0 +1,253 @@
+@@ -0,0 +1,291 @@
 +"use client";
++// Friend trades R2: the trade box now heads the friend's Spares tab (no fourth tab), and the same box draws in the spares
++// sheet over a deck. R1 note follows.
 +// Friend trades R1 (proposal; brief 2026-11-27-friend-trades.md): a friend page's Trade tab, the fourth in the strip
 +// (`FriendStrip`). One live trade per friend at a time, so the tab IS that trade: composed when there is none, else the
 +// trade in its state. Built from shipped parts only:
@@ -349,13 +1226,21 @@ index 0000000..5581403
 +/** One card in the box: the tile at card shape, its caption when the trade marks it. Opens card details. */
 +function BoxCard({ card }: { card: TradeCard }) {
 +  const out = card.change === "removed" || card.gone;
-+  const note = card.gone ? t.gone : card.change === "added" ? t.added : card.change === "removed" ? t.removed : card.agreed ? t.agreed : null;
++  // R4 (Hugh 2026-11-27): a gone card is marked ON the card (dimmed, a ⊘ badge), not by a two-line caption under it.
++  const note = card.gone ? null : card.change === "added" ? t.added : card.change === "removed" ? t.removed : card.agreed ? t.agreed : null;
 +  const ink = card.gone ? "text-[color:var(--warning)]" : card.change === "added" ? "text-[color:var(--accent-text)]" : card.agreed ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
 +  return (
 +    <li className="flex w-[64px] min-w-0 flex-col gap-[5px] md:w-[78px]">
-+      <button type="button" aria-label={card.name} className={`${TILE_BOX} ${card.change === "added" ? RING : ""} ${out ? "opacity-45" : ""}`}>
-+        {card.imageUri ? <HydratedImg eager src={card.imageUri} alt="" className="absolute inset-0 block h-full w-full object-cover" /> : null}
-+      </button>
++      <span className="relative block">
++        <button type="button" aria-label={card.gone ? `${card.name}, ${t.gone}` : card.name} className={`${TILE_BOX} ${card.change === "added" ? RING : ""} ${out ? "opacity-45" : ""}`}>
++          {card.imageUri ? <HydratedImg eager src={card.imageUri} alt="" className="absolute inset-0 block h-full w-full object-cover" /> : null}
++        </button>
++        {card.gone ? (
++          <span aria-hidden title={t.gone} className="absolute right-[-6px] top-[-6px] grid h-[22px] w-[22px] place-items-center rounded-full bg-[color:color-mix(in_srgb,var(--danger)_16%,var(--bg))] text-[color:var(--danger)] [border:1px_solid_color-mix(in_srgb,var(--danger)_45%,transparent)]">
++            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="12" cy="12" r="8.5" /><path d="M6 18 18 6" /></svg>
++          </span>
++        ) : null}
++      </span>
 +      {note ? <span className={`font-mono text-[9.5px] uppercase leading-[1.3] tracking-[.08em] ${ink}`}>{note}</span> : null}
 +    </li>
 +  );
@@ -369,7 +1254,14 @@ index 0000000..5581403
 +      {cards.length ? (
 +        <ul className="m-0 flex list-none flex-wrap gap-[8px] p-0 md:gap-[10px]">{cards.map((c) => <BoxCard key={c.oracleId + (c.change ?? "")} card={c} />)}</ul>
 +      ) : (
-+        <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{empty}</p>
++        // R3 (Hugh: "more than just text"): an empty side draws the card's own place, dashed, so the box reads as two
++        // sides waiting to be filled and keeps the filled side's height; the line under it says where cards come from.
++        <div className="flex flex-col gap-[8px]">
++          <span aria-hidden className="flex w-[64px] items-center justify-center [aspect-ratio:63/88] [border-radius:4.5%/3.2%] [border:1.5px_dashed_var(--border-dashed)] bg-[color:color-mix(in_oklab,var(--accent)_4%,transparent)] md:w-[78px]">
++            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--fg-faint)" strokeWidth="1.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
++          </span>
++          <p className="m-0 text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{empty}</p>
++        </div>
 +      )}
 +      {s.n === 0 && !cards.length ? null : <div className="mt-[2px] flex flex-col gap-[3px]">
 +        <span className="flex items-baseline gap-[8px]">
@@ -402,6 +1294,9 @@ index 0000000..5581403
 +  const aside = state === "yours" ? t.daysLeft(daysLeft) : null;
 +  const lookCard = [...fromThem, ...fromYou].find((c) => c.gone);
 +  const pressRow = "flex flex-wrap items-center gap-x-[14px] gap-y-[6px]";
++  const counterPress = (
++    <button type="button" data-testid="trade-counter" className="inline-flex h-[36px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] bg-transparent px-[16px] font-sans text-[13px] font-medium text-[color:var(--accent-text)] [border:1px_solid_color-mix(in_oklab,var(--accent)_55%,transparent)]">{t.counter}</button>
++  );
 +  let foot: ReactNode = null;
 +  switch (state) {
 +    case "draft":
@@ -420,10 +1315,10 @@ index 0000000..5581403
 +      break;
 +    case "theirs":
 +    case "theirCounter":
++      // R2 (item 4): Counter joins Yes and No in the one AnswerPresses row, before the days left.
 +      foot = (
 +        <div className={pressRow}>
-+          <AnswerPresses friend={friend} card="" daysLeft={daysLeft} busy={null} locked={false} onAnswer={() => {}} size="row" />
-+          <button type="button" className={`${LINK} text-[color:var(--accent-text)]`}>{t.counter}</button>
++          <AnswerPresses friend={friend} card="" daysLeft={daysLeft} busy={null} locked={false} onAnswer={() => {}} size="row" roomy extra={counterPress} />
 +          {state === "theirCounter" && was ? <p className="m-0 basis-full text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{t.replacesYours(was.day)}.</p> : null}
 +        </div>
 +      );
@@ -438,11 +1333,14 @@ index 0000000..5581403
 +      break;
 +    case "accepted":
 +    case "themMarked":
++      // R3: Mark traded and Rescind trade side by side at every width; the line goes under them.
 +      foot = (
-+        <div className={pressRow}>
-+          <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{t.markTraded}</PrimaryButton>
++        <div className="flex flex-col gap-[8px]">
++          <div className="flex flex-nowrap items-center gap-[10px]">
++            <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{t.markTraded}</PrimaryButton>
++            <GhostButton className={`${ACTION_SIZE} font-medium`}>{t.callOff}</GhostButton>
++          </div>
 +          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={state === "accepted" ? t.acceptedFoot : t.themMarked(friend)} /></p>
-+          <button type="button" className={`${LINK} ml-auto text-[color:var(--fg-muted)]`}>{t.callOff}</button>
 +        </div>
 +      );
 +      break;
@@ -458,11 +1356,21 @@ index 0000000..5581403
 +      );
 +      break;
 +    case "look":
++      // R2: their offer with a card gone. Yes is drawn but held; No and Counter in the same row (item 4).
++      foot = (
++        <div className="flex flex-col gap-[8px]">
++          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
++            <PersonText text={t.lookLine(lookCard?.name.split(",")[0] ?? "", friend)} />
++          </p>
++          <AnswerPresses friend={friend} card="" daysLeft={daysLeft} busy={null} locked={false} onAnswer={() => {}} size="row" roomy extra={counterPress} yesWaits />
++        </div>
++      );
++      break;
 +    case "lookYours":
 +      foot = (
 +        <div className="flex flex-col gap-[6px]">
 +          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
-+            <PersonText text={state === "look" ? t.lookLine(lookCard?.name.split(",")[0] ?? "", friend) : t.lookLineYours(lookCard?.name.split(",")[0] ?? "")} />
++            <PersonText text={t.lookLineYours(lookCard?.name.split(",")[0] ?? "")} />
 +          </p>
 +          <div className={pressRow}>
 +            <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{t.counter}</PrimaryButton>
@@ -483,6 +1391,11 @@ index 0000000..5581403
 +          <Side label={<PersonText text={t.side.them(friend)} />} cards={fromThem} was={was?.them} empty={<PersonText text={t.pickTheirs(friend)} />} />
 +          <Side label={t.side.you} cards={fromYou} was={was?.you} empty={t.pickYours} />
 +        </div>
++        {state === "askBack" && fromYou.some((c) => c.agreed) ? (
++          <p className="m-0 px-[14px] pb-[8px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] md:px-[16px]">
++            <PersonText text={t.askBackWhy(friend, fromYou.find((c) => c.agreed)!.name.split(",")[0])} />
++          </p>
++        ) : null}
 +        <p className={`${NOTE} px-[14px] pb-[12px] md:px-[16px]`} style={{ color: "var(--fg-locked)" }}>
 +          {priceCopy.strip.provenance} · {priceCopy.strip.lastChecked("Monday")}
 +        </p>
@@ -493,7 +1406,7 @@ index 0000000..5581403
 +  );
 +}
 +
-+function Picker({ friend, picker }: { friend: string | ThirdPartyName; picker: NonNullable<TradeTabProps["picker"]> }) {
++export function Picker({ friend, picker }: { friend: string | ThirdPartyName; picker: NonNullable<TradeTabProps["picker"]> }) {
 +  const lines = picker.side === "them" ? picker.theirs : picker.yours;
 +  const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
 +  return (
@@ -534,6 +1447,86 @@ index 0000000..5581403
 +        </div>
 +      )}
 +    </DeckBox>
++  );
++}
+diff --git a/src/components/social/trades-head.tsx b/src/components/social/trades-head.tsx
+new file mode 100644
+index 0000000..8fe5478
+--- /dev/null
++++ b/src/components/social/trades-head.tsx
+@@ -0,0 +1,74 @@
++"use client";
++// Friend trades R3/R4 (Hugh 2026-11-27): the head of a friend's Spares tab. The tiles below ask exactly as shipped (a press
++// opens the spares sheet, which offers Trade beside Ask). With live trades (several may be open with one friend; one
++// unanswered offer of yours at a time, Q10) they head the tab in the Trades row's form. R4c: under them, the Wishlist tab's
++// You have it parts, reused so the two tabs read alike: the call-out box (eyebrow + `TodoRow` statements), then the
++// compact radio `SegmentedSwitch` (All · N / You want · N) and the key line.
++import { DeckBox, DeckBoxBand, DeckBoxFoot } from "../decks/deck-box";
++import { TodoRow } from "../decks/todo-card";
++import { GhostButton, ACTION_SIZE } from "../ui/button";
++import { SegmentedSwitch } from "../ui/segmented-switch";
++import { PersonText, type ThirdPartyName } from "../../lib/person-name";
++import { haveItCopy } from "../../lib/copy/social";
++import { tradeCopy as t } from "../../lib/copy/trades";
++import { SpareGlyph, WishGlyph } from "./spare-key-item";
++import { TradeRows, type TradeRowView } from "./trade-rows";
++
++export type SparesFilter = "all" | "want";
++const c = t.callout;
++const names = (list: readonly string[]) => haveItCopy.callout.names(list);
++
++export function TradesHead({ friend, live, wants, youWant = [], capped = false, total, filter = "all" }: {
++  friend: ThirdPartyName; live: readonly TradeRowView[];
++  /** Your spares on this friend's wishlist (names). */
++  wants: readonly string[];
++  /** This friend's spares you want: on your wishlist or a deck needs them (names). */
++  youWant?: readonly string[];
++  /** Q10: an offer of yours to this friend is unanswered, so another waits (accepted trades don't count). */
++  capped?: boolean;
++  total: number;
++  filter?: SparesFilter;
++}) {
++  const propose = { label: t.sheet.press, name: t.propose, onPress: () => {} };
++  return (
++    <>
++      {live.length ? (
++        <DeckBox className="!mt-[18px] md:!mt-[22px]" data-testid="trades-head">
++          <DeckBoxBand title={<PersonText text={t.liveTitle(friend)} />} aside={<span className="font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">{t.openCount(live.length)}</span>} />
++          <TradeRows rows={live} />
++          <DeckBoxFoot>
++            <div className="flex flex-col gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[14px]">
++              {capped ? <span className="text-[12px] leading-[1.45] text-[color:var(--fg-muted)] md:order-first">{t.capLine(friend)}</span> : null}
++              <GhostButton disabled={capped} className={`${ACTION_SIZE} flex-none self-start font-medium md:self-auto ${capped ? "opacity-45" : ""}`}>{t.proposeAnother}</GhostButton>
++            </div>
++          </DeckBoxFoot>
++        </DeckBox>
++      ) : null}
++      <div data-testid="spares-callout" className={`${live.length ? "mt-[14px]" : "mt-[18px] md:mt-[22px]"} flex flex-col gap-[10px]`}>
++        <div className="overflow-hidden rounded-[10px] bg-[color:var(--surface-rail)] [border:1px_solid_var(--border)]">
++          <p className="m-0 px-[14px] pb-[2px] pt-[9px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:px-[16px]">{c.eyebrow}</p>
++          {youWant.length ? (
++            <TodoRow tone="action" next={false} mark={<WishGlyph size={14} />}
++              title={<PersonText text={c.youWantTitle(friend, youWant.length)} />} body={c.youWantBody(names(youWant))} />
++          ) : null}
++          {wants.length ? (
++            <TodoRow tone="action" markTone="fact" next={false} mark={<SpareGlyph size={16} />}
++              title={<PersonText text={c.theyWantTitle(friend, wants.length)} />} body={c.theyWantBody(names(wants))}
++              press={live.length ? undefined : propose} />
++          ) : null}
++          {!youWant.length && !wants.length ? (
++            <TodoRow tone="action" markTone="fact" next={false} mark={<SpareGlyph size={16} />} title={c.noneTitle} body={c.noneBody} press={live.length ? undefined : propose} />
++          ) : null}
++        </div>
++        <div className="flex flex-col items-start gap-[10px]">
++          {youWant.length > 0 && <SegmentedSwitch<SparesFilter> kind="radio" size="compact" ariaLabel={c.filterAria} value={filter} onChange={() => {}}
++            segments={[{ value: "all", label: c.filterAll, count: total }, { value: "want", label: c.filterWant, count: youWant.length }]} />}
++          <ul className="m-0 flex list-none flex-wrap items-center gap-x-[14px] gap-y-[4px] p-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
++            <li className="inline-flex items-center gap-[6px]"><span className="inline-flex text-[color:var(--accent-text)]"><WishGlyph size={11} /></span>{c.keyWish}</li>
++            <li className="inline-flex items-center gap-[6px]"><i aria-hidden className="size-[7px] shrink-0 rounded-full border border-dashed border-[color:var(--fg-muted)]" />{c.keyDeck}</li>
++          </ul>
++        </div>
++      </div>
++    </>
 +  );
 +}
 diff --git a/src/components/social/waiting-on-you.tsx b/src/components/social/waiting-on-you.tsx
@@ -614,17 +1607,65 @@ index 4da1a2f..b4a719a 100644
        combo: "Combo",
      } satisfies Record<FeedKind, string>,
      /** Each kind's one title. */
+diff --git a/src/lib/copy/social.ts b/src/lib/copy/social.ts
+index 5d142b2..d3c3ed8 100644
+--- a/src/lib/copy/social.ts
++++ b/src/lib/copy/social.ts
+@@ -117,6 +117,12 @@ export const socialCopy = {
+     openAria: (name: ThirdPartyName) => personText`${name}’s page`,
+     /** The per-friend chip (You have it): how many of their wanted cards the reader can spare; it opens their wishlist. */
+     spareChipAria: (name: ThirdPartyName, copyCount: number) => personText`You can spare ${String(copyCount)} of ${name}’s wanted cards`,
++    // Friend trades R4: the chips name their direction on desktop; on a phone the panel's key does.
++    spareChipWord: " they want",
++    wantChipWord: " you want",
++    wantChipAria: (name: ThirdPartyName, cardCount: number) => personText`${name} has spares of ${String(cardCount)} ${cardCount === 1 ? "card" : "cards"} you want`,
++    keyWant: "their spares you want",
++    keySpare: "your spares they want",
+   },
+ 
+   // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).
+@@ -135,8 +141,15 @@ export const socialCopy = {
+       line: (pods: readonly ThirdPartyName[]) => personText`Shared with ${joinNames(pods)}.`,
+       count: (spareCount: number) => (spareCount === 1 ? "1 spare" : `${spareCount} spares`),
+       onWishlist: "on your wishlist",
++      // R9 (friend trades): the tile's second chip, one word; the key line names both glyphs.
++      chipWishlist: "Wishlist",
++      chipAsked: "Asked",
++      chipYours: "Agreed",
++      chipDeck: "A deck",
+       /** Appended to the line with spare requests on (signature card call 8): a tile press opens the card's modal, with Ask. */
+       pressToAsk: " Press one to ask for it.",
++      /** Friend trades R2: the tab holds the trade, so its line names both presses. */
++      pressToAskOrTrade: " Press one to ask for it or trade for it.",
+       /** A landing on a spare the friend no longer offers (call 9): the shared toast, and no modal. */
+       gone: (name: string | ThirdPartyName, card: string) => personText`${name} no longer has a spare ${card}.`,
+       emptyTitle: (name: string | ThirdPartyName) => personText`${name} has no spares to show`,
+@@ -496,11 +509,11 @@ export const spareCopy = {
+       personText`You have ${spare} spare. ${friend} wants ${copies}${deck ? personText` for ${deck}` : ""}.`,
+     yes: "Yes",
+     no: "No",
+-    yesAria: (friend: string | ThirdPartyName, card: string) => personText`Yes, spare ${card} for ${friend}`,
+-    noAria: (friend: string | ThirdPartyName, card: string) => personText`No, don’t spare ${card} for ${friend}`,
++    yesAria: (friend: string | ThirdPartyName, card: string) => personText`Yes, give ${card} to ${friend}`,
++    noAria: (friend: string | ThirdPartyName, card: string) => personText`No, keep ${card}`,
+     /** The receipt's kicker, drawn uppercase by CSS. */
+     receiptKind: { yes: "Spare request · accepted", no: "Spare request · declined" },
+-    sparing: (card: string, friend: string | ThirdPartyName) => personText`You’re sparing ${card} for ${friend}`,
++    sparing: (card: string, friend: string | ThirdPartyName) => personText`You’re giving ${card} to ${friend}`,
+     sparingDetail: (friend: string | ThirdPartyName, card: string) =>
+       personText`${friend}’s been told. Hand ${card} over when you meet; your collection stays as it is until you change it.`,
+     keeping: (card: string) => `You’re keeping ${card}`,
 diff --git a/src/lib/copy/trades.ts b/src/lib/copy/trades.ts
 new file mode 100644
-index 0000000..109e196
+index 0000000..6d60838
 --- /dev/null
 +++ b/src/lib/copy/trades.ts
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,226 @@
 +// Friend trades R1 (brief 2026-11-27-friend-trades.md, D1 to D7): every new string. DRAFT, for `/copy-review`.
 +// Vocabulary follows spare requests: Requested, Accepted, Declined (never Rejected); "spare" is a copy none of the
 +// holder's decks use. Totals are a figure each side, never a comparison: no string here says fair, even, short, over,
 +// better, worse or a difference between the sides.
-+import { personText, type ThirdPartyName } from "../person-name";
++import { personText, type ThirdPartyName, joinNames } from "../person-name";
 +
 +type Name = string | ThirdPartyName;
 +
@@ -639,29 +1680,29 @@ index 0000000..109e196
 +const days = (n: number) => (n === 1 ? "1 day left" : `${n} days left`);
 +
 +export const tradeCopy = {
-+  /** The friend strip's fourth tab. */
-+  tab: "Trade",
++  /** R2: no fourth tab. The friend's Spares tab holds the trade; its strip figure takes a dot while one waits on you. */
++  tabWaits: "a trade waits on you",
 +  /** The box's side labels (mono, uppercase by CSS) and the counts under the figure. */
 +  side: { them: (f: Name) => personText`From ${f}`, you: "From you" },
 +  cards: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
 +  total: "Total",
 +  noneYet: "Nothing yet",
-+  pickTheirs: (f: Name) => personText`Pick from ${f}’s spares below.`,
-+  pickYours: "Pick from your spares below.",
++  pickTheirs: (f: Name) => personText`Add from ${f}’s spares below.`,
++  pickYours: "Add from your spares below.",
 +  /** A counter's figure, under the new one: the side's total in the offer it replaces. */
 +  was: (figure: string) => `was ${figure}`,
 +  /** Under a card in a counter: new to this side, or taken out of it. */
 +  added: "Added",
 +  removed: "Taken out",
 +  /** Under a card that stopped being spare (needs a look). */
-+  gone: "No longer spare",
++  gone: "No longer available",
 +  /** Under the card the reader already said yes to (Ask back). */
-+  agreed: "Already a yes",
++  agreed: "Your yes",
 +  daysLeft: days,
 +  /** The box's bands, by state. */
 +  band: {
 +    draft: (f: Name) => personText`Propose a trade to ${f}`,
-+    askBack: (f: Name) => personText`Ask ${f} back`,
++    askBack: (f: Name) => personText`Make it a trade with ${f}`,
 +    theirs: (f: Name) => personText`${f}’s offer`,
 +    yours: "Your offer",
 +    counterDraft: "Your counter",
@@ -679,13 +1720,15 @@ index 0000000..109e196
 +  sendAskBack: "Send",
 +  counter: "Counter",
 +  withdraw: "Withdraw",
-+  callOff: "Call it off",
++  callOff: "Rescind trade",
 +  cancelCounter: "Keep their offer",
 +  markTraded: "Mark traded",
 +  clear: "Clear",
 +  newTrade: "Propose a new trade",
 +  answerBy: (f: Name, n: number) => personText`${f} has ${n} days to answer.`,
 +  askBackFoot: (f: Name, card: string) => personText`${f} has 14 days to answer. Your yes on ${card} stands either way.`,
++  /** Make it a trade: why the yes card is on your side (R2, item 2). */
++  askBackWhy: (f: Name, card: string) => personText`${card} is the yes you already gave ${f}. It sits here so the two read as one trade. Pick what you’d like back.`,
 +  counterFoot: (f: Name) => personText`Your counter replaces ${f}’s offer. The days left stay as they are.`,
 +  /** Send waits on a card on each side; the line says why, in place of a dead press (Hugh 2026-11-17). */
 +  needsBoth: (f: Name) => personText`Pick a card from ${f} and one of yours to send.`,
@@ -694,10 +1737,53 @@ index 0000000..109e196
 +  themMarked: (f: Name) => personText`${f} marked it traded. Mark it once you have yours.`,
 +  youMarked: (f: Name) => personText`You marked it traded. Waiting on ${f}.`,
 +  tradedFoot: (day: string) => `Traded ${day}. Your collection stays as it is until you change it.`,
-+  lookLine: (card: string, f: Name) => personText`${card} is no longer spare for ${f}, so this can’t be accepted as it is.`,
-+  lookLineYours: (card: string) => `${card} is no longer spare for you. Counter without it, or withdraw.`,
++  lookLine: (card: string, f: Name) => personText`${card} is no longer available from ${f}, so Yes waits until the trade changes.`,
++  lookLineYours: (card: string) => `${card} is no longer available on your side. Counter without it, or withdraw.`,
 +  /** The picker's band: the switch's two tabs. */
 +  pick: { theirs: (f: Name) => personText`${f}’s spares`, yours: "Your spares" },
++  /** R3: the Spares tab's head. Tiles ask as shipped; a trade starts here or from a tile's sheet, and is made in the sheet. */
++  propose: "Propose a trade",
++  // R4c (Hugh 2026-11-27): the Spares tab's call-out and filter, the Wishlist tab's You have it parts reused.
++  callout: {
++    eyebrow: "Wanted",
++    youWantTitle: (f: Name, n: number) => personText`${f} has ${n === 1 ? "1 card" : `${n} cards`} you want`,
++    youWantBody: (cards: string) => `${cards}. Ask from its tile, or trade for it.`,
++    theyWantTitle: (f: Name, n: number) => personText`${f} wants ${n === 1 ? "1 of your spares" : `${n} of your spares`}`,
++    theyWantBody: (cards: string) => `${cards}. Offer them in a trade.`,
++    noneTitle: "Trade spares for spares",
++    noneBody: "Pick from both sides, then send it.",
++    filterAria: "Show spares",
++    filterAll: "All",
++    filterWant: "You want",
++    keyWish: "on your wishlist",
++    keyDeck: "a deck needs it",
++  },
++  // R4b (Hugh 2026-11-27, Q9): a spare may sit in two offers; the picker says so before you send.
++  alsoOffered: (fs: readonly Name[]) => personText`Offered to ${joinNames(fs)}`,
++  offeredCount: (n: number) => `${n} friends`,
++  offeredPop: { title: "Also in your offers to", line: (d: number) => `Waiting · ${d === 1 ? "1 day" : `${d} days`} left`, open: "Open ›" },
++  // R7: the picker's key, for the phone chips that carry only a glyph and a name.
++  key: { wants: "wants it", offered: "already offered" },
++  // R4b (Q10): one unanswered offer per friend; accepted trades don't count.
++  capLine: (_f: Name) => "Resolve your open trade before proposing another.",
++  capShort: "Offer waiting",
++  proposeAnother: "Propose another trade",
++  liveTitle: (f: Name) => personText`Trades with ${f}`,
++  /** Your spares on this friend's wishlist: the nudge a trade answers (Hugh 2026-11-27). */
++  wants: (f: Name, cards: string, n: number) => personText`${f} wants ${n === 1 ? "your spare" : `${n} of your spares`}: ${cards}.`,
++  wantsShort: (cards: string) => `Wants your ${cards}`,
++  wantsListed: (f: Name, n: number) => personText`${n === 1 ? "One is" : `${n} are`} on ${f}’s wishlist, listed first.`,
++  /** The Spares tab head with no trade and no wanted spare. */
++  // R4: the head's first line, in the Cart on your wishlist roll-up's words (its Q1), and its filter press.
++  youWant: (f: Name, n: number) => personText`${f} has spares of ${n === 1 ? "1 card" : `${n} cards`} you want.`,
++  showThem: "Show them ›",
++  headLine: "Trade spares for spares: pick from both sides, then send it.",
++  onTheirWishlist: (f: Name) => personText`${f} wants it`,
++  openCount: (n: number) => (n === 1 ? "1 trade open" : `${n} trades open`),
++  /** The Spares tab's side switch, drawn once a trade has a card. */
++  sideNote: { yours: "Your spares. Add the ones you’d give." },
++  /** The tab's line while a trade is live and not yours to change: tiles still ask, adding waits for a counter. */
++  liveNote: (f: Name) => personText`Your trade with ${f} is above. Counter it to change the cards.`,
 +  /** A picker tile's toggle: one press in, the same press out (aria-pressed). */
 +  addPress: "Add",
 +  inPress: "In the trade",
@@ -711,11 +1797,28 @@ index 0000000..109e196
 +    theirsTitle: (f: Name) => personText`${f} has no spares right now`,
 +    theirsBody: (f: Name) => personText`Their spares show here once ${f}’s decks leave copies free.`,
 +    listTitle: "No trades yet",
-+    listBody: "Propose one from a friend’s Trade tab, or ask back after you say yes to a spare request.",
++    listBody: "Add cards from a friend’s Spares tab, press Trade where a deck shows a friend’s spare, or make it a trade after you say yes to a spare request.",
 +  },
 +  /** Ask back, on the holder's Yes receipt (open question 7). */
-+  askBack: "Ask back",
++  askBack: "Make it a trade",
 +  askBackAria: (f: Name) => personText`Ask ${f} for a spare in return`,
++  /** The spares sheet over a deck or All shopping (R2): Trade beside Ask, and the trade made in the sheet. */
++  sheet: {
++    press: "Trade",
++    // R4: under the friend rows, so asking stays plainly an ask.
++    how: "Ask and they give it to you. Trade to offer one of your spares for it.",
++    pressAria: (f: Name, card: string) => personText`Propose a trade with ${f} for ${card}`,
++    open: "Trade open",
++    openAria: (f: Name) => personText`Open your trade with ${f}`,
++    title: (f: Name) => personText`Trade with ${f}`,
++    back: "Friends’ spares",
++    sentTitle: (f: Name) => personText`Offer sent to ${f}`,
++    sentBody: (f: Name) => personText`${f} has 14 days to answer. It’s on ${f}’s Spares tab and in Friends › Trades.`,
++    done: "Done",
++    openTrade: "Open the trade",
++  },
++  /** The friend page's back link when it was opened from a deck or All shopping: the way back, by name. */
++  backTo: (place: string) => `${place}`,
 +  /** The Requests box's third tab. */
 +  listTab: "Trades",
 +  /** One trade as a Trades row: kicker (uppercase by CSS), title, line, press. */
@@ -749,16 +1852,21 @@ index 0000000..109e196
 +    declined: (f: Name) => personText`${f} declined your trade`,
 +    declinedYou: (f: Name) => personText`You declined ${f}’s trade`,
 +    withdrawn: (f: Name) => personText`${f} withdrew the trade`,
++    /** R3: after an accept, ending it is Rescind trade (was Call it off). */
++    rescinded: (f: Name) => personText`${f} rescinded the trade`,
 +    nothingElse: "Nothing else changes.",
 +    expired: (f: Name) => personText`${f} didn’t answer your trade`,
 +    expiredLine: (n: number) => `Offered ${n} days ago.`,
-+    look: (card: string) => `${card} is no longer spare`,
++    look: (card: string) => `${card} is no longer available`,
 +    lookLine: (f: Name, n: number) => personText`${f}’s trade can’t go ahead as it is · ${days(n)}`,
 +    waitingLine: (f: Name, n: number) => personText`Waiting on ${f} · ${days(n)}`,
 +    open: "Open ›",
 +    answer: "Answer ›",
 +    seeCounter: "See the counter ›",
 +    look2: "Take a look ›",
++    /** The list's cap (R2, item 6): five rows, then one line for the rest, naming the ones that wait on you. */
++    moreWaiting: (waiting: number, rest: number) => rest > waiting ? `${waiting} more waiting on you · ${rest} in all` : `${waiting} more waiting on you`,
++    more: (n: number) => (n === 1 ? "1 more trade" : `${n} more trades`),
 +  },
 +  /** The feed kind (D7): its Settings row, kicker, and one title and line per push kind. Push copy is the same words. */
 +  feed: {

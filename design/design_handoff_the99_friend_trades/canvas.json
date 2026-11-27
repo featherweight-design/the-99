@@ -1,114 +1,79 @@
 {
-"v": 3,
-"createdOnFiles": {
-"v": 1,
-"at": "2026-11-27T10:30:00Z"
-},
-"title": "Friend trades",
-"launch": {
-"view": "canvas"
-},
-"pages": [],
-"boards": {
-"Main.dc.html": {
-"x": 0,
-"y": 0,
-"w": 1400,
-"h": 1140,
-"title": "Main \u00b7 calls and questions"
-},
-"AskBack.dc.html": {
-"x": 1480,
-"y": 0,
-"w": 1878,
-"h": 2065,
-"title": "A \u00b7 Ask back, on the Yes receipt"
-},
-"Propose.dc.html": {
-"x": 3438,
-"y": 0,
-"w": 1878,
-"h": 4876,
-"title": "P \u00b7 Propose a trade: the friend page's Trade tab"
-},
-"AskBackTrade.dc.html": {
-"x": 0,
-"y": 5036,
-"w": 1878,
-"h": 2400,
-"title": "P \u00b7 Ask back opens the asker's Trade tab"
-},
-"Answer.dc.html": {
-"x": 1958,
-"y": 5036,
-"w": 1878,
-"h": 2149,
-"title": "R \u00b7 Offered to you, and waiting on them"
-},
-"Counter.dc.html": {
-"x": 0,
-"y": 7596,
-"w": 1878,
-"h": 3298,
-"title": "C \u00b7 A counter, against the offer it replaces"
-},
-"Accepted.dc.html": {
-"x": 1958,
-"y": 7596,
-"w": 1878,
-"h": 4217,
-"title": "D \u00b7 Accepted, marked traded, traded"
-},
-"Look.dc.html": {
-"x": 0,
-"y": 11973,
-"w": 1878,
-"h": 1115,
-"title": "L \u00b7 Needs a look"
-},
-"Trades.dc.html": {
-"x": 1958,
-"y": 11973,
-"w": 1878,
-"h": 2440,
-"title": "S \u00b7 Every state in the Trades list"
-},
-"Feed.dc.html": {
-"x": 0,
-"y": 14573,
-"w": 1878,
-"h": 1680,
-"title": "N \u00b7 What's new: one row per push kind"
-},
-"Empty.dc.html": {
-"x": 1958,
-"y": 14573,
-"w": 1878,
-"h": 3586,
-"title": "E \u00b7 Empty states"
-},
-"Settings.dc.html": {
-"x": 0,
-"y": 18319,
-"w": 1878,
-"h": 2155,
-"title": "N \u00b7 Settings \u203a Notifications: the Trades row"
-}
-},
-"order": [
-"Main.dc.html",
-"AskBack.dc.html",
-"Propose.dc.html",
-"AskBackTrade.dc.html",
-"Answer.dc.html",
-"Counter.dc.html",
-"Accepted.dc.html",
-"Look.dc.html",
-"Trades.dc.html",
-"Feed.dc.html",
-"Empty.dc.html",
-"Settings.dc.html"
-],
-"notes": {},
-"designSystems": []
+ "title": "Friend trades",
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1500,
+   "h": 980,
+   "title": "Friend trades"
+  },
+  "Spares.dc.html": {
+   "x": 1600,
+   "y": 0,
+   "w": 1878,
+   "h": 10994,
+   "title": "A friend's Spares tab"
+  },
+  "Ask.dc.html": {
+   "x": 3578,
+   "y": 0,
+   "w": 1878,
+   "h": 2514,
+   "title": "Asking for a spare stays first"
+  },
+  "Propose.dc.html": {
+   "x": 5556,
+   "y": 0,
+   "w": 1878,
+   "h": 7989,
+   "title": "Proposing a trade: one sheet"
+  },
+  "Answer.dc.html": {
+   "x": 0,
+   "y": 11134,
+   "w": 1878,
+   "h": 5420,
+   "title": "Reading and answering a trade"
+  },
+  "Waiting.dc.html": {
+   "x": 1978,
+   "y": 11134,
+   "w": 1878,
+   "h": 5619,
+   "title": "Waiting, accepted and traded"
+  },
+  "FromDeck.dc.html": {
+   "x": 3956,
+   "y": 11134,
+   "w": 1878,
+   "h": 5221,
+   "title": "Trading from a deck or All shopping"
+  },
+  "MakeTrade.dc.html": {
+   "x": 5934,
+   "y": 11134,
+   "w": 1878,
+   "h": 8352,
+   "title": "Make it a trade from a Yes"
+  },
+  "Lists.dc.html": {
+   "x": 0,
+   "y": 19626,
+   "w": 1878,
+   "h": 11455,
+   "title": "Trades lists, Home and Settings"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Spares.dc.html",
+  "Ask.dc.html",
+  "Propose.dc.html",
+  "Answer.dc.html",
+  "Waiting.dc.html",
+  "FromDeck.dc.html",
+  "MakeTrade.dc.html",
+  "Lists.dc.html"
+ ]
 }

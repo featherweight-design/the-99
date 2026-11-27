@@ -1,0 +1,35 @@
+diff --git a/src/components/social/spare-markers.tsx b/src/components/social/spare-markers.tsx
+index b7f026f..c7cdb63 100644
+--- a/src/components/social/spare-markers.tsx
++++ b/src/components/social/spare-markers.tsx
+@@ -160,11 +160,13 @@ export function FriendSparesProvider({
+   children: React.ReactNode;
+ }) {
+   const key = useMemo(() => [...new Set(oracleIds)].sort().join(","), [oracleIds]);
+-  const [spares, setSpares] = useState<FriendSpare[]>([]);
+-  const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set());
++  // RENDER-ONLY (design boards, not in the proposal): globalThis.__SP* seed the provider for a static render.
++  const G = globalThis as any;
++  const [spares, setSpares] = useState<FriendSpare[]>(() => G.__SP ?? []);
++  const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set(G.__SP ? oracleIds : []));
+   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
+-  const [opened, setOpened] = useState<SpareCard | null>(null);
+-  const [asks, setAsks] = useState<AskStateLine[]>([]);
++  const [opened, setOpened] = useState<SpareCard | null>(() => G.__SP_OPENED ?? null);
++  const [asks, setAsks] = useState<AskStateLine[]>(() => G.__SP_ASKS ?? []);
+   // Moved by Try again: the read below runs once more for the same cards.
+   const [round, setRound] = useState(0);
+   // On open, the read is the opened card alone, skipped once it has landed this visit.
+diff --git a/src/components/ui/hydrated-art.tsx b/src/components/ui/hydrated-art.tsx
+index 94e276b..ba74ade 100644
+--- a/src/components/ui/hydrated-art.tsx
++++ b/src/components/ui/hydrated-art.tsx
+@@ -135,7 +135,7 @@ export function useArtFade(ref: RefObject<HTMLImageElement | null>, src: unknown
+ export function HydratedImg({ eager = false, src, srcSet, alt = "", ...rest }: ImgHTMLAttributes<HTMLImageElement> & { eager?: boolean }) {
+   const ref = useRef<HTMLImageElement | null>(null);
+   const near = useNearViewport(ref, !eager);
+-  const show = eager || near;
++  const show = eager || near || true; // RENDER-ONLY: draw src on the server (boards)
+   useArtFade(ref, show ? (src ?? srcSet) : undefined);
+   // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
+   return <img ref={ref} alt={alt} src={show ? src : undefined} srcSet={show ? srcSet : undefined} {...rest} />;
