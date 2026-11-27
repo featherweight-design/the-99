@@ -10,6 +10,7 @@
 // The screens share one modal (`SocialModal`'s `screen` and `onBack`). The QR screen's token lives here, so ‹ back
 // from it to path 2 and Show an invite QR again re-shows the same live QR (the server answers the same token anyway).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
 import { inviteCardOpen } from "../../lib/invites/rules";
@@ -102,7 +103,10 @@ export function InviteSheet({
     const seq = ++asked.current;
     const began = screenNow.current;
     setQrPending(true);
-    const call = showInviteQrAction().catch(() => null);
+    const call = showInviteQrAction().catch((e) => {
+      captureClientError("invite.qr", e);
+      return null;
+    });
     const out = await wait(call);
     if (out === "late" || seq !== asked.current) {
       // Given up on: an answer that still comes is read as news, never drawn. A QR it made is live on the server (Show

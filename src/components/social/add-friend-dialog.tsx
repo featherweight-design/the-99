@@ -67,6 +67,7 @@ export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
       await navigator.clipboard.writeText(url);
       setCopied(true);
     } catch {
+      // silent-catch: expected: refusal
       // No clipboard (an insecure origin, a refused permission): select the field, so a long press copies it.
       setManual(true);
       field.current?.focus();
@@ -75,7 +76,7 @@ export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
   }
   function share() {
     // Nothing is recorded about where it went; a dismissed share sheet rejects, which is not a failure.
-    navigator.share?.({ url, text: d.shareText }).catch(() => {});
+    navigator.share?.({ url, text: d.shareText }).catch(() => { /* silent-catch: expected: abort */ });
   }
 
   const soon = underADay(expiresAt, now);

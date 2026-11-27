@@ -9,6 +9,7 @@
 // Both writes answer with the shared toast on a failure and leave the row as it was (G5). ✕ revalidates `/friends`, so
 // its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
 // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter } from "next/navigation";
 import { BAND, PANEL } from "./section-panel";
 import { BandText } from "../decks/deck-box";
@@ -165,7 +166,10 @@ export function YourRequests({ rows, now, bare = false }: { rows: readonly YourR
     setBusy(a.id);
     setHeld({ rows, done: false });
     const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId, standalone: a.standalone })
-      .catch(() => null);
+      .catch((e) => {
+        captureClientError("requests.ask-again", e);
+        return null;
+      });
     if (!out?.ok) {
       setHeld(null);
       setBusy(null);

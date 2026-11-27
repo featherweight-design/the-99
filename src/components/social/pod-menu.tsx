@@ -7,6 +7,7 @@
 // The panel sits under the trigger inside the card, which does not clip (the wash clips itself), so it opens over
 // the seats and the cards below. The writes are the pane's: this only asks and waits.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Pod } from "../../lib/social/access";
 import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
@@ -120,7 +121,10 @@ export function PodMenu({
   async function confirm() {
     if (pending) return;
     setPending(true);
-    const gone = await (mode === "del" ? onDelete() : onLeave()).catch(() => false);
+    const gone = await (mode === "del" ? onDelete() : onLeave()).catch((e) => {
+      captureClientError("pod.leave-delete", e);
+      return false;
+    });
     setPending(false);
     // Gone: the card is about to leave with this menu in it, so there is nothing to put back.
     if (gone) {

@@ -5,6 +5,7 @@
 // nothing); Withdraw takes it back (L3), Send it again sends it once more. Signed out, the owner is named (Q2) with Join
 // (on one of their invites) and Sign in. Drawn on the shipped landing's card, column and stage.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,7 +53,10 @@ export function LinkLanding({ token, owner, initial, sentAt, friendsSince = null
 
   async function send(again: string | null) {
     setState({ kind: "sending" });
-    const out = await sendLinkRequestAction(token).catch(() => null);
+    const out = await sendLinkRequestAction(token).catch((e) => {
+      captureClientError("link.send", e);
+      return null;
+    });
     if (!out) return setState({ kind: "failed" });
     if (out.ok) {
       if (out.outcome === "nowFriends") return setState({ kind: "both" });
@@ -80,7 +84,10 @@ export function LinkLanding({ token, owner, initial, sentAt, friendsSince = null
     if (withdrawing) return;
     setWithdrawing(true);
     setWithdrawLine(null);
-    const done = await withdrawLinkRequestAction(owner.publicId).catch(() => false);
+    const done = await withdrawLinkRequestAction(owner.publicId).catch((e) => {
+      captureClientError("link.withdraw", e);
+      return false;
+    });
     setWithdrawing(false);
     if (done) setState({ kind: "withdrawn" });
     else setWithdrawLine(c.withdrawFailed);
@@ -97,6 +104,7 @@ export function LinkLanding({ token, owner, initial, sentAt, friendsSince = null
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
+      // silent-catch: expected: refusal
       setCopied(false);
     }
   }
@@ -169,7 +177,10 @@ export function LinkLandingSignedOut({ token, owner, outOfInvites }: { token: st
     if (joining) return;
     setJoining(true);
     setLine(null);
-    const out = await joinFromLinkAction(token).catch(() => null);
+    const out = await joinFromLinkAction(token).catch((e) => {
+      captureClientError("link.join", e);
+      return null;
+    });
     if (out?.ok) return router.push(out.path);
     setJoining(false);
     setLine(out && !out.ok && out.reason === "busy" ? c.joinBusy : c.joinFailed);

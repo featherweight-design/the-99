@@ -12,6 +12,7 @@
 // the press: card 1 makes the link and shows it as the chooser's path 1, card 2 invites someone new. Off (`invites`
 // null), everything here draws exactly as shipped. The pod sheet's Add a friend still makes a link straight away.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -71,7 +72,10 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
     if (pending.current) return "busy";
     pending.current = true;
     show(next);
-    const ok = await save().catch(() => false);
+    const ok = await save().catch((e) => {
+      captureClientError("friends.write", e);
+      return false;
+    });
     pending.current = false;
     if (!ok) show(latest.current);
     return ok ? "saved" : "failed";
@@ -350,7 +354,10 @@ export function FriendsView({
     // The face drawn as the save began: a redraw that lands while it is in flight (its own, or another tab's) replaces
     // it, and a newer redraw wins over this pick.
     const before = commander;
-    const out = await setCommanderAction(next?.oracleId ?? null, next?.printingId ?? null).catch(() => null);
+    const out = await setCommanderAction(next?.oracleId ?? null, next?.printingId ?? null).catch((e) => {
+      captureClientError("friends.signature", e);
+      return null;
+    });
     if (!out?.ok) {
       say(socialCopy.signature.failed);
       return false;
@@ -362,7 +369,10 @@ export function FriendsView({
 
   async function remove(friend: Friend) {
     setRemoving(friend.publicId);
-    const out = await unfriendAction(friend.publicId).catch(() => null);
+    const out = await unfriendAction(friend.publicId).catch((e) => {
+      captureClientError("friends.unfriend", e);
+      return null;
+    });
     setRemoving(null);
     // `notFriend`: already gone, which is done (E12).
     if (out?.ok || (out && !out.ok && out.reason === "notFriend")) {
@@ -380,7 +390,10 @@ export function FriendsView({
     const began = addingNow.current;
     setToast(null);
     setMaking(true);
-    const call = createInviteAction().catch(() => null);
+    const call = createInviteAction().catch((e) => {
+      captureClientError("friends.make-link", e);
+      return null;
+    });
     const out = await wait(call);
     makingNow.current = false;
     setMaking(false);
@@ -409,7 +422,10 @@ export function FriendsView({
     // The Revoke press leaves with its row (the whole section, for the last link): focus goes to Add a friend first.
     invite.current?.focus();
     setRevoked((r) => new Set(r).add(link.token));
-    const out = await revokeInviteAction(link.token).catch(() => null);
+    const out = await revokeInviteAction(link.token).catch((e) => {
+      captureClientError("friends.revoke", e);
+      return null;
+    });
     if (out?.ok) return;
     setRevoked((r) => {
       const next = new Set(r);

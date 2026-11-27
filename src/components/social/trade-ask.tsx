@@ -6,6 +6,7 @@
 // reader's asks for every trade-match card on the page read after it, so a row says Requested or Accepted from its first
 // paint and changes as an Ask lands. The push's tap keeps its `?spare=` landing on the friend's tab.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { PriceFact } from "../../lib/decks/price";
 import type { TradeAskCard, TradeAskPayload } from "../../lib/social/trade-ask";
@@ -57,7 +58,9 @@ export function TradeAskProvider({
   );
 }
 
-const refresh = () => void refreshFriendsAction().catch(() => {});
+const refresh = () => void refreshFriendsAction().catch((e) => {
+  captureClientError("trade.refresh", e);
+});
 
 const NONE: TradeAskPayload = { cards: [], prices: {}, newestAsOf: null };
 

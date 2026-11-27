@@ -11,6 +11,7 @@
 //
 // The caller draws its own presses and puts `overlays` (the chooser, the dialog and the toast) somewhere in its tree.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createInviteAction } from "../../app/friends/actions";
@@ -196,7 +197,10 @@ export function useAddFriend({ friends, links, now, invites, friendLinks = false
     const began = addingNow.current;
     setToast(null);
     setMaking(true);
-    const call = createInviteAction().catch(() => null);
+    const call = createInviteAction().catch((e) => {
+      captureClientError("friends.add-link", e);
+      return null;
+    });
     const out = await wait(call);
     makingNow.current = false;
     setMaking(false);

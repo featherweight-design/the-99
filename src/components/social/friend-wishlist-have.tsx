@@ -4,6 +4,7 @@
 // the call-out and its filter, the key, and the `You have this` sheet with Offer. Nothing here reads: the page's one read
 // (`loadHaveIt`) arrives with the tab, and a write's reply moves one card's mark for the visit.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { offerSpareAction } from "../../app/friends/spare-actions";
@@ -147,7 +148,8 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
         onChange({ mark: "offered", requestId: r.id, daysLeft: SPARE_REQUEST_DAYS });
         landed();
       } else toast.fail();
-    } catch {
+    } catch (e) {
+      captureClientError("spares.offer", e);
       toast.fail();
     } finally {
       setOffering(false);

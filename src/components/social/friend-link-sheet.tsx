@@ -5,6 +5,7 @@
 // new (the invites line), Reset link and code in place, then a friend's code typed in. Built from AddFriendBody's parts
 // and classes; the boxes are the join flow's `CodeBoxes` in their letters form.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
 import { friendLinkCopy } from "../../lib/copy/friend-links";
 import { socialCopy } from "../../lib/copy/social";
@@ -77,7 +78,10 @@ export function FriendLinkSheet({
 
   async function load() {
     setLoadFailed(false);
-    const out = await loadFriendLinkAction().catch(() => null);
+    const out = await loadFriendLinkAction().catch((e) => {
+      captureClientError("friend.link-load", e);
+      return null;
+    });
     if (out?.ok) setLink(out.link);
     else setLoadFailed(true);
   }
@@ -94,7 +98,10 @@ export function FriendLinkSheet({
 
   async function doReset() {
     setReset("busy");
-    const out = await resetFriendLinkAction().catch(() => null);
+    const out = await resetFriendLinkAction().catch((e) => {
+      captureClientError("friend.link-reset", e);
+      return null;
+    });
     if (out?.ok) {
       setLink(out.link);
       setReset("done");
@@ -108,7 +115,10 @@ export function FriendLinkSheet({
 
   async function send(chars: string) {
     setEntry({ kind: "typing", chars, busy: true });
-    const out = await sendCodeRequestAction(chars).catch(() => null);
+    const out = await sendCodeRequestAction(chars).catch((e) => {
+      captureClientError("friend.link-code", e);
+      return null;
+    });
     if (out?.ok) setEntry({ kind: out.outcome, owner: out.owner });
     else setEntry({ kind: out ? (out.reason === "off" ? "failed" : out.reason) : "failed", chars });
   }
@@ -187,6 +197,7 @@ function OwnLink({ link, left, fresh, canShare }: { link: FriendLinkView; left: 
       await navigator.clipboard.writeText(link.url);
       setCopied(true);
     } catch {
+      // silent-catch: expected: refusal
       // Copy failed (shipped): the field is shown and selected for a long press.
       setManual(true);
       requestAnimationFrame(() => {
@@ -208,7 +219,7 @@ function OwnLink({ link, left, fresh, canShare }: { link: FriendLinkView; left: 
 
       {canShare ? (
         <div className="mt-[18px] flex flex-col gap-[8px] md:hidden">
-          <button type="button" onClick={() => navigator.share?.({ url: link.url, text: d.shareText }).catch(() => {})} className="flex h-[48px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[color:var(--accent)] font-sans text-[15px] font-semibold text-[color:var(--bg)]">
+          <button type="button" onClick={() => navigator.share?.({ url: link.url, text: d.shareText }).catch(() => { /* silent-catch: expected: abort */ })} className="flex h-[48px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[color:var(--accent)] font-sans text-[15px] font-semibold text-[color:var(--bg)]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4" /><path d="M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7" /></svg>
             {d.share}
           </button>

@@ -13,6 +13,7 @@
 // longer be drawn (`printingGone`) is the one case the picker tells (P8): a note, and the usual art tile reads
 // Shown now, since that is what friends see.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { FaceCardHit, FacePrinting, FacePrintings, FaceTile } from "../../lib/decks/commander-picker";
 import type { OwnCommander } from "../../lib/social/friends";
@@ -141,7 +142,10 @@ export function SignaturePicker({
   async function save(pick: SignaturePick | null, what: Saving) {
     if (saving) return;
     setSaving(what);
-    const ok = await onSave(pick).catch(() => false);
+    const ok = await onSave(pick).catch((e) => {
+      captureClientError("signature.save", e);
+      return false;
+    });
     // Landed: the caller closes the picker. Failed: it stays, every row and tile live again.
     if (!ok) setSaving(null);
   }

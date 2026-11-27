@@ -8,6 +8,7 @@
 // its receipt, or when a ✕ takes the row away, so focus would fall to <body>. `useLandFocus` puts it on the element
 // that replaced the press (focusable, `tabIndex={-1}`), unless the reader has already moved on.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { answerOfferAction, answerSpareAction } from "../../app/friends/spare-actions";
 import { spareCopy } from "../../lib/copy/social";
@@ -75,7 +76,8 @@ export function useSpareAnswer(shared?: SpareToast) {
     let ok = false;
     try {
       ok = (await (offer ? answerOfferAction(requestId, a) : answerSpareAction(requestId, a))).ok;
-    } catch {
+    } catch (e) {
+      captureClientError("spares.answer", e);
       ok = false;
     }
     setBusy(null);

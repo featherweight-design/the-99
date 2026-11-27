@@ -9,6 +9,7 @@
 //
 // An answer turns its row into a receipt FOR THE VISIT: the action revalidates `/friends`, so the answered ask leaves
 // the server's rows at once, and the receipt is held here (`receipts`) in the place the row had, never stored.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { FriendRequestRow, SpareRequestRow, TradeMatchRow, WaitingRow } from "../../lib/social/waiting";
@@ -95,7 +96,10 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
   async function pressFriend(row: FriendRequestRow, a: FriendAnswer, index: number, from: Element) {
     if (anyBusy) return;
     setFriendBusy({ key: row.key, answer: a });
-    const done = await answerFriendRequestAction(row.request.requester.publicId, a).catch(() => false);
+    const done = await answerFriendRequestAction(row.request.requester.publicId, a).catch((e) => {
+      captureClientError("waiting.friend-answer", e);
+      return false;
+    });
     setFriendBusy(null);
     if (!done) {
       say(friendLinkCopy.request.failed);
@@ -112,7 +116,10 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
   async function putBack(row: FriendRequestRow) {
     if (puttingBack.current) return;
     puttingBack.current = true;
-    const done = await undoDeclineAction(row.request.requester.publicId).catch(() => false);
+    const done = await undoDeclineAction(row.request.requester.publicId).catch((e) => {
+      captureClientError("waiting.put-back", e);
+      return false;
+    });
     puttingBack.current = false;
     if (!done) {
       say(friendLinkCopy.request.putBackFailed);
