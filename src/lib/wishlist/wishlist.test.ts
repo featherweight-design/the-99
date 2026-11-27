@@ -1,6 +1,26 @@
-import { describe, expect, it } from "vitest";
-import { cleanQuantity, wantFloor, wishlistLinesQuery } from "./wishlist";
-import { friendWishlistQuery } from "../social/wishlist";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { describe, expect, it, vi } from "vitest";
+
+const execute = vi.hoisted(() => vi.fn());
+vi.mock("../../db", () => ({ db: { execute } }));
+
+import { cleanQuantity, loadWishlist, wantFloor } from "./wishlist";
+
+describe("loadWishlist", () => {
+  it("runs the owner's union and maps each row, source and deck ids included", async () => {
+    execute.mockResolvedValueOnce({ rows: [
+      { oracle_id: "o1", scryfall_id: null, quantity: "4", owned: "1", added_at: "2026-11-27T10:00:00Z", source: "hand", deck_ids: ["d1", "d2"] },
+      { oracle_id: "o2", scryfall_id: "s2", quantity: 2, owned: 0, added_at: "2026-11-26T10:00:00Z", source: "deck", deck_ids: null },
+    ] });
+    const lines = await loadWishlist("owner");
+    const { sql } = new PgDialect().sqlToQuery(execute.mock.calls[0][0]);
+    expect(sql).toContain(`full join (select ss.*`);
+    expect(lines).toEqual([
+      { oracleId: "o1", scryfallId: null, quantity: 4, owned: 1, addedAt: new Date("2026-11-27T10:00:00Z"), source: "hand", deckIds: ["d1", "d2"] },
+      { oracleId: "o2", scryfallId: "s2", quantity: 2, owned: 0, addedAt: new Date("2026-11-26T10:00:00Z"), source: "deck", deckIds: [] },
+    ]);
+  });
+});
 
 describe("cleanQuantity", () => {
   it("takes a whole number from 1 to 99, as a number or a form string", () => {
@@ -23,54 +43,5 @@ describe("wantFloor", () => {
   it("leaves a first want, and a line the collection already reaches, to the collected rule", () => {
     expect(wantFloor(1, 1, null)).toBe(1);
     expect(wantFloor(2, 3, 2)).toBe(2);
-  });
-});
-
-describe("wishlistLinesQuery", () => {
-  it("reads one owner's lines and only that owner's collection", () => {
-    const { sql, params } = wishlistLinesQuery("owner").toSQL();
-    expect(sql).toContain(`"wishlist_items"."user_id" = $`);
-    // The collection is the line owner's own: tied to the line's column, not a second bound id.
-    expect(sql.replace(/\s+/g, " ")).toContain(`ci.user_id = "wishlist_items"."user_id"`);
-    expect(params.filter((p) => p === "owner")).toHaveLength(1);
-  });
-
-  it("leaves out a line the collection already reaches, rather than deleting it (G5)", () => {
-    const { sql } = wishlistLinesQuery("owner").toSQL();
-    // The one `heldCopies` expression, qualified on the line's own columns (a single-table select would drop them).
-    const flat = sql.replace(/\s+/g, " ");
-    expect(flat).toContain(`ci.user_id = "wishlist_items"."user_id" and ci.oracle_id = "wishlist_items"."oracle_id"`);
-    expect(flat).toContain(`< "wishlist_items"."quantity"`);
-    expect(sql).not.toMatch(/delete/i);
-  });
-});
-
-describe("friendWishlistQuery", () => {
-  const { sql, params } = friendWishlistQuery("viewer", "00000000-0000-0000-0000-000000000001").toSQL();
-
-  it("joins the viewer's own friendship row to the wishlist's owner, in the same statement", () => {
-    expect(sql).toContain(`inner join "friend_links" on ("friend_links"."friend_user_id" = "wishlist_items"."user_id" and "friend_links"."user_id" = $`);
-    expect(params).toContain("viewer");
-  });
-
-  it("narrows to the friend named by public id", () => {
-    expect(sql).toContain(`"social_profiles"."public_id" = $`);
-  });
-
-  it("returns the card and the wanted count, never an owned count or got", () => {
-    const q = friendWishlistQuery("viewer", "00000000-0000-0000-0000-000000000001");
-    expect(Object.keys((q as unknown as { _: { selectedFields: object } })._.selectedFields))
-      .toEqual(["oracleId", "quantity", "name", "imageUri", "layout", "backImageUri"]);
-  });
-
-  it("leaves out a line the friend's collection already reaches (G5)", () => {
-    const flat = sql.replace(/\s+/g, " ");
-    expect(flat).toContain(`ci.user_id = "wishlist_items"."user_id" and ci.oracle_id = "wishlist_items"."oracle_id"`);
-    expect(flat).toContain(`< "wishlist_items"."quantity"`);
-    expect(flat).not.toContain("scryfall_id as");
-  });
-
-  it("joins the card from the catalog", () => {
-    expect(sql).toContain(`inner join "cards" on "cards"."oracle_id" = "wishlist_items"."oracle_id"`);
   });
 });

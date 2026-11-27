@@ -46,7 +46,12 @@ export async function buildExport(ctx: Ctx): Promise<Row> {
       coalesce((select json_agg(json_build_object('oracleId', ci.oracle_id::text, 'quantity', ci.quantity) order by ci.oracle_id)
         from collection_items ci where ci.user_id = p.user_id), '[]'::json) spares
     from social_profiles p where p.user_id <> ${viewer} order by p.display_name`);
-  const wishlist = await q(sql`select oracle_id::text "oracleId", quantity from wishlist_items where user_id = ${viewer} order by oracle_id`);
+  // The wishlist is the hand-added and deck-synced lines as one (cart on your wishlist, `src/lib/wishlist/lines.ts`):
+  // a card on both sides is one row wanting the larger count. Every line as stored, collected or not, as before.
+  const wishlist = await q(sql`select wl.oracle_id::text "oracleId", max(wl.quantity)::int quantity
+    from (select hw.oracle_id, hw.quantity from wishlist_items hw where hw.user_id = ${viewer}
+      union all select sw.oracle_id, sw.quantity from wishlist_synced sw where sw.user_id = ${viewer}) wl
+    group by wl.oracle_id order by wl.oracle_id`);
   const uploads = await q(sql`select filename, row_count "rowCount", confirmed_at "confirmedAt" from csv_uploads where user_id = ${viewer} order by created_at`);
   // Free owned cards (in no deck, not a commander, not a land) that fit two or more decks and are indexed by their
   // commanders: what "Which deck needs it most?" is for. Most decks first.

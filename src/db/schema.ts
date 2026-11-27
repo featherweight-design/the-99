@@ -817,6 +817,12 @@ export const decks = pgTable("decks", {
    * beside the owner's two `user_prefs` rules. Not an edit: writing it leaves `last_edited_at` alone.
    */
   hiddenFromFriends: boolean("hidden_from_friends").notNull().default(false),
+  /**
+   * Keep off my wishlist (cart on your wishlist, call 1 and M1): the wishlist sync leaves this deck's Shopping out. One
+   * stored choice behind both the Settings deck picker's tick and the ⋯ menu row. Not an edit: writing it leaves
+   * `last_edited_at` alone.
+   */
+  offWishlist: boolean("off_wishlist").notNull().default(false),
 },
   (t) => [
     // 1-5 or nothing. A 0 or a 6 is not a bracket, and a column that accepts one would put a
@@ -2382,6 +2388,17 @@ export const userPrefs = pgTable(
      */
     friendsSeeDecks: boolean("friends_see_decks").notNull().default(true),
     friendsSeeUnfinished: boolean("friends_see_unfinished").notNull().default(false),
+    /**
+     * Settings › Wishlist's Keep my shopping on my wishlist (cart on your wishlist, call 1): off by default. On, the sync
+     * (`lib/wishlist/sync.ts`) keeps `wishlist_synced` equal to what Shopping lists for every deck not kept off. Written
+     * only when it changes, because of the stamp trigger above.
+     */
+    wishlistSync: boolean("wishlist_sync").notNull().default(false),
+    /**
+     * When this reader closed the Wishlist tab's offer of the switch for good (call 2, its ✕). Written once, only while
+     * null, because of the stamp trigger above. Null is an offer never closed; the switch itself stays in Settings.
+     */
+    wishlistOfferDismissedAt: timestamp("wishlist_offer_dismissed_at", { withTimezone: true }),
     /**
      * The news kinds this reader has turned on (menu and Home, `lib/feed/prefs.ts`): kind -> when it was turned on, as
      * an ISO instant. A kind that is off is ABSENT. A kind shows only what arrived after its own instant, so turning one
@@ -4352,6 +4369,76 @@ export const wishlistCollected = pgTable("wishlist_collected", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
 ]);
+
+/**
+ * The wishlist lines the player's decks put there (cart on your wishlist, G1), apart from `wishlist_items` so a line the
+ * player added by hand is never touched by the sync. Written only by the sync (`lib/wishlist/sync.ts`), diff-only, while
+ * `user_prefs.wishlist_sync` is on. `quantity` is the copies held (any printing) plus what every included deck still
+ * needs (`loadDeckBuyRows`' deficits), so the collected sweep removes the line at the collection write that reaches it.
+ * No price columns: a synced line never gets a price baseline (Q4), so the price-drop job, which reads `wishlist_items`
+ * alone, never notices one. Read through `lib/wishlist/lines.ts` (the owner) and `lib/social/wishlist.ts` (a friend).
+ */
+export const wishlistSynced = pgTable("wishlist_synced", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  quantity: integer("quantity").notNull(),
+  /**
+   * The copies held (any printing) when the sync wrote `quantity`. A friend's view rebuilds the want from it and the
+   * visible decks' deficits (`held + visible deficits`, capped at 99), never by subtracting hidden decks from a capped
+   * `quantity`.
+   */
+  held: integer("held").notNull(),
+  /** Added in a pass that added many lines at once (switching on, a large deck import): its trade matches never push (Q2). */
+  quiet: boolean("quiet").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
+  check("wishlist_synced_quantity_check", sql`${t.quantity} between 1 and 99`),
+  check("wishlist_synced_held_check", sql`${t.held} >= 0`),
+]);
+
+/**
+ * Which decks put a synced line there, and how many copies each still needs (its Shopping deficit): the owner tab's one
+ * box per deck, and the friend read's filter (H1: a friend never sees a line whose only decks they cannot see).
+ * `unfinished` is the deck's pill class (New, Draft, Building: `unfinishedPill`) when the sync last wrote the row, so
+ * the friend read applies `friendCanSeeDeck` in one statement. Leaves with its line, and with its deck.
+ */
+export const wishlistSyncedDecks = pgTable("wishlist_synced_decks", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull(),
+  unfinished: boolean("unfinished").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId, t.deckId] }),
+  foreignKey({ name: "wishlist_synced_decks_line_fk", columns: [t.userId, t.oracleId], foreignColumns: [wishlistSynced.userId, wishlistSynced.oracleId] })
+    .onDelete("cascade"),
+  check("wishlist_synced_decks_quantity_check", sql`${t.quantity} >= 1`),
+  index("wishlist_synced_decks_deck_id_idx").on(t.deckId),
+]);
+
+/**
+ * Cards the player took off the synced set (call 5): Remove on a deck line, or changing its want, which makes it a line
+ * of their own. The sync never puts one back; only adding the card again from an add control clears the row. Changes
+ * nothing a page draws until the sync acts on it, so it carries no stamp trigger.
+ */
+export const wishlistSyncSkips = pgTable("wishlist_sync_skips", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
+]);
+
+/**
+ * The sync's ledger: the data stamp (`user_data_stamps`) it last brought the synced lines up to. A player is due when
+ * their stamp has moved past it. No stamp trigger: writing it must not make the player due again.
+ */
+export const wishlistSyncState = pgTable("wishlist_sync_state", {
+  userId: text("user_id").primaryKey(),
+  syncedStamp: bigint("synced_stamp", { mode: "number" }).notNull(),
+  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /**
  * The news feed's STORED items (menu and Home, G1; `lib/feed/`): one row per event a job noticed for this reader, of a

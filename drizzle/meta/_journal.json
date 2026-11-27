@@ -1905,6 +1905,13 @@
       "when": 1795652770941,
       "tag": "0273_deck_cards_oracle_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 274,
+      "version": "7",
+      "when": 1795792373864,
+      "tag": "0274_cart_wishlist",
+      "breakpoints": true
     }
   ]
 }
