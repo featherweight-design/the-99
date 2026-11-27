@@ -40,11 +40,14 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
   const toastSeq = useRef(0);
   const [announce, setAnnounce] = useState("");
 
-  // The switch and the decks left out, held from the press; a fresh server value always wins (adjusted during render).
+  // The switch and the decks left out, held from the press; a fresh server value wins (adjusted during render).
   const [on, setOn] = useState(settings.on);
   const [off, setOff] = useState(() => keptOff(settings));
+  // A fresh value that lands while a save is in flight (its own revalidation) waits until the last save settles, so a
+  // queued tick never flickers back.
+  const [pending, setPending] = useState(0);
   const [served, setServed] = useState(settings);
-  if (served !== settings) {
+  if (served !== settings && pending === 0) {
     setServed(settings);
     setOn(settings.on);
     setOff(keptOff(settings));
@@ -66,6 +69,7 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
     if (saving) return;
     setOn(next);
     setSaving(true);
+    setPending((n) => n + 1);
     try {
       const r = await setWishlistSyncAction(next);
       if (r.ok) saved.current = { ...saved.current, on: next };
@@ -75,6 +79,7 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
       failSwitch();
     } finally {
       setSaving(false);
+      setPending((n) => n - 1);
     }
   }
 
@@ -94,8 +99,9 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
     const gen = generation.current;
     for (let i = 0; i < ids.length; i += MAX_DECKS_PER_WRITE) {
       const batch = ids.slice(i, i + MAX_DECKS_PER_WRITE);
+      setPending((n) => n + 1);
       queue.current = queue.current.then(async () => {
-        if (gen !== generation.current) return;
+        if (gen !== generation.current) return setPending((n) => n - 1);
         try {
           const r = await setDecksOffWishlistAction(batch, leaveOut);
           if (!r.ok) return failDecks();
@@ -103,6 +109,8 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
         } catch (e) {
           captureClientError("settings.wishlist-decks", e);
           failDecks();
+        } finally {
+          setPending((n) => n - 1);
         }
       });
     }

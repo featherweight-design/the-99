@@ -29,6 +29,7 @@ import { NewsSection } from "../../components/settings/news-section";
 import { FriendDecksSection } from "../../components/settings/friend-decks-section";
 import { WishlistSection } from "../../components/settings/wishlist-section";
 import { loadWishlistSyncSettings } from "../../lib/wishlist/sync-settings";
+import { captureServerError } from "../../lib/sentry/capture";
 import { StoreSection } from "../../components/settings/store-section";
 import { storePreferenceEnabled } from "../../lib/stores/flag";
 
@@ -46,8 +47,12 @@ export default async function SettingsPage() {
     loadNewsSettings(userId, env),
     config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
     loadSpares(userId, env),
-    // Wishlist (cart on your wishlist, call 1): the switch and every deck; the counts only while it is on.
-    loadWishlistSyncSettings(userId),
+    // Wishlist (cart on your wishlist, call 1): the switch and every deck; the counts only while it is on. A failed
+    // read is reported and costs the page that section, nothing else.
+    loadWishlistSyncSettings(userId).catch((error) => {
+      captureServerError("settings.wishlist-read", error);
+      return null;
+    }),
     loadFriendDeckPrefs(userId),
     // Strict: a failed read draws no section rather than Mana Pool checked over a store the reader chose.
     storeOn
@@ -63,7 +68,7 @@ export default async function SettingsPage() {
       {store ? <StoreSection store={store} /> : null}
       <NewsSection kinds={news} push={push} />
       <SparesSection {...spares} />
-      <WishlistSection settings={wishlist} />
+      {wishlist ? <WishlistSection settings={wishlist} /> : null}
       <FriendDecksSection prefs={deckPrefs} />
       <Suspense fallback={null}>
         <AccountSlot userId={userId} />

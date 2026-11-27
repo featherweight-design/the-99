@@ -376,8 +376,8 @@ export function DeckCardOverflow({
     try {
       const r = await setDecksOffWishlistAction([deckId], !wishlist.kept);
       if (!r.ok) fail();
-    } catch (e) {
-      captureClientError("deck-menu.keep-off-wishlist", e);
+    } catch (error) {
+      captureClientError("deck-menu.keep-off-wishlist", error);
       fail();
     }
   }
