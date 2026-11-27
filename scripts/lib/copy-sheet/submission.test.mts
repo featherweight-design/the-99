@@ -39,6 +39,13 @@ describe("parseSubmission", () => {
     expect(parseSubmission(body)).toHaveProperty("error");
   });
 
+  it("names the edit a refusal is about, so the tray can mark it", () => {
+    expect(parseSubmission({ edits: [edit({ to: "" })] })).toEqual({ error: "an edit cannot leave a line empty", key: edit().key });
+    expect(parseSubmission({ edits: [edit({ to: edit().from })] })).toEqual({ error: "an edit must change the text", key: edit().key });
+    expect(parseSubmission({ edits: [edit(), edit()] })).toEqual({ error: "a key appears twice", key: edit().key });
+    expect(parseSubmission({ edits: [] })).toEqual({ error: "nothing to submit" });
+  });
+
   it("refuses more than the cap of edits", () => {
     const edits = Array.from({ length: MAX_EDITS + 1 }, (_, i) => edit({ key: `src/lib/copy/a.ts#k${i}` }));
     expect(parseSubmission({ edits })).toHaveProperty("error");

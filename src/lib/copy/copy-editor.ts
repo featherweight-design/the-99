@@ -94,6 +94,8 @@ export const copyEditorCopy = {
     failed: {
       stale: (editCount: number) => (editCount === 1 ? "No pull request opened. One edit is out of date; your edits are kept." : `No pull request opened. ${editCount} edits are out of date; your edits are kept.`),
       rule: "No pull request opened. The copy rules refused an edit; your edits are kept.",
+      /** The server refused the submission itself; `reason` is its own phrase ("an edit cannot leave a line empty"), empty when it sent none. */
+      invalid: (reason: string) => (reason ? `No pull request opened. The server refused the edits: ${reason}. Your edits are kept.` : "No pull request opened. The server refused the edits; your edits are kept."),
       limit: "No pull request opened. One a minute; wait a moment and try again. Your edits are kept.",
       unavailable: "No pull request opened. GitHub or the server did not take it; your edits are kept.",
       network: "No pull request opened. The request did not get through; your edits are kept.",

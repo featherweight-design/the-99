@@ -4,6 +4,7 @@ import { copyEditorUser } from "../../../../lib/copy-editor/gate";
 import { dispatchCopyEdit } from "../../../../lib/copy-editor/github";
 import { readEditorRows } from "../../../../lib/copy-editor/rows";
 import { readCapped } from "../../../../lib/http/read-capped";
+import { captureServerError, captureServerWarning } from "../../../../lib/sentry/capture";
 import { enforceHit } from "../../../../lib/rate/observe";
 import { tooManyRequests } from "../../../../lib/rate/refuse";
 import { editBranch, MAX_EDITS_CHARS, parseSubmission } from "../../../../../scripts/lib/copy-sheet/submission.mts";
@@ -33,7 +34,11 @@ export async function POST(req: NextRequest) {
     return refuse(400, { error: "bad-json" });
   }
   const parsed = parseSubmission(raw);
-  if ("error" in parsed) return refuse(400, { error: "bad-edits", message: parsed.error });
+  if ("error" in parsed) {
+    // The parser's reason is one of its own fixed phrases, never the edit's text, so it can travel to Sentry and the tray.
+    captureServerWarning("copy-edit-submit-bad-edits", parsed.error);
+    return refuse(400, { error: "bad-edits", message: parsed.error, keys: parsed.key ? [parsed.key] : [] });
+  }
   const rows = await readEditorRows();
   if (!rows) return refuse(503, { error: "rows-not-built" });
   const byKey = new Map(rows.map((r) => [r.key, r]));
@@ -54,6 +59,9 @@ export async function POST(req: NextRequest) {
   const wait = await enforceHit(userId, "copy-edit-submit");
   if (wait !== null) return tooManyRequests(wait, NO_STORE);
   const branch = editBranch(new Date());
-  if (!(await dispatchCopyEdit(token, branch, parsed.edits))) return refuse(502, { error: "dispatch-failed" });
+  if (!(await dispatchCopyEdit(token, branch, parsed.edits))) {
+    captureServerError("copy-edit-submit-dispatch", new Error("dispatch-failed"));
+    return refuse(502, { error: "dispatch-failed" });
+  }
   return refuse(202, { branch });
 }
