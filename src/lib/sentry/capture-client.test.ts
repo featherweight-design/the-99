@@ -7,7 +7,7 @@ vi.mock("@sentry/nextjs", () => ({
   captureMessage: vi.fn(),
 }));
 
-const { captureClientError, resetClientCaptureForTest } = await import("./capture");
+const { captureClientError, resetClientCaptureForTest } = await import("./capture-client");
 
 beforeEach(() => { captured.length = 0; resetClientCaptureForTest(); });
 
@@ -30,7 +30,7 @@ describe("captureClientError", () => {
     captureClientError("test.odd", odd);
     captureClientError("test.string", "a deck name typed by a player");
     expect(captured.map((c) => c.error.name)).toEqual(["Error", "Error"]);
-    expect(captured[1].error.stack).toBeUndefined();
+    expect(captured[1].error.stack).toBe("Error: test.string");
   });
 
   it("reports one event per tag per page session, so a render loop cannot flood the quota", () => {

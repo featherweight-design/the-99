@@ -1,5 +1,5 @@
 // A client component that catches an error and settles to a failed view, a toast or nothing leaves the browser's
-// failure invisible: Sentry never sees it. `captureClientError(tag, err)` (src/lib/sentry/capture.ts) reports the
+// failure invisible: Sentry never sees it. `captureClientError(tag, err)` (src/lib/sentry/capture-client.ts) reports the
 // unexpected ones. This guard finds every client catch that neither reports nor rethrows.
 //
 // Scope: non-test files under `src` that open with the "use client" directive. A site is a `catch` clause or a
@@ -40,7 +40,7 @@ export function catchSites(text, path = "x.tsx") {
         found = true;
         return;
       }
-      if (c !== root && isFn(c) && !ts.isCallExpression(c.parent)) return;
+      if (c !== root && isFn(c)) return;
       ts.forEachChild(c, w);
     };
     w(root);

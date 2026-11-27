@@ -23,7 +23,7 @@ import { picksOf, type UpgradeActionDeps } from "./upgrade-lines";
 import { markUpgradeSeenAction, pickUpgradeLineAction, upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
 import { CreditsText } from "../../../ui/credits-text";
 import { SheetGrabber } from "../../../ui/sheet-grabber";
-import { captureClientError } from "../../../../lib/sentry/capture";
+import { captureClientError } from "../../../../lib/sentry/capture-client";
 import { IntroStep } from "./intro-step";
 import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pick-steps";
 import { StepTracker } from "./step-tracker";

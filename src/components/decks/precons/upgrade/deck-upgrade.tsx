@@ -28,7 +28,7 @@ import { UpgradeFlow } from "./upgrade-flow";
 import { runningLabel, useLinePulse, useUpgradeRun, type Picks } from "./use-upgrade-run";
 import { useClock } from "./wait-view";
 import { captureEngagement } from "../../../../lib/analytics/posthog";
-import { captureClientError } from "../../../../lib/sentry/capture";
+import { captureClientError } from "../../../../lib/sentry/capture-client";
 
 const copy = preconUpgradeDeckCopy;
 

@@ -4,7 +4,7 @@
 // (addendum A2c). One run belongs to the precon, so both read the same panel and press the same action; this is the state
 // they share: the panel, what this tab's press made of the run, the watch on a run begun elsewhere, and the confirm.
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { captureClientError } from "../../../../lib/sentry/capture";
+import { captureClientError } from "../../../../lib/sentry/capture-client";
 import { pressUpgradeAction, readUpgradeAction } from "../../../../lib/precons/upgrade/actions";
 import { viewOf, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";

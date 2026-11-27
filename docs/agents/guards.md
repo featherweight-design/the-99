@@ -149,7 +149,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   outstanding: 90 bare tokens in `src`, every one overridden at its own variant.
 
 - `pnpm check:silent-catch` fails when a non-test file under `src` that opens with `"use client"` has a `catch`
-  clause or `.catch(` call that neither calls `captureClientError(tag, err)` (`src/lib/sentry/capture.ts`), nor
+  clause or `.catch(` call that neither calls `captureClientError(tag, err)` (`src/lib/sentry/capture-client.ts`, apart from `capture.ts` because that reads `src/db`), nor
   rethrows, nor carries `// silent-catch: expected: refusal | out-of-credits | abort | offline` on its line, the
   line above or inside it. A marker with no reason or an unknown one is a finding. Existing silent sites sit in
   the ratchet `scripts/silent-catch-baseline.json` (a count per file): a file may not exceed its count, and a
