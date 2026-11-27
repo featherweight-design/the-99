@@ -6,6 +6,7 @@ import { parseStrategyKey } from "@/lib/strategy/focus";
 import type { StrategyKey } from "@/lib/strategy/score";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
+import { CopyLines } from "../copy-lines";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import {
@@ -1416,11 +1417,13 @@ export function TuningPanel({
   // With every card locked, the CREDIT line gives way to the one fact that matters: nothing is spent.
   // The state's own note (a set's tally, a failure's note) stays. Outside the never-run lead, where
   // the sentence is the lead, it joins the note so every state says why the press is disabled.
-  const lockedNote = allLocked === null
+  // Held as parts: each copy row draws in its own span (CopyLines); `lockedNote` is the same words as one string, for gating.
+  const lockedParts = allLocked === null
     ? null
     : neverRun && !v2
-      ? lockedCardsCopy.tuning.allLockedNote
-      : `${lockedCardsCopy.tuning.allLocked(allLocked)} ${lockedCardsCopy.tuning.allLockedNote}`;
+      ? [lockedCardsCopy.tuning.allLockedNote]
+      : [lockedCardsCopy.tuning.allLocked(allLocked), lockedCardsCopy.tuning.allLockedNote];
+  const lockedNote = lockedParts === null ? null : lockedParts.join(" ");
   const tail = lockedNote ?? credit;
   // SC-Cost B, D and E: a 2-credit run that can start names its source and why it is 2. Only where the credit line is
   // what the row says (never under the owner's share or every card locked); a state's own note still leads it.
@@ -1628,6 +1631,11 @@ export function TuningPanel({
                   {two.lead}{" "}
                   <span style={{ color: "var(--fg-body)" }}>{two.why}</span>{" "}
                   <CreditsText text={two.count} />
+                </>
+              ) : lockedParts ? (
+                <>
+                  {note ? `${note} · ` : null}
+                  <CopyLines lines={lockedParts} />
                 </>
               ) : (
                 <CreditsText text={noteLine} />

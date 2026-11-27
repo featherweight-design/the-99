@@ -4,6 +4,7 @@ import { Fragment, useId, useState } from "react";
 import { collectionSources, type GuideText } from "../../lib/copy/collection-sources";
 import { MoxfieldNote } from "../collection/moxfield-note";
 import { landingCopy } from "../../lib/copy/landing";
+import { CopyLines } from "../copy-lines";
 import { rise, Section, Lead } from "./section";
 
 const c = landingCopy.bring;
@@ -94,12 +95,7 @@ export function Bring() {
                         <li key={i}><Words parts={parts} /></li>
                       ))}
                     </ol>
-                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{[s.requirement, app.bothColumns, app.foot].filter((line): line is NonNullable<typeof line> => Boolean(line)).map((line, i) => (
-                      <Fragment key={i}>
-                        {i > 0 && " "}
-                        <span>{line}</span>
-                      </Fragment>
-                    ))}</p>
+                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><CopyLines lines={[s.requirement, app.bothColumns, app.foot]} /></p>
                     {app.id === "moxfield" && <MoxfieldNote className="mt-[12px]" />}
                   </div>
               </li>

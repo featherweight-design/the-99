@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyLines } from "../copy-lines";
 import { createContext, useContext, type ReactNode } from "react";
 
 import { lockedLast, unreachable, upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/bracket/upgrade";
@@ -151,9 +152,7 @@ function Item({
         <p className={sentence}>
           {/* EACH REASON ON THE LIST, ONCE. At Upgraded a loop of extra turns and an assembled
               combo are different rules, and one sentence for both would misdescribe one. */}
-          {[...new Set(item.combos.map((c) => c.reason))]
-            .map((reason) => upgradePathCopy.comboRule[reason](target))
-            .join(" ")}{" "}
+          <CopyLines lines={[...new Set(item.combos.map((c) => c.reason))].map((reason) => upgradePathCopy.comboRule[reason](target))} />{" "}
           {item.combos.length === 1 ? <b className="font-semibold text-[color:var(--fg)]">{comboClause(item.combos[0])}</b> : null}
         </p>
         {/* THE SPACER holds the label column's second row so the pairs line up with the sentence. */}

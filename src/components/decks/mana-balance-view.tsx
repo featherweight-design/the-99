@@ -11,6 +11,7 @@
 
 import type { ReactNode, Ref } from "react";
 
+import { CopyLines } from "../copy-lines";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import { colorRows } from "../../lib/mana/color-rows";
@@ -69,7 +70,7 @@ export function ManaBalanceView({
         </div>
       ) : (
         <p className="max-w-[660px] text-[13px] leading-[1.6] [text-wrap:pretty] text-[color:var(--fg-body)] md:text-[13.5px]">
-          {balance.state === "noSources" && noLands ? `${deckStatsCopy.colors.noLands} ${copy.thin.noSources}` : copy.lead}
+          {balance.state === "noSources" && noLands ? <CopyLines lines={[deckStatsCopy.colors.noLands, copy.thin.noSources]} /> : copy.lead}
         </p>
       )}
 

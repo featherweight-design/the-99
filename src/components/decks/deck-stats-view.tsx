@@ -1,8 +1,9 @@
 "use client";
 
 import { CountUp } from "@/components/ui/count-up";
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 
+import { CopyLines } from "../copy-lines";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { AverageCard } from "./deck-stats-average";
 import { Shell } from "./deck-stats-shell";
@@ -208,7 +209,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
   const otherSegments = rows.reduce((a, r) => a + r.other, 0);
   const sources = sourceTotal;
   const asked = rows.filter((r) => r.pips > 0);
-  const tip = asked.length === 1 ? [`${copy.monoLead(copy.names[asked[0].c])} ${copy.tip[0]}`, copy.tip[1]] : copy.tip;
+  const tip: readonly ReactNode[] = asked.length === 1 ? [<CopyLines key="mono" lines={[copy.monoLead(copy.names[asked[0].c]), copy.tip[0]]} />, copy.tip[1]] : copy.tip;
   // Each line states an absence, so each needs the whole count behind it: a rock whose color we cannot read
   // is still a rock, and a land that adds nothing is still a land.
   const footer =

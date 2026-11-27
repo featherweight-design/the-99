@@ -12,6 +12,7 @@
 // could drift from the phone's. It now reuses the phone's column exactly.
 
 import { useId } from "react";
+import { CopyLines } from "../copy-lines";
 import { priceCopy } from "../../lib/copy/price";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { formatLimit } from "../../lib/swaps/limit";
@@ -154,7 +155,7 @@ export function PriceStrip({
     ...(dated.behind ? [priceCopy.strip.behind] : []),
     // Only beside a figure: why the cart the link builds can cost more than it.
     ...(showFigure && store.cart ? [priceCopy.strip.cartNote] : []),
-  ].join(" · ");
+  ];
 
   return (
     // The To buy box (R3-YourDeck): the band's total, then Total / Over / Last checked, then the buy link in the foot.
@@ -185,11 +186,14 @@ export function PriceStrip({
             </p>
           ) : null}
           <p className={noteClass} style={{ color: "var(--fg-locked)" }}>
-            {[
-              showFigure ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store),
-              // A market figure is an average of sales, said beside the figure it qualifies (call 4).
-              ...(showFigure && store.figure === "market" ? [storeCopy.marketNote] : []),
-            ].join(" · ")}
+            <CopyLines
+              lines={[
+                showFigure ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store),
+                // A market figure is an average of sales, said beside the figure it qualifies (call 4).
+                ...(showFigure && store.figure === "market" ? [storeCopy.marketNote] : []),
+              ]}
+              sep=" · "
+            />
             <StoreDoor />
           </p>
         </div>
@@ -205,7 +209,7 @@ export function PriceStrip({
         <div className={`${cellClass} ${tools ? "col-span-2 md:col-span-1 max-md:[border-left:0] max-md:[border-top:1px_solid_var(--border)]" : ""}`}>
           <span className={labelClass} style={{ color: "var(--fg-faint)" }}>{box.lastChecked}</span>
           <span className="text-[15px] font-semibold" style={{ color: "var(--fg)" }}>{dated.when}</span>
-          {behindNotes ? <span className={noteClass} style={{ color: "var(--fg-locked)" }}>{behindNotes}</span> : null}
+          {behindNotes.length > 0 ? <span className={noteClass} style={{ color: "var(--fg-locked)" }}><CopyLines lines={behindNotes} sep=" · " /></span> : null}
         </div>
       </div>
       {/* The 44px is the ROW's height, never the link's box: the link stays inline text with a full-height target. */}

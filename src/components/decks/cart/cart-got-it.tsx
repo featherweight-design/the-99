@@ -8,6 +8,7 @@ import { captureClientError } from "../../../lib/sentry/capture-client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { markBoughtForDecks, readCartChooser } from "../../../app/decks/mark-bought-actions";
 import type { ContestedCard } from "../../../lib/collection/summary-read";
+import { CopyLines } from "../../copy-lines";
 import { ContestedCardRow } from "../contested-card-row";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { SelectedLine } from "../../../lib/decks/cart";
@@ -89,9 +90,9 @@ export function useCartGotIt(): CartGotIt | null {
  * The receipt's body (S3, S4, S6): the decks the read says the copies covered, then what is still
  * short. A deck the read lists no claim for is named from the cart's own list.
  */
-export function cartReceiptBody(
+export function cartReceiptParts(
   facts: CartReceiptFacts | null, deckNames: ReadonlyMap<string, string>, picked: string | null = null,
-): string | null {
+): string[] | null {
   if (!facts) return null;
   const name = (d: { deckId: string; deckName: string }) => d.deckName || deckNames.get(d.deckId) || "";
   const parts: string[] = [];
@@ -103,7 +104,12 @@ export function cartReceiptBody(
   if (facts.still.length > 1) {
     parts.push(copy.receipt.stillMany(facts.still.length, facts.still.reduce((n, d) => n + d.need, 0)));
   }
-  return parts.length > 0 ? parts.join(" ") : null;
+  return parts.length > 0 ? parts : null;
+}
+
+/** Each copy row of the receipt in its own span, a space between (the copy editor matches one row to one node). */
+function receiptBody(parts: string[] | null) {
+  return parts ? <CopyLines lines={parts} /> : null;
 }
 
 /**
@@ -221,7 +227,7 @@ export function CartGotItProvider({
           oracleId={receipt.line.oracleId}
           cardName={receipt.line.name}
           written={receipt.written}
-          body={cartReceiptBody(receipt.written.facts, receipt.names, receipt.picked)}
+          body={receiptBody(cartReceiptParts(receipt.written.facts, receipt.names, receipt.picked))}
           // The pick this press made goes with the copy on Undo (decision 5): left standing, it would
           // hand the next copy to the deck this purchase chose, after the purchase was taken back.
           // Only one the press CREATED: a reservation the deck already had is not this press's to drop.

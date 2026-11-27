@@ -10,7 +10,7 @@
 // then done or failed. A failed undo withdraws Undo and points to History (the UndoRow rule).
 
 import { captureClientError } from "../../lib/sentry/capture-client";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { previewRevert, revertCollectionEntry } from "../../app/collection/history-actions";
@@ -144,7 +144,7 @@ export function GotItReceipt({
   cardName: string;
   written: GotItWritten<unknown>;
   /** The receipt's body when the caller writes its own (the cart's); else read from a deck's facts. */
-  body?: string | null;
+  body?: ReactNode;
   /** Where the toast sits: a deck page's slot, or the cart's (bottom right; on the phone above the tab bar). */
   placement?: "deck" | "cart";
   host: GotItUndoHost;

@@ -19,7 +19,7 @@ vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() })
 vi.mock("../../../app/collection/history-actions", () => ({ previewRevert, revertCollectionEntry }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
-const { CartGotItProvider, cartReceiptBody, useCartGotIt } = await import("./cart-got-it");
+const { CartGotItProvider, cartReceiptParts, useCartGotIt } = await import("./cart-got-it");
 
 const ORACLE = "33333333-3333-4333-8333-333333333333";
 const G = "11111111-1111-4111-8111-111111111111";
@@ -58,29 +58,29 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("cartReceiptBody", () => {
+describe("cartReceiptParts", () => {
   it("names the covered decks, then the one still short", () => {
-    expect(cartReceiptBody({
+    expect(cartReceiptParts({
       covered: [{ deckId: G, deckName: "HD - Gishath" }],
       still: [{ deckId: K, deckName: "HD - Kratos", need: 1 }],
-    }, names)).toBe(`${copy.receipt.covered(["HD - Gishath"])} ${copy.receipt.still("HD - Kratos", 1)}`);
+    }, names)).toEqual([copy.receipt.covered(["HD - Gishath"]), copy.receipt.still("HD - Kratos", 1)]);
   });
 
   it("names a deck the read gave no name from the cart's own list, and sums several still short", () => {
-    expect(cartReceiptBody({
+    expect(cartReceiptParts({
       covered: [],
       still: [{ deckId: G, deckName: "", need: 1 }, { deckId: K, deckName: "HD - Kratos", need: 2 }],
-    }, names)).toBe(copy.receipt.stillMany(2, 3));
-    expect(cartReceiptBody({ covered: [{ deckId: G, deckName: "" }], still: [] }, names))
-      .toBe(copy.receipt.covered(["HD - Gishath"]));
+    }, names)).toEqual([copy.receipt.stillMany(2, 3)]);
+    expect(cartReceiptParts({ covered: [{ deckId: G, deckName: "" }], still: [] }, names))
+      .toEqual([copy.receipt.covered(["HD - Gishath"])]);
   });
 
   it("says `as you picked` only when the read covers the picked deck (S4, lock 7)", () => {
     const facts = { covered: [{ deckId: G, deckName: "HD - Gishath" }], still: [{ deckId: K, deckName: "HD - Kratos", need: 1 }] };
-    expect(cartReceiptBody(facts, names, G)).toBe(`${copy.receipt.covered(["HD - Gishath"], true)} ${copy.receipt.still("HD - Kratos", 1)}`);
+    expect(cartReceiptParts(facts, names, G)).toEqual([copy.receipt.covered(["HD - Gishath"], true), copy.receipt.still("HD - Kratos", 1)]);
     expect(copy.receipt.covered(["HD - Gishath"], true)).toContain("as you picked");
     // The pick went somewhere the read does not confirm: the receipt names what the read says.
-    expect(cartReceiptBody(facts, names, K)).toBe(`${copy.receipt.covered(["HD - Gishath"])} ${copy.receipt.still("HD - Kratos", 1)}`);
+    expect(cartReceiptParts(facts, names, K)).toEqual([copy.receipt.covered(["HD - Gishath"]), copy.receipt.still("HD - Kratos", 1)]);
   });
 });
 

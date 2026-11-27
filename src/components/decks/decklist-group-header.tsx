@@ -4,6 +4,7 @@
 
 // src/lib/copy/recommendations is imported here so the auto-count clause
 // ("9 · 9 auto") comes from the copy module rather than a bare inline string.
+import type { ReactNode } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { Chevron } from "../ui/chevron";
 
@@ -14,7 +15,7 @@ interface DecklistGroupHeaderProps {
   /** The unresolved group draws its count in --warning; every other group is faint. */
   countColor?: string;
   /** Right-aligned on desktop only (e.g. "37 recommended"). */
-  note?: string;
+  note?: ReactNode;
   /** The draft note is brass; every other note is the quiet default. */
   noteColor?: string;
   /**
