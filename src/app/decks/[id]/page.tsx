@@ -78,6 +78,7 @@ import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { readWishlistSync } from "../../../lib/wishlist/sync-pref";
+import { captureServerError } from "../../../lib/sentry/capture";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillGame, logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { gameLandingId } from "../../../lib/games/landing";
@@ -287,11 +288,14 @@ async function DeckBuilderBody({
   // The reader's own friend deck rules, for the header menu's Hidden from friends (friend decks README 4). A failed
   // read costs the menu that row and the header its mark, nothing else.
   const friendPrefsRead = early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null));
+  // Settings › Wishlist's switch, for the header menu's Keep off my wishlist (cart on your wishlist, M1). A failed read
+  // costs the menu that row, nothing else, and is reported.
+  const wishlistOnRead = early(perf.timed("wishlistSync", () => readWishlistSync(userId)).catch((error) => {
+    captureServerError("deck-page.wishlist-sync-read", error);
+    return false;
+  }));
   // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the
   // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
-  // Settings › Wishlist's switch, for the header menu's Keep off my wishlist (cart on your wishlist, M1). A failed read
-  // costs the menu that row, nothing else.
-  const wishlistOnRead = early(perf.timed("wishlistSync", () => readWishlistSync(userId)).catch(() => false));
   const strategyRead = early(perf.timed("strategy", () => loadDeckStrategy(userId, id)).catch(() => null));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
   // Who sat across the table, and the matchups drawn from it (Social R3). Never throws: a failed read draws no
