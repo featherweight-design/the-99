@@ -38,7 +38,8 @@ describe("wishedForMatchQuery", () => {
   });
 
   it("marks a card quiet only when a quiet synced line alone wants it (a hand line makes it loud)", () => {
-    expect(q).toContain(`(ul.source = 'deck' and exists (select 1 from "wishlist_synced" tq where tq.user_id = ul.user_id and tq.oracle_id = ul.oracle_id and tq.quiet)) as quiet`);
+    expect(q).toContain("(ul.source = 'deck' and tq.quiet_since is not null) as quiet");
+    expect(q).toContain(`left join lateral (select tqs.created_at::text as quiet_since from "wishlist_synced" tqs where tqs.user_id = ul.user_id and tqs.oracle_id = ul.oracle_id and tqs.quiet) tq on true`);
   });
 
   it("answers the earlier of the two stamps as the kind's enabledAt", () => {
@@ -73,12 +74,14 @@ describe("the one-push-a-day cap", () => {
     expect(r.params).toEqual(["viewer_1"]);
   });
 
-  it("clears quiet on the read lines alone, once read", () => {
-    const r = new PgDialect().sqlToQuery(clearQuietQuery("viewer_1", ["a", "b"]));
-    expect(r.sql.replace(/\s+/g, " ")).toBe(
-      `update "wishlist_synced" set quiet = false where user_id = $1 and quiet and oracle_id = any($2::uuid[])`,
+  it("clears quiet on the rows it read alone, each by its card and arrival stamp", () => {
+    const r = new PgDialect().sqlToQuery(
+      clearQuietQuery("viewer_1", [{ oracleId: "a", since: "2026-11-27 10:00:00.123456+00" }, { oracleId: "b", since: "2026-11-27 10:00:01+00" }]),
     );
-    expect(r.params).toEqual(["viewer_1", "{a,b}"]);
+    expect(r.sql.replace(/\s+/g, " ")).toBe(
+      `update "wishlist_synced" set quiet = false where user_id = $1 and quiet and (oracle_id, created_at) in (select * from unnest($2::uuid[], $3::timestamptz[]))`,
+    );
+    expect(r.params).toEqual(["viewer_1", "{a,b}", `{"2026-11-27 10:00:00.123456+00","2026-11-27 10:00:01+00"}`]);
   });
 
   it("reads the zone of the device that refreshed last", () => {

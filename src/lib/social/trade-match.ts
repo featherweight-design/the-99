@@ -35,18 +35,20 @@ import { friendGeneration, loadFriendSpares, spareGrantorsQuery } from "./spares
  * The viewer's unmet wishlist cards (the union: hand and deck lines, still-wanted only), read only while they want
  * trade-match news (the feed kind on, or a device with its push on), with the earlier stamp of the two. `quiet`: the
  * card is wanted only by a synced line its pass marked quiet, so its matches never push. A hand line that still wants
- * the card makes it loud, since the reader picked it.
+ * the card makes it loud, since the reader picked it. `quiet_since`: the quiet synced line's `created_at` (text, to the
+ * microsecond), read with the line, so the clear names that very row and never one inserted after the read.
  */
 export function wishedForMatchQuery(viewerId: string) {
   // The gate sits in the owners subquery, so a reader who wants no trade-match news reads no lines at all.
   const owners = sql`select tup.user_id from ${userPrefs} tup
     where tup.user_id = ${viewerId} and ${feedOrPushWanted(sql`tup`, sql`tup.user_id`, "trade-match")}`;
-  return sql`select ul.oracle_id as oracle_id,
-      (ul.source = 'deck' and exists (select 1 from ${wishlistSynced} tq
-        where tq.user_id = ul.user_id and tq.oracle_id = ul.oracle_id and tq.quiet)) as quiet,
+  return sql`select ul.oracle_id as oracle_id, tq.quiet_since as quiet_since,
+      (ul.source = 'deck' and tq.quiet_since is not null) as quiet,
       coalesce(tep.feed_kinds ->> 'trade-match', tep.push_kinds ->> 'trade-match') as enabled_at
     from (${unionLines(handSide(owners), ownerSyncedSide(owners))}) ul
     join ${userPrefs} tep on tep.user_id = ul.user_id
+    left join lateral (select tqs.created_at::text as quiet_since from ${wishlistSynced} tqs
+      where tqs.user_id = ul.user_id and tqs.oracle_id = ul.oracle_id and tqs.quiet) tq on true
     order by ul.oracle_id`;
 }
 
@@ -86,13 +88,16 @@ export function tradeMatchPushLock(viewerId: string): SQL {
 /**
  * Quiet is a mark on the lines' arrival, not on the lines: once a notice has read a quiet line (and written whatever
  * matches it had then, without a push), the line is loud, so a spare a friend lists later pushes as usual (plan
- * finding 5). Only the cards this notice judged: one the sync adds quiet meanwhile, or one whose match was skipped,
- * waits for the next notice. A card a hand line also wants (read as loud) is cleared too, so its synced line cannot
- * turn quiet again when the hand line goes.
+ * finding 5). Only the rows this notice read and judged, each named by its card and `created_at`: a line the sync
+ * inserts after the read (a new row, or one removed and added again by switching the sync off and on) keeps its mark,
+ * and so does a card whose match was skipped. A card a hand line also wants (read as loud) is cleared too, so its
+ * synced line cannot turn quiet again when the hand line goes. Quiet is set only on insert (`sync.ts`).
  */
-export function clearQuietQuery(viewerId: string, oracleIds: string[]): SQL {
+export function clearQuietQuery(viewerId: string, lines: readonly { oracleId: string; since: string }[]): SQL {
+  const ids = `{${lines.map((l) => l.oracleId).join(",")}}`;
+  const stamps = `{${lines.map((l) => JSON.stringify(l.since)).join(",")}}`;
   return sql`update ${wishlistSynced} set quiet = false where user_id = ${viewerId} and quiet
-    and oracle_id = any(${`{${oracleIds.join(",")}}`}::uuid[])`;
+    and (oracle_id, created_at) in (select * from unnest(${ids}::uuid[], ${stamps}::timestamptz[]))`;
 }
 
 /** A trade match's dedupe key: one item per card per friend, ever. */
@@ -123,7 +128,9 @@ export function forgetTradeMatchFingerprints(): void {
  */
 export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEnv): Promise<number> {
   if (!availableFeedKinds(env).includes("trade-match")) return 0;
-  const rows = (await db.execute<{ oracle_id: string; quiet: boolean; enabled_at: string }>(wishedForMatchQuery(viewerId))).rows;
+  const rows = (
+    await db.execute<{ oracle_id: string; quiet_since: string | null; quiet: boolean; enabled_at: string }>(wishedForMatchQuery(viewerId))
+  ).rows;
   if (rows.length === 0) {
     memo.delete(viewerId);
     return 0;
@@ -138,7 +145,7 @@ export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEn
   }
   let written = 0;
   const skipped = new Set<string>();
-  const judged = () => wished.filter((id) => !skipped.has(id));
+  const judged = () => rows.flatMap((r) => (r.quiet_since !== null && !skipped.has(r.oracle_id) ? [{ oracleId: r.oracle_id, since: r.quiet_since }] : []));
   // One call, one batch: the matches this notice found are one push ("Colin has 3 spares you want").
   const batchKey = newBatchKey("trade-match");
   if (spares.length > 0) {
@@ -173,11 +180,13 @@ export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEn
         if (ok) n += 1;
       }
       // In the writes' transaction: a failed write leaves the lines quiet, so the retry still never pushes them.
-      await tx.execute(clearQuietQuery(viewerId, judged()));
+      const clear = judged();
+      if (clear.length > 0) await tx.execute(clearQuietQuery(viewerId, clear));
       return n;
     });
   } else {
-    await db.execute(clearQuietQuery(viewerId, judged()));
+    const clear = judged();
+    if (clear.length > 0) await db.execute(clearQuietQuery(viewerId, clear));
   }
   remember(viewerId, fingerprint);
   return written;
