@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T3 Tokens box card view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0;background:#0f0d0a;font-family:system-ui,sans-serif;color:#EDE6D8}</style></helmet>
+<div style="width: 1830px; box-sizing: border-box; padding: 40px; background: #0f0d0a; display: flex; flex-direction: column">
+<p style="margin: 0 0 8px; font-size: 28px; font-weight: 600">T3 · Tokens box in Card view</p>
+<p style="margin: 0 0 28px; font-size: 16px; line-height: 1.5; color: #C0B8A6; max-width: 1500px">The same box around the shipped TokenTile grid (the deck’s own Card view columns). Only the band and the box are new; tiles, their foot line and Add to Shopping are shipped. The card view’s shipped key follows.</p>
+<p style="margin: 0 0 12px; font: 600 15px ui-monospace, monospace; letter-spacing: .12em; color: #CF8745">AFTER · R1</p>
+<div style="display: flex; gap: 60px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 13px ui-monospace, monospace; color: #948B78">Desktop</span><img src="../art/box-after-cards-desk.jpg" width="1300" height="563" alt="Tokens box with token tiles on desktop" style="display: block; border: 1px solid #2B241B"></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 13px ui-monospace, monospace; color: #948B78">Phone</span><img src="../art/box-after-cards-phone.jpg" width="390" height="856" alt="Tokens box with token tiles on phone" style="display: block; border: 1px solid #2B241B"></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1830,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
