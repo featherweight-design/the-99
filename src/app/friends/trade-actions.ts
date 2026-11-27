@@ -19,7 +19,7 @@ import { requestFlags } from "../../lib/flags/request";
 import { enforceHit } from "../../lib/rate/observe";
 import { isUuid } from "../../lib/social/rules";
 import { loadTrade, type TradeView } from "../../lib/social/trade-reads";
-import { cleanSides } from "../../lib/social/trade-rules";
+import { cleanSides, isRound, isSeenAt } from "../../lib/social/trade-rules";
 import {
   answerTrade, clearTrade, counterTrade, markTraded, proposeTrade, rescindTrade, reviseTrade, withdrawTrade,
   type CounterOutcome, type ProposeOutcome, type TradeOutcome,
@@ -28,7 +28,7 @@ import { readerStoreForPage } from "../../lib/stores/preference";
 
 type Limited = { ok: false; reason: "limited" };
 
-const landed = <T extends { ok: boolean }>(out: T): T => {
+const revalidateIfLanded = <T extends { ok: boolean }>(out: T): T => {
   if (out.ok) after(() => revalidatePath("/friends"));
   return out;
 };
@@ -43,7 +43,7 @@ export async function proposeTradeAction(
   if (!isUuid(friendPublicId)) return { ok: false, reason: "not-friend" };
   if (!cleanSides(sides) || (fromRequestId != null && !isUuid(fromRequestId))) return GONE;
   if ((await enforceHit(userId, "trade-offer")) !== null) return { ok: false, reason: "limited" };
-  return landed(await proposeTrade(userId, friendPublicId, sides, fromRequestId));
+  return revalidateIfLanded(await proposeTrade(userId, friendPublicId, sides, fromRequestId));
 }
 
 /** Counter the offer the reader saw: round `seenRound`, offered at `seenAt`. */
@@ -51,48 +51,49 @@ export async function counterTradeAction(
   tradeId: unknown, seenRound: unknown, seenAt: unknown, sides: unknown,
 ): Promise<CounterOutcome | Limited> {
   const userId = await requireUserId();
-  if (!isUuid(tradeId) || !cleanSides(sides)) return GONE;
+  // Every shape the library would refuse is refused here, before the press spends a hit from the bucket.
+  if (!isUuid(tradeId) || !isRound(seenRound) || !isSeenAt(seenAt) || !cleanSides(sides)) return GONE;
   if ((await enforceHit(userId, "trade-offer")) !== null) return { ok: false, reason: "limited" };
-  return landed(await counterTrade(userId, tradeId, seenRound, seenAt, sides));
+  return revalidateIfLanded(await counterTrade(userId, tradeId, seenRound, seenAt, sides));
 }
 
 /** Change the reader's own offer, as seen at round `seenRound` and `seenAt`, while a card on it needs a look. Tells nobody, so it takes no rate bucket. */
 export async function reviseTradeAction(tradeId: unknown, seenRound: unknown, seenAt: unknown, sides: unknown): Promise<TradeOutcome> {
   const userId = await requireUserId();
   if (!isUuid(tradeId) || !cleanSides(sides)) return GONE;
-  return landed(await reviseTrade(userId, tradeId, seenRound, seenAt, sides));
+  return revalidateIfLanded(await reviseTrade(userId, tradeId, seenRound, seenAt, sides));
 }
 
 /** Yes or No on the offer the reader saw. */
 export async function answerTradeAction(tradeId: unknown, seenRound: unknown, seenAt: unknown, answer: unknown): Promise<TradeOutcome> {
   const userId = await requireUserId();
   if (!isUuid(tradeId)) return GONE;
-  return landed(await answerTrade(userId, tradeId, seenRound, seenAt, answer));
+  return revalidateIfLanded(await answerTrade(userId, tradeId, seenRound, seenAt, answer));
 }
 
 export async function withdrawTradeAction(tradeId: unknown, seenRound: unknown): Promise<TradeOutcome> {
   const userId = await requireUserId();
   if (!isUuid(tradeId)) return GONE;
-  return landed(await withdrawTrade(userId, tradeId, seenRound));
+  return revalidateIfLanded(await withdrawTrade(userId, tradeId, seenRound));
 }
 
 export async function rescindTradeAction(tradeId: unknown): Promise<TradeOutcome> {
   const userId = await requireUserId();
   if (!isUuid(tradeId)) return GONE;
-  return landed(await rescindTrade(userId, tradeId));
+  return revalidateIfLanded(await rescindTrade(userId, tradeId));
 }
 
 export async function markTradedAction(tradeId: unknown): Promise<TradeOutcome> {
   const userId = await requireUserId();
   if (!isUuid(tradeId)) return GONE;
-  return landed(await markTraded(userId, tradeId));
+  return revalidateIfLanded(await markTraded(userId, tradeId));
 }
 
 /** ✕ on an ended trade: it leaves the reader's lists. */
 export async function clearTradeAction(tradeId: unknown): Promise<TradeOutcome> {
   const userId = await requireUserId();
   if (!isUuid(tradeId)) return GONE;
-  return landed(await clearTrade(userId, tradeId));
+  return revalidateIfLanded(await clearTrade(userId, tradeId));
 }
 
 /** Open a trade's sheet in place (a row, the feed, a push): its whole view, priced at the reader's store. */

@@ -201,10 +201,16 @@ export type TradeSides = { theirs: readonly string[]; yours: readonly string[] }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** A round number as a press sends it. */
+export const isRound = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= TRADE_ROUND_MAX;
+
+/** A seen `offered_at` as a press sends it: an ISO timestamp. */
+export const isSeenAt = (v: unknown): v is string => typeof v === "string" && v.length <= 40 && !Number.isNaN(Date.parse(v));
+
 /**
  * An offer's sides as a press sends them, mended or refused before any read: each side a set of distinct oracle ids
- * (a repeat collapses, one copy each, D3), both sides at least one card (D2), neither past `TRADE_SIDE_MAX`. Returns
- * null for anything else, a malformed id included.
+ * (a repeat collapses, one copy each, D3), both sides at least one card (D2), neither past `TRADE_SIDE_MAX`, and no
+ * card on both sides (a card for itself). Returns null for anything else, a malformed id included.
  */
 export function cleanSides(v: unknown): { theirs: string[]; yours: string[] } | null {
   if (typeof v !== "object" || v === null) return null;
@@ -216,7 +222,8 @@ export function cleanSides(v: unknown): { theirs: string[]; yours: string[] } | 
   };
   const theirs = side((v as { theirs?: unknown }).theirs);
   const yours = side((v as { yours?: unknown }).yours);
-  return theirs && yours ? { theirs, yours } : null;
+  if (!theirs || !yours || theirs.some((id) => yours.includes(id))) return null;
+  return { theirs, yours };
 }
 
 /** A round set against the one it replaces: what a counter added and took out (the counter marks, S8 and T5). */

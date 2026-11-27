@@ -185,7 +185,11 @@ describe("an offer's sides as sent", () => {
     expect(cleanSides(null)).toBeNull();
     const many = Array.from({ length: TRADE_SIDE_MAX + 1 }, (_, i) => id(i));
     expect(cleanSides({ theirs: many, yours: [id(1)] })).toBeNull();
-    expect(cleanSides({ theirs: many.slice(0, TRADE_SIDE_MAX), yours: [id(1)] })?.theirs).toHaveLength(TRADE_SIDE_MAX);
+    expect(cleanSides({ theirs: many.slice(0, TRADE_SIDE_MAX), yours: [id(TRADE_SIDE_MAX + 5)] })?.theirs).toHaveLength(TRADE_SIDE_MAX);
+  });
+
+  it("refuses a card on both sides: a card for itself", () => {
+    expect(cleanSides({ theirs: [id(1), id(2)], yours: [id(2).toUpperCase()] })).toBeNull();
   });
 });
 

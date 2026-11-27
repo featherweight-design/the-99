@@ -22,14 +22,14 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { friendLinks, socialProfiles, spareRequests, tradeCards, tradeRounds, trades } from "../../db/schema";
-import { isUniqueViolation } from "../db-error";
+import { constraintName, isUniqueViolation } from "../db-error";
 import { resolveFriend } from "./access";
 import { recordFeedItem } from "./feed-write";
 import { isUuid } from "./rules";
 import { lockFriendshipQuery, type Tx } from "./spare-requests";
 import { loadFriendSpares } from "./spares";
 import {
-  TRADE_ROUND_MAX, TRADE_SIDE_MAX, cleanSides, offerHeld, tradeOpenFloor, type TradeRole, type TradeSides, type TradeStatus,
+  TRADE_ROUND_MAX, TRADE_SIDE_MAX, cleanSides, isRound, isSeenAt, offerHeld, tradeOpenFloor, type TradeRole, type TradeSides, type TradeStatus,
 } from "./trade-rules";
 
 export type ProposeOutcome = { ok: true; id: string } | { ok: false; reason: "not-friend" | "not-spare" | "held" | "used" | "gone" };
@@ -41,7 +41,6 @@ export type StoredCard = { side: TradeRole; oracleId: string };
 
 const other = (r: TradeRole): TradeRole => (r === "proposer" ? "recipient" : "proposer");
 const landed = (r: { rowCount?: number | null; rows: unknown[] }) => (r.rowCount ?? r.rows.length) > 0;
-const isRound = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= TRADE_ROUND_MAX;
 
 /** The viewer's sides as stored rows: `yours` is the viewer's spare, `theirs` the friend's. */
 export function storedCards(role: TradeRole, sides: TradeSides): StoredCard[] {
@@ -111,8 +110,6 @@ const roundSeen = (t: string, seenAt: string) =>
   sql`exists (select 1 from ${tradeRounds} srd where srd.trade_id = ${sql.raw(t)}.id and srd.round = ${sql.raw(t)}.round
       and date_trunc('milliseconds', srd.offered_at) = date_trunc('milliseconds', ${seenAt}::timestamptz))`;
 
-/** A seen `offered_at` as a press sends it: an ISO timestamp. */
-const isSeenAt = (v: unknown): v is string => typeof v === "string" && v.length <= 40 && !Number.isNaN(Date.parse(v));
 
 const openNow = (t: string, now: Date) =>
   sql`${sql.raw(t)}.status = 'open' and ${sql.raw(t)}.created_at > ${tradeOpenFloor(now).toISOString()}::timestamptz`;
@@ -239,16 +236,6 @@ export function proposeInsertQuery(
     select t.id from t`;
 }
 
-/** The constraint a Postgres error names, wherever the driver put it (Drizzle wraps it in `cause`). */
-function constraintOf(error: unknown): string | null {
-  let current: unknown = error;
-  for (let depth = 0; depth < 5 && typeof current === "object" && current !== null; depth += 1) {
-    const name = (current as { constraint?: unknown }).constraint;
-    if (typeof name === "string") return name;
-    current = (current as { cause?: unknown }).cause;
-  }
-  return null;
-}
 
 /**
  * Offers the friend `friendPublicId` a trade. Every card must be spare now, as its receiver sees it (`not-spare`); one
@@ -300,7 +287,7 @@ export async function proposeTrade(
     });
   } catch (e) {
     // `trades_from_request_once`: one trade per spare request, however two presses race.
-    if (isUniqueViolation(e) && constraintOf(e) === "trades_from_request_once") return { ok: false, reason: "used" };
+    if (isUniqueViolation(e) && constraintName(e) === "trades_from_request_once") return { ok: false, reason: "used" };
     throw e;
   }
 }
@@ -431,12 +418,11 @@ export async function answerTrade(
   viewerId: string, tradeId: unknown, seenRound: unknown, seenAt: unknown, answer: unknown, now = new Date(),
 ): Promise<TradeOutcome> {
   if (!isUuid(tradeId) || !isRound(seenRound) || !isSeenAt(seenAt) || (answer !== "yes" && answer !== "no")) return { ok: false, reason: "gone" };
-  const head = await loadHead(viewerId, tradeId);
+  // A Yes re-checks the round's cards, read alongside the head rather than after it.
+  const [head, cards] = await Promise.all([loadHead(viewerId, tradeId), answer === "yes" ? loadRoundCards(tradeId, seenRound) : null]);
   if (!head || head.round !== seenRound || head.offeredByUserId === viewerId) return { ok: false, reason: "gone" };
   const p = partiesOf(head, viewerId);
-  if (answer === "yes" && (await anyGone(p.viewer, p.friend, sidesOf(p.role, await loadRoundCards(tradeId, seenRound))))) {
-    return { ok: false, reason: "not-spare" };
-  }
+  if (cards && (await anyGone(p.viewer, p.friend, sidesOf(p.role, cards)))) return { ok: false, reason: "not-spare" };
   return inTradeTransaction(viewerId, p.friend.userId, async (tx): Promise<TradeOutcome> => {
     const [row] = (await tx.execute<{ id: string; round: number; offered_by_user_id: string }>(
       answerTradeQuery(viewerId, tradeId, seenRound, seenAt, answer, now),

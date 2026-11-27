@@ -27,3 +27,14 @@ export const isUniqueViolation = (error: unknown) => sqlstate(error) === "23505"
 /** 23503 — a foreign key refused it, which on a delete-then-write race means
  *  the referenced row is gone. */
 export const isForeignKeyViolation = (error: unknown) => sqlstate(error) === "23503";
+
+/** The constraint a Postgres error names, from the same `cause` chain as its code. */
+export function constraintName(error: unknown): string | null {
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && typeof current === "object" && current !== null; depth += 1) {
+    const name = (current as { constraint?: unknown }).constraint;
+    if (typeof name === "string") return name;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return null;
+}

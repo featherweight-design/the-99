@@ -93,6 +93,8 @@ describe("counterTradeAction", () => {
   it("refuses a bad id or sides first, and stops at the bucket", async () => {
     expect(await counterTradeAction("x", 2, SEEN, SIDES)).toEqual({ ok: false, reason: "gone" });
     expect(await counterTradeAction(T, 2, SEEN, null)).toEqual({ ok: false, reason: "gone" });
+    expect(await counterTradeAction(T, 0, SEEN, SIDES)).toEqual({ ok: false, reason: "gone" });
+    expect(await counterTradeAction(T, 2, "not a time", SIDES)).toEqual({ ok: false, reason: "gone" });
     expect(m.enforceHit).not.toHaveBeenCalled();
     m.enforceHit.mockResolvedValue(10);
     expect(await counterTradeAction(T, 2, SEEN, SIDES)).toEqual({ ok: false, reason: "limited" });

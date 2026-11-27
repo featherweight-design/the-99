@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isForeignKeyViolation, isUniqueViolation, sqlstate } from "./db-error";
+import { constraintName, isForeignKeyViolation, isUniqueViolation, sqlstate } from "./db-error";
 
 const withCode = (code: string) => Object.assign(new Error("nope"), { code });
 
@@ -53,5 +53,14 @@ describe("the two named violations", () => {
     // A connection drop is not a refusal, and reading it as one is what put a
     // database outage in front of the player as a name error.
     expect(isUniqueViolation(withCode("57P01"))).toBe(false);
+  });
+});
+
+describe("constraintName", () => {
+  it("reads the constraint off the error or its cause chain, and is null without one", () => {
+    expect(constraintName({ constraint: "a_key" })).toBe("a_key");
+    expect(constraintName(Object.assign(new Error("wrapped"), { cause: { code: "23505", constraint: "b_key" } }))).toBe("b_key");
+    expect(constraintName(new Error("bare"))).toBeNull();
+    expect(constraintName(null)).toBeNull();
   });
 });
