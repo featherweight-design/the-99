@@ -118,4 +118,23 @@ describe("reconcileWishlistSyncs", () => {
     expect(result!.checked).toBeLessThan(3);
     vi.doUnmock("../../db");
   });
+
+  it("reports a failed pass to Sentry by its tag alone, and goes on to the next player", async () => {
+    vi.resetModules();
+    let call = 0;
+    // The first read lists two players; every read after it (each player's pass) fails.
+    const execute = vi.fn(async () => {
+      if (call++ === 0) return { rows: [{ user_id: "u1", stale: false }, { user_id: "u2", stale: false }] };
+      throw new Error("db down");
+    });
+    const captureServerError = vi.fn();
+    vi.doMock("../../db", () => ({ db: { execute } }));
+    vi.doMock("../sentry/capture", () => ({ captureServerError }));
+    const mod = await import("./sync");
+    const result = await mod.reconcileWishlistSyncs();
+    expect(result).toEqual({ checked: 2, synced: 0, failed: 2 });
+    expect(captureServerError.mock.calls.map((c) => c[0])).toEqual(["cart-sync-failed", "cart-sync-failed"]);
+    vi.doUnmock("../../db");
+    vi.doUnmock("../sentry/capture");
+  });
 });

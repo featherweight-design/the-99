@@ -13,6 +13,8 @@ vi.mock("next/headers", () => ({
 }));
 const later = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./sync", () => ({ syncWishlistLater: later }));
+const capture = vi.hoisted(() => vi.fn());
+vi.mock("../sentry/capture", () => ({ captureServerError: capture }));
 const { isServerActionRequest, scheduleWishlistSyncAfterAction } = await import("./sync-trigger");
 
 describe("isServerActionRequest", () => {
@@ -28,7 +30,7 @@ describe("isServerActionRequest", () => {
 });
 
 describe("scheduleWishlistSyncAfterAction", () => {
-  beforeEach(() => later.mockClear());
+  beforeEach(() => { later.mockClear(); capture.mockClear(); });
 
   it("schedules a pass when the request carries the next-action header", async () => {
     headerMap.value = new Map([["next-action", "7f00ab"]]);
@@ -56,5 +58,18 @@ describe("scheduleWishlistSyncAfterAction", () => {
     headerMap.value = null;
     await expect(scheduleWishlistSyncAfterAction("user_1")).resolves.toBeUndefined();
     expect(later).not.toHaveBeenCalled();
+  });
+
+  it("reports a pass it could not schedule to Sentry by its tag alone, and throws nothing", async () => {
+    headerMap.value = new Map([["next-action", "7f00ab"]]);
+    later.mockRejectedValueOnce(new Error("after() unavailable"));
+    await expect(scheduleWishlistSyncAfterAction("user_1")).resolves.toBeUndefined();
+    expect(capture).toHaveBeenCalledWith("cart-sync-schedule-failed", expect.any(Error));
+  });
+
+  it("reports nothing outside a request scope: no request is not a failure", async () => {
+    headerMap.value = null;
+    await scheduleWishlistSyncAfterAction("user_1");
+    expect(capture).not.toHaveBeenCalled();
   });
 });

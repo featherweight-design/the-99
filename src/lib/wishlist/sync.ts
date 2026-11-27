@@ -32,6 +32,7 @@ import { loadDeckBuyRows } from "../decks/availability-query";
 import { listDecksWithStats } from "../decks/read";
 import { unfinishedPill } from "../social/deck-visibility-rule";
 import { afterCommit } from "../feed/after-commit";
+import { captureServerError } from "../sentry/capture";
 import { wishlistSyncLock } from "./collected";
 import { heldCopies } from "./held";
 
@@ -278,9 +279,19 @@ export async function setWishlistSync(userId: string, on: boolean): Promise<void
   if (on) await syncWishlistLater(userId);
 }
 
-/** A pass after the response, non-fatal (`afterCommit`); run now outside a request. */
+/** The Sentry tag for a failed pass: the site only, never who (`captureServerError` sends the tag and SQLSTATE alone). */
+export const SYNC_FAILED_TAG = "cart-sync-failed";
+
+/** A pass after the response, non-fatal (`afterCommit`); run now outside a request. A failure reaches Sentry. */
 export function syncWishlistLater(userId: string): Promise<void> {
-  return afterCommit("wishlist sync", () => syncWishlistIfDue(userId));
+  return afterCommit("wishlist sync", async () => {
+    try {
+      await syncWishlistIfDue(userId);
+    } catch (error) {
+      captureServerError(SYNC_FAILED_TAG, error);
+      throw error;
+    }
+  });
 }
 
 /** The most players one cron run reconciles; the rest wait for the next hour. */
@@ -322,6 +333,7 @@ export async function reconcileWishlistSyncs(
     } catch (error) {
       failed += 1;
       console.error("wishlist sync reconcile failed for one player", error);
+      captureServerError(SYNC_FAILED_TAG, error);
     }
   }
   return { checked, synced, failed };

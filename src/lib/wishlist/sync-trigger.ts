@@ -6,6 +6,7 @@
  * Page renders and prefetches only read, so they schedule nothing and pay one header read. Apart from `sync.ts` so `auth.ts` loads the database only for an action.
  */
 import { headers } from "next/headers";
+import { captureServerError } from "../sentry/capture";
 
 /**
  * Whether this request is a Server Action, by Next's own rule (`server-action-request-meta.js`): the `next-action`
@@ -50,5 +51,6 @@ export async function scheduleWishlistSyncAfterAction(userId: string): Promise<v
   } catch (error) {
     // not a fallback: nothing is drawn from this. Logged, never thrown: the action the player pressed must not fail because its after-work could not be scheduled.
     console.error("wishlist sync could not be scheduled", error);
+    captureServerError("cart-sync-schedule-failed", error);
   }
 }
