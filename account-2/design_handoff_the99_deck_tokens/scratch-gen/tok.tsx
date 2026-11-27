@@ -107,7 +107,7 @@ const shell = (over: any = {}) => () => (
 );
 // Each frame: BEFORE (main, G.__TOK unset) or a concept. `ls` seeds the stored view and the Tokens fold.
 const F = (id: string, tok: string | undefined, dev: "desk" | "phone", vh: number, over: any = {}, ls: Record<string, string> = {}) =>
-  app(id, dev, "/decks/d1", () => { G.__TOK = tok; return shell(over)(); }, { vh, ls });
+  app(id, dev, "/decks/d1", () => { G.__TOK = tok; G.__STRIP = over.__strip; return shell(over)(); }, { vh, ls });
 const OPEN = {}, FOLD = { "the99:deck-tokens-fold": "closed" }, CARDV = { "the99:deck-view": "card" };
 for (const [dev, vh] of [["desk", 2300], ["phone", 3600]] as const) {
   F(`before-${dev}`, undefined, dev, vh, {}, OPEN);
@@ -116,9 +116,11 @@ for (const [dev, vh] of [["desk", 2300], ["phone", 3600]] as const) {
   F(`base-fold-${dev}`, "base", dev, vh, {}, FOLD);
   F(`base-cards-${dev}`, "base", dev, vh + 400, {}, CARDV);
   F(`A-${dev}`, "A", dev, vh, {}, FOLD);
+  F(`A1-${dev}`, "A", dev, vh, { __strip: "one" }, FOLD);
+  F(`A2-${dev}`, "A", dev, vh, { __strip: "two" }, FOLD);
   F(`B-${dev}`, "B", dev, vh, {}, FOLD);
   F(`C-${dev}`, "C", dev, 1400, { initialBody: "shopping" }, FOLD);
   F(`before-shop-${dev}`, undefined, dev, 1400, { initialBody: "shopping" }, FOLD);
 }
-G.__TOK = undefined;
+G.__TOK = undefined; G.__STRIP = undefined;
 writeFileSync("dz/frames.json", JSON.stringify(frames));

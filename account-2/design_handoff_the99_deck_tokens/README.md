@@ -29,3 +29,4 @@ jsx react-jsx and @clerk/nextjs + next/navigation stubbed (clerk.tsx, nav.ts), `
 symlinked into node_modules. `proposal.diff` = the design change against main (G.__TOK picks the concept for the render;
 the build drops that switch). `render-only.diff` = SSR-only patches (stored view and eager art read from globals).
 Run: `DATABASE_URL=stub npx tsx dz/tok.tsx all`, `node css.mjs`, `node dz/shoot.cjs`; crops from out/pos/*.json.
+- A2-StripLines (2026-11-27, after Hugh asked for one line, two at most): phone strip in short forms. A1 one line (recommended): "v2 · Nov 13 · ∞ 5 near combos › · ◎ 4 tokens ›". A2 two lines: full version line, then link segments on line 2. Desktop keeps the full wording on one line in both. `scratch-gen/strip-lines.diff` is the whole todo-foot change including A (G.__STRIP picks the option for the render).
