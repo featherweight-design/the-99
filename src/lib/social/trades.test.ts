@@ -15,11 +15,12 @@ import { TRADE_ROUND_MAX, tradeOpenFloor } from "./trade-rules";
 import {
   answerTrade, answerTradeQuery, clearTradeQuery, counterQuery, counterTrade, markTradedQuery, proposeInsertQuery, proposeTrade,
   rescindTradeQuery, reviseRoundQuery, reviseTrade, roundInsertQuery, sidesOf, storedCards, tradeCapQuery, tradeHeadQuery,
-  tradeLockQuery, withdrawTrade, withdrawTradeQuery,
+  tradeLockQuery, withdrawTrade, withdrawTradeQuery, rescindTrade, markTraded, clearTrade,
 } from "./trades";
 
 const NOW = new Date("2026-11-27T12:00:00Z");
 const FLOOR = tradeOpenFloor(NOW).toISOString();
+const SEEN = "2026-11-26T09:30:00.123Z";
 const T = "2b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
 const A = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
 const B = "1b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
@@ -71,7 +72,7 @@ describe("the statements, aliased and qualified", () => {
   });
 
   it("a counter: the non-author, open, unexpired, at the round seen, below the cap", () => {
-    const { q, params } = render(counterQuery("v", T, 3, NOW));
+    const { q, params } = render(counterQuery("v", T, 3, SEEN, NOW));
     expect(q).toContain("set round = ctr.round + 1, offered_by_user_id = $1");
     expect(q).toContain("and ctr.offered_by_user_id <> $");
     expect(q).toContain("ctr.status = 'open' and ctr.created_at > $");
@@ -79,6 +80,8 @@ describe("the statements, aliased and qualified", () => {
     expect(params).toContain(FLOOR);
     expect(params).toContain(3);
     expect(params).toContain(TRADE_ROUND_MAX);
+    expect(q).toMatch(/exists \(select 1 from "trade_rounds" srd where srd\.trade_id = ctr\.id and srd\.round = ctr\.round\s+and date_trunc\('milliseconds', srd\.offered_at\) = date_trunc\('milliseconds', \$\d+::timestamptz\)\)/);
+    expect(params).toContain(SEEN);
     expectHeld(q, "ctr", "cfl");
   });
 
@@ -96,13 +99,16 @@ describe("the statements, aliased and qualified", () => {
   });
 
   it("Yes and No: the non-author, open, unexpired, at the round seen; No ends it by the viewer", () => {
-    const yes = render(answerTradeQuery("v", T, 1, "yes", NOW));
+    const yes = render(answerTradeQuery("v", T, 1, SEEN, "yes", NOW));
     expect(yes.q).toContain("set status = 'accepted', answered_at = $1::timestamptz where atr.id");
     expect(yes.q).toContain("atr.offered_by_user_id <> $");
     expect(yes.q).toContain("atr.status = 'open' and atr.created_at > $");
     expect(yes.params).toContain(FLOOR);
     expectHeld(yes.q, "atr", "afl");
-    const no = render(answerTradeQuery("v", T, 1, "no", NOW));
+    // A revise keeps the round but stamps a new offered_at: a Yes matches the round's offered_at the viewer saw.
+    expect(yes.q).toMatch(/srd\.trade_id = atr\.id and srd\.round = atr\.round\s+and date_trunc\('milliseconds', srd\.offered_at\)/);
+    expect(yes.params).toContain(SEEN);
+    const no = render(answerTradeQuery("v", T, 1, SEEN, "no", NOW));
     expect(no.q).toContain("set status = 'declined', answered_at = $1::timestamptz, ended_at = $2::timestamptz, ended_by_user_id = $3");
     expect(no.params[2]).toBe("v");
   });
@@ -292,7 +298,7 @@ describe("counterTrade", () => {
       if (q.startsWith('update "trades" ctr')) return { rows: [{ id: T, round: 2 }] };
       return { rows: [] };
     });
-    expect(await counterTrade("v", T, 1, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: true, round: 2 });
+    expect(await counterTrade("v", T, 1, SEEN, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: true, round: 2 });
     const round = tx.execute.mock.calls.map((c) => render((c as unknown as [SQL])[0])).find((r) => r.q.startsWith("with r as"))!;
     // The viewer is the recipient: their own card is stored on the recipient's side.
     expect(round.params).toEqual(expect.arrayContaining(["recipient", B, "proposer", A]));
@@ -301,16 +307,16 @@ describe("counterTrade", () => {
 
   it("the author, or a stale round, cannot counter", async () => {
     vi.mocked(db.execute).mockResolvedValueOnce({ rows: [head({ offered_by_user_id: "v", proposer_user_id: "v", recipient_user_id: "f" })] } as never);
-    expect(await counterTrade("v", T, 1, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(await counterTrade("v", T, 1, SEEN, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
     vi.mocked(db.execute).mockResolvedValueOnce({ rows: [head({ round: 2 })] } as never);
-    expect(await counterTrade("v", T, 1, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(await counterTrade("v", T, 1, SEEN, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
     expect(db.transaction).not.toHaveBeenCalled();
   });
 
   it("a statement that changed nothing writes no round and tells nobody", async () => {
     vi.mocked(db.execute).mockResolvedValueOnce({ rows: [head()] } as never);
     const tx = txAnswering((q) => (q.includes("sfl") ? LINKS : { rows: [] }));
-    expect(await counterTrade("v", T, 1, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(await counterTrade("v", T, 1, SEEN, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
     expect(sent(tx).some((q) => q.startsWith("with r as"))).toBe(false);
     expect(recordFeedItem).not.toHaveBeenCalled();
   });
@@ -322,8 +328,15 @@ describe("answerTrade", () => {
       .mockResolvedValueOnce({ rows: [head()] } as never)
       .mockResolvedValueOnce({ rows: [{ side: "proposer", oracle_id: A }, { side: "recipient", oracle_id: B }] } as never);
     allSpare([A]);
-    expect(await answerTrade("v", T, 1, "yes", NOW)).toEqual({ ok: false, reason: "not-spare" });
+    expect(await answerTrade("v", T, 1, SEEN, "yes", NOW)).toEqual({ ok: false, reason: "not-spare" });
     expect(db.transaction).not.toHaveBeenCalled();
+  });
+
+  it("a missing or malformed seen time changes nothing", async () => {
+    expect(await answerTrade("v", T, 1, undefined, "yes", NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(await answerTrade("v", T, 1, "not a time", "yes", NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(await counterTrade("v", T, 1, 42, { theirs: [A], yours: [B] }, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(db.execute).not.toHaveBeenCalled();
   });
 
   it("Yes tells the author accept; No tells decline without reading cards", async () => {
@@ -332,13 +345,13 @@ describe("answerTrade", () => {
       .mockResolvedValueOnce({ rows: [{ side: "proposer", oracle_id: A }] } as never);
     const answered = (q: string) => (q.includes("sfl") ? LINKS : q.startsWith('update "trades" atr') ? { rows: [{ id: T, round: 1, offered_by_user_id: "f" }] } : { rows: [] });
     let tx = txAnswering(answered);
-    expect(await answerTrade("v", T, 1, "yes", NOW)).toEqual({ ok: true });
+    expect(await answerTrade("v", T, 1, SEEN, "yes", NOW)).toEqual({ ok: true });
     expect(recordFeedItem).toHaveBeenCalledWith(tx, expect.objectContaining({ userId: "f", dedupeKey: `${T}:1:accept` }));
 
     vi.mocked(recordFeedItem).mockClear();
     vi.mocked(db.execute).mockResolvedValueOnce({ rows: [head()] } as never);
     tx = txAnswering(answered);
-    expect(await answerTrade("v", T, 1, "no", NOW)).toEqual({ ok: true });
+    expect(await answerTrade("v", T, 1, SEEN, "no", NOW)).toEqual({ ok: true });
     expect(db.execute).toHaveBeenCalledTimes(3);
     expect(recordFeedItem).toHaveBeenCalledWith(tx, expect.objectContaining({ userId: "f", dedupeKey: `${T}:1:decline` }));
   });
@@ -385,5 +398,45 @@ describe("withdrawTrade", () => {
     vi.mocked(db.execute).mockResolvedValueOnce({ rows: [] } as never);
     expect(await withdrawTrade("v", T, 1, NOW)).toEqual({ ok: false, reason: "gone" });
     expect(db.transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("rescind, mark and clear", () => {
+  const writes = [
+    ["rescindTrade", rescindTrade, 'update "trades" xtr'],
+    ["markTraded", markTraded, 'update "trades" mtr'],
+    ["clearTrade", clearTrade, 'update "trades" ltr'],
+  ] as const;
+
+  for (const [name, write, prefix] of writes) {
+    it(`${name}: locks the pair with the friend, writes once, and tells nobody`, async () => {
+      vi.mocked(db.execute).mockResolvedValueOnce({ rows: [head({ status: "accepted" })] } as never);
+      const tx = txAnswering((q) => (q.includes("sfl") ? LINKS : q.startsWith(prefix) ? { rows: [{ id: T }], rowCount: 1 } : { rows: [] }));
+      expect(await write("v", T, NOW)).toEqual({ ok: true });
+      const calls = tx.execute.mock.calls.map((c) => render((c as unknown as [SQL])[0]));
+      // The lock is the pair's, the viewer's friend resolved from the trade's row, not the viewer twice.
+      expect(calls[0].params).toEqual(["trade:f:v"]);
+      expect(calls.filter((c) => c.q.startsWith(prefix))).toHaveLength(1);
+      expect(recordFeedItem).not.toHaveBeenCalled();
+    });
+
+    it(`${name}: a statement that changed nothing is gone`, async () => {
+      vi.mocked(db.execute).mockResolvedValueOnce({ rows: [head({ status: "accepted" })] } as never);
+      txAnswering((q) => (q.includes("sfl") ? LINKS : { rows: [], rowCount: 0 }));
+      expect(await write("v", T, NOW)).toEqual({ ok: false, reason: "gone" });
+    });
+  }
+});
+
+describe("reviseTrade, landing nothing", () => {
+  it("a revise statement that changed nothing rewrites no cards", async () => {
+    const mine = head({ proposer_user_id: "v", recipient_user_id: "f", offered_by_user_id: "v", proposer_public_id: PV, recipient_public_id: PF });
+    vi.mocked(db.execute)
+      .mockResolvedValueOnce({ rows: [mine] } as never)
+      .mockResolvedValueOnce({ rows: [{ side: "proposer", oracle_id: B }, { side: "recipient", oracle_id: A }] } as never);
+    allSpare([B]);
+    const tx = txAnswering((q) => (q.includes("sfl") ? LINKS : { rows: [], rowCount: 0 }));
+    expect(await reviseTrade("v", T, 1, { theirs: [A], yours: [C] }, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(sent(tx).some((q) => q.startsWith('delete from "trade_cards"') || q.startsWith('insert into "trade_cards"'))).toBe(false);
   });
 });

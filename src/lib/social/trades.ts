@@ -97,6 +97,18 @@ const friendsStill = (t: string, fl: string, viewerId: string) =>
 const isParty = (t: string, viewerId: string) =>
   sql`(${sql.raw(t)}.proposer_user_id = ${viewerId} or ${sql.raw(t)}.recipient_user_id = ${viewerId})`;
 
+/**
+ * The round the viewer saw is still the one on the table: same number AND same `offered_at`. A revise rewrites the
+ * current round's cards in place and stamps a new `offered_at`, so without this a Yes or a counter keyed on the round
+ * alone would act on cards the viewer never saw. Compared at millisecond precision, the precision a JS Date carries.
+ */
+const roundSeen = (t: string, seenAt: string) =>
+  sql`exists (select 1 from ${tradeRounds} srd where srd.trade_id = ${sql.raw(t)}.id and srd.round = ${sql.raw(t)}.round
+      and date_trunc('milliseconds', srd.offered_at) = date_trunc('milliseconds', ${seenAt}::timestamptz))`;
+
+/** A seen `offered_at` as a press sends it: an ISO timestamp. */
+const isSeenAt = (v: unknown): v is string => typeof v === "string" && v.length <= 40 && !Number.isNaN(Date.parse(v));
+
 const openNow = (t: string, now: Date) =>
   sql`${sql.raw(t)}.status = 'open' and ${sql.raw(t)}.created_at > ${tradeOpenFloor(now).toISOString()}::timestamptz`;
 
@@ -222,11 +234,6 @@ export function proposeInsertQuery(
     select t.id from t`;
 }
 
-/**
- * Offers the friend `friendPublicId` a trade. Every card must be spare now, as its receiver sees it (`not-spare`); one
- * unanswered offer per friend (Q10, `held`); `fromRequestId` names the viewer's own Yes to that friend's ask, whose card
- * is put on the viewer's side, and a second trade from it is `used`.
- */
 /** The constraint a Postgres error names, wherever the driver put it (Drizzle wraps it in `cause`). */
 function constraintOf(error: unknown): string | null {
   let current: unknown = error;
@@ -238,6 +245,11 @@ function constraintOf(error: unknown): string | null {
   return null;
 }
 
+/**
+ * Offers the friend `friendPublicId` a trade. Every card must be spare now, as its receiver sees it (`not-spare`); one
+ * unanswered offer per friend (Q10, `held`); `fromRequestId` names the viewer's own Yes to that friend's ask, whose card
+ * is put on the viewer's side, and a second trade from it is `used`.
+ */
 export async function proposeTrade(
   viewerId: string, friendPublicId: unknown, rawSides: unknown, fromRequestId: unknown = null, now = new Date(),
 ): Promise<ProposeOutcome> {
@@ -291,10 +303,10 @@ export async function proposeTrade(
 // ---- Counter and revise --------------------------------------------------------------------------------------------
 
 /** The counter: the non-author of an open, unexpired trade at the round they saw, below the round cap. */
-export function counterQuery(viewerId: string, tradeId: string, seenRound: number, now: Date): SQL {
+export function counterQuery(viewerId: string, tradeId: string, seenRound: number, seenAt: string, now: Date): SQL {
   return sql`update ${trades} ctr set round = ctr.round + 1, offered_by_user_id = ${viewerId}
     where ctr.id = ${tradeId} and ${isParty("ctr", viewerId)} and ctr.offered_by_user_id <> ${viewerId}
-      and ${openNow("ctr", now)} and ctr.round = ${seenRound} and ctr.round < ${TRADE_ROUND_MAX}
+      and ${openNow("ctr", now)} and ctr.round = ${seenRound} and ctr.round < ${TRADE_ROUND_MAX} and ${roundSeen("ctr", seenAt)}
       and ${friendsStill("ctr", "cfl", viewerId)}
     returning ctr.id, ctr.round`;
 }
@@ -310,15 +322,17 @@ export function roundInsertQuery(tradeId: string, round: number, cards: readonly
  * The viewer counters the offer they were sent at `seenRound` with their own sides: the next round, theirs to author.
  * The cap never holds a counter back.
  */
-export async function counterTrade(viewerId: string, tradeId: unknown, seenRound: unknown, rawSides: unknown, now = new Date()): Promise<CounterOutcome> {
+export async function counterTrade(
+  viewerId: string, tradeId: unknown, seenRound: unknown, seenAt: unknown, rawSides: unknown, now = new Date(),
+): Promise<CounterOutcome> {
   const sides = cleanSides(rawSides);
-  if (!sides || !isUuid(tradeId) || !isRound(seenRound)) return { ok: false, reason: "gone" };
+  if (!sides || !isUuid(tradeId) || !isRound(seenRound) || !isSeenAt(seenAt)) return { ok: false, reason: "gone" };
   const head = await loadHead(viewerId, tradeId);
   if (!head || head.round !== seenRound || head.offeredByUserId === viewerId) return { ok: false, reason: "gone" };
   const p = partiesOf(head, viewerId);
   if (await anyGone(p.viewer, p.friend, sides)) return { ok: false, reason: "not-spare" };
   return inTradeTransaction(viewerId, p.friend.userId, async (tx): Promise<CounterOutcome> => {
-    const [row] = (await tx.execute<{ id: string; round: number }>(counterQuery(viewerId, tradeId, seenRound, now))).rows;
+    const [row] = (await tx.execute<{ id: string; round: number }>(counterQuery(viewerId, tradeId, seenRound, seenAt, now))).rows;
     if (!row) return { ok: false, reason: "gone" };
     const round = Number(row.round);
     await tx.execute(roundInsertQuery(tradeId, round, storedCards(p.role, sides), now));
@@ -375,24 +389,26 @@ export async function reviseTrade(viewerId: string, tradeId: unknown, seenRound:
 // ---- Answer and withdraw -------------------------------------------------------------------------------------------
 
 /** Yes or No: the non-author of an open, unexpired trade, at the round they saw. */
-export function answerTradeQuery(viewerId: string, tradeId: string, seenRound: number, answer: "yes" | "no", now: Date): SQL {
+export function answerTradeQuery(viewerId: string, tradeId: string, seenRound: number, seenAt: string, answer: "yes" | "no", now: Date): SQL {
   const at = sql`${now.toISOString()}::timestamptz`;
   const set = answer === "yes"
     ? sql`status = 'accepted', answered_at = ${at}`
     : sql`status = 'declined', answered_at = ${at}, ended_at = ${at}, ended_by_user_id = ${viewerId}`;
   return sql`update ${trades} atr set ${set}
     where atr.id = ${tradeId} and ${isParty("atr", viewerId)} and atr.offered_by_user_id <> ${viewerId}
-      and ${openNow("atr", now)} and atr.round = ${seenRound}
+      and ${openNow("atr", now)} and atr.round = ${seenRound} and ${roundSeen("atr", seenAt)}
       and ${friendsStill("atr", "afl", viewerId)}
     returning atr.id, atr.round, atr.offered_by_user_id`;
 }
 
 /**
- * The viewer answers the offer they were sent at `seenRound`. Yes re-checks every card first and refuses one no longer
+ * The viewer answers the offer they were sent at `seenRound`, sent or last revised at `seenAt` (its `offered_at`). Yes re-checks every card first and refuses one no longer
  * spare (`not-spare`: the sheet is in Needs a look). The author is told either way.
  */
-export async function answerTrade(viewerId: string, tradeId: unknown, seenRound: unknown, answer: unknown, now = new Date()): Promise<TradeOutcome> {
-  if (!isUuid(tradeId) || !isRound(seenRound) || (answer !== "yes" && answer !== "no")) return { ok: false, reason: "gone" };
+export async function answerTrade(
+  viewerId: string, tradeId: unknown, seenRound: unknown, seenAt: unknown, answer: unknown, now = new Date(),
+): Promise<TradeOutcome> {
+  if (!isUuid(tradeId) || !isRound(seenRound) || !isSeenAt(seenAt) || (answer !== "yes" && answer !== "no")) return { ok: false, reason: "gone" };
   const head = await loadHead(viewerId, tradeId);
   if (!head || head.round !== seenRound || head.offeredByUserId === viewerId) return { ok: false, reason: "gone" };
   const p = partiesOf(head, viewerId);
@@ -401,7 +417,7 @@ export async function answerTrade(viewerId: string, tradeId: unknown, seenRound:
   }
   return inTradeTransaction(viewerId, p.friend.userId, async (tx): Promise<TradeOutcome> => {
     const [row] = (await tx.execute<{ id: string; round: number; offered_by_user_id: string }>(
-      answerTradeQuery(viewerId, tradeId, seenRound, answer, now),
+      answerTradeQuery(viewerId, tradeId, seenRound, seenAt, answer, now),
     )).rows;
     if (!row) return { ok: false, reason: "gone" };
     await tellOther(tx, row.offered_by_user_id, viewerId, tradeId, Number(row.round), answer === "yes" ? "accept" : "decline", now);
