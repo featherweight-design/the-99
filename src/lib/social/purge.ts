@@ -10,7 +10,7 @@
  */
 import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { deckGameOpponents, feedItems, friendInvites, friendLinks, friendRequests, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, spareRequests } from "../../db/schema";
+import { deckGameOpponents, feedItems, friendInvites, friendLinks, friendRequests, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, spareRequests, trades } from "../../db/schema";
 import { unlinkLinkKeysIn } from "./friend-link-keys";
 import { leavePodIn } from "./pods";
 import { purgeRuleZeroIn } from "./rule-zero";
@@ -35,6 +35,9 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
   feed_items: ["user_id", "friend_user_id"],
   // Spare requests (G5), both sides: the account's asks and the asks made of it. Here for the same reason.
   spare_requests: ["asker_user_id", "holder_user_id"],
+  // Friend trades, both sides. `offered_by_user_id` and `ended_by_user_id` are bound by checks to the proposer or the
+  // recipient, so the delete by those two clears them too. A trade's rounds and cards name no account and cascade.
+  trades: ["proposer_user_id", "recipient_user_id", "offered_by_user_id", "ended_by_user_id"],
   // Friend requests (friend links R1), both sides: the ones the account sent and the ones sent to it.
   friend_requests: ["requester_user_id", "owner_user_id"],
 };
@@ -133,6 +136,10 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // The feed's items, both sides: no reader keeps a trade match naming a deleted account (the read would drop it, the
   // friendship being gone, but the row would still hold the id). No stamp moves: `feed_items` carries no trigger.
   await tx.delete(feedItems).where(or(eq(feedItems.userId, userId), eq(feedItems.friendUserId, userId)));
+  // Trades, both sides, before the spare requests a Make it a trade points at (a set null would be a wasted write).
+  // Their rounds and cards go by cascade: neither names an account.
+  // A trade write racing this must hold both friendship rows for share, as an ask does (the writes, plan PR 3).
+  await tx.delete(trades).where(or(eq(trades.proposerUserId, userId), eq(trades.recipientUserId, userId)));
   // Spare requests, both sides. An ask racing this held both friendship rows for share, so it either committed before
   // the friendship rows were locked above (and is deleted here) or waited and found the friendship gone.
   await tx.delete(spareRequests).where(or(eq(spareRequests.askerUserId, userId), eq(spareRequests.holderUserId, userId)));

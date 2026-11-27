@@ -36,6 +36,18 @@ describe("socialReadsIn", () => {
     }
   });
 
+  it("covers the trade tables, by binding and by name, and reads trades only where SQL names a table", () => {
+    expect(socialReadsIn(`import { trades, tradeRounds, tradeCards } from "../../db/schema";`).map((f) => f.why)).toEqual(["imports trades", "imports tradeRounds", "imports tradeCards"]);
+    expect(socialReadsIn("sql`select 1 from trade_cards where side = ${side}`").map((f) => f.why)).toEqual(["names trade_cards in SQL"]);
+    expect(socialReadsIn("sql`select 1 from trade_rounds where trade_id = ${id}`").map((f) => f.why)).toEqual(["names trade_rounds in SQL"]);
+    expect(socialReadsIn('sql`update "trades" set status = \'open\'`').map((f) => f.why)).toEqual(['names update "trades" in SQL']);
+    // Schema-qualified, quoted or not, and `only`, for both words matched by position.
+    expect(socialReadsIn("sql`select 1 from public.trades t`").map((f) => f.why)).toEqual(["names from public.trades in SQL"]);
+    expect(socialReadsIn('sql`delete from only "public"."pods"`').map((f) => f.why)).toEqual(['names from only "public"."pods" in SQL']);
+    // Deck tuning's "trades" (a swap of one card for another) is a word in copy and comments, never a table.
+    expect(socialReadsIn(`const line = "Three trades would fix the curve.";`)).toEqual([]);
+  });
+
   it("does not read the word pods in copy, or a type-only import", () => {
     expect(socialReadsIn(`const line = "Your pods are where game nights start.";`)).toEqual([]);
     expect(socialReadsIn(`import type { pods } from "../db/schema";`)).toEqual([]);

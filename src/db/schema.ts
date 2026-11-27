@@ -4560,6 +4560,97 @@ export const spareRequests = pgTable("spare_requests", {
 ]);
 
 /**
+ * A trade between two friends (plan `2026-11-27-friend-trades.md`, brief D1 to D7): spares from each side, one copy each
+ * (D3). The proposer sent the first offer; the current offer is `offered_by_user_id`'s, in round `round`, and the other
+ * person answers Yes, No or Counter (D2). A counter is a new round by the other person and keeps `created_at`, the
+ * trade's one clock (D6). After a Yes both people mark it traded (D5); nothing in either collection moves.
+ *
+ * EXPIRY IS DERIVED, as for spare requests: an `open` trade older than 14 days reads as expired everywhere
+ * (`trade-rules.ts`), so no job sweeps. An accepted trade does not expire. Needs a look (a card no longer spare) is
+ * derived on read too, never stored. To be written and read only from `src/lib/social/trades.ts` (plan PR 3), which
+ * re-joins the live friendship on every statement; `check:social-reads` already holds every read to `src/lib/social/`. No stamp trigger: nothing here is in a cached payload. Purged on
+ * both sides with the account (`purgeSocialIn`).
+ */
+export const trades = pgTable("trades", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  proposerUserId: text("proposer_user_id").notNull(),
+  recipientUserId: text("recipient_user_id").notNull(),
+  status: text("status").notNull().default("open"),
+  /**
+   * Who sent the current offer (round `round`): the other person answers it. Rounds alternate (the proposer's are odd),
+   * so this always follows from `round`; it is stored so the cap (one unanswered offer per friend) reads one column.
+   * A revise (the author's own offer needs a look) rewrites the current round's cards in place and keeps the round.
+   */
+  offeredByUserId: text("offered_by_user_id").notNull(),
+  round: integer("round").notNull().default(1),
+  /** The first offer: the trade's whole clock (D6), never reset by a counter. */
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /** The Yes or No. */
+  answeredAt: timestamp("answered_at", { withTimezone: true }),
+  /** When it ended by a press (declined, withdrawn, rescinded), and by whom: both set exactly then. */
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  endedByUserId: text("ended_by_user_id"),
+  proposerMarkedAt: timestamp("proposer_marked_at", { withTimezone: true }),
+  recipientMarkedAt: timestamp("recipient_marked_at", { withTimezone: true }),
+  /** Each side's ✕ on an ended trade: it leaves that side's lists. Never a delete. */
+  proposerClearedAt: timestamp("proposer_cleared_at", { withTimezone: true }),
+  recipientClearedAt: timestamp("recipient_cleared_at", { withTimezone: true }),
+  /**
+   * Make it a trade (D1, Ask back): the spare request the proposer said Yes to as holder, whose card rides on the
+   * proposer's side. The yes stands whatever the trade's answer. Null for a trade proposed from the Spares tab.
+   */
+  fromRequestId: uuid("from_request_id").references(() => spareRequests.id, { onDelete: "set null" }),
+}, (t) => [
+  check("trades_status_check", sql`${t.status} in ('open', 'accepted', 'traded', 'declined', 'withdrawn', 'rescinded', 'expired')`),
+  check("trades_not_self_check", sql`${t.proposerUserId} <> ${t.recipientUserId}`),
+  // Rounds alternate: the proposer sends the odd ones, the recipient the even ones (a revise rewrites its own round).
+  check("trades_offered_by_check", sql`${t.offeredByUserId} = case when ${t.round} % 2 = 1 then ${t.proposerUserId} else ${t.recipientUserId} end`),
+  check("trades_round_check", sql`${t.round} >= 1`),
+  check("trades_ended_by_check", sql`${t.endedByUserId} is null or ${t.endedByUserId} in (${t.proposerUserId}, ${t.recipientUserId})`),
+  check("trades_ended_check", sql`(${t.status} in ('declined', 'withdrawn', 'rescinded')) = (${t.endedAt} is not null) and (${t.endedAt} is null) = (${t.endedByUserId} is null)`),
+  check("trades_traded_check", sql`(${t.status} = 'traded') = (${t.proposerMarkedAt} is not null and ${t.recipientMarkedAt} is not null)`),
+  check("trades_answered_check", sql`${t.status} not in ('accepted', 'traded', 'declined') or ${t.answeredAt} is not null`),
+  // A mark is a promise kept: only an accepted trade takes one, and a rescinded one keeps whichever was set.
+  check("trades_marks_check", sql`(${t.proposerMarkedAt} is null and ${t.recipientMarkedAt} is null) or ${t.status} in ('accepted', 'traded', 'rescinded')`),
+  // One Yes seeds at most one trade (Make it a trade).
+  uniqueIndex("trades_from_request_once").on(t.fromRequestId).where(sql`${t.fromRequestId} is not null`),
+  index("trades_proposer_idx").on(t.proposerUserId, t.status),
+  index("trades_recipient_idx").on(t.recipientUserId, t.status),
+]);
+
+/**
+ * A trade's offers, one row per round, every round kept: a counter reads against the round it replaces (Added, Taken
+ * out, `was`, "Replaces your offer of Nov 24"). `offered_at` is when the round was sent, or last revised by its author.
+ * Its author follows from the round's parity (`trades_offered_by_check`), so it is not stored here. No account column:
+ * the account purge reaches rounds and their cards by cascade from `trades`. The trade's current `round` must always
+ * have a row: the writes (`trades.ts`, plan PR 3) insert both in one transaction, since a circular foreign key would need
+ * a deferred constraint.
+ */
+export const tradeRounds = pgTable("trade_rounds", {
+  tradeId: uuid("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  round: integer("round").notNull(),
+  offeredAt: timestamp("offered_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.tradeId, t.round] }),
+  check("trade_rounds_round_check", sql`${t.round} >= 1`),
+]);
+
+/**
+ * A round's cards. `side` is whose spare the card is, as a party to the trade (never a third account), so the holder
+ * follows from the trade row. One copy of each card (D3), so a row is a card and there is no count to store.
+ */
+export const tradeCards = pgTable("trade_cards", {
+  tradeId: uuid("trade_id").notNull(),
+  round: integer("round").notNull(),
+  side: text("side").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+}, (t) => [
+  primaryKey({ columns: [t.tradeId, t.round, t.side, t.oracleId] }),
+  foreignKey({ name: "trade_cards_round_fk", columns: [t.tradeId, t.round], foreignColumns: [tradeRounds.tradeId, tradeRounds.round] }).onDelete("cascade"),
+  check("trade_cards_side_check", sql`${t.side} in ('proposer', 'recipient')`),
+]);
+
+/**
  * One row per device that turned push on (`lib/push/`, plan `2026-10-22-push.md`): the push service's endpoint and the
  * keys it encrypts to, the browser's own time zone (the overnight hold is judged in it), a short label of the browser
  * for the reader's own list, and when a push last reached it. `endpoint` is unique: a re-subscribe of the same device
