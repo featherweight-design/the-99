@@ -94,7 +94,12 @@ export function Bring() {
                         <li key={i}><Words parts={parts} /></li>
                       ))}
                     </ol>
-                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{[s.requirement, app.bothColumns, app.foot].filter(Boolean).join(" ")}</p>
+                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{[s.requirement, app.bothColumns, app.foot].filter((line): line is NonNullable<typeof line> => Boolean(line)).map((line, i) => (
+                      <Fragment key={line}>
+                        {i > 0 && " "}
+                        <span>{line}</span>
+                      </Fragment>
+                    ))}</p>
                     {app.id === "moxfield" && <MoxfieldNote className="mt-[12px]" />}
                   </div>
               </li>
