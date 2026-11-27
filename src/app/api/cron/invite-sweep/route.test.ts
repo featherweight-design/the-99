@@ -10,6 +10,8 @@ const reports = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/feedback/purge", () => ({ purgeAnonymousReports: reports }));
 const ping = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/cron/heartbeat", () => ({ pingHeartbeat: ping }));
+const syncs = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/wishlist/sync", () => ({ reconcileWishlistSyncs: syncs }));
 const { GET } = await import("./route");
 
 const call = (auth?: string) => GET(new Request("https://x/api/cron/invite-sweep", { headers: auth ? { authorization: auth } : {} }) as never);
@@ -21,6 +23,7 @@ describe("GET /api/cron/invite-sweep", () => {
     flyerSweep.mockReset().mockResolvedValue({ released: 3, kept: 1 });
     purge.mockReset().mockResolvedValue({ due: false, deleted: 0 });
     reports.mockReset().mockResolvedValue({ deleted: 0 });
+    syncs.mockReset().mockResolvedValue({ checked: 4, synced: 2, failed: 0 });
     process.env.CRON_SECRET = "s3cret";
     ping.mockReset().mockResolvedValue(undefined);
     process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP = "https://hb.example/invite-sweep";
@@ -47,7 +50,7 @@ describe("GET /api/cron/invite-sweep", () => {
   it("sweeps on the cron's bearer token and answers its counts", async () => {
     const res = await call("Bearer s3cret");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { deleted: 0 } });
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { deleted: 0 }, wishlistSync: { checked: 4, synced: 2, failed: 0 } });
   });
 
   it("answers the launch-list purge's report beside the others", async () => {
@@ -60,7 +63,7 @@ describe("GET /api/cron/invite-sweep", () => {
     const err = vi.spyOn(console, "info").mockImplementation(() => {});
     const res = await call("Bearer s3cret");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { error: true }, anonReports: { deleted: 0 } });
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { error: true }, anonReports: { deleted: 0 }, wishlistSync: { checked: 4, synced: 2, failed: 0 } });
     expect(err.mock.calls.flat().join(" ")).toContain("purge failed (40P01)");
     expect(err.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
     err.mockRestore();
@@ -76,9 +79,22 @@ describe("GET /api/cron/invite-sweep", () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const res = await call("Bearer s3cret");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { error: true } });
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { error: true }, wishlistSync: { checked: 4, synced: 2, failed: 0 } });
     expect(info.mock.calls.flat().join(" ")).toContain("signed-out reports failed (40P01)");
     expect(info.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
+    info.mockRestore();
+  });
+
+  it("answers the wishlist sync's reconcile counts, and keeps the others when only it fails", async () => {
+    expect((await (await call("Bearer s3cret")).json()).wishlistSync).toEqual({ checked: 4, synced: 2, failed: 0 });
+    syncs.mockRejectedValueOnce(Object.assign(new Error("boom"), { code: "57014" }));
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const res = await call("Bearer s3cret");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.wishlistSync).toEqual({ error: true });
+    expect(body.returned).toBe(2);
+    expect(info.mock.calls.flat().join(" ")).toContain("wishlist sync failed (57014)");
     info.mockRestore();
   });
 

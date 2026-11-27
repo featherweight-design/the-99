@@ -24,7 +24,10 @@ const stub = vi.hoisted(() => {
     // lock be deleted with this suite still green.
     execute: async (q: { queryChunks?: unknown[] }) => {
       executed.push(JSON.stringify(q?.queryChunks ?? q));
-      if (executed[executed.length - 1].includes("pg_advisory_xact_lock")) trace.push("lock");
+      const last = executed[executed.length - 1];
+      // The wishlist sync's lock, taken by the collected sweep after the rows are written, is its own step.
+      if (last.includes("wishlist-sync")) trace.push("sweep");
+      else if (last.includes("pg_advisory_xact_lock")) trace.push("lock");
       return { rows: [] };
     },
   };
@@ -118,11 +121,11 @@ describe("replaceCollection", () => {
     stub.trace.length = 0;
     combo.delta = null;
     await replaceCollection("user_1", []);
-    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "delta", "commit"]);
+    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "sweep", "delta", "commit"]);
     stub.trace.length = 0;
     combo.delta = { added: ["new"], held: new Set(["new", "held-before"]) };
     await replaceCollection("user_1", []);
-    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "delta", "commit", "after-commit", "notice"]);
+    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "sweep", "delta", "commit", "after-commit", "notice"]);
     combo.delta = null;
   });
 
@@ -136,6 +139,6 @@ describe("replaceCollection", () => {
       stub.fail.commit = false;
       combo.delta = null;
     }
-    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "delta"]);
+    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "sweep", "delta"]);
   });
 });

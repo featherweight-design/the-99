@@ -4,6 +4,7 @@ import { purgeAnonymousReports } from "../../../../lib/feedback/purge";
 import { purgeLaunchList } from "../../../../lib/flyer/launch-purge";
 import { sweepFlyerClaims } from "../../../../lib/flyer/sweep";
 import { sweepInvites } from "../../../../lib/invites/sweep";
+import { reconcileWishlistSyncs } from "../../../../lib/wishlist/sync";
 import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { logEvent } from "../../../../lib/sentry/log-event";
@@ -20,8 +21,13 @@ export const dynamic = "force-dynamic";
  * call without it is refused with 401 before anything runs. It reads no feature switch: a lapsed reservation is
  * returned whatever the switches say. It also purges the launch list once the launch date plus 30 days has passed
  * (the date set on the admin launch list card, else `FLYER_LAUNCH_DATE`; neither set, nothing is deleted), and deletes
- * signed-out problem reports (`feedback` rows with no `user_id`) 90 days after they were filed (`feedback/purge.ts`).
+ * signed-out problem reports (`feedback` rows with no `user_id`) 90 days after they were filed (`feedback/purge.ts`),
+ * and reconciles the wishlist sync (`wishlist/sync.ts`): every player with it on who is due or not synced for a day, the
+ * backstop for a write that reached their data without a Server Action.
  */
+/** The wishlist reconcile spends up to a minute after the sweeps (`RECONCILE_BUDGET_MS`); this leaves ample room. */
+export const maxDuration = 300;
+
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return new Response("Cron not configured", { status: 503 });
@@ -62,11 +68,24 @@ export async function GET(req: NextRequest) {
       reportNote = `failed${typeof rcode === "string" && /^[0-9A-Z]{5}$/.test(rcode) ? ` (${rcode})` : ""}`;
       captureServerError("invite-sweep-anon-reports", reportError);
     }
+    // The wishlist sync's hourly backstop (`wishlist/sync.ts`). Its own try/catch too: the sweeps above already committed.
+    let wishlistSync: { checked: number; synced: number; failed: number } | { error: true };
+    let syncNote: string;
+    try {
+      const done = await reconcileWishlistSyncs();
+      wishlistSync = done;
+      syncNote = `checked ${done.checked}, synced ${done.synced}, failed ${done.failed}`;
+    } catch (syncError) {
+      const scode = (syncError as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (syncError as { code?: unknown })?.code;
+      wishlistSync = { error: true };
+      syncNote = `failed${typeof scode === "string" && /^[0-9A-Z]{5}$/.test(scode) ? ` (${scode})` : ""}`;
+      captureServerError("invite-sweep-wishlist-sync", syncError);
+    }
     // Counts only, never an id or an address.
-    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}; signed-out reports ${reportNote}`);
+    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}; signed-out reports ${reportNote}; wishlist sync ${syncNote}`);
     await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP);
     logEvent("cron.run", { cron: "invite-sweep", result: "ok", ms: Date.now() - started });
-    return Response.json({ ...report, flyer, launchList, anonReports });
+    return Response.json({ ...report, flyer, launchList, anonReports, wishlistSync });
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[invite-sweep] sweep failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);

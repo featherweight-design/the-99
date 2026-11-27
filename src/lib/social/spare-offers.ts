@@ -11,7 +11,8 @@
  */
 import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, feedDismissals, friendLinks, socialProfiles, spareRequests, wishlistItems } from "../../db/schema";
+import { handSide, ownerSyncedSide, unionLines } from "../wishlist/lines";
+import { cards, feedDismissals, friendLinks, socialProfiles, spareRequests } from "../../db/schema";
 import { named } from "../person-name/mint";
 import { resolveFriend } from "./access";
 import { isUuid } from "./rules";
@@ -243,7 +244,7 @@ export type IncomingOffer = {
 export function incomingOffersQuery(wanterId: string, now: Date): SQL {
   return sql`select ior.id, ior.oracle_id, ior.created_at, ior.copies, iop.public_id::text as public_id, iop.display_name,
       ic.name as card_name, ic.image_uri as card_image,
-      (select max(iw.quantity) from ${wishlistItems} iw where iw.user_id = ior.asker_user_id and iw.oracle_id = ior.oracle_id) as want,
+      (select max(iw.quantity) from (${unionLines(handSide(sql`select ior.asker_user_id`, sql`ior.oracle_id`), ownerSyncedSide(sql`select ior.asker_user_id`, sql`ior.oracle_id`))}) iw) as want,
       icc.oracle_id as commander_oracle_id, icc.name as commander_name, icc.art_crop_uri as commander_art
     from ${spareRequests} ior
     join ${friendLinks} ifl on ifl.user_id = ior.asker_user_id and ifl.friend_user_id = ior.holder_user_id

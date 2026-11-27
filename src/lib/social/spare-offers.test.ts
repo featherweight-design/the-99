@@ -81,7 +81,10 @@ describe("incomingOffersQuery", () => {
     expect(q).toContain(`join "friend_links" ifl on ifl.user_id = ior.asker_user_id and ifl.friend_user_id = ior.holder_user_id`);
   });
   it("qualifies the wishlist subquery on the alias and leaves out a hidden offer", () => {
-    expect(q).toContain(`from "wishlist_items" iw where iw.user_id = ior.asker_user_id and iw.oracle_id = ior.oracle_id`);
+    // Both sides of the asker's wishlist (cart on your wishlist), each correlated on the offer row's alias.
+    expect(q).toContain(`from "wishlist_items" hw where hw.user_id in (select ior.asker_user_id) and hw.oracle_id = ior.oracle_id`);
+    expect(q).toContain(`from "wishlist_synced" sw where sw.user_id in (select ior.asker_user_id) and sw.oracle_id = ior.oracle_id`);
+    expect(q).toContain(`(select max(iw.quantity) from (select coalesce(uh.user_id, us.user_id)`);
     expect(q).toContain(`idd.user_id = ior.asker_user_id and idd.key = 'ask:' || ior.id::text`);
   });
 });
