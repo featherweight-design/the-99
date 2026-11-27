@@ -4567,8 +4567,8 @@ export const spareRequests = pgTable("spare_requests", {
  *
  * EXPIRY IS DERIVED, as for spare requests: an `open` trade older than 14 days reads as expired everywhere
  * (`trade-rules.ts`), so no job sweeps. An accepted trade does not expire. Needs a look (a card no longer spare) is
- * derived on read too, never stored. Written and read only from `src/lib/social/trades.ts`, which re-joins the live
- * friendship on every statement (`check:social-reads`). No stamp trigger: nothing here is in a cached payload. Purged on
+ * derived on read too, never stored. To be written and read only from `src/lib/social/trades.ts` (plan PR 3), which
+ * re-joins the live friendship on every statement; `check:social-reads` already holds every read to `src/lib/social/`. No stamp trigger: nothing here is in a cached payload. Purged on
  * both sides with the account (`purgeSocialIn`).
  */
 export const trades = pgTable("trades", {
@@ -4622,8 +4622,9 @@ export const trades = pgTable("trades", {
  * A trade's offers, one row per round, every round kept: a counter reads against the round it replaces (Added, Taken
  * out, `was`, "Replaces your offer of Nov 24"). `offered_at` is when the round was sent, or last revised by its author.
  * Its author follows from the round's parity (`trades_offered_by_check`), so it is not stored here. No account column:
- * the account purge reaches rounds and their cards by cascade from `trades`. The trade's current `round` always has a
- * row: `trades.ts` inserts both in one transaction (a circular foreign key would need a deferred constraint).
+ * the account purge reaches rounds and their cards by cascade from `trades`. The trade's current `round` must always
+ * have a row: the writes (`trades.ts`, plan PR 3) insert both in one transaction, since a circular foreign key would need
+ * a deferred constraint.
  */
 export const tradeRounds = pgTable("trade_rounds", {
   tradeId: uuid("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),

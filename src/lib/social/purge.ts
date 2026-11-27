@@ -138,7 +138,7 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   await tx.delete(feedItems).where(or(eq(feedItems.userId, userId), eq(feedItems.friendUserId, userId)));
   // Trades, both sides, before the spare requests a Make it a trade points at (a set null would be a wasted write).
   // Their rounds and cards go by cascade: neither names an account.
-  // A trade write racing this held both friendship rows for share, as an ask does.
+  // A trade write racing this must hold both friendship rows for share, as an ask does (the writes, plan PR 3).
   await tx.delete(trades).where(or(eq(trades.proposerUserId, userId), eq(trades.recipientUserId, userId)));
   // Spare requests, both sides. An ask racing this held both friendship rows for share, so it either committed before
   // the friendship rows were locked above (and is deleted here) or waited and found the friendship gone.

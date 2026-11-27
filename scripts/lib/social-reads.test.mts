@@ -38,8 +38,8 @@ describe("socialReadsIn", () => {
 
   it("covers the trade tables, by binding and by name, and reads trades only where SQL names a table", () => {
     expect(socialReadsIn(`import { trades, tradeRounds, tradeCards } from "../../db/schema";`).map((f) => f.why)).toEqual(["imports trades", "imports tradeRounds", "imports tradeCards"]);
-    expect(socialReadsIn("sql`select 1 from trade_cards where owner_user_id = ${id}`").map((f) => f.why)).toEqual(["names trade_cards in SQL"]);
-    expect(socialReadsIn("sql`select 1 from trade_rounds where offered_by_user_id = ${id}`").map((f) => f.why)).toEqual(["names trade_rounds in SQL"]);
+    expect(socialReadsIn("sql`select 1 from trade_cards where side = ${side}`").map((f) => f.why)).toEqual(["names trade_cards in SQL"]);
+    expect(socialReadsIn("sql`select 1 from trade_rounds where trade_id = ${id}`").map((f) => f.why)).toEqual(["names trade_rounds in SQL"]);
     expect(socialReadsIn('sql`update "trades" set status = \'open\'`').map((f) => f.why)).toEqual(['names update "trades" in SQL']);
     // Schema-qualified, quoted or not, and `only`, for both words matched by position.
     expect(socialReadsIn("sql`select 1 from public.trades t`").map((f) => f.why)).toEqual(["names from public.trades in SQL"]);
