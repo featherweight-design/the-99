@@ -60,16 +60,24 @@ app("W2-phone", "phone", wish({ tiles: ALL, groups: GROUPS }));
 // Settings: the new Wishlist section between Spares and Your decks; News with the trade-match line.
 const news = ["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "price-drop", "trade-match", "spare-request", "combo"]
   .map((kind) => ({ kind, on: ["secret-lair", "commander-decklists", "wizards-news", "trade-match", "spare-request"].includes(kind) })) as any;
-const settings = (on: boolean) => (
+const DECK_NAMES = ["Saltmarsh Reclamation", "Lanternlight Tinkers", "Hollow Oak Hours", "Ashen Banner Parade", "Gisa's Ghouls", "Thopter Works", "Stompy", "Jace Control", "Dina's Garden", "Zimone's Primes", "Giada's Choir", "Lathliss Hoard", "Doom's Latveria", "Heroes in a Half Shell", "Captain's Avengers", "Miku Live", "Rootha Storm", "Zada Copies", "Quintorius Digs", "Killian Auras", "Invisible Walls", "Ghalta Big Stuff", "Sai Artifacts"];
+const TOBUY = [15, 14, 14, 2, 0, 6, 3, 9, 1, 4, 7, 11, 5, 8, 2, 0, 3, 6, 4, 2, 1, 9, 5];
+const SDECKS = DECK_NAMES.map((name, i) => ({ id: `k${i}`, name, toBuy: TOBUY[i] }));
+const CHOSEN = SDECKS.filter((d) => d.name !== "Ashen Banner Parade").map((d) => d.id);
+const settings = (on: boolean, compact?: boolean) => (
   <SettingsView>
     <NewsSection kinds={news} />
     <SparesSection spareMin={2} pods={[named("The Bros")]} kept={[]} />
-    <WishlistSection on={on} leftOut={["Ashen Banner Parade"]} />
+    <WishlistSection on={on} decks={SDECKS} chosen={CHOSEN} compact={compact} />
     <FriendDecksSection prefs={{ seeDecks: true, seeUnfinished: false }} />
   </SettingsView>
 );
 app("S1-desk", "desk", settings(true), { path: "/settings" });
-app("S1-phone", "phone", settings(true), { path: "/settings" });
+app("S1-phone", "phone", settings(true, true), { path: "/settings" });
+(globalThis as any).__FP = true;
+app("S2-desk", "desk", settings(true, false), { path: "/settings" });
+app("S2-phone", "phone", settings(true, true), { path: "/settings" });
+(globalThis as any).__FP = false;
 
 // F1: a friend's Wishlist tab of the reader (Colin reading Wren): the one shipped list, no groups, no deck names.
 const wren = { publicId: "wren", displayName: named("Wren"), since: new Date("2026-08-02"), commander: { oracleId: "c", name: "Sai", artCropUri: "art/face-sai.jpg" } } as any;

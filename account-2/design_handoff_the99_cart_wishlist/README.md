@@ -1,6 +1,6 @@
-# Cart on your wishlist · R1
+# Cart on your wishlist · R1c
 
-Account 2, 2026-11-27. Status: **R1 for Hugh's review** (R1b: per-deck ticks moved from Settings to the deck ⋯ menu). Canvas (Design type): https://claude.ai/artifact/VhLtmwDv6aMtudcYG7kXuN
+Account 2, 2026-11-27. Status: **R1 for Hugh's review** (R1b: per-deck opt-out in the deck ⋯ menu; R1c: Settings deck picker = shipped FilterPanel, Shopping wording). Canvas (Design type): https://claude.ai/artifact/VhLtmwDv6aMtudcYG7kXuN
 (Main, Wishlist-Desktop, Wishlist-Phone, Offer, Settings, Friend, Notices).
 
 Hugh's ask (2026-11-27): move the cart to the wishlist, or keep the two in sync (opt-in), so friends see what you're shopping
@@ -15,13 +15,17 @@ Every frame is rendered from main with the shipped components and the shipped CS
 
 ## Calls
 
-1. **One switch, Settings › Wishlist** (board `Settings`, R1b after Hugh asked about 20+ decks). A new section after Spares,
-   drawn as Your decks draws its rows: `Add the cards my decks need` / `Every deck, new ones too. A card leaves once you have it or
-   cut it.` Every deck is in, new decks too; nothing is ticked deck by deck. When any are left out, a line under it:
-   `Leaving out Ashen Banner Parade.` / `Leaving out 3 decks: …`. Foot: `To leave a deck out, tick Keep off my wishlist in its ⋯
-   menu. Cards you add yourself never change here.` Default off. Same height at any deck count.
+1. **One switch, Settings › Wishlist** (board `Settings`, R1c after Hugh asked for a per-deck opt-out that scales and for
+   Shopping wording). A new section after Spares, drawn as Your decks draws its rows: `Keep my shopping on my wishlist` /
+   `Cards in Shopping for all decks go on your wishlist and follow your decks. Each leaves once you have it.` Under it an indented
+   `From` row holds the shipped `FilterPanel` (`triggerLook="field"`, searchable, `compact` on phone = bottom sheet): trigger
+   `22 decks`, sheet title `Shopping from`, search `Search your decks`, a tick per deck with the count Shopping lists for it,
+   foot `22 of 23 decks` + Clear. Every deck starts in; a new deck joins by itself. Switch off, the From row dims and is disabled.
+   Foot: `A new deck joins by itself. You can also leave a deck out from its ⋯ menu. Cards you add yourself never change here.`
+   One line at 5 decks or 50. Default off. Copy: `DECKS_PANEL_COPY` in `wishlist-section.tsx`.
    **Keep off my wishlist** (board `Settings`, M1): a checkbox row in the deck's ⋯ menu under Hidden from friends (tile and
-   header placements), the same row geometry, shown only while the switch is on. Ticking it takes that deck's cards off.
+   header placements), the same row geometry, shown only while the switch is on. It is the same stored choice as the picker's
+   tick, so each mirrors the other.
 2. **Offered once on the Wishlist tab** (board `Offer`), while the switch is off and the reader's decks need a card they own none
    of: the collected strip's shell, bookmark glyph, `Your decks need 12 cards you don’t own.` + `Put them here so friends can see
    them. They follow your decks, and leave once you have them.`, ghost `Add them`, ✕ `Not now`. Add them = switch on, all decks
@@ -69,4 +73,4 @@ Every frame is rendered from main with the shipped components and the shipped CS
 
 SSR recipe (friends_link): copy main, drop `@fwd-stack/*`, `npm install --ignore-scripts`, `tsconfig.scratch.json` + `stubs/`,
 `patch -p1 < proposal.diff`, `node css.mjs`, `DATABASE_URL=postgres://x:y@localhost/z npx tsx dz/render.tsx`, `FULL=1 node dz/shoot.cjs`.
-The render also sets `HydratedImg`, and opens the ⋯ menu from `globalThis.__OPEN` (render only, not in the diff); M1 is the SSR menu over the shipped About Decks captures. It also sets `HydratedImg` to draw `src` on the server (render only, not in the diff). Card art from account-1 card_search.
+The render also sets `HydratedImg` to draw `src` on the server, opens the ⋯ menu from `globalThis.__OPEN` and the deck picker from `globalThis.__FP` (render only, not in the diff); M1 is the SSR menu over the shipped About Decks captures. Card art from account-1 card_search.
