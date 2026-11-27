@@ -122,6 +122,22 @@ describe("the results under a read (the read addendum R1)", () => {
     expect(screen.getByTestId("rest-divider").textContent).toBe(`◆${helpMeChooseCopy.results.restHead}`);
   });
 
+  it("draws the More commanders head unless the rest divider leads the list", () => {
+    const head = () => screen.queryByRole("heading", { name: helpMeChooseCopy.results.moreCommanders });
+    draw(picked(14, 10), "done");
+    expect(screen.getByRole("heading", { name: helpMeChooseCopy.results.bestFits })).toBeTruthy();
+    expect(head()).toBeTruthy();
+    expect(screen.getByTestId("rest-divider")).toBeTruthy();
+    cleanup();
+    draw(picked(14, 3), "done");
+    expect(head()).toBeNull();
+    expect(screen.getByTestId("rest-divider")).toBeTruthy();
+    cleanup();
+    draw(picked(10, 10), "done");
+    expect(head()).toBeTruthy();
+    expect(screen.queryByTestId("rest-divider")).toBeNull();
+  });
+
   it("draws no divider with no picks, or when every row is a pick", () => {
     draw(page(14), "done");
     expect(screen.queryByTestId("rest-divider")).toBeNull();
