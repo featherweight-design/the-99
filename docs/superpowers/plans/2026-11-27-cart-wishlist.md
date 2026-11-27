@@ -62,7 +62,7 @@ Correlated subqueries alias and qualify (code rules), pinned by `.toSQL()` tests
 
 ## Feed and push (Q1, Q3, F9 to F11)
 
-- **Roll-up.** One What's new row per friend per reader-day: the trade-match writer keeps its per-card dedupe key (told once) and the read folds the day's rows for a friend into one item (`Colin has spares of 4 cards you want`). The badge counts folded items; dismiss on the folded item dismisses its rows.
+- **Roll-up.** One What's new row per friend per reader-day: the trade-match writer keeps its per-card dedupe key (told once) and the read folds the day's rows for a friend into one item (`Colin has spares of 4 cards you want`). The badge counts folded items; dismiss on the folded item dismisses its rows. The fold lands in PR 6 with its row, not in PR 3 (orchestrator, 2026-11-27): a fold read before the row exists would draw each folded group as a single-card row, so readers would see a regression between the merges.
 - **Cap.** At most one trade-match push per reader-day (H3). State: the `push_outbox` rows of kind `trade-match` for the reader inside the reader's day, counted in the enqueue's own transaction under a per-reader advisory lock, so a restart or a second worker cannot double-push. No new table. scoped to `trade-match` only, shipped words `tradeMatchOne` / `tradeMatchMany`, shipped overnight hold. Rows from `quiet` lines never push.
 - **Overlap (F14).** #3401 friend trades (R2, in Design) also edits `feed-item.tsx` and `copy/feed.ts`. Whichever merges second rebases; nothing here touches other kinds.
 
@@ -72,10 +72,10 @@ Correlated subqueries alias and qualify (code rules), pinned by `.toSQL()` tests
 | --- | --- | --- | --- |
 | 1 | This plan; migration `0274` and schema; `lines.ts` union (owner) and the friend view in `social/wishlist.ts` (H1 filter, the three friend reads moved onto it); owner `loadWishlist` onto the union; purge list and fictional-fixture purge (all four tables in both); fixture export reads the union; rendered-SQL tests. The union and the H1 view were run on a scratch branch of local-dev with seeded lines (a hidden-only card, an unfinished-deck card and a card split across a hidden and a shown deck all read as H1 says). Tables stay empty, so nothing a reader sees changes. | Risky | about 14 |
 | 2 | Sync job: `syncWishlistIfDue`, the stamp ledger (a deck status change, such as a committed deck back to Building, re-syncs and rewrites `unfinished`, pinned by a test, since the friend filter reads the stored pill), diff writes, skips, `after()` hooks, reconcile cron, the collected sweep over synced lines, card search, `spares.ts` and `spare-offers.ts` (the asker's own `want`) onto the owner union, price-drop pin test, a guard test that no `src/` reader of `wishlist_items` sits outside `lines.ts`, the owner and friend wishlist modules, card details' `loadWishlistLine` (the Wishlist section reads a deck line too) and the price-drop job. | Risky | about 16 |
-| 3 | Trade-match onto the union, roll-up read, quiet arrivals, one-push-a-day cap. Lands before any reader can switch on, so switching on can never flood. | Risky | about 12 |
+| 3 | Trade-match writer onto the union (hand and deck lines), quiet arrivals never push (`quiet` clears once a notice has read the line), one-push-a-day cap judged under a per-reader lock in the reader's zone. Lands before any reader can switch on, so switching on can never flood. The roll-up read moved to PR 6. | Risky | about 6 |
 | 4 | Settings › Wishlist section, deck picker (`FilterPanel`), ⋯ menu Keep off my wishlist row, set/clear actions, copy leaves, privacy text. | UI | about 12 |
 | 5 | Tab split by source (`DeckBox` boxes), offer strip and its dismissal, convert and Remove on deck lines. | UI | about 12 |
-| 6 | Roll-up row UI in What's new (fanned picture, `See Colin's spares ›`). | UI | about 6 |
+| 6 | Roll-up read (fold per friend per reader-day, badge counts folded items, dismiss the group) and its row UI in What's new (fanned picture, `See Colin's spares ›`), together so no reader sees a regression between merges (moved from PR 3, orchestrator 2026-11-27). | UI | about 9 |
 
 Over 20 files in any PR: split before building, boundary named here.
 
