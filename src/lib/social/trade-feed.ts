@@ -47,11 +47,13 @@ type Row = {
   identity: string[] | null; image: string | null; art: string | null; layout: string | null;
 };
 
-/** One read for every trade item in the feed, never one per item. Empty refs read nothing. */
+/** One read for every trade item in the feed, never one per item, each round once. Empty refs read nothing. */
 export async function loadTradeFeedSides(viewerId: string, refs: readonly TradeFeedRef[], q: Executor): Promise<Map<string, TradeFeedSides>> {
   const out = new Map<string, TradeFeedSides>();
-  if (refs.length === 0) return out;
-  const { rows } = await q.execute<Row>(tradeFeedSidesQuery(viewerId, refs));
+  // Two items can name one round (an offer, then its accept): read each round once, or its cards come back twice.
+  const unique = [...new Map(refs.map((r) => [tradeFeedKey(r.trade, r.round), r])).values()];
+  if (unique.length === 0) return out;
+  const { rows } = await q.execute<Row>(tradeFeedSidesQuery(viewerId, unique));
   for (const r of rows) {
     const key = tradeFeedKey(r.trade_id, Number(r.round));
     const sides = out.get(key) ?? { theirs: [], yours: [] };

@@ -17,8 +17,8 @@ vi.mock("../social/spare-offers", async (importOriginal) => ({
 }));
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { tradeFeedSidesQuery } from "../social/trade-feed";
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, answerableKeys, splitLead, toViews, withAnswerDetails, withListTargets, withAsks, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
+import { loadTradeFeedSides, tradeFeedSidesQuery } from "../social/trade-feed";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, answerableKeys, splitLead, toViews, withAnswerDetails, withTradeSides, withListTargets, withAsks, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 import { named } from "../person-name/mint";
@@ -223,6 +223,19 @@ describe("toViews", () => {
     expect(gone.trade).toBeUndefined();
     const sides = new Map([["t1:1", { theirs: [], yours: [] }]]);
     expect(toViews([{ ...base, data: { trade: "t1", round: 1, event: "withdraw" } } as FeedItem], { ...empty, tradeSides: sides })[0].trade).toBeUndefined();
+    // A side with no cards, or a round that is not a whole number from 1, draws no trade either.
+    const c = (name: string) => ({ oracleId: name, name, image: null, art: null, colorIdentity: null });
+    const half = new Map([["t1:1", { theirs: [c("Sol Ring")], yours: [] }]]);
+    expect(toViews([{ ...base, data: { trade: "t1", round: 1, event: "offer" } } as FeedItem], { ...empty, tradeSides: half })[0].trade).toBeUndefined();
+    const whole = new Map([["t1:1", { theirs: [c("Sol Ring")], yours: [c("Arcane Signet")] }]]);
+    expect(toViews([{ ...base, data: { trade: "t1", round: 1.5, event: "offer" } } as FeedItem], { ...empty, tradeSides: whole })[0].trade).toBeUndefined();
+  });
+
+  it("drops a trade row with no sides, and keeps every other row (withTradeSides)", () => {
+    const drawn = view({ key: "item:a", kind: "trade", trade: { id: "t1", event: "offer", theirs: [], yours: [] } });
+    const bare = view({ key: "item:b", kind: "trade" });
+    const other = view({ key: "item:c", kind: "combo" });
+    expect(withTradeSides([drawn, bare, other]).map((v) => v.key)).toEqual(["item:a", "item:c"]);
   });
 
   it("gives an answer to the reader's own ask its answer and a press to Your requests", () => {
@@ -484,5 +497,15 @@ describe("tradeFeedSidesQuery (friend trades PR 2)", () => {
   it("makes the viewer a party and joins the friendship on the viewer in the same statement", () => {
     expect(q).toContain("ft.proposer_user_id = $");
     expect(q).toMatch(/from "friend_links" ffl where ffl\.user_id = \$\d+ and ffl\.friend_user_id = \(case when ft\.proposer_user_id/);
+  });
+  it("reads a round two items name once, so its cards never come back twice (loadTradeFeedSides)", async () => {
+    const seen: unknown[][] = [];
+    const exec = { execute: async (query: SQL) => (seen.push(new PgDialect().sqlToQuery(query).params), { rows: [] }) } as unknown as Parameters<typeof loadTradeFeedSides>[2];
+    await loadTradeFeedSides("viewer", [{ trade: "t1", round: 1 }, { trade: "t1", round: 1 }, { trade: "t1", round: 2 }], exec);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toContainEqual(["t1", "t1"]);
+    expect(seen[0]).toContainEqual([1, 2]);
+    expect(await loadTradeFeedSides("viewer", [], exec)).toEqual(new Map());
+    expect(seen).toHaveLength(1);
   });
 });

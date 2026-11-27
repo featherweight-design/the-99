@@ -320,12 +320,12 @@ export function toViews(
         return { ...base, card, friend, askable: found.askable === true, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}/spares${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
       case "trade": {
         const tradeId = typeof item.data.trade === "string" ? item.data.trade : null;
-        const round = typeof item.data.round === "number" ? item.data.round : null;
+        const round = isTradeRound(item.data.round) ? item.data.round : null;
         const event = item.data.event;
         const sides = tradeId !== null && round !== null ? found.tradeSides?.get(tradeFeedKey(tradeId, round)) : undefined;
         const href = friend && tradeId ? `/friends/${encodeURIComponent(friend.publicId)}/spares?trade=${encodeURIComponent(tradeId)}` : null;
-        // Missing sides (the trade or the friendship is gone, or the item is malformed): the row keeps its press but carries no `trade`.
-        if (!sides || !tradeId || !isTradeEvent(event)) return { ...base, card: null, friend, href };
+        // Missing sides (the trade or the friendship is gone, or the item is malformed): no `trade`, and `withTradeSides` drops the row.
+        if (!sides || sides.theirs.length === 0 || sides.yours.length === 0 || !tradeId || !isTradeEvent(event)) return { ...base, card: null, friend, href };
         return { ...base, card: sides.theirs[0] ?? null, friend, href, trade: { id: tradeId, event, theirs: sides.theirs, yours: sides.yours } };
       }
       case "combo": {
@@ -358,7 +358,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
   const tradeRefs = items.flatMap((i) => {
     if (i.kind !== "trade") return [];
     const { trade, round } = i.data;
-    return typeof trade === "string" && typeof round === "number" ? [{ trade, round }] : [];
+    return typeof trade === "string" && isTradeRound(round) ? [{ trade, round }] : [];
   });
   const run = <R extends Record<string, unknown>>(query: SQL, when: boolean) => (when ? q.execute<R>(query).then((r) => r.rows as R[]) : Promise.resolve([] as R[]));
   const [setRows, preconRows, ownedRows, cardRows, art, tradeSides] = await Promise.all([
@@ -416,7 +416,7 @@ export async function loadHomeFeed(
     waiting ? loadIncomingAsks(userId, env, now, q) : Promise.resolve([] as IncomingAsk[]),
     waiting ? loadIncomingOffers(userId, now) : Promise.resolve([] as IncomingOffer[]),
   ]);
-  const views = withListTargets(toViews(items, found, store), targets);
+  const views = withTradeSides(withListTargets(toViews(items, found, store), targets));
   const incoming = [...asks, ...offers.map(offerAsLeadAsk)];
   const open = answerableKeys(views, asks, offers.map(offerAsLeadAsk));
   const feed = offer.length > 0 ? { ...splitLead(views, on, open), offer } : splitLead(views, on, open);
@@ -484,6 +484,14 @@ export function withAsks(feed: HomeFeed, asks: readonly (IncomingAsk & { offer?:
     return ask ? { ...v, ask: { id: ask.id, spare: ask.spare, copies: ask.copies, deckName: ask.deckName, daysLeft: ask.daysLeft, ...(ask.offer ? { offer: ask.offer } : {}) } } : v;
   };
   return { ...feed, lead: feed.lead && attach(feed.lead), items: feed.items.map(attach) };
+}
+
+/** A trade round's number as the feed stores it: a whole number from 1. */
+const isTradeRound = (r: unknown): r is number => typeof r === "number" && Number.isInteger(r) && r >= 1;
+
+/** Drops a trade row whose sides could not be read: it would draw a bare kicker, and lead or count as unseen. Pure, for the tests. */
+export function withTradeSides(views: FeedView[]): FeedView[] {
+  return views.filter((v) => v.kind !== "trade" || v.trade !== undefined);
 }
 
 /**

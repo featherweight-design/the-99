@@ -361,7 +361,7 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
         // eslint-disable-next-line @next/next/no-img-element
         <img src={item.trade.yours[0].image} alt="" data-feed-trade-yours className="absolute -left-[5px] top-[1px] block h-[60px] w-[43px] -rotate-[9deg] rounded-[3px] object-cover opacity-90 shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
       ) : null}
-      <span className={`relative block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${item.trade ? "rotate-[3deg]" : ""}`}>
+      <span className={`block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${item.trade ? "relative rotate-[3deg]" : ""}`}>
         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
       </span>
       {item.friend && (

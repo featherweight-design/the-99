@@ -52,7 +52,7 @@ describe("feedUnion", () => {
     expect(params).toContain("new-precon");
     // Stored kinds go through `kindEnabledAt`: the stamp, else always for a default-on kind not declined (G4).
     expect(flatQ).toMatch(/fi\.created_at > coalesce\(\(fup\.feed_kinds ->> fi\.kind\)::timestamptz, case when fi\.kind = any\(\$\d+::text\[\]\) and not \(fi\.kind = any\(coalesce\(fup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
-    expect(params).toContainEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
+    expect(params).toContainEqual(["spare-request", "trade", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 
   it("left joins the reader's prefs in the stored branch, so a reader with no row still reads a default-on kind", () => {
@@ -106,7 +106,7 @@ describe("the Announcements branch", () => {
 
   it("gates on kindEnabledAt with the kind default on, so a reader who never chose (or has no prefs row) reads a post", () => {
     expect(q).toMatch(/and wa\.first_seen_at > coalesce\(\(aup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\)/);
-    expect(params).toContainEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
+    expect(params).toContainEqual(["spare-request", "trade", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 
   it("carries the row's words in data, the lists' count an aliased, qualified correlated subquery", () => {

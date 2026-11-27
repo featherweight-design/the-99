@@ -142,7 +142,7 @@ export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt
     const a = leadRank(item.kind);
     const b = leadRank(best.kind);
     // Within one kind, an item waiting on the reader beats news (a trade offer over a newer decline), then newest.
-    const w = (waits(best) ? 1 : 0) - (waits(item) ? 1 : 0);
+    const w = (waits(item) ? 1 : 0) - (waits(best) ? 1 : 0);
     if (a < b || (a === b && (w > 0 || (w === 0 && item.createdAt.getTime() > best.createdAt.getTime())))) best = item;
   }
   return best;

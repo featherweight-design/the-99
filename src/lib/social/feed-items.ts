@@ -70,10 +70,11 @@ function standing(viewerId: string, now: Date, storeOn: boolean): SQL {
               and fsr.created_at > ${openFloor(now).toISOString()}::timestamptz end)))
       and (fi.kind <> 'trade' or exists (
         select 1 from ${trades} ft
-        where ft.id = (case when fi.kind = 'trade' then (fi.data ->> 'trade')::uuid end)
+        where ft.id::text = fi.data ->> 'trade'
           and (ft.proposer_user_id = fi.user_id or ft.recipient_user_id = fi.user_id)
+          and fi.friend_user_id = (case when ft.proposer_user_id = fi.user_id then ft.recipient_user_id else ft.proposer_user_id end)
           and (case when fi.data ->> 'event' in ('offer', 'counter')
-            then ft.status = 'open' and ft.round = (fi.data ->> 'round')::int and ft.offered_by_user_id <> fi.user_id
+            then ft.status = 'open' and ft.round::text = fi.data ->> 'round' and ft.offered_by_user_id <> fi.user_id
               and ft.created_at > ${tradeOpenFloor(now).toISOString()}::timestamptz
             when fi.data ->> 'event' = 'accept' then ft.status in ('accepted', 'traded')
             when fi.data ->> 'event' = 'decline' then ft.status = 'declined'
