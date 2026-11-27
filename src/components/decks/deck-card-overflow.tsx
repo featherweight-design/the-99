@@ -17,7 +17,6 @@ import { setDeckHiddenFromFriendsAction } from "../../app/decks/hide-actions";
 import { socialCopy } from "../../lib/copy/social";
 import { setDecksOffWishlistAction } from "../../app/settings/wishlist-actions";
 import { wishlistCopy } from "../../lib/copy/wishlist";
-import { captureClientError } from "../../lib/sentry/capture-client";
 import type { StatusPill } from "../../lib/decks/status";
 import { SETTINGS_TARGET_HASH, hiddenWhy, settingsHideDeck, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
