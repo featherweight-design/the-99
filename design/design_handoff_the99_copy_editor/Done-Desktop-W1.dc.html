@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop W1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width:1300px;height:900px;position:relative;overflow:hidden;box-sizing:border-box;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8">
+<img src="art/ce-d-off.webp" alt="Help me choose on desktop, copy editor off" style="position:absolute;left:0;top:0;width:1300px;height:900px;display:block"><div style="position:absolute;left:1146px;top:828px;width:138px;height:54px;background:#120E0B"></div><button type="button" aria-label="Edit copy, 3 edits waiting" style="all:unset;box-sizing:border-box;position:absolute;right:24px;bottom:24px;height:40px;display:flex;align-items:center;gap:8px;padding:0 8px 0 16px;border:1px solid #3A3229;border-radius:999px;background:#211D18;box-shadow:0 18px 50px rgba(0,0,0,.6);font-size:13px;color:#EDE6D8;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20z"/><path d="M13.5 7.5l3 3"/></svg><span>Edit copy</span><span aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:999px;background:#DEAA29;flex:none"></span><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(207,135,69,.16);color:#CF8745;font-size:12px;font-weight:500;white-space:nowrap">3 edits waiting</span></button><div role="status" aria-label="Copy edits" style="position:absolute;right:24px;bottom:84px;width:360px;box-sizing:border-box;padding:14px 16px 14px;border:1px solid #3A3229;border-radius:14px;background:#211D18;box-shadow:0 18px 50px rgba(0,0,0,.6)"><div style="display:flex;align-items:flex-start;gap:12px"><div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500;color:#EDE6D8"><span aria-hidden="true" style="width:8px;height:8px;border-radius:999px;background:#CF8745;flex:none"></span>3 edits waiting, not sent</div><p style="margin:4px 0 0;font-size:13px;line-height:1.45;color:#A59C89">They stay in this browser until you open a pull request or clear them.</p></div><button type="button" aria-label="Close" style="all:unset;display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:-6px -6px 0 0;border-radius:999px;color:#A59C89;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button type="button" style="all:unset;border:1px solid #3A3229;border-radius:999px;padding:5px 15px;font-size:13px;color:#EDE6D8;cursor:pointer;white-space:nowrap;">Review</button><button type="button" style="all:unset;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:500;background:#CF8745;color:#14110E;cursor:pointer;white-space:nowrap;">Open pull request</button></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

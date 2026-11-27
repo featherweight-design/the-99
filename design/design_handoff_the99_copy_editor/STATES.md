@@ -19,7 +19,11 @@ Art: `art/ce-<p|d>-<state>.webp` (phone 390 at 2x, desktop 1300 at 1.5x).
 | 10 | Submitting | `submitting` | Rows locked, spinner. |
 | 11 | Submitted | `submitted` | PR number, branch, Open on GitHub; bar shows PR open. |
 | 12 | Failed | `failed` | Banner, stale row flagged with Redo, Try again. |
+| 13a | Done, edits waiting | `Done-*-W1` | Mode off; notice "3 edits waiting, not sent" with Review / Open pull request; door shows the count. ADDENDUM-done-unsent.md. |
+| 13b | Count on the door | `Done-*-W2` | Pill chip `3 edits waiting`; phone pencil count badge, staging dot at its foot. |
+| 13c | Sent from the notice | `Done-*-W3` | Tray straight in C5 Submitting, mode still off. |
 
 ## Addendum
 
 - `ADDENDUM-insert-fill.md` (2026-11-25, approved): a fill-in can be removed (chip ✕, Backspace) and inserted (Insert at cursor row). States 5a to 5c. Overrides row 4 and the chip line "Moves, never deletes".
+- `ADDENDUM-done-unsent.md` (2026-11-27, approved): Done with unsent edits leaves as today, shows a notice with Open pull request, and the door keeps a waiting count. States 13a to 13c.
