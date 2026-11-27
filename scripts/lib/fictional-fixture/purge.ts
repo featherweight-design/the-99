@@ -81,6 +81,10 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   user_prefs: ["user_id"],
   wishlist_collected: ["user_id"],
   wishlist_items: ["user_id"],
+  wishlist_sync_skips: ["user_id"],
+  wishlist_sync_state: ["user_id"],
+  wishlist_synced: ["user_id"],
+  wishlist_synced_decks: ["user_id"],
   account_tombstones: ["clerk_id"],
   // A leftover backup copy of a real collection: not in the Drizzle schema, still a user table, still emptied.
   collection_items_backup_20260915: ["user_id"],

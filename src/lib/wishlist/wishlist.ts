@@ -7,12 +7,13 @@
  * never shows a collected card and never deletes one. Reads and writes here are the viewer's OWN rows only; a
  * friend's wishlist is read through `src/lib/social/wishlist.ts`, which joins the friendship.
  */
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, printings, wishlistItems } from "../../db/schema";
 import { cheapestNow, loadPrices } from "../decks/price-query";
 import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { heldCopies } from "./held";
+import { ownerLinesQuery, type LineSource, type UnionRow } from "./lines";
 import { requestFlags } from "../flags/request";
 import { readerStore } from "../stores/preference";
 import type { Store } from "../stores/rows";
@@ -31,30 +32,30 @@ export function cleanQuantity(raw: unknown): number | null {
 }
 
 /** `scryfallId`: the one printing the line names, or null for "any printing" (only that printing collects it). */
-export type WishlistLine = { oracleId: string; scryfallId: string | null; quantity: number; owned: number; addedAt: Date };
+export type WishlistLine = {
+  oracleId: string; scryfallId: string | null; quantity: number; owned: number; addedAt: Date;
+  /** `hand`: added by the player (or converted from a deck line); `deck`: put there by their decks alone (`lines.ts`). */
+  source: LineSource;
+  /** The decks still needing the card, for a line the sync holds; empty for a hand-only line. The owner's own decks. */
+  deckIds: string[];
+};
 
 /**
- * One owner's lines still WANTED (the collection holds fewer than wanted), with what it holds of each, newest
- * first. A collected line is left out here rather than deleted (G5: a read never deletes). Apart so a test can
- * render it.
+ * One owner's lines still WANTED (the collection holds fewer than wanted), hand-added and deck-synced as one union
+ * (`lines.ts`, whose `ownerLinesQuery` a test renders), with what it holds of each, newest first. A collected line is
+ * left out here rather than deleted (G5: a read never deletes).
  */
-export function wishlistLinesQuery(ownerId: string, q: Pick<typeof db, "select"> = db) {
-  // What the collection holds of the line, as the line counts it (`held.ts`). The join to `cards` (a foreign key, so
-  // it never drops a row) keeps the table qualification Drizzle drops in a single-table select, which the correlated
-  // subquery needs: bare, its `user_id` would read the collection row's own.
-  const owned = heldCopies(wishlistItems.userId, wishlistItems.oracleId, wishlistItems.scryfallId);
-  return q
-    .select({
-      oracleId: wishlistItems.oracleId,
-      scryfallId: wishlistItems.scryfallId,
-      quantity: wishlistItems.quantity,
-      owned,
-      addedAt: wishlistItems.createdAt,
-    })
-    .from(wishlistItems)
-    .innerJoin(cards, eq(cards.oracleId, wishlistItems.oracleId))
-    .where(and(eq(wishlistItems.userId, ownerId), sql`${owned} < ${wishlistItems.quantity}`))
-    .orderBy(sql`${wishlistItems.createdAt} desc`, asc(wishlistItems.oracleId));
+export async function wishlistLinesQuery(ownerId: string): Promise<WishlistLine[]> {
+  const { rows } = await db.execute<UnionRow>(ownerLinesQuery(ownerId));
+  return rows.map((r) => ({
+    oracleId: r.oracle_id,
+    scryfallId: r.scryfall_id,
+    quantity: Number(r.quantity),
+    owned: Number(r.owned),
+    addedAt: new Date(r.added_at),
+    source: r.source,
+    deckIds: r.deck_ids ?? [],
+  }));
 }
 
 export async function loadWishlist(viewerId: string): Promise<WishlistLine[]> {
