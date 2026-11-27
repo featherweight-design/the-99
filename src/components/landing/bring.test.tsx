@@ -26,6 +26,17 @@ describe("Bring", () => {
     expect(panel.textContent).toContain(`${collectionSources.requirement} ${moxfield.bothColumns}`);
   });
 
+  it("draws a guide's own foot line as its own text node after the requirement", () => {
+    render(<Bring />);
+    const manabox = collectionSources.apps.find((a) => a.id === "manabox")!;
+    press(manabox.name);
+    const panel = document.getElementById(screen.getByRole("button", { name: new RegExp(`^${manabox.name}`) }).getAttribute("aria-controls") ?? "") as HTMLElement;
+    const row = (key: string, text: string): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "" });
+    const index = indexRows([row("cs#requirement", collectionSources.requirement), row("cs#foot", manabox.foot!)]);
+    expect(scanPage(index, panel).map((e) => e.matches[0].row.key)).toEqual(["cs#requirement", "cs#foot"]);
+    expect(panel.textContent).toContain(`${collectionSources.requirement} ${manabox.foot}`);
+  });
+
   it("leads with the first-timer path, then a row per source", () => {
     render(<Bring />);
     const html = section().textContent ?? "";
