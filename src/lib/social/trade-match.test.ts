@@ -31,6 +31,12 @@ describe("wishedForMatchQuery", () => {
     expect(q).toContain("where uh.wanted or us.wanted");
   });
 
+  it("leaves out a line the collection already reaches, as each side counts it (a hand line's named printing only by its own copies)", () => {
+    expect(q).toContain("hs.owned < hs.quantity as wanted");
+    expect(q).toContain("ss.owned < ss.quantity as wanted");
+    expect(q).toMatch(/ci\.user_id = hw\.user_id and ci\.oracle_id = hw\.oracle_id and \(hw\.scryfall_id::uuid is null/);
+  });
+
   it("marks a card quiet only when a quiet synced line alone wants it (a hand line makes it loud)", () => {
     expect(q).toContain(`(ul.source = 'deck' and exists (select 1 from "wishlist_synced" tq where tq.user_id = ul.user_id and tq.oracle_id = ul.oracle_id and tq.quiet)) as quiet`);
   });
@@ -70,9 +76,9 @@ describe("the one-push-a-day cap", () => {
   it("clears quiet on the read lines alone, once read", () => {
     const r = new PgDialect().sqlToQuery(clearQuietQuery("viewer_1", ["a", "b"]));
     expect(r.sql.replace(/\s+/g, " ")).toBe(
-      `update "wishlist_synced" set quiet = false where user_id = $1 and quiet and oracle_id in ($2::uuid, $3::uuid)`,
+      `update "wishlist_synced" set quiet = false where user_id = $1 and quiet and oracle_id = any($2::uuid[])`,
     );
-    expect(r.params).toEqual(["viewer_1", "a", "b"]);
+    expect(r.params).toEqual(["viewer_1", "{a,b}"]);
   });
 
   it("reads the zone of the device that refreshed last", () => {

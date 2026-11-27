@@ -8,7 +8,7 @@
  *
  * `noticeTradeMatches` is called per request through `after()` by the pages that draw the feed or the Friends badge.
  * It is idempotent (the dedupe key) and cheap when nothing changed: a kind that is off or a wishlist with nothing
- * unmet costs one indexed read, and an unchanged fingerprint (the wished cards, the kind's `enabledAt` and
+ * unmet costs one read (the owner gate and the two union sides, `lines.ts`), and an unchanged fingerprint (the wished cards, the kind's `enabledAt` and
  * `friendGeneration`, which moves on any granting friend's data stamp, name or grant) costs two and reads no spares.
  * The fingerprint is held per server instance, so a cold instance pays one full read, which writes nothing new.
  *
@@ -86,11 +86,13 @@ export function tradeMatchPushLock(viewerId: string): SQL {
 /**
  * Quiet is a mark on the lines' arrival, not on the lines: once a notice has read a quiet line (and written whatever
  * matches it had then, without a push), the line is loud, so a spare a friend lists later pushes as usual (plan
- * finding 5). Only the lines this notice read: one the sync adds quiet meanwhile waits for the next notice.
+ * finding 5). Only the cards this notice judged: one the sync adds quiet meanwhile, or one whose match was skipped,
+ * waits for the next notice. A card a hand line also wants (read as loud) is cleared too, so its synced line cannot
+ * turn quiet again when the hand line goes.
  */
 export function clearQuietQuery(viewerId: string, oracleIds: string[]): SQL {
   return sql`update ${wishlistSynced} set quiet = false where user_id = ${viewerId} and quiet
-    and oracle_id in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
+    and oracle_id = any(${`{${oracleIds.join(",")}}`}::uuid[])`;
 }
 
 /** A trade match's dedupe key: one item per card per friend, ever. */
@@ -134,25 +136,30 @@ export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEn
   for (let i = 0; i < wished.length; i += MAX_SPARES_BATCH) {
     spares.push(...(await loadFriendSpares(viewerId, wished.slice(i, i + MAX_SPARES_BATCH))));
   }
-  const quietIds = rows.filter((r) => r.quiet === true).map((r) => r.oracle_id);
   let written = 0;
+  const skipped = new Set<string>();
+  const judged = () => wished.filter((id) => !skipped.has(id));
   // One call, one batch: the matches this notice found are one push ("Colin has 3 spares you want").
   const batchKey = newBatchKey("trade-match");
   if (spares.length > 0) {
     // A spare names its friend by public id; the item stores the account, read through the same grant.
     const byPublic = new Map((await spareGrantorsQuery(viewerId)).map((g) => [g.publicId, g.userId]));
-    const quiet = new Set(quietIds);
-    const now = new Date();
-    const zone = (await db.execute<{ time_zone: string }>(readerZoneQuery(viewerId))).rows[0]?.time_zone ?? null;
-    const cap = pushCapWhen(viewerId, batchKey, readerDayStart(now, zone));
+    const quiet = new Set(rows.filter((r) => r.quiet === true).map((r) => r.oracle_id));
     written = await db.transaction(async (tx) => {
       // The cap reads the reader's queued pushes: under this lock a second notice waits, then sees this one's rows.
       await tx.execute(tradeMatchPushLock(viewerId));
+      // The day is judged after the wait, so a notice that waited across the reader's midnight counts the new day.
+      const now = new Date();
+      const zone = (await tx.execute<{ time_zone: string }>(readerZoneQuery(viewerId))).rows[0]?.time_zone ?? null;
+      const cap = pushCapWhen(viewerId, batchKey, readerDayStart(now, zone));
       let n = 0;
       for (const s of spares) {
         const friendUserId = byPublic.get(s.friend.publicId);
         // A grant gone between the two reads: the next notice, with a new fingerprint, decides.
-        if (!friendUserId) continue;
+        if (!friendUserId) {
+          skipped.add(s.oracleId);
+          continue;
+        }
         const ok = await recordFeedItem(tx, {
           userId: viewerId,
           kind: "trade-match",
@@ -166,11 +173,11 @@ export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEn
         if (ok) n += 1;
       }
       // In the writes' transaction: a failed write leaves the lines quiet, so the retry still never pushes them.
-      if (quietIds.length > 0) await tx.execute(clearQuietQuery(viewerId, quietIds));
+      await tx.execute(clearQuietQuery(viewerId, judged()));
       return n;
     });
-  } else if (quietIds.length > 0) {
-    await db.execute(clearQuietQuery(viewerId, quietIds));
+  } else {
+    await db.execute(clearQuietQuery(viewerId, judged()));
   }
   remember(viewerId, fingerprint);
   return written;
