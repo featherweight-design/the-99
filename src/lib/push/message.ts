@@ -7,13 +7,13 @@
  * DEVICE; a spare request's own key, so two asks never replace each other),
  * the item keys it stands for, and the card image where there is one.
  *
- * Collapse: `live` sends one per (kind, batch), `release` (what waited the night) one per kind. A spare request is never
- * collapsed in either mode.
+ * Collapse: `live` sends one per (kind, batch), `release` (what waited the night) one per kind. A spare request and a trade
+ * are never collapsed in either mode (a trade by its key, so two friends' offers never fold into one push).
  */
 import { formatCents } from "../decks/price";
 import { pushCopy, type LogResult } from "../copy/push";
 import { NO_DEVICE, saleWords, type SaleDevice } from "./sale-words";
-import type { AnnouncementFeedKind, LOG_PUSH_KIND, SEAT_PUSH_KIND } from "../feed/kinds";
+import type { AnnouncementFeedKind, LOG_PUSH_KIND, SEAT_PUSH_KIND, TradeEvent } from "../feed/kinds";
 import { logGameHref } from "../rule-zero/table-view";
 
 export type PushItem =
@@ -22,6 +22,8 @@ export type PushItem =
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null; printing?: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null; askable: boolean }
   | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no"; offer?: true }
+  /** A friend's trade event (friend trades PR 2): `theirs` and `yours` are the round's card names already joined (`cardList`); `image` is the friend's first card. */
+  | { kind: "trade"; key: string; batch: string; friend: string; publicId: string; trade: string; event: TradeEvent; theirs: string; yours: string; image: string | null }
   | { kind: "combo"; key: string; batch: string; oracleId: string; variantId: string | null; a: string; b: string; added: string; image: string | null }
   /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
   | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
@@ -60,7 +62,7 @@ export type CollapseMode = "live" | "release";
 export function collapse(items: readonly PushItem[], mode: CollapseMode): PushItem[][] {
   const groups = new Map<string, PushItem[]>();
   for (const item of items) {
-    const id = item.kind === "spare-request" || item.kind === "rule_zero_seat" || isSaleItem(item) ? `${item.kind}\u0000${item.key}` : item.kind === "rule_zero_log" ? `${item.kind}\u0000${item.batch}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
+    const id = item.kind === "spare-request" || item.kind === "trade" || item.kind === "rule_zero_seat" || isSaleItem(item) ? `${item.kind}\u0000${item.key}` : item.kind === "rule_zero_log" ? `${item.kind}\u0000${item.batch}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
     const g = groups.get(id);
     if (g) g.push(item);
     else groups.set(id, [item]);
@@ -115,6 +117,13 @@ export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DE
       }
       const words = first.answer ? c.one.spareAnswer[first.answer] : c.one.spareRequest;
       return home(`spare-request:${first.key}`, keys, words.title(first.friend, first.card), words.body, { route: "/friends", image: first.image });
+    }
+    case "trade": {
+      // Never collapsed: one group, one item, tagged by its key. A tap lands on the friend's Spares tab (the sheet mounts in PR 5).
+      const words = c.one.trade;
+      return home(`trade:${first.key}`, keys, words.title(first.event, first.friend), words.body(first.event, first.theirs, first.yours), {
+        route: `/friends/${encodeURIComponent(first.publicId)}/spares?trade=${encodeURIComponent(first.trade)}`, image: first.image,
+      });
     }
     case "rule_zero_seat": {
       // Never collapsed (one table, one reader): the table's own page, tagged by its key so two tables never replace each other.

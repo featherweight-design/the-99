@@ -17,7 +17,8 @@ vi.mock("../social/spare-offers", async (importOriginal) => ({
 }));
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, answerableKeys, splitLead, toViews, withAnswerDetails, withListTargets, withAsks, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
+import { loadTradeFeedSides, tradeFeedSidesQuery } from "../social/trade-feed";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, answerableKeys, splitLead, toViews, withAnswerDetails, withTradeSides, withListTargets, withAsks, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 import { named } from "../person-name/mint";
@@ -51,7 +52,7 @@ const row = (o: Record<string, unknown>) => ({
 describe("loadHomeFeed", () => {
   it("with every kind off after a choice, answers the off box, never the offer, and reads no feed (small items 6, item 6)", async () => {
     // Every kind turned off in Settings, the default-on spare requests included.
-    const declined = fake({}, {}, { declined: ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"] });
+    const declined = fake({}, {}, { declined: ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "trade", "combo"] });
     expect(await loadHomeFeed("u1", ON, NOW, declined)).toEqual({ chosen: true, on: [], items: [], unseen: 0, lead: null });
     expect((declined as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
@@ -66,7 +67,7 @@ describe("loadHomeFeed", () => {
     it("with nothing in the window, for a reader who never chose, names the kinds on for the quiet line (small items 5)", async () => {
       const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}));
       // `on`: spare requests already show here, so the quiet line over the offer line names them.
-      expect(feed).toEqual({ chosen: false, offer: OFFER, on: ["spare-request"] });
+      expect(feed).toEqual({ chosen: false, offer: OFFER, on: ["spare-request", "trade"] });
     });
 
     it("stands with items in the window: the first item no longer ends it", async () => {
@@ -86,10 +87,10 @@ describe("loadHomeFeed", () => {
     it("is gone after its ✕, and the empty window is the quiet line alone (no offer line under it), while the default-on kinds stay on as for a reader who never chose", async () => {
       const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask()] }, { offerClosedAt: new Date("2026-10-20T00:00:00Z") }));
       expect(feed?.chosen && feed.offer).toBeUndefined();
-      expect(feed?.chosen && feed.on).toEqual(["spare-request"]);
+      expect(feed?.chosen && feed.on).toEqual(["spare-request", "trade"]);
       expect(feed?.chosen && feed.lead?.key).toBe("item:s");
       const empty = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}, { offerClosedAt: new Date("2026-10-20T00:00:00Z") }));
-      expect(empty).toEqual({ chosen: true, on: ["spare-request"], items: [], unseen: 0, lead: null });
+      expect(empty).toEqual({ chosen: true, on: ["spare-request", "trade"], items: [], unseen: 0, lead: null });
     });
   });
 
@@ -206,6 +207,37 @@ describe("toViews", () => {
     expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: named("Peter") }, answer: null });
   });
 
+  it("draws a trade from its live sides and opens the friend's Spares with the trade", () => {
+    const c = (name: string) => ({ oracleId: name, name, image: null, art: null, colorIdentity: null });
+    const item = { kind: "trade", key: "item:tr", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p q", displayName: named("Ann") }, data: { trade: "t1", round: 2, event: "counter" }, answer: null } as FeedItem;
+    const tradeSides = new Map([["t1:2", { theirs: [c("Sol Ring")], yours: [c("Arcane Signet")] }]]);
+    expect(toViews([item], { ...empty, tradeSides })[0]).toMatchObject({
+      href: "/friends/p%20q/spares?trade=t1", card: c("Sol Ring"), trade: { id: "t1", event: "counter", theirs: [c("Sol Ring")], yours: [c("Arcane Signet")] },
+    });
+  });
+
+  it("keeps a trade's press but draws no trade when its sides are gone or its data is malformed", () => {
+    const base = { kind: "trade", key: "item:tr", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Ann") }, answer: null };
+    const gone = toViews([{ ...base, data: { trade: "t1", round: 1, event: "offer" } } as FeedItem], empty)[0];
+    expect(gone).toMatchObject({ href: "/friends/p/spares?trade=t1", card: null });
+    expect(gone.trade).toBeUndefined();
+    const sides = new Map([["t1:1", { theirs: [], yours: [] }]]);
+    expect(toViews([{ ...base, data: { trade: "t1", round: 1, event: "withdraw" } } as FeedItem], { ...empty, tradeSides: sides })[0].trade).toBeUndefined();
+    // A side with no cards, or a round that is not a whole number from 1, draws no trade either.
+    const c = (name: string) => ({ oracleId: name, name, image: null, art: null, colorIdentity: null });
+    const half = new Map([["t1:1", { theirs: [c("Sol Ring")], yours: [] }]]);
+    expect(toViews([{ ...base, data: { trade: "t1", round: 1, event: "offer" } } as FeedItem], { ...empty, tradeSides: half })[0].trade).toBeUndefined();
+    const whole = new Map([["t1:1", { theirs: [c("Sol Ring")], yours: [c("Arcane Signet")] }]]);
+    expect(toViews([{ ...base, data: { trade: "t1", round: 1.5, event: "offer" } } as FeedItem], { ...empty, tradeSides: whole })[0].trade).toBeUndefined();
+  });
+
+  it("drops a trade row with no sides, and keeps every other row (withTradeSides)", () => {
+    const drawn = view({ key: "item:a", kind: "trade", trade: { id: "t1", event: "offer", theirs: [], yours: [] } });
+    const bare = view({ key: "item:b", kind: "trade" });
+    const other = view({ key: "item:c", kind: "combo" });
+    expect(withTradeSides([drawn, bare, other]).map((v) => v.key)).toEqual(["item:a", "item:c"]);
+  });
+
   it("gives an answer to the reader's own ask its answer and a press to Your requests", () => {
     const item = { kind: "spare-request", key: "item:a", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Colin") }, data: { answer: "yes" }, answer: "yes" } as FeedItem;
     expect(toViews([item], empty)[0]).toMatchObject({ href: "/friends", answer: "yes", friend: { displayName: named("Colin") } });
@@ -311,6 +343,13 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
     expect(answerableKeys([{ ...seen, offer: true }], [incoming()], []).size).toBe(0);
   });
 
+  it("holds a seen trade offer or counter answerable, never an accept, a decline or a trade with no sides", () => {
+    const t = (key: string, event?: "offer" | "counter" | "accept" | "decline") =>
+      view({ key, kind: "trade", unseen: false, ...(event ? { trade: { id: "t1", event, theirs: [], yours: [] } } : {}) });
+    const open = answerableKeys([t("o", "offer"), t("c", "counter"), t("a", "accept"), t("d", "decline"), t("x")], [], []);
+    expect([...open].sort()).toEqual(["c", "o"]);
+  });
+
   it("attaches the lead's own ask, by card and asker", () => {
     const out = withAsks(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: named("Ann"), commander: null } }), incoming()]);
     expect(out.chosen && out.lead?.ask).toEqual({ id: "req-1", spare: 2, copies: 1, deckName: named("Dragons"), daysLeft: 13 });
@@ -393,7 +432,7 @@ describe("a Wizards post", () => {
     const data = { title: "Magic’s 2027 release schedule", excerpt: "Every set.", hero: null, url: URL_OK, promised: null, lists: 0 };
     const q = fake({}, { feed: [row({ kind: "wizards-news", key: "post:n1", created_at: NOW.toISOString(), name: data.title, data })] });
     const feed = await loadHomeFeed("u1", env, NOW, q);
-    expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news", "spare-request"], lead: null, unseen: 1 });
+    expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news", "spare-request", "trade"], lead: null, unseen: 1 });
     // The post does not end the offer (announcements call 3): the kinds still off ride under it.
     expect(feed?.chosen && feed.offer).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
     expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", "/out/wizards/n1"]]);
@@ -428,7 +467,7 @@ describe("a Wizards post", () => {
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
     const feed = await loadHomeFeed("u1", {} as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], on: ["spare-request"] });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], on: ["spare-request", "trade"] });
   });
 });
 
@@ -444,5 +483,29 @@ describe("withListTargets", () => {
     expect(out.map((v) => v.href)).toEqual(["/decks/precons?q=FDC", null, null]);
     expect(out.map((v) => v.outbound)).toEqual(["/out/wizards/d1", "/out/wizards/d1", "/out/wizards/d2"]);
     expect(out[1]).toBe(views[1]);
+  });
+});
+
+describe("tradeFeedSidesQuery (friend trades PR 2)", () => {
+  const q = text(tradeFeedSidesQuery("viewer", [{ trade: "t1", round: 1 }])).replace(/\s+/g, " ");
+  it("aliases and qualifies every table's columns", () => {
+    expect(q).toContain('join "trades" ft on ft.id = fr.trade_id');
+    expect(q).toContain('join "trade_cards" ftc on ftc.trade_id = ft.id and ftc.round = fr.round');
+    expect(q).toContain('join "cards" fcd on fcd.oracle_id = ftc.oracle_id');
+    expect(q).toContain("fcd.name as name");
+  });
+  it("makes the viewer a party and joins the friendship on the viewer in the same statement", () => {
+    expect(q).toContain("ft.proposer_user_id = $");
+    expect(q).toMatch(/from "friend_links" ffl where ffl\.user_id = \$\d+ and ffl\.friend_user_id = \(case when ft\.proposer_user_id/);
+  });
+  it("reads a round two items name once, so its cards never come back twice (loadTradeFeedSides)", async () => {
+    const seen: unknown[][] = [];
+    const exec = { execute: async (query: SQL) => (seen.push(new PgDialect().sqlToQuery(query).params), { rows: [] }) } as unknown as Parameters<typeof loadTradeFeedSides>[2];
+    await loadTradeFeedSides("viewer", [{ trade: "t1", round: 1 }, { trade: "t1", round: 1 }, { trade: "t1", round: 2 }], exec);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toContainEqual(["t1", "t1"]);
+    expect(seen[0]).toContainEqual([1, 2]);
+    expect(await loadTradeFeedSides("viewer", [], exec)).toEqual(new Map());
+    expect(seen).toHaveLength(1);
   });
 });

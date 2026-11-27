@@ -314,7 +314,7 @@ function Rows({ wide, items, upcoming, now, faces, zone, onShowAll, onDismiss, a
  * with everything on hears about one of each.
  */
 export const TEASE_ORDER: readonly FeedKind[] = [
-  "new-precon", "trade-match", "secret-lair", "spare-request", "price-drop", "new-set", "commander-decklists", "combo", "wizards-news",
+  "new-precon", "trade-match", "secret-lair", "spare-request", "trade", "price-drop", "new-set", "commander-decklists", "combo", "wizards-news",
 ];
 
 /** The two kinds the quiet box teases: the first two of `on` in `TEASE_ORDER`. Pure. */
@@ -353,6 +353,7 @@ function KindGlyph({ kind, faint = false }: { kind: FeedKind; faint?: boolean })
       return <NavIcon href="/decks" />;
     case "trade-match":
     case "spare-request":
+    case "trade":
       return <NavIcon href="/friends" />;
     case "new-set":
       return <NavIcon href="/collection" />;

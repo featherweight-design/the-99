@@ -1,0 +1,4 @@
+ALTER TABLE "feed_items" DROP CONSTRAINT "feed_items_kind_check";--> statement-breakpoint
+ALTER TABLE "push_outbox" DROP CONSTRAINT "push_outbox_kind_check";--> statement-breakpoint
+ALTER TABLE "feed_items" ADD CONSTRAINT "feed_items_kind_check" CHECK ("feed_items"."kind" in ('price-drop', 'trade-match', 'spare-request', 'trade', 'combo'));--> statement-breakpoint
+ALTER TABLE "push_outbox" ADD CONSTRAINT "push_outbox_kind_check" CHECK ("push_outbox"."kind" in ('new-set', 'new-precon', 'price-drop', 'trade-match', 'spare-request', 'trade', 'combo', 'secret-lair', 'commander-decklists', 'wizards-news', 'rule_zero_seat', 'rule_zero_log'));

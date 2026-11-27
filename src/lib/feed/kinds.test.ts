@@ -9,9 +9,9 @@ const at = (iso: string) => new Date(iso);
 const item = (kind: FeedKind, iso: string, unseen = true, key = `${kind}:${iso}`) => ({ kind, createdAt: at(iso), unseen, key });
 
 describe("the feed's kinds", () => {
-  it("is the closed set of nine, split into catalog and stored with nothing left over", () => {
+  it("is the closed set of ten, split into catalog and stored with nothing left over", () => {
     expect([...FEED_KINDS].sort()).toEqual([
-      "combo", "commander-decklists", "new-precon", "new-set", "price-drop", "secret-lair", "spare-request", "trade-match", "wizards-news",
+      "combo", "commander-decklists", "new-precon", "new-set", "price-drop", "secret-lair", "spare-request", "trade", "trade-match", "wizards-news",
     ]);
     expect([...CATALOG_KINDS, ...STORED_KINDS].sort()).toEqual([...FEED_KINDS].sort());
     expect(isFeedKind("combo")).toBe(true);
@@ -22,7 +22,7 @@ describe("the feed's kinds", () => {
   });
 
   it("orders the lead story by the boards' rule, every kind once there or in NEVER_LEADS", () => {
-    expect(LEAD_PRIORITY).toEqual(["spare-request", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair"]);
+    expect(LEAD_PRIORITY).toEqual(["spare-request", "trade", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair"]);
     expect(NEVER_LEADS).toEqual(["wizards-news"]);
     expect([...LEAD_PRIORITY, ...NEVER_LEADS].sort()).toEqual([...FEED_KINDS].sort());
   });
@@ -33,15 +33,15 @@ describe("the feed's kinds", () => {
       expect(isDefaultOn(k)).toBe(true);
       expect(isAnnouncementKind(k)).toBe(true);
     }
-    expect(DEFAULT_ON_KINDS).toEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
+    expect(DEFAULT_ON_KINDS).toEqual(["spare-request", "trade", "secret-lair", "commander-decklists", "wizards-news"]);
     expect(isDefaultOn("new-set")).toBe(false);
     expect(isAnnouncementKind("new-set")).toBe(false);
     expect(FEED_KINDS.slice(0, 5)).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 
-  it("keeps the outbox's kinds every feed kind, in the order migration 0193's check was generated in", () => {
+  it("keeps the outbox's kinds every feed kind, in the order migrations 0193 and 0277 generated the check in", () => {
     expect([...PUSH_OUTBOX_KINDS].sort()).toEqual([...FEED_KINDS].sort());
-    expect(PUSH_OUTBOX_KINDS).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo", "secret-lair", "commander-decklists", "wizards-news"]);
+    expect(PUSH_OUTBOX_KINDS).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "trade", "combo", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 });
 
@@ -91,6 +91,23 @@ describe("leadStory", () => {
     const lead = leadStory([item("price-drop", "2026-10-20T10:00:00Z"), item("price-drop", "2026-10-21T10:00:00Z")]);
     expect(lead?.createdAt.toISOString()).toBe("2026-10-21T10:00:00.000Z");
     expect(leadStory([item("combo", "2026-10-20T10:00:00Z", false)])).toBeNull();
+  });
+
+  it("waits on a trade offer or counter only: an accept or decline is ordinary news", () => {
+    const t = (event: string, key: string) => ({ ...item("trade", "2026-10-22T10:00:00Z", true, key), data: { event } });
+    const old = item("new-set", "2026-10-23T10:00:00Z");
+    expect(leadStory([old, t("offer", "a")])?.kind).toBe("trade");
+    expect(leadStory([old, t("counter", "b")])?.kind).toBe("trade");
+    expect([t("accept", "c"), t("decline", "d")].every((i) => leadStory([i]) !== null)).toBe(true);
+    expect([old, t("accept", "c")].sort(feedOrder)[0].kind).toBe("new-set");
+    expect([old, t("offer", "a")].sort(feedOrder)[0].kind).toBe("trade");
+  });
+
+  it("leads with a waiting trade offer over a newer trade decline", () => {
+    const offer = { ...item("trade", "2026-10-22T10:00:00Z", true, "offer"), data: { event: "offer" } };
+    const decline = { ...item("trade", "2026-10-22T11:00:00Z", true, "decline"), data: { event: "decline" } };
+    expect(leadStory([offer, decline])?.key).toBe("offer");
+    expect(leadStory([decline, offer])?.key).toBe("offer");
   });
 
   it("never leads with an answer to the reader's own spare request, however new", () => {

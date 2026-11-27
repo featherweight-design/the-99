@@ -31,9 +31,10 @@ import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadIncomingOffers, offerAsAsk, type IncomingOffer } from "../social/spare-offers";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
+import { loadTradeFeedSides, tradeFeedKey, type TradeFeedSides } from "../social/trade-feed";
 import { availableFeedKinds } from "./flag";
 import type { FeedFriend } from "../social/feed-items";
-import { leadStory, type FeedKind } from "./kinds";
+import { isTradeEvent, leadStory, TRADE_WAITING_EVENTS, type FeedKind, type TradeEvent } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
 import type { DropSale } from "./drop-lines";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
@@ -104,6 +105,12 @@ export type FeedView = {
    * False on every other item.
    */
   askable: boolean;
+  /**
+   * A trade item (friend trades PR 2): the event it tells, the trade's id and the round's cards, read live (`trade-feed.ts`):
+   * `theirs` is what the friend gives, `yours` what the reader gives. Absent on every other kind, and on a trade whose
+   * sides are gone (the trade or the friendship), which drops from a push and draws no row.
+   */
+  trade?: { id: string; event: TradeEvent; theirs: FeedCard[]; yours: FeedCard[] };
   /** Home only (`withAnswerDetails`): what the answer's line says. Absent on a push. */
   answerDetail?: AnswerDetail;
 };
@@ -250,6 +257,8 @@ export function toViews(
     cards: Map<string, FeedCard>;
     /** A trade match's press asks (always, since `SOCIAL_FRIENDS_ENABLED` retired). */
     askable?: boolean;
+    /** Each trade item's round cards, by `tradeFeedKey` (`loadTradeFeedSides`). Optional: the other readers of `toViews` carry no trade. */
+    tradeSides?: Map<string, TradeFeedSides>;
   },
   /** The reader's store: a price drop's press goes there. The drops read are already that store's (`storedFeedBranch`). */
   store: Store = "manapool",
@@ -309,6 +318,16 @@ export function toViews(
       case "trade-match":
         // The card's modal opens on landing (signature card call 9): `?spare=` names it.
         return { ...base, card, friend, askable: found.askable === true, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}/spares${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
+      case "trade": {
+        const tradeId = typeof item.data.trade === "string" ? item.data.trade : null;
+        const round = isTradeRound(item.data.round) ? item.data.round : null;
+        const event = item.data.event;
+        const sides = tradeId !== null && round !== null ? found.tradeSides?.get(tradeFeedKey(tradeId, round)) : undefined;
+        const href = friend && tradeId ? `/friends/${encodeURIComponent(friend.publicId)}/spares?trade=${encodeURIComponent(tradeId)}` : null;
+        // Missing sides (the trade or the friendship is gone, or the item is malformed): no `trade`, and `withTradeSides` drops the row.
+        if (!sides || sides.theirs.length === 0 || sides.yours.length === 0 || !tradeId || !isTradeEvent(event)) return { ...base, card: null, friend, href };
+        return { ...base, card: sides.theirs[0] ?? null, friend, href, trade: { id: tradeId, event, theirs: sides.theirs, yours: sides.yours } };
+      }
       case "combo": {
         const c = comboPieces(item.data);
         return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added, variantId: item.variantId } };
@@ -336,13 +355,19 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
       }),
     ),
   ];
+  const tradeRefs = items.flatMap((i) => {
+    if (i.kind !== "trade") return [];
+    const { trade, round } = i.data;
+    return typeof trade === "string" && isTradeRound(round) ? [{ trade, round }] : [];
+  });
   const run = <R extends Record<string, unknown>>(query: SQL, when: boolean) => (when ? q.execute<R>(query).then((r) => r.rows as R[]) : Promise.resolve([] as R[]));
-  const [setRows, preconRows, ownedRows, cardRows, art] = await Promise.all([
+  const [setRows, preconRows, ownedRows, cardRows, art, tradeSides] = await Promise.all([
     run<CardRow & { code: string; size: number | null }>(setCardsQuery(codes), codes.length > 0),
     run<CardRow & { file_name: string }>(preconCommandersQuery(files), files.length > 0),
     run<{ file_name: string; total: number; owned: number }>(preconOwnedQuery(userId, files), files.length > 0),
     run<CardRow>(feedCardsQuery(ids), ids.length > 0),
     chainArt(userId, null, ids, store),
+    loadTradeFeedSides(userId, tradeRefs, q),
   ]);
   return {
     sets: new Map(setRows.map((r) => [r.code, { ...toCard(r), size: r.size === null ? null : Number(r.size) }])),
@@ -350,6 +375,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
     owned: new Map(ownedRows.map((r) => [r.file_name, { owned: Number(r.owned), of: Number(r.total) }])),
     cards: new Map(cardRows.map((r) => [r.oracle_id, { ...toCard(r), image: art.get(r.oracle_id) ?? r.image }])),
     askable: true,
+    tradeSides,
   };
 }
 
@@ -390,7 +416,7 @@ export async function loadHomeFeed(
     waiting ? loadIncomingAsks(userId, env, now, q) : Promise.resolve([] as IncomingAsk[]),
     waiting ? loadIncomingOffers(userId, now) : Promise.resolve([] as IncomingOffer[]),
   ]);
-  const views = withListTargets(toViews(items, found, store), targets);
+  const views = withTradeSides(withListTargets(toViews(items, found, store), targets));
   const incoming = [...asks, ...offers.map(offerAsLeadAsk)];
   const open = answerableKeys(views, asks, offers.map(offerAsLeadAsk));
   const feed = offer.length > 0 ? { ...splitLead(views, on, open), offer } : splitLead(views, on, open);
@@ -460,10 +486,26 @@ export function withAsks(feed: HomeFeed, asks: readonly (IncomingAsk & { offer?:
   return { ...feed, lead: feed.lead && attach(feed.lead), items: feed.items.map(attach) };
 }
 
-/** The keys of the spare-request rows whose ask or offer is still open to answer (the read holds only those). Pure, for the tests. */
+/** A trade round's number as the feed stores it: a whole number from 1. */
+const isTradeRound = (r: unknown): r is number => typeof r === "number" && Number.isInteger(r) && r >= 1;
+
+/** Drops a trade row whose sides could not be read: it would draw a bare kicker, and lead or count as unseen. Pure, for the tests. */
+export function withTradeSides(views: FeedView[]): FeedView[] {
+  return views.filter((v) => v.kind !== "trade" || v.trade !== undefined);
+}
+
+/**
+ * The keys of the rows still open to answer: a spare-request row whose ask or offer is still open (the read holds only
+ * those), and a trade offer or counter with its sides drawn (the feed's `standing` already holds it to an open round
+ * offered by the friend, friend trades PR 2). Pure, for the tests.
+ */
 export function answerableKeys(views: readonly FeedView[], asks: readonly IncomingAsk[], offers: readonly IncomingAsk[]): Set<string> {
   const keys = new Set<string>();
   for (const v of views) {
+    if (v.kind === "trade") {
+      if (v.trade && TRADE_WAITING_EVENTS.includes(v.trade.event)) keys.add(v.key);
+      continue;
+    }
     if (v.kind !== "spare-request" || v.answer || !v.card || !v.friend) continue;
     const { card, friend } = v;
     if ((v.offer ? offers : asks).some((a) => a.oracleId === card.oracleId && a.asker.publicId === friend.publicId)) keys.add(v.key);

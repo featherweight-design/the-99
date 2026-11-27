@@ -9,7 +9,7 @@ const q = sql.replace(/\s+/g, " ");
 describe("storedFeedBranch", () => {
   it("reads only the viewer's own rows of the kinds asked for", () => {
     expect(q).toMatch(/where fi\.user_id = \$1 and fi\.kind = any\(\$2::text\[\]\)/);
-    expect(params).toEqual(["viewer_1", ["trade-match", "combo", "spare-request"], ["spare-request", "secret-lair", "commander-decklists", "wizards-news"], "2026-10-08T12:00:00.000Z"]);
+    expect(params).toEqual(["viewer_1", ["trade-match", "combo", "spare-request"], ["spare-request", "trade", "secret-lair", "commander-decklists", "wizards-news"], "2026-10-08T12:00:00.000Z", "2026-10-08T12:00:00.000Z"]);
   });
 
   it("left joins the reader's prefs and gates each kind on its effective enabledAt: the stamp, else always for a default-on kind not declined (G4)", () => {
@@ -24,6 +24,15 @@ describe("storedFeedBranch", () => {
 
   it("keeps an ANSWER to the reader's own ask while that ask still holds the answer it reports and is not cleared, the reader as asker", () => {
     expect(q).toContain(`then fsr.status = fi.data ->> 'answer' and (case when fi.data ->> 'offer' is not null then fsr.holder_user_id else fsr.asker_user_id end) = fi.user_id and (fi.data ->> 'offer' is not null or fsr.asker_cleared_at is null) else`);
+  });
+
+  it("keeps a trade item only while its event still stands, the reader a party and the item's friend the other party (friend trades PR 2)", () => {
+    // Compared as text, never cast: a malformed row reads as not standing instead of failing the whole feed.
+    expect(q).toContain(`and (fi.kind <> 'trade' or exists ( select 1 from "trades" ft where ft.id::text = fi.data ->> 'trade' and (ft.proposer_user_id = fi.user_id or ft.recipient_user_id = fi.user_id) and fi.friend_user_id = (case when ft.proposer_user_id = fi.user_id then ft.recipient_user_id else ft.proposer_user_id end)`);
+    // An offer or counter: open, on the round the item names, offered by the other party, inside its fourteen days.
+    expect(q).toContain(`then ft.status = 'open' and ft.round::text = fi.data ->> 'round' and ft.offered_by_user_id <> fi.user_id and ft.created_at > $5::timestamptz`);
+    expect(q).toContain(`when fi.data ->> 'event' = 'accept' then ft.status in ('accepted', 'traded') when fi.data ->> 'event' = 'decline' then ft.status = 'declined' else false end`);
+    expect(q).not.toMatch(/fi\.data ->> 'trade'\)::uuid|fi\.data ->> 'round'\)::int/);
   });
 
   it("re-joins the live spare grant for a trade match: the friendship, the friend's share, both in that pod", () => {

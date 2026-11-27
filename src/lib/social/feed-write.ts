@@ -22,7 +22,7 @@ import { kindEnabledAt } from "../feed/kind-gate";
 import { enqueuePushQuery } from "../push/enqueue";
 import { kickPush } from "../push/kick";
 import { pushKindEnabledAt } from "../push/kind-gate";
-import { isStoredKind, type StoredKind } from "../feed/kinds";
+import { isStoredKind, isTradeEvent, type StoredKind } from "../feed/kinds";
 
 export type FeedItemInput = {
   userId: string;
@@ -57,6 +57,16 @@ export function feedItemProblem(input: FeedItemInput): string | null {
   if (input.friendUserId != null && input.friendUserId === input.userId) return "an item cannot name the reader as the friend";
   if ((input.kind === "trade-match" || input.kind === "spare-request") && (!input.friendUserId || !input.oracleId)) {
     return `${input.kind} needs a friend and a card`;
+  }
+  if (input.kind === "trade") {
+    // Friend trades PR 2: the item names the other party and the trade round, never a card (the card lists are read
+    // live from `trade_cards`, `trade-feed.ts`, because a revise rewrites a round in place).
+    if (!input.friendUserId) return "trade needs a friend";
+    if (input.oracleId != null) return "trade names no card";
+    const d = input.data ?? {};
+    if (typeof d.trade !== "string" || !UUID.test(d.trade)) return "trade needs data.trade as a uuid";
+    if (typeof d.round !== "number" || !Number.isInteger(d.round) || d.round < 1) return "trade needs data.round as a positive integer";
+    if (typeof d.event !== "string" || !isTradeEvent(d.event)) return "trade needs data.event of offer, counter, accept or decline";
   }
   if (input.kind === "price-drop" && !input.oracleId) return "price-drop needs a card";
   if (input.kind === "combo" && !input.variantId) return "combo needs a variant";

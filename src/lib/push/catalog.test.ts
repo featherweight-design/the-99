@@ -85,7 +85,7 @@ describe("the readers the cron looks at", () => {
     expect(flat(r.sql)).toBe(
       `select distinct cps.user_id as user_id from "push_subscriptions" cps left join "user_prefs" cup on cup.user_id = cps.user_id where ${[1, 5, 9, 13, 17].map(gate).join(" or ")}`,
     );
-    const defaults = ["spare-request", "secret-lair", "commander-decklists", "wizards-news"];
+    const defaults = ["spare-request", "trade", "secret-lair", "commander-decklists", "wizards-news"];
     // Every catalog kind, Wizards' three posts' kinds included (Announcements UI 3b).
     expect(r.params).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news"].flatMap((k) => [k, k, defaults, k]));
   });

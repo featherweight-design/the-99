@@ -20,14 +20,14 @@ export const ANNOUNCEMENT_KINDS = ["secret-lair", "commander-decklists", "wizard
 export type AnnouncementFeedKind = (typeof ANNOUNCEMENT_KINDS)[number];
 
 /** In Settings' order: the three Announcements kinds sit after New precons (handoff README, call 7). */
-export const FEED_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS, "price-drop", "trade-match", "spare-request", "combo"] as const;
+export const FEED_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS, "price-drop", "trade-match", "spare-request", "trade", "combo"] as const;
 
 export type FeedKind = (typeof FEED_KINDS)[number];
 
 export const CATALOG_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 export type CatalogKind = (typeof CATALOG_KINDS)[number];
 
-export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "combo"] as const satisfies readonly FeedKind[];
+export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "trade", "combo"] as const satisfies readonly FeedKind[];
 export type StoredKind = (typeof STORED_KINDS)[number];
 
 const ANNOUNCEMENT_SET = new Set<string>(ANNOUNCEMENT_KINDS);
@@ -35,9 +35,9 @@ export const isAnnouncementKind = (k: unknown): k is AnnouncementFeedKind => typ
 
 /**
  * Every kind a `push_outbox` row may carry (its `push_outbox_kind_check`): every feed kind. Spelled in the order the
- * constraint was generated in (migration 0193), so the schema renders the same check and no migration follows.
+ * constraint was generated in (migration 0193, then `trade` after `spare-request` in 0277), so the schema renders the same check as the migration.
  */
-export const PUSH_OUTBOX_KINDS = ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
+export const PUSH_OUTBOX_KINDS = ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "trade", "combo", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 
 /**
  * The seat notice's push kind (Rule 0 revisions, item 6): a `push_outbox` kind that is NOT a feed kind. It is a toast plus a
@@ -61,7 +61,7 @@ export const PUSH_OUTBOX_ALL_KINDS = [...PUSH_OUTBOX_KINDS, SEAT_PUSH_KIND, LOG_
  * answer, so it is heard of by default, and Wizards' own announcements start on (handoff README, call 7). A default-on kind is on while it is stamped in `feed_kinds` or absent from both
  * `feed_kinds` and `feed_kinds_declined`; turned off, it moves to `feed_kinds_declined`. Every other kind starts off.
  */
-export const DEFAULT_ON_KINDS = ["spare-request", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
+export const DEFAULT_ON_KINDS = ["spare-request", "trade", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 export const isDefaultOn = (k: FeedKind): boolean => (DEFAULT_ON_KINDS as readonly FeedKind[]).includes(k);
 
 const KIND_SET = new Set<string>(FEED_KINDS);
@@ -75,7 +75,7 @@ export const isStoredKind = (k: unknown): k is StoredKind => typeof k === "strin
  * Home, waiting on you first. Every kind appears exactly once here or in `NEVER_LEADS`.
  */
 export const LEAD_PRIORITY: readonly FeedKind[] = [
-  "spare-request", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair",
+  "spare-request", "trade", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair",
 ];
 
 /** The kinds that are only ever a row (Announcements call 2: Wizards news never leads). */
@@ -94,25 +94,46 @@ export const FEED_WINDOW_DAYS = 14;
  * The kinds that wait on the reader's answer: they sort ahead of everything newer ("Order: waiting on you
  * first, then newest").
  */
-export const WAITING_KINDS: readonly FeedKind[] = ["spare-request"];
+export const WAITING_KINDS: readonly FeedKind[] = ["spare-request", "trade"];
 
 /**
  * An item of a waiting kind that waits on nothing: the answer to the reader's OWN spare request (`answer` set, the
  * `answerOf` marker). It reads as an ordinary item, newest first, and never leads (the board draws it as a row).
+ * A `trade` item waits PER EVENT (friend trades PR 2): an `offer` or a `counter` waits on the reader's answer; an
+ * `accept` or a `decline` is news about the reader's own trade, so it never sorts first. `data` is the stored item's
+ * payload, read only for `data.event`; a drawn view (`FeedView`) carries the same fact as `trade.event`.
  */
-type MaybeAnswer = { answer?: string | null };
-const waits = (i: { kind: FeedKind } & MaybeAnswer): boolean => WAITING_KINDS.includes(i.kind) && !i.answer;
+type MaybeAnswer = { answer?: string | null; data?: Record<string, unknown>; trade?: { event: string } };
+
+/** The four events a `trade` feed item tells (friend trades PR 2): the item's `data.event`. */
+export const TRADE_EVENTS = ["offer", "counter", "accept", "decline"] as const;
+export type TradeEvent = (typeof TRADE_EVENTS)[number];
+export const isTradeEvent = (v: unknown): v is TradeEvent => typeof v === "string" && (TRADE_EVENTS as readonly string[]).includes(v);
+
+/** The trade events that wait on the reader's answer. */
+export const TRADE_WAITING_EVENTS: readonly string[] = ["offer", "counter"];
+
+const waits = (i: { kind: FeedKind } & MaybeAnswer): boolean => {
+  if (!WAITING_KINDS.includes(i.kind)) return false;
+  if (i.kind === "trade") {
+    const event = i.trade?.event ?? i.data?.event;
+    return typeof event === "string" && TRADE_WAITING_EVENTS.includes(event);
+  }
+  return !i.answer;
+};
 
 /**
  * The lead story: the first unseen item by `LEAD_PRIORITY`, newest first within a kind; null when nothing is unseen.
  * `answerable` are the keys of waiting asks and offers still open to answer: they lead seen or not.
- * An answer item never leads, nor a kind in `NEVER_LEADS`.
+ * An answer item never leads, nor a kind in `NEVER_LEADS`. A trade `accept` or `decline` leads like any unseen news
+ * (by `LEAD_PRIORITY`) but is never `open`: only an `offer` or a `counter` waits, and within one kind a waiting item
+ * leads ahead of a newer one that does not.
  */
 export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt: Date; key?: string } & MaybeAnswer>(items: readonly T[], answerable: ReadonlySet<string> = new Set()): T | null {
   let best: T | null = null;
   for (const item of items) {
     // An ask that still waits on the reader leads seen or not (Q16 A): unseen is the rule for news only.
-    const open = item.key !== undefined && answerable.has(item.key) && WAITING_KINDS.includes(item.kind);
+    const open = item.key !== undefined && answerable.has(item.key) && waits(item);
     if ((!item.unseen && !open) || item.answer || NEVER_LEADS.includes(item.kind)) continue;
     if (!best) {
       best = item;
@@ -120,7 +141,9 @@ export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt
     }
     const a = leadRank(item.kind);
     const b = leadRank(best.kind);
-    if (a < b || (a === b && item.createdAt.getTime() > best.createdAt.getTime())) best = item;
+    // Within one kind, an item waiting on the reader beats news (a trade offer over a newer decline), then newest.
+    const w = (waits(item) ? 1 : 0) - (waits(best) ? 1 : 0);
+    if (a < b || (a === b && (w > 0 || (w === 0 && item.createdAt.getTime() > best.createdAt.getTime())))) best = item;
   }
   return best;
 }

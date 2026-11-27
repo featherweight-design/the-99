@@ -13,6 +13,17 @@ const post = (key: string, title: string, kind: "secret-lair" | "commander-deckl
   ({ kind, key: `post:${key}`, batch: `${kind}:2026-10-29`, title, excerpt: "A drop of five.", image: "https://images.ctfassets.net/h.jpg", href: `/out/wizards/${key}`, ...over });
 const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, variantId: "1-2", a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
 
+const tradeItem = (key: string, friend: string): PushItem => ({ kind: "trade", key, batch: "t-1", friend, publicId: "p-1", trade: "t1", event: "offer", theirs: "Sol Ring", yours: "Arcane Signet", image: null });
+
+describe("a trade push (friend trades PR 2)", () => {
+  it("lands on the friend's Spares with the trade, tagged by key", () => {
+    expect(toMessage([tradeItem("k1", "Ann")])).toMatchObject({ route: "/friends/p-1/spares?trade=t1", tag: "trade:k1" });
+  });
+  it("never folds two trade items into one push", () => {
+    expect(collapse([tradeItem("k1", "Ann"), tradeItem("k2", "Bo")], "live")).toHaveLength(2);
+  });
+});
+
 describe("one item of each kind (the handoff's table)", () => {
   it("tells an offer and its answer in their own words, never as an ask", () => {
     const card = "Lathliss, Dragon Queen";

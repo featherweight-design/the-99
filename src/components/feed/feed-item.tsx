@@ -19,6 +19,8 @@ import { storeCopy } from "../../lib/copy/store";
 import { STORE_INFO } from "../../lib/stores/info";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
+import { cardList, tradeCopy } from "../../lib/copy/trades";
+import { TRADE_WAITING_EVENTS } from "../../lib/feed/kinds";
 import { PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { formatCents } from "../../lib/decks/price";
 import type { FeedView } from "../../lib/feed/home";
@@ -88,6 +90,17 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
       }
       if (item.answer) return { ...answerText(item, friend, card), press: c.press.answer };
       return { title: c.title.spareRequest(friend, card), line: c.line.spareRequest, press: null };
+    case "trade": {
+      // Friend trades PR 2: the event picks the title and the line; a trade whose sides are gone has no `trade`, and draws
+      // the kicker alone with no press (the href stays, the row is not a dead link).
+      const t = item.trade;
+      const f = tradeCopy.feed;
+      if (!t) return { title: c.kicker.trade, line: null, press: null };
+      const theirs = cardList(t.theirs.map((x) => x.name));
+      const yours = cardList(t.yours.map((x) => x.name));
+      const line = t.event === "offer" ? f.offerLine(theirs, yours) : t.event === "counter" ? f.counterLine(theirs, yours) : t.event === "accept" ? f.acceptLine : f.declineLine;
+      return { title: f.title(t.event, item.friend?.displayName ?? ""), line, press: t.event === "counter" ? f.pressCounter : f.press };
+    }
     case "combo":
       return {
         title: item.combo ? c.title.combo(item.combo.pieces[0], item.combo.pieces[1]) : c.kicker.combo,
@@ -343,7 +356,12 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
   if (item.post) return <PostPicture item={item} box={box} />;
   const art = (
     <>
-      <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
+      {/* A trade: the reader's first card fanned behind the friend's (friend trades handoff, the feed item). */}
+      {item.trade?.yours[0]?.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.trade.yours[0].image} alt="" data-feed-trade-yours className="absolute -left-[5px] top-[1px] block h-[60px] w-[43px] -rotate-[9deg] rounded-[3px] object-cover opacity-90 shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
+      ) : null}
+      <span className={`block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${item.trade ? "relative rotate-[3deg]" : ""}`}>
         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
       </span>
       {item.friend && (
@@ -411,7 +429,8 @@ export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, onComboCl
   const two = seesLists(item);
   // A new-combo item: See the combo (the row's stretched press) beside See your combos, the Collection's combos view.
   const comboView = item.kind === "combo" && item.combo ? comboViewHref(item.combo.variantId) : null;
-  const waiting = item.kind === "spare-request" && !item.answer;
+  // A spare request waits until answered; a trade waits per event (`TRADE_WAITING_EVENTS`: an offer or a counter).
+  const waiting = (item.kind === "spare-request" && !item.answer) || (item.kind === "trade" && !!item.trade && TRADE_WAITING_EVENTS.includes(item.trade.event));
   // Q18 A: a waiting ask or offer answers in its own row, and the receipt lands in place of its lines.
   const ask = waiting ? item.ask ?? null : null;
   const [answered, setAnswered] = useState<Answer | null>(null);

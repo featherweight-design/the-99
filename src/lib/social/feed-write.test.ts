@@ -15,6 +15,21 @@ describe("feedItemProblem", () => {
     expect(feedItemProblem({ userId: "u", kind: "trade-match", dedupeKey: "f:c", oracleId: CARD, friendUserId: "f" })).toBeNull();
   });
 
+  it("accepts a trade item with a friend, no card, and a uuid, a round and an event", () => {
+    const T = "6f1c2d3e-4b5a-4c6d-8e7f-0a1b2c3d4e5f";
+    const base = { userId: "u", kind: "trade", dedupeKey: `${T}:1:offer`, friendUserId: "f" } as const;
+    for (const event of ["offer", "counter", "accept", "decline"]) {
+      expect(feedItemProblem({ ...base, data: { trade: T, round: 1, event } })).toBeNull();
+    }
+    expect(feedItemProblem({ ...base, friendUserId: null, data: { trade: T, round: 1, event: "offer" } })).toMatch(/friend/);
+    expect(feedItemProblem({ ...base, oracleId: CARD, data: { trade: T, round: 1, event: "offer" } })).toMatch(/no card/);
+    expect(feedItemProblem({ ...base, data: { trade: "nope", round: 1, event: "offer" } })).toMatch(/data\.trade/);
+    expect(feedItemProblem({ ...base, data: { trade: T, round: 0, event: "offer" } })).toMatch(/data\.round/);
+    expect(feedItemProblem({ ...base, data: { trade: T, round: 1.5, event: "offer" } })).toMatch(/data\.round/);
+    expect(feedItemProblem({ ...base, data: { trade: T, round: 1, event: "withdraw" } })).toMatch(/data\.event/);
+    expect(feedItemProblem({ ...base })).toMatch(/data\.trade/);
+  });
+
   it("refuses a catalog kind, a missing subject, a self-naming friend and a bad key", () => {
     expect(feedItemProblem({ userId: "u", kind: "new-set" as never, dedupeKey: "x" })).toMatch(/not a stored kind/);
     expect(feedItemProblem({ userId: "u", kind: "combo", dedupeKey: "x" })).toMatch(/variant/);
@@ -36,7 +51,7 @@ describe("recordFeedItemQuery", () => {
   it("writes only while the kind is ON and the item is newer than its enabledAt (`kindEnabledAt`): a kind that is off is not written", () => {
     expect(q).toMatch(/where \(\$\d+::timestamptz > coalesce\(\(wup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\) and not \(\$\d+::text = any\(coalesce\(wup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
     expect(params.filter((p) => p === "combo")).toHaveLength(11); // the row's kind, the feed stamp (x3), the push stamp (x3), and the outbox row's kind and its push stamp (x4)
-    expect(params).toContainEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
+    expect(params).toContainEqual(["spare-request", "trade", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 
   it("also writes while the reader has a DEVICE and the item is newer than the kind's PUSH stamp, with the feed kind off", () => {

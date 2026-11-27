@@ -4,7 +4,8 @@
 // formatted (`formatCents`); this module formats nothing but counts.
 import { feedCopy } from "./feed";
 import { spareCopy } from "./social";
-import type { AnnouncementFeedKind } from "../feed/kinds";
+import { tradeCopy } from "./trades";
+import type { AnnouncementFeedKind, TradeEvent } from "../feed/kinds";
 
 const t = feedCopy.home.title;
 
@@ -25,6 +26,15 @@ export const pushCopy = {
       bodyAsk: (friend: string) => `${feedCopy.home.line.tradeMatch} Ask ${friend} for it.`,
     },
     spareRequest: { title: t.spareRequest, body: feedCopy.home.line.spareRequest },
+    /** A friend's trade event (friend trades PR 2): the feed's own title with the friend as a plain string, and the row's line as the body. `theirs` and `yours` are already `cardList`s. */
+    trade: {
+      title: tradeCopy.feed.title,
+      body: (event: TradeEvent, theirs: string, yours: string) =>
+        event === "offer" ? tradeCopy.feed.offerLine(theirs, yours)
+          : event === "counter" ? tradeCopy.feed.counterLine(theirs, yours)
+            : event === "accept" ? tradeCopy.feed.acceptLine
+              : tradeCopy.feed.declineLine,
+    },
     /** A friend's offer of a spare the reader wants (You have it): who offers, what, and where to answer. */
     spareOffer: { title: (friend: string, card: string) => `${friend} is offering you ${card}`, body: "Answer in Friends." },
     /** The wanter's answer to the reader's offer. */

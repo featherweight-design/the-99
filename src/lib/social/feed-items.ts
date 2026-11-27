@@ -15,6 +15,10 @@
  *   used as the dedupe key) is still open and unexpired: answering it, or fourteen days passing, drops it with no write.
  *   An ANSWER to the reader's own ask ("Colin can spare Jace", `answerOf`) stands while that ask still holds the answer
  *   it reports and the asker has not cleared it from Your requests (where its press leads), and the holder is still a friend.
+ * - a TRADE item ("Ann offers a trade", friend trades PR 2) stands per event, by the trade id in `data.trade`, the reader a
+ *   party: an `offer` or `counter` while the trade is still open, unexpired, on that round and offered by the other
+ *   person; an `accept` while the trade is accepted or traded; a `decline` while it is declined (its 14 days are the
+ *   feed window itself). A withdrawn, rescinded, expired or answered offer drops with no write.
  * An unfriend, a pod left, a share turned off or a card kept back drops the row from the feed and from both badges at once, with no
  * write. What comes back names the friend by `social_profiles.public_id` and display name, never a Clerk id.
  *
@@ -22,8 +26,9 @@
  * Friends count are each one statement.
  */
 import { sql, type SQL } from "drizzle-orm";
-import { feedDismissals, feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, spareRequests, userPrefs } from "../../db/schema";
+import { feedDismissals, feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, spareRequests, trades, userPrefs } from "../../db/schema";
 import { openFloor } from "./spare-request-rules";
+import { tradeOpenFloor } from "./trade-rules";
 import { kindEnabledAt } from "../feed/kind-gate";
 import type { StoredKind } from "../feed/kinds";
 import type { ThirdPartyName } from "../person-name/brand";
@@ -63,6 +68,17 @@ function standing(viewerId: string, now: Date, storeOn: boolean): SQL {
             else fsr.status = 'open'
               and (case when fi.data ->> 'offer' is not null then fsr.asker_user_id else fsr.holder_user_id end) = fi.user_id
               and fsr.created_at > ${openFloor(now).toISOString()}::timestamptz end)))
+      and (fi.kind <> 'trade' or exists (
+        select 1 from ${trades} ft
+        where ft.id::text = fi.data ->> 'trade'
+          and (ft.proposer_user_id = fi.user_id or ft.recipient_user_id = fi.user_id)
+          and fi.friend_user_id = (case when ft.proposer_user_id = fi.user_id then ft.recipient_user_id else ft.proposer_user_id end)
+          and (case when fi.data ->> 'event' in ('offer', 'counter')
+            then ft.status = 'open' and ft.round::text = fi.data ->> 'round' and ft.offered_by_user_id <> fi.user_id
+              and ft.created_at > ${tradeOpenFloor(now).toISOString()}::timestamptz
+            when fi.data ->> 'event' = 'accept' then ft.status in ('accepted', 'traded')
+            when fi.data ->> 'event' = 'decline' then ft.status = 'declined'
+            else false end)))
       and (fi.friend_user_id is null or (sp.public_id is not null and (
         (fi.kind = 'trade-match' and exists (
           select 1 from ${friendLinks} gl
