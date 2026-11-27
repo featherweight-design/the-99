@@ -2,6 +2,7 @@
 
 import { captureClientError } from "../../lib/sentry/capture-client";
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
+import { CopyLines } from "../copy-lines";
 
 import type { ApplySetActionResult } from "../../app/decks/tuning-v2-actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -526,10 +527,10 @@ export function SuggestedChangesRun({
     const reached = outcome?.kind === "reached" ? outcome : null;
     meta = reached ? (
       <>
-        {`${sc.bar.stays} · `}
+        <span>{sc.bar.stays}</span>{" · "}
         <Emph text={bracketText(reached)!} part={`${reached.to} · ${BRACKET_NAMES[reached.to as Bracket]}`} color={`var(--bracket-${reached.to})`} />
       </>
-    ) : [sc.bar.stays, bracketText(outcome)].filter(Boolean).join(" · ");
+    ) : <CopyLines lines={[sc.bar.stays, bracketText(outcome)]} sep=" · " />;
     if (outcome?.kind === "missed") {
       const name = BRACKET_NAMES[outcome.aim.target as Bracket];
       sentence = outcome.aim.choice === "up"

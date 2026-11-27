@@ -225,14 +225,14 @@ function SubLine({ reading }: { reading: ReturnType<typeof verdictSubLine> }) {
  * The LOWEST limit among the reasons is what a reader has to satisfy, which is why it is a
  * `Math.min` rather than the first reason's.
  */
-function ruledOutClause(below: Bracket, reasons: RuledOutReason[]): string {
+function ruledOutClause(below: Bracket, reasons: RuledOutReason[]): ReactNode {
   const copy = deckAnalysisCopy.verdict;
   const facts = reasons.map((r) => {
     const [one, many] = ruleNounFor(r.rule, below);
     return copy.ruledOutFact(r.have, r.have === 1 ? one : many);
   });
   const limit = Math.min(...reasons.map((r) => r.limit));
-  return `${sentenceCase(nameList(facts))}, ${copy.ruledOutAllowance(BRACKET_NAMES[below], limit)}.`;
+  return <><span>{sentenceCase(nameList(facts))}</span>{", "}<span>{copy.ruledOutAllowance(BRACKET_NAMES[below], limit)}</span>{"."}</>;
 }
 
 /**
