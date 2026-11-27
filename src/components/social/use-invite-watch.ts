@@ -54,8 +54,9 @@ export function useInviteWatch(tokens: readonly string[], onEnded: (ended: Invit
             if (!l.open) ended.push(l);
           }
         } catch (e) {
-          captureClientError("invite.watch", e);
-          // A failed batch (offline, aborted) changes nothing; the next poll asks again.
+          // A dropped connection (fetch rejects with a TypeError) is routine on a phone and the next poll asks again, so
+          // it must not spend the tag; anything else (a body that is not JSON, say) is a defect and reports.
+          if (!(e instanceof TypeError)) captureClientError("invite.watch", e);
         }
       }
       inFlight = null;

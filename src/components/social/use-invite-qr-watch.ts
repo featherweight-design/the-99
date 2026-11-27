@@ -24,8 +24,9 @@ export async function readQrState(token: string, signal?: AbortSignal): Promise<
     }
     return null;
   } catch (e) {
-    captureClientError("invite.qr-watch", e);
-    // A failed poll (offline, aborted) changes nothing; the next one asks again.
+    // A dropped connection (fetch rejects with a TypeError) is routine on a phone and the next poll asks again, so it
+    // must not spend the tag; anything else (a body that is not JSON, say) is a defect and reports.
+    if (!(e instanceof TypeError)) captureClientError("invite.qr-watch", e);
     return null;
   }
 }
