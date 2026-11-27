@@ -41,6 +41,7 @@ vi.mock("../../lib/stores/preference", () => ({ readerStore: m.readerStore, read
 import SettingsPage from "./page";
 import { NewsSection } from "../../components/settings/news-section";
 import { SparesSection } from "../../components/settings/spares-section";
+import { WishlistSection } from "../../components/settings/wishlist-section";
 import { FriendDecksSection } from "../../components/settings/friend-decks-section";
 import { AccountSection } from "../../components/settings/account-section";
 import { StoreSection } from "../../components/settings/store-section";
@@ -72,9 +73,9 @@ beforeEach(() => {
 });
 
 describe("/settings", () => {
-  it("draws news first, then Spares, then Your decks, then Account", async () => {
+  it("draws news first, then Spares, then Wishlist, then Your decks, then Account", async () => {
     const el = await SettingsPage();
-    expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, FriendDecksSection, Suspense]);
+    expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, WishlistSection, FriendDecksSection, Suspense]);
     // Account streams in behind its own boundary: the page never waits on Clerk's read.
     expect((sections(el)[3].props.children as El).type).toBe(AccountSlot);
     expect(m.currentUser).not.toHaveBeenCalled();
@@ -85,7 +86,7 @@ describe("/settings", () => {
     m.env = { STORE_PREFERENCE_ENABLED: "true" };
     m.readerStore.mockResolvedValueOnce("tcgplayer");
     const el = await SettingsPage();
-    expect(sections(el).map((c) => c.type)).toEqual([StoreSection, NewsSection, SparesSection, FriendDecksSection, Suspense]);
+    expect(sections(el).map((c) => c.type)).toEqual([StoreSection, NewsSection, SparesSection, WishlistSection, FriendDecksSection, Suspense]);
     expect(sections(el)[0].props.store).toBe("tcgplayer");
   });
 
