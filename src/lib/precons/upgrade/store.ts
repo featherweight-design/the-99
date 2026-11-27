@@ -41,7 +41,7 @@ export async function startUpgrade(
         select
           exists (select 1 from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending') as pending,
           exists (select 1 from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and strategy_key = ${strategy.key}
-            and status = 'done' and not refunded and finished_at > ${new Date(now.getTime() - UPGRADE_CURRENT_MS)}) as current`);
+            and status = 'done' and not refunded and finished_at > ${new Date(now.getTime() - UPGRADE_CURRENT_MS).toISOString()}::timestamp) as current`);
       if (seen?.pending) throw new InFlightError();
       if (seen?.current) throw new AlreadyCurrentError();
       const unit = await reserveModelCall(tx, userId, "precon_upgrade", model, now, "player", UPGRADE_UNITS);

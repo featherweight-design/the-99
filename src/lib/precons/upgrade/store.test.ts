@@ -17,7 +17,7 @@ const db = vi.hoisted(() => ({
 vi.mock("../../../db", () => ({
   db: {
     transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({
-      execute: async (q: unknown) => { db.executed.push(q); return { rows: db.executed.length === 2 ? [db.seen] : [] }; },
+      execute: async (q: unknown) => { db.executed.push(q); return { rows: render(q).sql.includes("as current") ? [db.seen] : [] }; },
       insert: () => ({ values: () => ({ returning: async () => [{ id: "run-new" }] }) }),
     }),
     select: () => {
@@ -120,9 +120,9 @@ describe("startUpgrade's repeat guard", () => {
 
   it("counts a kept run of the same picks as current only when it finished within UPGRADE_CURRENT_MS", async () => {
     await startUpgrade("u1", "boss.json", strategy, "m", now);
-    const seen = render(db.executed[1]);
+    const seen = render(db.executed.find((q) => render(q).sql.includes("as current")));
     expect(seen.sql).toContain("finished_at >");
-    expect(seen.params).toContainEqual(new Date(now.getTime() - UPGRADE_CURRENT_MS));
+    expect(seen.params).toContainEqual(new Date(now.getTime() - UPGRADE_CURRENT_MS).toISOString());
   });
 
   it("refuses a press that lost the race to a run that just finished, and starts a new run for an older repeat", async () => {

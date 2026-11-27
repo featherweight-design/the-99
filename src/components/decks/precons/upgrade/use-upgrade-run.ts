@@ -102,10 +102,12 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
       const next = await refresh(true);
       if (res.reason === "short" || res.reason === "current") {
         // Under 12 held up: refunded, kept, and still startable (R2). `current`: a press that lost a race to one that has since finished,
-        // so the result is already there. The run is the one stored under these picks, never an older one.
+        // so the result is already there. The run is the newest one stored under these picks, never an older one.
         const key = runKey(picks.commander, picks.bracket, picks.strategy);
-        const kept = next?.runs.find((r) => r.status === "done" && r.strategyKey === key);
-        settle(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
+        const kept = (next?.runs ?? []).filter((r) => r.status === "done" && r.strategyKey === key)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+        // Nothing failed on a `current` press, so a read that missed the run leaves the start screen, never the failed view.
+        settle(kept ? { kind: "results", runId: kept.id } : res.reason === "current" ? { kind: "none" } : { kind: "failed", picks });
         // A short run is refunded but kept: it landed (ruled), so it pulses like a full one. Only this press's own run counts:
         // a read that missed the new row finds an older run of the same picks, and that is not a landing.
         if (kept && !before.has(kept.id)) land();
