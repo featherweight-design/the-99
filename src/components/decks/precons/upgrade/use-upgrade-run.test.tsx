@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 
 vi.mock("../../../../lib/precons/upgrade/actions", () => ({ pressUpgradeAction: vi.fn(), readUpgradeAction: vi.fn() }));
-const { useLinePulse } = await import("./use-upgrade-run");
+const { useLinePulse, useUpgradeRun } = await import("./use-upgrade-run");
+const { pressUpgradeAction, readUpgradeAction } = await import("../../../../lib/precons/upgrade/actions");
+import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 
 const el = () => ({ current: document.createElement("button") });
 
@@ -59,5 +61,18 @@ describe("useLinePulse's replay (addendum A3, G21)", () => {
     rerender({ n: 3 });
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
     expect(result.current).toBe(0);
+  });
+});
+
+describe("useUpgradeRun's confirm when the server says the picks are current", () => {
+  it("opens the kept run of those picks, never the failed view", async () => {
+    const kept = { id: "r1", status: "done", strategyKey: "cmd/3/landfall", seenAt: new Date(), createdAt: new Date("2026-11-27T12:00:00Z"), unpicked: [] };
+    const panel = { runs: [kept], commanders: [], cards: {}, figures: {} } as unknown as UpgradePanel;
+    vi.mocked(pressUpgradeAction).mockResolvedValue({ ok: false, reason: "current" });
+    vi.mocked(readUpgradeAction).mockResolvedValue(panel);
+    const { result } = renderHook(() => useUpgradeRun("boss.json", panel));
+    await act(async () => { result.current.setOpen(true); });
+    await act(async () => { await result.current.confirm({ commander: "cmd", bracket: 3, strategy: "landfall" }); });
+    expect(result.current.view).toEqual({ kind: "results", runId: "r1" });
   });
 });

@@ -5,7 +5,7 @@ import { preconUpgrades } from "../../../db/schema";
 import { isUniqueViolation } from "../../db-error";
 import { AllowanceSpentError, reserveModelCall, settleModelCall, type Billed } from "../../model/allowance";
 import { recordLate, RunSupersededError } from "../../tuning/run-store";
-import { UPGRADE_REAP_MS, UPGRADE_UNITS } from "./constants";
+import { UPGRADE_CURRENT_MS, UPGRADE_REAP_MS, UPGRADE_UNITS } from "./constants";
 import type { StoredPair, UpgradeDrop } from "./validate";
 
 /**
@@ -26,8 +26,9 @@ class InFlightError extends Error {}
 
 /**
  * ONE transaction: reserve the run's credits and insert the pending row. Starts for one reader and precon are SERIALIZED by
- * an advisory lock, and inside it the press is re-checked: a run already done for this very strategy that kept its charge
- * is `current` (a second press that lost the race to a first that has since finished; nothing is reserved), and a pending
+ * an advisory lock, and inside it the press is re-checked: a run done for this very strategy that kept its charge
+ * within the last `UPGRADE_CURRENT_MS` is `current` (a second press that lost the race to a first that has since finished; nothing is
+ * reserved). An older one is no race: the player chose `Run it again`, so it starts a new run, and a pending
  * one is `in_flight`. The partial unique index stays as the floor under the lock. Another strategy is another run.
  */
 export async function startUpgrade(
@@ -40,7 +41,7 @@ export async function startUpgrade(
         select
           exists (select 1 from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending') as pending,
           exists (select 1 from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and strategy_key = ${strategy.key}
-            and status = 'done' and not refunded) as current`);
+            and status = 'done' and not refunded and finished_at > ${new Date(now.getTime() - UPGRADE_CURRENT_MS).toISOString()}::timestamp) as current`);
       if (seen?.pending) throw new InFlightError();
       if (seen?.current) throw new AlreadyCurrentError();
       const unit = await reserveModelCall(tx, userId, "precon_upgrade", model, now, "player", UPGRADE_UNITS);

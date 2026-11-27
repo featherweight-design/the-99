@@ -46,5 +46,11 @@ export const UPGRADE_CALL_DEADLINE_MS = 60_000;
 /** A pending run older than this is reaped: its process died, and its pending row would block every later press. Two call deadlines and a margin. */
 export const UPGRADE_REAP_MS = 5 * 60_000;
 
+/**
+ * A done run of the same picks counts as the one a second press lost the race to only while it is this fresh. Older, the press is a
+ * deliberate repeat (the confirm's `Run it again`, which says it costs 2 credits), and it starts a new run.
+ */
+export const UPGRADE_CURRENT_MS = 30_000;
+
 /** How many of the commander's most-included cards are priced and offered to `poolForPrompt`, which then keeps at most `POOL_MAX` of the affordable ones. */
 export const POOL_READ_MAX = 400;
