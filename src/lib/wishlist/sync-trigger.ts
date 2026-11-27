@@ -37,7 +37,8 @@ export async function scheduleWishlistSyncAfterAction(userId: string): Promise<v
   try {
     h = await headers();
   } catch {
-    // No request scope, or a scope with no headers (a cached function): nothing to schedule after.
+    // not a fallback: nothing is drawn from this. No request scope, or a scope with no headers (a cached function):
+    // nothing to schedule after.
     return;
   }
   if (!isServerActionRequest({ action: h.get("next-action"), contentType: h.get("content-type") })) return;
@@ -47,7 +48,7 @@ export async function scheduleWishlistSyncAfterAction(userId: string): Promise<v
     const { syncWishlistLater } = await import("./sync");
     await syncWishlistLater(userId);
   } catch (error) {
-    // Logged, never thrown: the action the player pressed must not fail because its after-work could not be scheduled.
+    // not a fallback: nothing is drawn from this. Logged, never thrown: the action the player pressed must not fail because its after-work could not be scheduled.
     console.error("wishlist sync could not be scheduled", error);
   }
 }

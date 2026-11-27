@@ -30,8 +30,8 @@ describe("cardSignalsSql", () => {
     expect(sql).toMatch(/from collection_items ci\s+where ci\.user_id = \$1/);
     expect(sql).toMatch(/from decks d\s+where d\.user_id = \$2/);
     // Both sides of the wishlist (cart on your wishlist): the hand lines and the synced lines, each the reader's own.
-    expect(sql).toMatch(/from wishlist_items hw where hw\.user_id in \(select \$3::text\)/);
-    expect(sql).toMatch(/from wishlist_synced sw where sw\.user_id in \(select \$4::text\)/);
+    expect(sql).toMatch(/from "wishlist_items" hw where hw\.user_id in \(select \$3::text\)/);
+    expect(sql).toMatch(/from "wishlist_synced" sw where sw\.user_id in \(select \$4::text\)/);
     // Each side's "still unmet" test is its own `heldCopies`, tied to the line's columns (no extra bound id).
     expect(sql.replace(/\s+/g, " ")).toContain("ci.user_id = hw.user_id and ci.oracle_id = hw.oracle_id and (hw.scryfall_id::uuid is null");
     expect(sql.replace(/\s+/g, " ")).toContain("ci.user_id = sw.user_id and ci.oracle_id = sw.oracle_id and (null::uuid is null");
