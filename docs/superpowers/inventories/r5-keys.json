@@ -1,0 +1,60 @@
+{
+  "feature": "Deck details R5: large-page keys back at the top (All list and card view, Shopping filled and empty, Tuning > Consider)",
+  "note": "Env: R5_DECK (a deck holding marked cards and Shopping > 0; HD - Zombies 3119268e-f824-48ce-8e27-6b8cabe4cb61), R5_EMPTY (a deck whose Shopping tab reads 0; HD - Yuriko 15592575-a0c8-4df9-a4c7-2dfdc502abc7). Read-only; the account must have seen the current ABOUT_VERSION. The keys box must sit above the first group / shelf (Shopping: under the To buy box).",
+  "out": "contact-sheets/r5-keys",
+  "rows": [
+    {
+      "id": "all-list",
+      "label": "/decks/[id] Your deck, All, list view: keys box above the first group",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        { "goto": "/decks/${R5_DECK}", "wait": "[role=tablist]", "settle": 3500 }
+      ],
+      "binding": "MarkKey"
+    },
+    {
+      "id": "all-card",
+      "label": "/decks/[id] Your deck, All, card view (reached by a press): keys box above the first group",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        { "goto": "/decks/${R5_DECK}", "wait": "[role=tablist]", "settle": 3500 },
+        { "clickRole": "button", "name": "^Card view$", "settle": 1500 }
+      ],
+      "binding": "MarkKey"
+    },
+    {
+      "id": "shopping-filled",
+      "label": "/decks/[id] Shopping, filled: keys box under the To buy box, above the first group",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        { "goto": "/decks/${R5_DECK}", "wait": "[role=tablist]", "settle": 3000 },
+        { "clickRole": "tab", "name": "^Shopping", "settle": 1500 }
+      ],
+      "binding": "ShoppingKey"
+    },
+    {
+      "id": "shopping-empty",
+      "label": "/decks/[id] Shopping, empty (a fully owned deck): keys box opens the list",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        { "goto": "/decks/${R5_EMPTY}", "wait": "[role=tablist]", "settle": 3000 },
+        { "clickRole": "tab", "name": "^Shopping", "settle": 1500 }
+      ],
+      "binding": "MarkKey"
+    },
+    {
+      "id": "tuning-consider",
+      "label": "/decks/[id] Tuning > Consider: keys box above the first shelf",
+      "view": "src/components/decks/consider-panel.tsx",
+      "steps": [
+        { "goto": "/decks/${R5_DECK}?tab=consider", "wait": "[role=tablist]", "settle": 5000 }
+      ],
+      "binding": "AddSurfaceMarkKey"
+    }
+  ],
+  "shares": [
+    { "binding": "MarkKey", "module": "src/components/decks/mark-key.tsx" },
+    { "binding": "ShoppingKey", "module": "src/components/decks/shopping-key.tsx" },
+    { "binding": "AddSurfaceMarkKey", "module": "src/components/decks/add-surface-mark-key.tsx" }
+  ]
+}
