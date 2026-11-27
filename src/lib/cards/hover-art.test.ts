@@ -418,9 +418,6 @@ const NOT_A_ROW = new Set<string>([
   // Quick-add's results (Small items 2 item 6b): a search popup like card search's, whose rows already draw the card's
   // thumbnail; the name cell opens card details and the board draws no hover preview over the field.
   "components/decks/quick-add-bar.tsx",
-  // The Export dialog reads `useCardDetailIfAny` only to mount a provider when its host has none (the /decks tile menu).
-  // Its Shopping rows are `DecklistRow`, which carries both the press and the hover.
-  "components/decks/export-dialog.tsx",
 ]);
 
 describe("the row guard's own failure paths", () => {

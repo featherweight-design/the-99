@@ -19,6 +19,7 @@ import { SETTINGS_TARGET_HASH, hiddenWhy, settingsHideDeck, type FriendDeckPrefs
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { PendingReporter } from "../shell/pending-reporter";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 
 /** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
 const MENU_WIDTH = 186;
@@ -620,7 +621,10 @@ export function DeckCardOverflow({
       {exporting
         ? createPortal(
             <div {...{ [COVERED_WITH_MAIN]: "" }}>
-              <exporting.Dialog {...exporting.read} open onClose={closeExport} returnFocusRef={buttonRef} />
+              {/* The dialog's Shopping rows are DecklistRows, which read card details; a tile has no provider of its own. */}
+              <CardDetailProvider>
+                <exporting.Dialog {...exporting.read} open onClose={closeExport} returnFocusRef={buttonRef} />
+              </CardDetailProvider>
             </div>,
             document.body,
           )

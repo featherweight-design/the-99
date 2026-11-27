@@ -7,8 +7,6 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { DecklistRow } from "./decklist-row";
-import { CardDetailProvider } from "../cards/card-detail-provider";
-import { useCardDetailIfAny } from "../cards/card-detail-context";
 import type { ExportShoppingCard } from "../../lib/decks/export-data";
 import { downloadTextFile } from "../../lib/decks/download";
 import {
@@ -497,12 +495,11 @@ function DialogContent({
 }
 
 /**
- * The Shopping tab's rows: the shipped read-only `DecklistRow`, so a row here is the row the deck page draws. The
- * /decks tile menu opens this dialog outside any card-detail provider, which the row needs, so one is mounted there.
+ * The Shopping tab's rows: the shipped read-only `DecklistRow`, so a row here is the row the deck page draws. The row
+ * needs a card-detail provider: the deck page has one, and the /decks tile menu mounts one around this dialog.
  */
 function ShoppingRows({ cards, isMobile }: { cards: ExportShoppingCard[]; isMobile: boolean }) {
-  const hosted = useCardDetailIfAny() !== null;
-  const list = (
+  return (
     <ul className={`m-0 flex list-none flex-col gap-[4px] ${isMobile ? "px-[14px] pb-[12px] pt-[8px]" : "px-[22px] pb-[12px] pt-[4px]"}`}>
       {cards.map((card) => (
         <li key={card.oracleId}>
@@ -511,5 +508,4 @@ function ShoppingRows({ cards, isMobile }: { cards: ExportShoppingCard[]; isMobi
       ))}
     </ul>
   );
-  return hosted ? list : <CardDetailProvider>{list}</CardDetailProvider>;
 }
