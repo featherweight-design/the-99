@@ -5,6 +5,7 @@
 // and a row reopening that run (in its own tool, or read-only when it has nothing to load). Lives in the hub, which owns the open past run
 // so its phone header can carry `‹ History` in the switch slot (H3b).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { historyDay } from "./tuning-history-day";
@@ -143,7 +144,7 @@ export function TuningHistory({
         if (ticket !== asked.current) return;
         setState(page ? { kind: "ok", rows: page.rows, nextCursor: page.nextCursor, more: "idle" } : { kind: "failed" });
       })
-      .catch(() => { if (ticket === asked.current) setState({ kind: "failed" }); });
+      .catch((e) => { if (ticket !== asked.current) return; captureClientError("tuning.history-read", e); setState({ kind: "failed" }); });
   }, [deckId]);
 
   // The first page, on mount. The filter starts at All, and a chip press reads its own page.
@@ -184,7 +185,7 @@ export function TuningHistory({
             return { ...s, rows: [...page.rows, ...tail], nextCursor: tail.length ? s.nextCursor : page.nextCursor };
           });
         })
-        .catch(() => {});
+        .catch((e) => { captureClientError("tuning.history-watch", e); });
     }, HISTORY_WATCH_MS);
     return () => clearInterval(watch);
   }, [hasRunning, deckId, filter]);
@@ -209,7 +210,11 @@ export function TuningHistory({
           ? { kind: "ok", rows: [...s.rows, ...page.rows], nextCursor: page.nextCursor, more: "idle" }
           : { ...s, more: "failed" }));
       })
-      .catch(() => { if (ticket === asked.current) setState((s) => (s.kind === "ok" ? { ...s, more: "failed" } : s)); });
+      .catch((e) => {
+        if (ticket !== asked.current) return;
+        captureClientError("tuning.history-more", e);
+        setState((s) => (s.kind === "ok" ? { ...s, more: "failed" } : s));
+      });
   };
 
   const monthId = useId();
@@ -493,7 +498,7 @@ export function PastRunView({ deckId, row, onBack }: { deckId: string; row: Hist
         setRun(r ?? "failed");
         if (r && "outcome" in r && r.outcome === "running") again = setTimeout(() => setReads((n) => n + 1), HISTORY_WATCH_MS);
       })
-      .catch(() => { if (live) setRun("failed"); });
+      .catch((e) => { if (!live) return; captureClientError("tuning.history-run", e); setRun("failed"); });
     return () => { live = false; clearTimeout(again); };
   }, [deckId, row.id, reads]);
 

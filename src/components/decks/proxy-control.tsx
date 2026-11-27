@@ -14,6 +14,7 @@
 // otherwise. A proxy claims nothing, so here the promise is TRUE: every deck can
 // print the same card at once, independently. Same rule, opposite answer.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState } from "react";
 import { setCardProxied } from "../../app/decks/actions";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -90,10 +91,10 @@ export function ProxyControl({
     setError(null);
     setPending(true);
     void (async () => {
-      const result = await setCardProxied(deckId, oracleId, next).catch(() => ({
-        ok: false as const,
-        message: proxyCopy.error.refused,
-      }));
+      const result = await setCardProxied(deckId, oracleId, next).catch((e) => {
+        captureClientError("deck.proxy", e);
+        return { ok: false as const, message: proxyCopy.error.refused };
+      });
       setPending(false);
       if (!result.ok) {
         // The server refuses when the card left the deck between render and tap.

@@ -10,6 +10,7 @@
 // line and its desktop meta stay as the board draws them; the card shell and
 // its accent rule went, because the to-do card is the shell now.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useSyncExternalStore } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -96,7 +97,8 @@ export function usePassUndo({
       setUndoState(key, IDLE);
       onDone?.();
       onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
-    } catch {
+    } catch (e) {
+      captureClientError("topoff.undo", e);
       setUndoState(key, { pending: false, error: ledger.undoFailed });
     }
   };

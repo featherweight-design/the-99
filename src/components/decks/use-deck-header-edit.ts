@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useState, useTransition } from "react";
 import { saveDeckHeader } from "../../app/decks/tuning-actions";
 import { renameCopy } from "../../lib/copy/decks-builder";
@@ -119,7 +120,8 @@ export function useDeckHeaderEdit(
         // exactly the change a sighted reader sees happen.
         if (savedDescription) setAnnounced(deckDescriptionCopy.announce.descriptionSaved);
         onDone();
-      } catch {
+      } catch (e) {
+        captureClientError("deck.header-edit", e);
         setError(renameCopy.errorFailed);
       }
     });

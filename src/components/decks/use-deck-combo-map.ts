@@ -29,6 +29,7 @@
 //    held. Keeping it would decorate every result with a snapshot of a deck that no longer
 //    exists, with nothing ever correcting it.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useState } from "react";
 import { loadDeckComboMap } from "../../app/decks/[id]/combo-map-action";
 
@@ -58,8 +59,10 @@ export function useDeckComboMap(
       // Decoration, like the search's availability read: a failed read leaves rows with no
       // clause, which is exactly what a card with no combo looks like, and never breaks the bar.
       // Cleared rather than left alone: see rule 4.
-      .catch(() => {
-        if (!cancelled) setHeld(null);
+      .catch((e) => {
+        if (cancelled) return;
+        captureClientError("deck.combo-map", e);
+        setHeld(null);
       });
     return () => {
       cancelled = true;

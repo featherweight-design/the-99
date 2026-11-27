@@ -9,6 +9,7 @@
 // facts about the deck this list is being compared against, and the whole
 // premise is that neither of them changes.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
@@ -142,6 +143,7 @@ export function UpdateEntry({ deckId, deckName, bodySize }: { deckId: string; de
         // is surfaced; every other throw is an internal invariant and falls back
         // to the generic body.
         const message = e instanceof Error ? e.message : "";
+        if (!isDeckImportTooLargeMessage(message)) captureClientError("deck.update", e);
         setFailure({
           kind: "unexpected",
           detail: isDeckImportTooLargeMessage(message) ? message : null,
@@ -168,7 +170,8 @@ export function UpdateEntry({ deckId, deckName, bodySize }: { deckId: string; de
             ? `/decks/${deckId}`
             : `/decks/${deckId}?${UPDATED_PARAM}=${result.in}-${result.out}-${result.kept}`,
         );
-      } catch {
+      } catch (e) {
+        captureClientError("deck.update-apply", e);
         setRefused(true);
       }
     });

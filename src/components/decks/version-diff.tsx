@@ -17,6 +17,7 @@
 // The two lists are fetched when the row opens rather than with the rail: a
 // ten-version deck would otherwise pay ten diffs to draw ten closed rows.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useState } from "react";
 import { getVersionDiff } from "../../app/decks/actions";
 import { printedFaceName } from "../../lib/collection/browse";
@@ -359,8 +360,10 @@ export function VersionDiff({
         if (result !== null) cache.set(key, result);
         if (live) setDiff(result ?? "unavailable");
       })
-      .catch(() => {
-        if (live) setDiff("unavailable");
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("deck.version-diff", e);
+        setDiff("unavailable");
       });
     return () => {
       live = false;

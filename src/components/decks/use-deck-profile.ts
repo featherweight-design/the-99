@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -150,7 +151,8 @@ export function useDeckProfile(
       let result: ProfileFetch;
       try {
         result = await fetchDeckProfile(deckId);
-      } catch {
+      } catch (e) {
+        captureClientError("deck.profile-read", e);
         // A THROW IS `failed`, NEVER `missing`. The action answers a missing deck in its return
         // value, so an exception here is the request itself — a network drop, a serialisation
         // error — and telling the reader their deck is gone would be a lie with a retry hidden
@@ -200,7 +202,8 @@ export function useDeckProfile(
       let result: StoredProfileFetch;
       try {
         result = await fetchStoredDeckProfile(deckId);
-      } catch {
+      } catch (e) {
+        captureClientError("deck.profile-peek", e);
         // A failed peek is a miss. The press is still there, and it is the recovery.
         settle();
         return;
