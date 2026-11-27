@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, Wishlist section and the deck menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1878px; height: 5360px; box-sizing: border-box; padding: 48px 64px 64px; background: #161412; color: #e9e3d8; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 50px">
+<div style="display: flex; gap: 60px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 14px; width: 1300px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">S1c · Settings › Wishlist, switch on</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 66px">"Keep my shopping on my wishlist" names both places. Under it, "From 22 decks" is the shipped field trigger of the searchable deck picker, so the section is the same height at 5 decks or 50. Every deck starts in, and a new deck joins by itself. Switch off, the From row dims and can't be opened.</p>
+<img src="art/S1-desk.jpg" alt="Settings with the Wishlist section, desktop" style="width: 1300px; height: 1666px; border-radius: 10px; display: block">
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; width: 390px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">Phone</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 66px">The From field goes full width under its label.</p>
+<img src="art/S1-phone.jpg" alt="Settings with the Wishlist section, phone" style="width: 390px; height: 2042px; border-radius: 10px; display: block">
+</div>
+</div>
+<div style="display: flex; gap: 60px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 14px; width: 1300px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">S2 · The deck picker open</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 66px">The shipped FilterPanel, unchanged: search, a tick per deck, and the count Shopping lists for it on the right. Untick Ashen Banner Parade and its cards leave your wishlist. The foot reads "22 of 23 decks" with Clear.</p>
+<img src="art/S2-desk.jpg" alt="Deck picker open over Settings, desktop" style="width: 1300px; height: 1814px; border-radius: 10px; display: block">
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; width: 390px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">Phone</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 66px">The same panel as the shipped bottom sheet, "Shopping from 22", Clear and Done.</p>
+<img src="art/S2-phone.jpg" alt="Deck picker as a sheet, phone" style="width: 390px; height: 844px; border-radius: 10px; display: block">
+</div>
+</div>
+<div style="display: flex; gap: 60px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 14px; width: 1300px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">M1 · The deck's ⋯ menu, Decks list</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 66px">The same choice from the deck itself: "Keep off my wishlist" under Hidden from friends, as the same checkbox row, shown only while the switch is on. Ticking it here unticks the deck in the picker, and the other way round. The deck page header's ⋯ menu gets the same row.</p>
+<img src="art/M1-desk.jpg" alt="Deck menu with Keep off my wishlist ticked, desktop" style="width: 1300px; height: 900px; border-radius: 10px; display: block">
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; width: 390px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">Phone</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 66px">Scrolled to the first tile.</p>
+<img src="art/M1-phone.jpg" alt="Deck menu with Keep off my wishlist ticked, phone" style="width: 390px; height: 514px; border-radius: 10px; display: block">
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1878,"height":5360}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
