@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it, vi } from "vitest";
 
@@ -35,6 +36,14 @@ describe("recordFeedItem queues its push in the SAME statement", () => {
     const stamps = render(unstamped as never).params.filter((p) => typeof p === "string" && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(p));
     expect(stamps.length).toBeGreaterThanOrEqual(2); // the feed row's, and the outbox row's (twice)
     expect(new Set(stamps).size).toBe(1);
+  });
+
+  it("ANDs a writer's push condition into the outbox insert alone, so the item is still written", () => {
+    const withWhen = new PgDialect().sqlToQuery(recordFeedItemQuery({ ...input, pushWhen: sql`false` }));
+    const feed = withWhen.sql.slice(0, withWhen.sql.indexOf('pushed as (insert into "push_outbox"'));
+    const outbox = withWhen.sql.slice(withWhen.sql.indexOf('pushed as (insert into "push_outbox"'));
+    expect(outbox).toContain("where exists (select 1 from wrote) and (false)");
+    expect(feed).not.toContain("(false)");
   });
 
   it("passes the writer's own batch key on", () => {

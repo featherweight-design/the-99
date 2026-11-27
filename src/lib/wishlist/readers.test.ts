@@ -18,7 +18,6 @@ const ALLOWED: Record<string, string> = {
   "src/lib/wishlist/wishlist.ts": "the hand-line writes (want, printing, clear), which only a player's own add controls make",
   "src/lib/wishlist/collected.ts": "the collected sweep's hand-line delete, beside its synced-line delete",
   "src/lib/feed/price-drop.ts": "by design: a synced line never gets a price baseline (Q4), so the price-drop job reads hand lines alone",
-  "src/lib/social/trade-match.ts": "moves onto the union in the next PR (plan PR 3)",
   "src/lib/account/purge.ts": "the account purge deletes every row the player owns",
 };
 

@@ -37,6 +37,11 @@ export type FeedItemInput = {
   /** The job run this event belongs to, so several of one kind from one run are ONE push. Default: the kind's 15-minute window (`defaultBatchKey`). */
   batchKey?: string;
   now?: Date;
+  /**
+   * An extra condition on the item's PUSH, never on the item: false writes the item to the feed and queues no push. The
+   * trade-match notice passes its quiet lines and its one-a-day cap here. Default: none.
+   */
+  pushWhen?: SQL;
 };
 
 type Executor = Pick<typeof db, "execute">;
@@ -87,7 +92,8 @@ export function recordFeedItemQuery(input: FeedItemInput): SQL {
   // ONE statement: the feed insert and the push it announces, so they commit or fail together whatever the executor is.
   const push = enqueuePushQuery({
     userId: input.userId, kind: input.kind, itemKey: sql`'item:' || (select wrote.id::text from wrote limit 1)`,
-    batchKey: input.batchKey, now: at, when: sql`exists (select 1 from wrote)`,
+    batchKey: input.batchKey, now: at,
+    when: input.pushWhen ? sql`exists (select 1 from wrote) and (${input.pushWhen})` : sql`exists (select 1 from wrote)`,
   });
   return sql`with wrote as (
       insert into ${feedItems} (user_id, kind, dedupe_key, oracle_id, variant_id, friend_user_id, data, created_at)
