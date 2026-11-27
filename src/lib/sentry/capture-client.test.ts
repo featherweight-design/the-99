@@ -14,7 +14,7 @@ beforeEach(() => { captured.length = 0; resetClientCaptureForTest(); });
 describe("captureClientError", () => {
   it("sends the tag, the error's class name and its frames, never its message", () => {
     const err = new TypeError("Cannot read Kitchen Table Brew of Atraxa");
-    err.stack = "TypeError: Cannot read Kitchen Table Brew of Atraxa\n    at confirm (https://x.test/a.js:10:5)\nsecond line of the message, Sol Ring\n    at least 3 copies of Sol Ring\n    at run (https://x.test/b.js:2:9)\nfn@https://x.test/c.js:3:4";
+    err.stack = "TypeError: Cannot read Kitchen Table Brew of Atraxa\n    at confirm (https://x.test/a.js:10:5)\nsecond line of the message, Sol Ring\n  at Kitchen Table:3:4\n    at least 3 copies of Sol Ring\n    at run (https://x.test/b.js:2:9)\nfn@https://x.test/c.js:3:4";
     captureClientError("test.site", err);
     expect(captured).toHaveLength(1);
     const { error, hint } = captured[0];

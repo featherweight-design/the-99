@@ -462,7 +462,7 @@ export function ContestedCardRow({
       }
       } catch (e) {
         captureClientError("contested.write", e);
-        // Swallowed HERE and nowhere else: a thrown action is a transport failure, and the app's
+        // Reported above, and nothing more is said here: a thrown action is a transport failure, and the app's
         // shipped treatment for that is not a refusal sentence on this row — the three sentences
         // it owns each name a reason the server gave, and inventing a fourth for "we do not know"
         // would tell the player something the server never said. What matters is that the
