@@ -521,7 +521,7 @@ describe("the fold", () => {
     // The count still says how many there are.
     expect(toggle().textContent).toContain("6");
     view.unmount();
-    // The first draw wrote the fold; a token with no art is judged folded (and a pictured one drawn the fan above).
+    // Start folded again (the first draw wrote the preference): with no art on the token, the folded band draws no fan.
     localStorage.setItem("the99:deck-tokens-fold", "closed");
     draw(ok([token()]));
     expect(toggle().getAttribute("aria-expanded")).toBe("false");
