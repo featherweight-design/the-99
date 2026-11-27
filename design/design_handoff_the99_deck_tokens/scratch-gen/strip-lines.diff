@@ -1,0 +1,87 @@
+--- a/src/components/decks/todo-foot.tsx
++++ b/src/components/decks/todo-foot.tsx
+@@ -22,6 +22,9 @@
+ import { TOUCH_HIT } from "../ui/touch-hit";
+ import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
+ import { useZone } from "../zone-context";
++import { useDeckTokens } from "./deck-tokens-context";
++import { landOnDeckTokens } from "./deck-tokens-landing";
++import { TokenGlyph, tokConcept } from "./token-glyph";
+ 
+ const copy = deckVersioningCopy.todoCard;
+ 
+@@ -58,8 +61,13 @@
+   return f.nearCombos != null && f.nearCombos.count > 0;
+ }
+ 
++// PROPOSAL A2 (strip): G.__STRIP "one" = short forms below md, one line; "two" = version on line 1, links on line 2 (short forms).
++const stripMode = () => (globalThis as any).__STRIP as undefined | "one" | "two";
++const SL = (short: string, long: string) =>
++  stripMode() ? (<><span className="md:hidden">{short}</span><span className="hidden md:inline">{long}</span></>) : long;
+ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
+   const zone = useZone();
++  const deckTokens = useDeckTokens();
+   const [open, setOpen] = useState(false);
+   const ids = useId();
+   // A segment that leaves while open (the last auto card kept) takes its disclosure with it, so it
+@@ -102,13 +110,29 @@
+   if (facts.version) {
+     segments.push({
+       key: "version",
+-      node: <VersionSegment className={cell} text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt, zone))} />,
++      node: (() => { const full = deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt, zone));
++        const short = stripMode() === "one" ? `v${facts.version.number} · ${formatDeckDate(facts.version.committedAt, zone).replace(/, \d{4}$/, "")}` : full;
++        return <VersionSegment className={cell} text={SL(short, full)} />; })(),
+     });
+   }
+   else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });
+   if (hasNearCombos(facts)) {
+     segments.push({ key: "combos", node: <NearCombosSegment className={cell} quiet={quiet} count={facts.nearCombos.count} onOpen={facts.nearCombos.onOpen} /> });
+   }
++  // PROPOSAL A: the deck's tokens are a segment of the status line, after combos: `◎ 4 tokens from 7 cards ›` lands on the box.
++  if (tokConcept() === "A" && deckTokens?.read.status === "ok" && deckTokens.read.tokens.length > 0) {
++    const t = deckTokens.read;
++    segments.push({ key: "tokens", node: (
++      <button type="button" onClick={landOnDeckTokens} data-tokens-segment=""
++        className={`${cell} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}>
++        <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
++          <TokenGlyph size={13} className="text-[color:var(--accent-text)]" />
++          <span>{SL(`${t.tokens.length} tokens`, `${t.tokens.length} tokens from ${t.makerCount} cards`)}</span>
++          <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">›</span>
++        </span>
++      </button>
++    ) });
++  }
+   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
+   if (facts.provenance) {
+     segments.push({
+@@ -140,9 +164,9 @@
+             rather than leaving the dot dangling at the end of the line before. The 5px before the dot is the row's
+             column gap, which a wrapped line does not draw at its start. */}
+         {segments.map((s, i) => (
+-          <span key={s.key} data-foot-segment className="flex items-start whitespace-nowrap">
++          <span key={s.key} data-foot-segment className={`flex items-start whitespace-nowrap ${stripMode() === "two" && s.key === "version" ? "basis-full md:basis-auto" : ""}`}>
+             {i > 0 && (
+-              <span aria-hidden data-foot-separator className={`${cell} text-[color:var(--fg-locked)]`}>
++              <span aria-hidden data-foot-separator className={`${cell} text-[color:var(--fg-locked)] ${stripMode() === "two" && i === 1 && segments[0]?.key === "version" ? "max-md:hidden" : ""}`}>
+                 {`${copy.footSeparator}\u00a0`}
+               </span>
+             )}
+@@ -185,7 +209,7 @@
+     >
+       <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
+         <ComboGlyph size={13} />
+-        <span>{combosCloseCopy.segment(count)}</span>
++        <span>{stripMode() === "one" ? SL(`${count} near combos`, combosCloseCopy.segment(count)) : combosCloseCopy.segment(count)}</span>
+         <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{combosCloseCopy.caret}</span>
+       </span>
+     </button>
+@@ -195,7 +219,7 @@
+ /** The committed version line, and where a commit lands. Focusable but not a tab stop
+  *  (`tabIndex={-1}`): a statement, not a control, reachable programmatically once, the paint after
+  *  the commit sheet or a discard navigated here. See `COMMIT_RECEIPT_HASH` for why that matters. */
+-function VersionSegment({ text, className }: { text: string; className: string }) {
++function VersionSegment({ text, className }: { text: ReactNode; className: string }) {
+   const ref = useRef<HTMLSpanElement>(null);
+   useEffect(() => {
+     const hash = window.location.hash;

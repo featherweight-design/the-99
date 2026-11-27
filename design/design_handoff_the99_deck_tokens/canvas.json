@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-27T04:20:00Z"
+ },
+ "title": "Deck Tokens surfacing",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1400,
+   "h": 760,
+   "title": "Main \u00b7 what changes"
+  },
+  "T1-Box.dc.html": {
+   "x": 0,
+   "y": 880,
+   "w": 1830,
+   "h": 1860,
+   "title": "T1 Tokens box \u00b7 open, List view"
+  },
+  "T2-Folded.dc.html": {
+   "x": 1910,
+   "y": 880,
+   "w": 1830,
+   "h": 900,
+   "title": "T2 Tokens box \u00b7 folded, with the art fan"
+  },
+  "T3-Cards.dc.html": {
+   "x": 3820,
+   "y": 880,
+   "w": 1830,
+   "h": 1080,
+   "title": "T3 Tokens box \u00b7 Card view"
+  },
+  "A-StatusLine.dc.html": {
+   "x": 0,
+   "y": 2860,
+   "w": 1830,
+   "h": 2310,
+   "title": "A Status line segment (picked)"
+  },
+  "A2-StripLines.dc.html": {
+   "x": 0,
+   "y": 5250,
+   "w": 1830,
+   "h": 2180,
+   "title": "A Strip on one or two lines (phone)"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "T1-Box.dc.html",
+  "T2-Folded.dc.html",
+  "T3-Cards.dc.html",
+  "A-StatusLine.dc.html",
+  "A2-StripLines.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
