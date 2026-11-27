@@ -30,13 +30,13 @@ export async function submitEdits(edits: readonly Edit[], doFetch: typeof fetch 
     if (res.status === 422) return { kind: "rule", keys: (body.rows ?? []).map((r) => r.key) };
     if (res.status === 429) return { kind: "limit" };
     if (res.status === 400) {
-      captureClientError("copy-editor-submit-invalid", new Error("400"));
+      // The route already reported this 400, so the client does not.
       // Only a short plain phrase is shown: the parser's reasons are all under 80 characters.
       const message = typeof body.message === "string" && body.message.length <= 120 ? body.message : "";
       return { kind: "invalid", message, keys: Array.isArray(body.keys) ? body.keys.filter((k): k is string => typeof k === "string") : [] };
     }
-    // 502 (GitHub did not take the dispatch), 503 (not configured) or anything unplanned: the player sees "unavailable", and the page reports it.
-    captureClientError("copy-editor-submit-unavailable", new Error(String(res.status)));
+    // The player sees "unavailable". Statuses the route or gate answers on purpose (gate 404, 413, 415, 502 reported by the route, 503 not built) are not reported again; anything else is unplanned and the page reports it.
+    if (![404, 413, 415, 502, 503].includes(res.status)) captureClientError("copy-editor-submit-unavailable", new Error(String(res.status)));
     return { kind: "unavailable" };
   } catch (error) {
     // An offline browser is an expected outcome, the tray says so; anything else threw before a response and is reported.

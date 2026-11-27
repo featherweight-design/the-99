@@ -11,10 +11,10 @@ const reply = (status: number, body: unknown = {}) => (async () => new Response(
 beforeEach(() => capture.mockReset());
 
 describe("submitEdits", () => {
-  it("keeps the server's reason and the edit it names on a 400, and reports it", async () => {
+  it("keeps the server's reason and the edit it names on a 400 (the route reports it, not the client)", async () => {
     const r = await submitEdits(edits, reply(400, { error: "bad-edits", message: "an edit cannot leave a line empty", keys: [edits[0].key] }));
     expect(r).toEqual({ kind: "invalid", message: "an edit cannot leave a line empty", keys: [edits[0].key] });
-    expect(capture).toHaveBeenCalledWith("copy-editor-submit-invalid", expect.any(Error));
+    expect(capture).not.toHaveBeenCalled();
   });
 
   it("drops a reason that is not a short phrase", async () => {
@@ -22,10 +22,12 @@ describe("submitEdits", () => {
     expect(r).toEqual({ kind: "invalid", message: "", keys: ["k"] });
   });
 
-  it("reports a 502 and any other unplanned status as unavailable", async () => {
+  it("shows unavailable for 502 and 503 without a second report, and reports a status nothing planned", async () => {
     expect(await submitEdits(edits, reply(502, { error: "dispatch-failed" }))).toEqual({ kind: "unavailable" });
     expect(await submitEdits(edits, reply(503))).toEqual({ kind: "unavailable" });
-    expect(capture).toHaveBeenCalledTimes(2);
+    expect(capture).not.toHaveBeenCalled();
+    expect(await submitEdits(edits, reply(500))).toEqual({ kind: "unavailable" });
+    expect(capture).toHaveBeenCalledWith("copy-editor-submit-unavailable", expect.any(Error));
   });
 
   it("stays silent for the outcomes it expects: success, stale, rule, limit, offline", async () => {
