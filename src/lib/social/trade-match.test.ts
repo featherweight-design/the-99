@@ -22,7 +22,7 @@ describe("wishedForMatchQuery", () => {
     expect(q).toContain("(tup.push_kinds ->> $");
     expect(q).toContain(`exists (select 1 from "push_subscriptions" wnt where wnt.user_id = tup.user_id)`);
     expect(params).toContain("viewer_1");
-    expect(params.filter((p) => p === "trade-match")).toHaveLength(2); // the two wanted tests
+    expect(params.filter((p) => p === "trade-match")).toHaveLength(4); // the two wanted tests, in each union side's owner gate
   });
 
   it("reads the whole wishlist, the hand lines and the lines the decks put there, still-wanted only", () => {
