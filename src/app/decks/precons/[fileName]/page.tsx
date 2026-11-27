@@ -53,6 +53,7 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
   const upgradeRead = preconUpgradeEnabled(env)
     ? readUpgrade(userId, name, LIVE_DEPS, env).catch((error) => {
       // not a fallback: the panel is drawn beside the cached payload, never stored in it.
+      console.error("precons: the upgrade panel could not be read", error);
       captureServerError("precons.upgrade-panel-read", error);
       return null;
     })

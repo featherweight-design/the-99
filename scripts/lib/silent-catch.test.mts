@@ -13,6 +13,14 @@ describe("catchSites", () => {
     const s = catchSites('try { a(); } catch (e) { captureClientError("x.y", e); }\ntry { a(); } catch (e) { throw e; }\nb().catch((e) => captureClientError("x.z", e));');
     expect(s.every((x) => x.handled)).toBe(true);
   });
+  it("does not let a trailing marker cover the catch on the next line", () => {
+    const src = "try { a(); } catch { x(); } // silent-catch: expected: abort\ntry { a(); } catch { x(); }";
+    expect(catchSites(src).map((x) => x.marker)).toEqual(["valid", "none"]);
+  });
+  it("counts only real calls and throws, not a comment or a throw in a nested function", () => {
+    const src = "try { a(); } catch { /* captureClientError */ f(() => { throw 1; }); }";
+    expect(catchSites(src)[0].handled).toBe(false);
+  });
   it("reads a marker on the line above, on the line, or inside, and rejects a missing or unknown reason", () => {
     const src = [
       "// silent-catch: expected: refusal",

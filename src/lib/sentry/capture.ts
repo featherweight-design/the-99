@@ -31,9 +31,9 @@ export function captureServerWarning(tag: string, message: string, tags: Record<
 
 const SEEN_TAGS = new Set<string>();
 const ERROR_NAME = /^[A-Za-z][A-Za-z0-9]{0,39}$/;
-// A V8 frame (`    at fn (file:1:2)`) or a Firefox/Safari one (`fn@file:1:2`, no spaces after the `@`). A message's own lines
+// A V8 frame (`    at fn (file:1:2)`, ending in line:column) or a Firefox/Safari one (`fn@file:1:2`, no spaces after the `@`). A message's own lines
 // can hold a card or deck name, so only a line shaped like a frame leaves.
-const FRAME = /^\s+at\s|^[\w$.<>/-]*@\S+:\d+:\d+$/;
+const FRAME = /^\s+at\s.*:\d+:\d+\)?$|^[\w$.<>/-]*@\S+:\d+:\d+$/;
 
 /**
  * Reports an error a CLIENT component caught and survived (a catch that settles to a failed view, a toast or nothing): the

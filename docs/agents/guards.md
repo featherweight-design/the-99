@@ -154,7 +154,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   line above or inside it. A marker with no reason or an unknown one is a finding. Existing silent sites sit in
   the ratchet `scripts/silent-catch-baseline.json` (a count per file): a file may not exceed its count, and a
   count above the real number is stale and fails too, so every sweep PR must lower it; the sweep ends with an
-  empty baseline. Limit: a file without the directive that still runs in the browser is not scanned. Server
+  empty baseline. Limits: `.then(ok, onRejected)` is not scanned; a file without the directive that still runs in the browser is not scanned. Server
   catches are out of scope (`captureServerError`). `pnpm check:silent-catch --write-baseline` regenerates the
   ratchet; use it only to shrink it. The failure path (add a silent catch to a client file, expect exit 1) ran in
   its PR.

@@ -8,7 +8,7 @@
 //     // silent-catch: expected: refusal | out-of-credits | abort | offline
 // A marker with no reason, or a reason outside that list, is a finding.
 //
-// Known limit: a file without the directive that still runs in the browser (a plain module a client file imports) is
+// Known limits: the `.then(ok, onRejected)` form is not scanned; a file without the directive that still runs in the browser (a plain module a client file imports) is
 // not scanned. Server code is out of scope: `captureServerError` covers it.
 //
 // The baseline (scripts/silent-catch-baseline.json) is a RATCHET of the silent sites that existed when the guard
@@ -22,7 +22,7 @@ export const REASONS = ["refusal", "out-of-credits", "abort", "offline"];
 const MARKER = /silent-catch:/;
 const VALID_MARKER = new RegExp(`silent-catch:\\s*expected:\\s*(?:${REASONS.join("|")})\\b`);
 
-const isClientFile = (text) => /^\s*(?:\/\/[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*["']use client["']/.test(text.slice(0, 600));
+const isClientFile = (text) => /^\s*(?:\/\/[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*["']use client["']/.test(text.slice(0, 2000));
 
 /** Every catch site in a file: `{ line, kind, handled, marker }`, marker "none" | "valid" | "invalid". */
 export function catchSites(text, path = "x.tsx") {
@@ -30,23 +30,30 @@ export function catchSites(text, path = "x.tsx") {
   const sf = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, kind);
   const lines = text.split("\n");
   const sites = [];
-  const hasThrow = (n) => {
+  // Reports or rethrows in the site's own code: a comment, or a nested function that merely contains a throw, does not count.
+  const isFn = (c) => ts.isFunctionLike(c);
+  const handles = (root) => {
     let found = false;
     const w = (c) => {
       if (found) return;
-      if (ts.isThrowStatement(c)) found = true;
-      else ts.forEachChild(c, w);
+      if (ts.isThrowStatement(c) || (ts.isCallExpression(c) && ts.isIdentifier(c.expression) && c.expression.text === "captureClientError")) {
+        found = true;
+        return;
+      }
+      if (c !== root && isFn(c) && !ts.isCallExpression(c.parent)) return;
+      ts.forEachChild(c, w);
     };
-    w(n);
+    w(root);
     return found;
   };
   const add = (siteNode, anchor, label) => {
-    const body = siteNode.getText(sf);
     const startLine = sf.getLineAndCharacterOfPosition(anchor.getStart(sf)).line;
     const endLine = sf.getLineAndCharacterOfPosition(siteNode.getEnd()).line;
-    const window = lines.slice(Math.max(0, startLine - 1), endLine + 1).join("\n");
+    // The line above counts only when it is a comment line of its own, so a trailing marker covers its own site alone.
+    const above = startLine > 0 && /^\s*\/[/*]/.test(lines[startLine - 1]) ? lines[startLine - 1] : "";
+    const window = [above, ...lines.slice(startLine, endLine + 1)].join("\n");
     const marker = !MARKER.test(window) ? "none" : VALID_MARKER.test(window) ? "valid" : "invalid";
-    sites.push({ line: startLine + 1, kind: label, handled: body.includes("captureClientError") || hasThrow(siteNode), marker });
+    sites.push({ line: startLine + 1, kind: label, handled: handles(siteNode), marker });
   };
   const walk = (n) => {
     if (ts.isCatchClause(n)) add(n, n, "catch");

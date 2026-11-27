@@ -57,7 +57,12 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     reading.current = true;
     const seq = ++readSeq.current;
     try {
-      const next = await readUpgradeAction(fileName).catch((e) => { captureClientError("upgrade.read", e); return null; });
+      const next = await readUpgradeAction(fileName).catch((e) => {
+        // A dropped connection is expected on a poll, not a defect.
+        if (typeof navigator !== "undefined" && !navigator.onLine) return null;
+        captureClientError("upgrade.read", e);
+        return null;
+      });
       if (next && seq === readSeq.current) {
         const id = watched.current;
         const run = id ? next.runs.find((r) => r.id === id) : undefined;
