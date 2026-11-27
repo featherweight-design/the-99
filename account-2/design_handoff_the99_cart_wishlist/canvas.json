@@ -1,0 +1,12 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-27T04:20:00Z"},"title":"Cart on your wishlist","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1400,"h":1180,"title":"Main · calls and questions"},
+"Wishlist-Desktop.dc.html":{"x":0,"y":1300,"w":2788,"h":2880,"title":"W · Your Wishlist tab, desktop (shipped | proposed)"},
+"Wishlist-Phone.dc.html":{"x":2868,"y":1300,"w":968,"h":2760,"title":"W · Your Wishlist tab, phone (shipped | proposed)"},
+"Offer.dc.html":{"x":0,"y":4300,"w":1878,"h":1150,"title":"O · The one-time offer (switch off)"},
+"Settings.dc.html":{"x":1958,"y":4300,"w":1878,"h":2350,"title":"S · Settings › Wishlist"},
+"Friend.dc.html":{"x":3916,"y":4300,"w":1878,"h":1950,"title":"F · A friend's view of your wishlist (unchanged)"},
+"Notices.dc.html":{"x":0,"y":6770,"w":2788,"h":2170,"title":"N · What's new: trade matches (shipped | proposed)"}
+},
+"order":["Main.dc.html","Wishlist-Desktop.dc.html","Wishlist-Phone.dc.html","Offer.dc.html","Settings.dc.html","Friend.dc.html","Notices.dc.html"],
+"notes":{},"designSystems":[]}

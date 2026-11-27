@@ -1,0 +1,233 @@
+--- a/src/components/wishlist/wishlist-view.tsx
++++ b/src/components/wishlist/wishlist-view.tsx
+@@ -16,6 +16,7 @@
+ import { dismissCollectedAction } from "../../app/collection/wishlist/actions";
+ import { FriendSparesProvider, SparesSheetHost, SpareKeyItem, usePageSpares } from "../social/spare-markers";
+ import { WishlistSearch } from "./wishlist-search";
++import { CartOffer, WishlistGroups } from "./wishlist-groups";
+ import { WishlistSparePress } from "./wishlist-spare-press";
+ import type { WishlistTileLine } from "../../lib/wishlist/tile-line";
+ import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText } from "./wishlist-tile";
+@@ -36,7 +37,13 @@
+   notices,
+   hasFriend,
+   newestAsOf = null,
++  groups,
++  offer,
+ }: {
++  /** Cart on your wishlist (proposal): the lines split by where they came from, Added by you first, then each deck. */
++  groups?: { key: string; kind: "you" | "deck"; name: string; deckHref?: string; tiles: WishlistViewTile[] }[];
++  /** The switch is off and the reader's decks need this many cards they own none of: the one-time offer. */
++  offer?: number;
+   tiles: WishlistViewTile[];
+   notices: WishlistViewNotice[];
+   hasFriend: boolean;
+@@ -134,6 +141,7 @@
+             </div>
+           )}
+ 
++          {offer ? <CartOffer need={offer} /> : null}
+           {tiles.length > 0 ? (
+             <>
+               {/* On a phone the open panel covers this row, so it is not drawn then (WP2). */}
+@@ -146,7 +154,16 @@
+                 </span>
+                 {hasFriend && <span className="pt-[6px] text-[color:var(--fg-faint)] md:pt-0">{copy.page.friendsLine}</span>}
+               </div>
+-              <WishlistGrid tiles={tiles} sort={sort} searching={searching} />
++              {groups ? (
++                <WishlistGroups
++                  groups={groups.map((g) => ({
++                    key: g.key, kind: g.kind, name: g.name, deckHref: g.deckHref, count: g.tiles.length,
++                    tiles: g.tiles.map((t, i) => <WishlistTile key={t.oracleId} tile={t} eager={i < GRID_EAGER_TILES} siblings={g.tiles.map((x) => ({ oracleId: x.oracleId, name: x.name, imageUri: x.imageUri }))} />),
++                  }))}
++                />
++              ) : (
++                <WishlistGrid tiles={tiles} sort={sort} searching={searching} />
++              )}
+             </>
+           ) : (
+             !searching && <EmptyState />
+--- a/src/lib/feed/home.ts
++++ b/src/lib/feed/home.ts
+@@ -50,6 +50,8 @@
+ /** One item, as the row and the lead draw it. Client-safe: plain data, the time as an ISO string. */
+ export type FeedView = {
+   key: string;
++  /** Cart on your wishlist (proposal): a trade match rolled up for one friend and one day. `cards` are every card in it, `card` the first. */
++  rolled?: { cards: FeedCard[] };
+   kind: FeedKind;
+   at: string;
+   unseen: boolean;
+--- a/src/components/feed/feed-item.tsx
++++ b/src/components/feed/feed-item.tsx
+@@ -20,6 +20,7 @@
+ import { feedCopy } from "../../lib/copy/feed";
+ import { spareCopy } from "../../lib/copy/social";
+ import { PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
++import { personText } from "../../lib/person-name/brand";
+ import { formatCents } from "../../lib/decks/price";
+ import type { FeedView } from "../../lib/feed/home";
+ import type { ProfileCommander } from "../../lib/social/commander";
+@@ -76,6 +77,11 @@
+         press: item.outbound ? (item.store ? storeCopy.feedBuy(STORE_INFO[item.store]) : c.press.priceDrop) : null,
+       };
+     case "trade-match":
++      if (item.rolled && item.rolled.cards.length > 1) {
++        const names = item.rolled.cards.map((x) => shortName(x.name));
++        const list = names.length <= 3 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
++        return { title: personText`${item.friend!.displayName} has spares of ${String(names.length)} cards you want`, line: `${list}. On your wishlist.`, press: c.press.tradeMatch(item.friend!.displayName) };
++      }
+       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
+     case "spare-request":
+       if (item.offer) {
+@@ -341,9 +347,15 @@
+   }
+   const box = `relative z-[1] row-span-2 h-[64px] w-[46px] self-start ${rowMd(compact, "md:row-span-1 md:self-center", "md:max-[1179px]:row-span-1 md:max-[1179px]:self-center")}`;
+   if (item.post) return <PostPicture item={item} box={box} />;
++  const rolled = item.rolled && item.rolled.cards.length > 1 ? item.rolled.cards : null;
+   const art = (
+     <>
+-      <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
++      {rolled ? rolled.slice(1, 3).reverse().map((x, i, arr) => (
++        <span key={x.oracleId} className="absolute inset-0 block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]" style={{ transform: `rotate(${-(arr.length - i) * 6}deg) translateX(${-(arr.length - i) * 3}px)`, transformOrigin: "50% 100%" }}>
++          <CommanderThumb imageUri={x.image} colorIdentity={x.colorIdentity} size="feed" />
++        </span>
++      )) : null}
++      <span className="relative block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
+         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
+       </span>
+       {item.friend && (
+--- /dev/null
++++ b/src/components/wishlist/wishlist-groups.tsx
+@@ -0,0 +1,78 @@
++"use client";
++// Cart on your wishlist R1 (proposal, account 2, 2026-11-27): the owner's Wishlist tab split by where each line came
++// from. "Added by you" holds the lines the reader added (search, card details); one box per deck holds the cards that
++// deck still needs and the reader does not own, kept in step with the deck. A card two decks need sits in both boxes.
++// Each box is the deck tabs' shipped box (`DeckBox` + `DeckBoxBand`); the tiles inside are the shipped Wishlist tiles.
++// Friends never see this split: their Wishlist tab of the reader is the one shipped list.
++
++import Link from "next/link";
++import { DeckBox, DeckBoxBand } from "../decks/deck-box";
++import { CARD_GRID_TRACKS } from "../ui/card-grid";
++import { GhostButton, HAIRLINE } from "../ui/button";
++import { ArrivalDismiss } from "../decks/arrival-strip";
++
++export const cartWishlistCopy = {
++  you: "Added by you",
++  deck: (name: string) => `For ${name}`,
++  openDeck: "Open deck",
++  offer: {
++    strong: (n: number) => `Your decks need ${n} cards you don’t own.`,
++    rest: "Put them here so friends can see them. They follow your decks, and leave once you have them.",
++    press: "Add them",
++    dismiss: "Not now",
++  },
++  added: (n: number, decks: number) => `Added ${n} cards from ${decks} decks. They’ll follow your decks from now on.`,
++} as const;
++
++export type WishlistGroup = { key: string; kind: "you" | "deck"; name: string; deckHref?: string; count: number; tiles: React.ReactNode[] };
++
++export function WishlistGroups({ groups }: { groups: WishlistGroup[] }) {
++  return (
++    <div className="flex flex-col gap-[14px] px-[14px] pb-[14px] pt-[12px] md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px]">
++      {groups.map((g) => (
++        <DeckBox key={g.key} data-wishlist-group={g.kind}>
++          <DeckBoxBand
++            title={g.kind === "you" ? cartWishlistCopy.you : cartWishlistCopy.deck(g.name)}
++            count={g.count}
++            aside={
++              g.deckHref ? (
++                <Link href={g.deckHref} className="flex-none font-sans text-[13px] font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--accent-hover)]">
++                  {cartWishlistCopy.openDeck} ›
++                </Link>
++              ) : null
++            }
++          />
++          <ul className={`m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] p-[10px] md:gap-[20px] md:p-[16px]`}>{g.tiles}</ul>
++        </DeckBox>
++      ))}
++    </div>
++  );
++}
++
++/** The one-time offer on the tab while the switch is off and the reader's decks need cards: the collected strip's own shell. */
++export function CartOffer({ need }: { need: number }) {
++  return (
++    <div
++      role="status"
++      className="mx-[14px] mt-[12px] flex flex-col gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] px-[16px] py-[12px] text-[13.5px] text-[color:var(--fg-body)] md:mx-[34px] md:mt-[14px] md:flex-row md:items-center md:gap-[14px] md:text-[14px]"
++    >
++      <span className="flex min-w-0 flex-1 items-start gap-[12px]">
++        <svg aria-hidden width="14" height="17" viewBox="0 0 24 24" fill="currentColor" className="mt-[2px] flex-none text-[color:var(--accent-text)]">
++          <path d="M6 3h12v18l-6-4-6 4z" />
++        </svg>
++        <span className="min-w-0 flex-1">
++          <span className="font-medium text-[color:var(--fg)]">{cartWishlistCopy.offer.strong(need)}</span> {cartWishlistCopy.offer.rest}
++        </span>
++        <span className="md:hidden">
++          <ArrivalDismiss onDismiss={() => {}} label={cartWishlistCopy.offer.dismiss} />
++        </span>
++      </span>
++      <span className="flex items-center gap-[10px] pl-[26px] md:pl-0">
++        <GhostButton className={`min-h-[44px] rounded-[8px] px-[16px] text-[13px] ${HAIRLINE}`}>{cartWishlistCopy.offer.press}</GhostButton>
++        <span className="hidden md:inline-flex">
++          <ArrivalDismiss onDismiss={() => {}} label={cartWishlistCopy.offer.dismiss} />
++        </span>
++      </span>
++    </div>
++  );
++}
+--- /dev/null
++++ b/src/components/settings/wishlist-section.tsx
+@@ -0,0 +1,49 @@
++"use client";
++// Settings' Wishlist section (Cart on your wishlist R1, proposal): the one switch that keeps the cards the reader's
++// decks need on their wishlist, and under it every deck, ticked unless the reader left it out. Drawn as Your decks
++// draws its rows (`friend-decks-section.tsx`): the shipped Checkbox, a name and a line, the sub rows indented.
++
++import { BandText } from "../decks/deck-box";
++import { SECTION_HEAD } from "../social/friends-list";
++import { Checkbox } from "../ui/checkbox";
++
++export const wishlistSettingsCopy = {
++  head: "Wishlist",
++  explain: "Friends see your wishlist, and their spares are matched against it.",
++  sync: { name: "Add the cards my decks need", line: "They follow your decks: on when a deck needs a card you don’t own, off once you have it or cut it." },
++  deckLine: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
++  foot: "A new deck is ticked. Cards you add yourself never change here.",
++} as const;
++const c = wishlistSettingsCopy;
++
++export function WishlistSection({ on, decks }: { on: boolean; decks: { name: string; cards: number; in: boolean }[] }) {
++  return (
++    <section aria-labelledby="settings-wishlist" className="mt-[26px] md:mt-[34px]">
++      <h2 id="settings-wishlist" className={SECTION_HEAD}><BandText text={c.head} /></h2>
++      <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
++      <ul className="m-0 mt-[4px] list-none p-0">
++        <li className="[&+&]:[border-top:1px_solid_var(--border)]">
++          <label className="flex min-h-[44px] cursor-pointer items-start gap-[12px] rounded-[8px] py-[8px]">
++            <Checkbox checked={on} onChange={() => {}} className="mt-[1px]" />
++            <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
++              <b className="font-sans text-[14px] font-medium text-[color:var(--fg)]">{c.sync.name}</b>
++              <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{c.sync.line}</span>
++            </span>
++          </label>
++        </li>
++        {decks.map((d) => (
++          <li key={d.name} className="[&+&]:[border-top:1px_solid_var(--border)]">
++            <label className={`flex min-h-[44px] items-start gap-[12px] rounded-[8px] py-[8px] pl-[30px] ${on ? "cursor-pointer" : "cursor-default opacity-[.45]"}`}>
++              <Checkbox checked={on && d.in} disabled={!on} onChange={() => {}} className="mt-[1px]" />
++              <span className="flex min-w-0 flex-1 items-baseline justify-between gap-[12px]">
++                <b className="font-sans text-[14px] font-medium text-[color:var(--fg)]">{d.name}</b>
++                <span className="flex-none font-mono text-[11.5px] text-[color:var(--fg-faint)]">{c.deckLine(d.cards)}</span>
++              </span>
++            </label>
++          </li>
++        ))}
++      </ul>
++      <p className="m-0 mt-[10px] font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
++    </section>
++  );
++}
