@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// One Map is one request: `headers()` hands back the same object for the whole request, as Next's does.
 const headerMap = vi.hoisted(() => ({ value: new Map<string, string>() as Map<string, string> | null }));
+const perRequest = vi.hoisted(() => new WeakMap<Map<string, string>, { get: (name: string) => string | null }>());
 vi.mock("next/headers", () => ({
   headers: async () => {
     if (headerMap.value === null) throw new Error("`headers` was called outside a request scope.");
     const h = headerMap.value;
-    return { get: (name: string) => h.get(name) ?? null };
+    if (!perRequest.has(h)) perRequest.set(h, { get: (name: string) => h.get(name) ?? null });
+    return perRequest.get(h)!;
   },
 }));
 const later = vi.hoisted(() => vi.fn(async () => {}));
@@ -31,6 +34,16 @@ describe("scheduleWishlistSyncAfterAction", () => {
     headerMap.value = new Map([["next-action", "7f00ab"]]);
     await scheduleWishlistSyncAfterAction("user_1");
     expect(later).toHaveBeenCalledWith("user_1");
+  });
+
+  it("schedules one pass per request, however often the action calls it", async () => {
+    headerMap.value = new Map([["next-action", "7f00ab"]]);
+    await scheduleWishlistSyncAfterAction("user_1");
+    await scheduleWishlistSyncAfterAction("user_1");
+    expect(later).toHaveBeenCalledTimes(1);
+    headerMap.value = new Map([["next-action", "7f00ab"]]);
+    await scheduleWishlistSyncAfterAction("user_1");
+    expect(later).toHaveBeenCalledTimes(2);
   });
 
   it("schedules nothing for a request without it (a page render or prefetch)", async () => {

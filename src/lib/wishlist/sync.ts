@@ -9,14 +9,18 @@
  * brought the lines up to (`wishlist_sync_state`). Switch off, or stamp not past it, and it returns. Every Server Action
  * schedules it after its response (`sync-trigger.ts`, from `requireUserId`), and the hourly invite-sweep
  * cron reconciles anyone due or not synced for a day (`reconcileWishlistSyncs`), a backstop for a write that reached the
- * data without an action (a script, the Clerk webhook).
+ * data without an action (a script, a webhook, a Route Handler).
  *
  * HOW IT WRITES. The desired set is computed first, then a transaction takes a per-player advisory lock, re-reads the
  * ledger and writes only the difference: a line inserted, a line deleted, a line updated only where its `quantity` or
  * `held` differs, the same for the deck rows. A recompute that changes nothing writes nothing, so it fires no stamp
- * trigger and leaves no reason to run again. The ledger records the stamp read BEFORE the desired set was computed: a
- * write that lands mid-pass moves the stamp past it, so the player stays due and the next pass sees that write. A pass
- * that finds the ledger already at or past its own stamp (a concurrent pass got there first) writes nothing.
+ * trigger. The sync's own writes do move the stamp (its tables carry the touch trigger), so a pass that changed lines
+ * leaves the player due once more, and the next pass settles with a recompute that writes nothing: one extra read of
+ * the desired set per real change, never a loop. The ledger records the stamp read BEFORE the desired set was
+ * computed. A pass writes nothing when the ledger is already at or past that stamp (a concurrent pass got there
+ * first), or when the stamp moved while it computed (a write landed mid-pass: its set may be stale, and the player
+ * stays due). The lock is shared with the collected sweep (`wishlistSyncLock`), so a collection write and a pass
+ * never interleave.
  *
  * QUIET ARRIVALS (Q2). A line written by a player's first pass, or by a pass adding more than `QUIET_BATCH` lines, is
  * `quiet`: its trade matches never push. `quiet` is set only when a line is inserted.
@@ -28,6 +32,7 @@ import { loadDeckBuyRows } from "../decks/availability-query";
 import { listDecksWithStats } from "../decks/read";
 import { unfinishedPill } from "../social/deck-visibility-rule";
 import { afterCommit } from "../feed/after-commit";
+import { wishlistSyncLock } from "./collected";
 import { heldCopies } from "./held";
 
 /** The most copies a line can want (the tables' own check). */
@@ -229,15 +234,19 @@ export async function syncWishlistIfDue(userId: string, opts: { force?: boolean 
   const stampBefore = state.stamp;
   const desired = await loadDesired(userId);
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('wishlist-sync'), hashtext(${userId}))`);
-    const { rows } = await tx.execute<{ on: boolean | null; synced_stamp: number | string | null }>(sql`
+    await tx.execute(wishlistSyncLock(userId));
+    const { rows } = await tx.execute<{ on: boolean | null; synced_stamp: number | string | null; stamp: number | string | null }>(sql`
       select (select up.wishlist_sync from user_prefs up where up.user_id = ${userId}) as on,
-        (select ss.synced_stamp from wishlist_sync_state ss where ss.user_id = ${userId}) as synced_stamp
+        (select ss.synced_stamp from wishlist_sync_state ss where ss.user_id = ${userId}) as synced_stamp,
+        (select ds.stamp from user_data_stamps ds where ds.user_id = ${userId}) as stamp
     `);
     // Switched off while the pass computed: the switch's own write has removed the lines; write nothing back.
     if (rows[0]?.on !== true) return "off";
     const ledger = rows[0]?.synced_stamp == null ? null : Number(rows[0].synced_stamp);
     if (!opts.force && ledger !== null && ledger >= stampBefore) return "raced";
+    // A write committed while the desired set was computed (a collection write, another pass): that set may be stale,
+    // so write nothing. The player stays due, and the write's own pass (or the hourly reconcile) sees it.
+    if (Number(rows[0]?.stamp ?? 0) > stampBefore) return "raced";
     const current = await loadCurrent(tx, userId);
     const plan = planWishlistSync(desired, current, { firstPass: ledger === null });
     await applyPlan(tx, userId, plan);
@@ -255,7 +264,7 @@ export async function syncWishlistIfDue(userId: string, opts: { force?: boolean 
  */
 export async function setWishlistSync(userId: string, on: boolean): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('wishlist-sync'), hashtext(${userId}))`);
+    await tx.execute(wishlistSyncLock(userId));
     await tx.insert(userPrefs).values({ userId, wishlistSync: on }).onConflictDoUpdate({
       target: userPrefs.userId,
       set: { wishlistSync: on },
@@ -277,12 +286,20 @@ export function syncWishlistLater(userId: string): Promise<void> {
 /** The most players one cron run reconciles; the rest wait for the next hour. */
 export const RECONCILE_LIMIT = 200;
 
+/** The wall-clock budget one cron run spends on passes, well inside the route's time limit; the rest wait an hour. */
+export const RECONCILE_BUDGET_MS = 60_000;
+
 /**
  * The hourly backstop (invite-sweep cron): every player with the switch on who is due, or whose last pass is over a day
- * old (forced, so a change no stamp recorded is still picked up). One at a time; one player's failure does not stop
- * the rest. Answers the counts.
+ * old (forced, so a change no stamp recorded is still picked up). One at a time, inside a time budget, so the cron
+ * finishes and pings its heartbeat even with a backlog; in random order, so a backlog drains over runs and a player
+ * whose pass keeps failing cannot starve the rest. One player's failure does not stop the rest. Answers the counts (`checked` is the
+ * players a pass ran for).
  */
-export async function reconcileWishlistSyncs(): Promise<{ checked: number; synced: number; failed: number }> {
+export async function reconcileWishlistSyncs(
+  budgetMs = RECONCILE_BUDGET_MS, now: () => number = Date.now,
+): Promise<{ checked: number; synced: number; failed: number }> {
+  const deadline = now() + budgetMs;
   const { rows } = await db.execute<{ user_id: string; stale: boolean }>(sql`
     select up.user_id, (ss.synced_at is not null and ss.synced_at < now() - interval '24 hours') as stale
     from user_prefs up
@@ -290,12 +307,16 @@ export async function reconcileWishlistSyncs(): Promise<{ checked: number; synce
     left join user_data_stamps ds on ds.user_id = up.user_id
     where up.wishlist_sync
       and (ss.user_id is null or coalesce(ds.stamp, 0) > ss.synced_stamp or ss.synced_at < now() - interval '24 hours')
-    order by ss.synced_at nulls first
+    -- Random, not oldest first: a player whose pass keeps failing never stamps synced_at, and must not hold the front.
+    order by random()
     limit ${RECONCILE_LIMIT}
   `);
+  let checked = 0;
   let synced = 0;
   let failed = 0;
   for (const r of rows) {
+    if (now() >= deadline) break;
+    checked += 1;
     try {
       if ((await syncWishlistIfDue(r.user_id, { force: r.stale })) === "synced") synced += 1;
     } catch (error) {
@@ -303,5 +324,5 @@ export async function reconcileWishlistSyncs(): Promise<{ checked: number; synce
       console.error("wishlist sync reconcile failed for one player", error);
     }
   }
-  return { checked: rows.length, synced, failed };
+  return { checked, synced, failed };
 }

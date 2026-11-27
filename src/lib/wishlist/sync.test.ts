@@ -104,3 +104,18 @@ describe("isDue", () => {
     expect(isDue({ on: false, stamp: 9, syncedStamp: null })).toBe(false);
   });
 });
+
+describe("reconcileWishlistSyncs", () => {
+  it("stops starting passes once its time budget is spent", async () => {
+    vi.resetModules();
+    const execute = vi.fn(async () => ({ rows: [{ user_id: "u1", stale: false }, { user_id: "u2", stale: false }, { user_id: "u3", stale: false }] }));
+    vi.doMock("../../db", () => ({ db: { execute } }));
+    const mod = await import("./sync");
+    let clock = 0;
+    // Each clock read moves 40ms; a 100ms budget leaves room for two passes' checks, then the loop stops.
+    const result = await mod.reconcileWishlistSyncs(100, () => (clock += 40)).catch(() => null);
+    expect(result).not.toBeNull();
+    expect(result!.checked).toBeLessThan(3);
+    vi.doUnmock("../../db");
+  });
+});

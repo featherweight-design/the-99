@@ -11,12 +11,17 @@
  * that change themselves, and the strip names what was collected since they last looked. Synced lines (cart on your
  * wishlist) are swept by the same statement, by their own any-printing test.
  */
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, wishlistCollected } from "../../db/schema";
 import { heldCopies } from "./held";
 
 type Executor = Pick<typeof db, "execute">;
+
+/** The per-player lock the sync's writes and the collected sweep share (transaction-scoped). */
+export function wishlistSyncLock(userId: string): SQL {
+  return sql`select pg_advisory_xact_lock(hashtext('wishlist-sync'), hashtext(${userId}))`;
+}
 
 /**
  * Deletes every line of the player's wishlist the collection now reaches, and records each in
@@ -28,8 +33,12 @@ type Executor = Pick<typeof db, "execute">;
  * any printing (its `wishlist_synced_decks` rows leave with it, by the cascade). A card is recorded once, at the larger
  * want of the sides that left (one `on conflict` cannot touch a row twice), and a synced line that leaves while the
  * card's hand line still stands records nothing: the card is still on the list.
+ *
+ * It takes the wishlist sync's per-player lock first (`wishlistSyncLock`), so a sync pass and a collection write never
+ * interleave: a pass that wrote first is swept here, and a pass that runs after sees this write's stamp and stands down.
  */
 export async function sweepCollectedIn(tx: Executor, userId: string): Promise<string[]> {
+  await tx.execute(wishlistSyncLock(userId));
   const { rows } = await tx.execute<{ oracle_id: string }>(sql`
     with gone_hand as (
       delete from wishlist_items w

@@ -8,13 +8,20 @@ const { sweepCollectedIn } = await import("./collected");
 
 const dialect = new PgDialect();
 
-async function sent(): Promise<string> {
-  let query: SQL | undefined;
-  await sweepCollectedIn({ execute: (async (q: SQL) => { query = q; return { rows: [] }; }) as never }, "user_1");
-  return dialect.sqlToQuery(query!).sql.replace(/\s+/g, " ");
+async function statements(): Promise<string[]> {
+  const queries: SQL[] = [];
+  await sweepCollectedIn({ execute: (async (q: SQL) => { queries.push(q); return { rows: [] }; }) as never }, "user_1");
+  return queries.map((q) => dialect.sqlToQuery(q).sql.replace(/\s+/g, " "));
 }
+const sent = async () => (await statements()).at(-1)!;
 
 describe("sweepCollectedIn", () => {
+  it("takes the wishlist sync's per-player lock before it deletes anything", async () => {
+    const [lock, sweep] = await statements();
+    expect(lock).toBe("select pg_advisory_xact_lock(hashtext('wishlist-sync'), hashtext($1))");
+    expect(sweep).toContain("delete from wishlist_items");
+  });
+
   it("deletes a hand line by its printing and a synced line by any printing", async () => {
     const q = await sent();
     expect(q).toContain("delete from wishlist_items w where w.user_id = $1 and w.quantity <= ( select coalesce(sum(ci.quantity), 0)::int from collection_items ci where ci.user_id = w.user_id and ci.oracle_id = w.oracle_id and (w.scryfall_id::uuid is null");

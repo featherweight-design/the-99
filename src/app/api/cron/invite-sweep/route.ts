@@ -25,6 +25,9 @@ export const dynamic = "force-dynamic";
  * and reconciles the wishlist sync (`wishlist/sync.ts`): every player with it on who is due or not synced for a day, the
  * backstop for a write that reached their data without a Server Action.
  */
+/** The wishlist reconcile spends up to a minute after the sweeps (`RECONCILE_BUDGET_MS`); this leaves ample room. */
+export const maxDuration = 300;
+
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return new Response("Cron not configured", { status: 503 });
