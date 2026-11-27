@@ -21,7 +21,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks, friendLinks, socialProfiles, userPrefs, wishlistSynced, wishlistSyncedDecks } from "../../db/schema";
 import { heldCopies } from "../wishlist/held";
-import { handSide, unionLines, type LineSide } from "../wishlist/lines";
+import { handSide, oracleFilter, unionLines, type LineSide } from "../wishlist/lines";
 import { DEFAULT_FRIEND_DECK_PREFS } from "./deck-visibility-rule";
 import { isUuid } from "./rules";
 
@@ -43,23 +43,30 @@ const sourceVisible = sql`coalesce(sdk.id is not null and not sdk.hidden_from_fr
   and coalesce(sup.friends_see_decks, ${sql.raw(String(DEFAULT_FRIEND_DECK_PREFS.seeDecks))})
   and (coalesce(sup.friends_see_unfinished, ${sql.raw(String(DEFAULT_FRIEND_DECK_PREFS.seeUnfinished))}) or not sd.unfinished), false)`;
 
-/** The synced lines of `owners`, as a friend sees them: visible decks' copies only, and only lines with one. */
-export function visibleSyncedSide(owners: SQL): LineSide {
+/**
+ * The synced lines of `owners`, as a friend sees them: visible decks' copies only, and only lines with one. The want is
+ * rebuilt as the copies held at the sync plus the visible decks' deficits, capped at 99 like the stored want; never the
+ * stored want minus the hidden decks', which would undercount a line the cap clipped.
+ */
+export function visibleSyncedSide(owners: SQL, oracleIds?: readonly string[]): LineSide {
   return sql`select sw.user_id, sw.oracle_id, null::uuid as scryfall_id,
-      (sw.quantity - coalesce(sum(sd.quantity) filter (where not ${sourceVisible}), 0))::int as quantity, sw.created_at,
+      least(99, sw.held + coalesce(sum(sd.quantity) filter (where ${sourceVisible}), 0))::int as quantity, sw.created_at,
       ${heldCopies(sql`sw.user_id`, sql`sw.oracle_id`, sql`null`)} as owned, null::text[] as deck_ids
     from ${wishlistSynced} sw
     join ${wishlistSyncedDecks} sd on sd.user_id = sw.user_id and sd.oracle_id = sw.oracle_id
     left join ${decks} sdk on sdk.id = sd.deck_id and sdk.user_id = sw.user_id
     left join ${userPrefs} sup on sup.user_id = sw.user_id
-    where sw.user_id in (${owners})
-    group by sw.user_id, sw.oracle_id, sw.quantity, sw.created_at, sup.friends_see_decks, sup.friends_see_unfinished
+    where sw.user_id in (${owners})${oracleFilter(sql`sw.oracle_id`, oracleIds)}
+    group by sw.user_id, sw.oracle_id, sw.held, sw.created_at, sup.friends_see_decks, sup.friends_see_unfinished
     having bool_or(${sourceVisible})`;
 }
 
-/** A friend's still-wanted lines as this viewer may see them. `owners` must already be cut to the viewer's grant. */
-function friendLines(owners: SQL): SQL {
-  return unionLines(handSide(owners), visibleSyncedSide(owners));
+/**
+ * A friend's still-wanted lines as this viewer may see them, optionally only `oracleIds`. `owners` must already be cut
+ * to the viewer's grant.
+ */
+function friendLines(owners: SQL, oracleIds?: readonly string[]): SQL {
+  return unionLines(handSide(owners, oracleIds), visibleSyncedSide(owners, oracleIds));
 }
 
 /** The one friend named by `friendPublicId`, through the viewer's own friendship row. */
@@ -97,8 +104,7 @@ export async function loadFriendWishlist(viewerId: string, friendPublicId: unkno
  */
 export function friendWantedGapQuery(viewerId: string, friendPublicId: string, oracleIds: readonly string[]): SQL {
   return sql`select fg.oracle_id, fg.gap::int as gap
-    from (${friendLines(grantedFriend(viewerId, friendPublicId))}) fg
-    where fg.oracle_id in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
+    from (${friendLines(grantedFriend(viewerId, friendPublicId), oracleIds)}) fg`;
 }
 
 export async function loadFriendWantedGap(viewerId: string, friendPublicId: unknown, oracleIds: readonly unknown[]): Promise<Map<string, number>> {

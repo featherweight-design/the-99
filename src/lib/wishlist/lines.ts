@@ -24,11 +24,20 @@ import { heldCopies } from "./held";
  */
 export type LineSide = SQL;
 
-/** The hand-added lines of the owners `owners` selects (a subquery yielding user ids). */
-export function handSide(owners: SQL): LineSide {
-  return sql`select hw.user_id, hw.oracle_id, hw.scryfall_id, hw.quantity, hw.created_at,
+/** Narrows a side to the cards `oracleIds` names, inside the side so the planner never builds the whole union. */
+export function oracleFilter(column: SQL, oracleIds?: readonly string[]): SQL {
+  if (!oracleIds) return sql``;
+  return sql` and ${column} in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
+}
+
+/**
+ * The hand-added lines of the owners `owners` selects (a subquery yielding user ids), optionally only `oracleIds`.
+ * `wishlist_items.created_at` is a naive UTC timestamp; it is read as UTC so it orders with the synced side's timestamptz.
+ */
+export function handSide(owners: SQL, oracleIds?: readonly string[]): LineSide {
+  return sql`select hw.user_id, hw.oracle_id, hw.scryfall_id, hw.quantity, hw.created_at at time zone 'UTC' as created_at,
       ${heldCopies(sql`hw.user_id`, sql`hw.oracle_id`, sql`hw.scryfall_id`)} as owned, null::text[] as deck_ids
-    from ${wishlistItems} hw where hw.user_id in (${owners})`;
+    from ${wishlistItems} hw where hw.user_id in (${owners})${oracleFilter(sql`hw.oracle_id`, oracleIds)}`;
 }
 
 /** The owner's own synced lines: every deck that put the line there, whoever could see it. */

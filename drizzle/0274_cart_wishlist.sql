@@ -15,10 +15,12 @@ CREATE TABLE "wishlist_synced" (
 	"user_id" text NOT NULL,
 	"oracle_id" uuid NOT NULL,
 	"quantity" integer NOT NULL,
+	"held" integer NOT NULL,
 	"quiet" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "wishlist_synced_user_id_oracle_id_pk" PRIMARY KEY("user_id","oracle_id"),
-	CONSTRAINT "wishlist_synced_quantity_check" CHECK ("wishlist_synced"."quantity" between 1 and 99)
+	CONSTRAINT "wishlist_synced_quantity_check" CHECK ("wishlist_synced"."quantity" between 1 and 99),
+	CONSTRAINT "wishlist_synced_held_check" CHECK ("wishlist_synced"."held" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "wishlist_synced_decks" (

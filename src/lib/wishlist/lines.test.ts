@@ -15,6 +15,10 @@ describe("ownerLinesQuery", () => {
     expect(params.filter((p) => p === "owner")).toHaveLength(2);
   });
 
+  it("reads the hand side's naive timestamp as UTC, so both sides order as timestamptz", () => {
+    expect(q).toContain(`hw.created_at at time zone 'UTC' as created_at`);
+  });
+
   it("tests held per side: the hand line by its printing, the synced line by any printing", () => {
     expect(q).toContain(`ci.user_id = hw.user_id and ci.oracle_id = hw.oracle_id and (hw.scryfall_id::uuid is null`);
     expect(q).toContain(`ci.user_id = sw.user_id and ci.oracle_id = sw.oracle_id and (null::uuid is null`);

@@ -4382,12 +4382,19 @@ export const wishlistSynced = pgTable("wishlist_synced", {
   userId: text("user_id").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   quantity: integer("quantity").notNull(),
+  /**
+   * The copies held (any printing) when the sync wrote `quantity`. A friend's view rebuilds the want from it and the
+   * visible decks' deficits (`held + visible deficits`, capped at 99), never by subtracting hidden decks from a capped
+   * `quantity`.
+   */
+  held: integer("held").notNull(),
   /** Added in a pass that added many lines at once (switching on, a large deck import): its trade matches never push (Q2). */
   quiet: boolean("quiet").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_synced_quantity_check", sql`${t.quantity} between 1 and 99`),
+  check("wishlist_synced_held_check", sql`${t.held} >= 0`),
 ]);
 
 /**

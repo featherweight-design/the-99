@@ -14512,6 +14512,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "held": {
+          "name": "held",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "quiet": {
           "name": "quiet",
           "type": "boolean",
@@ -14558,6 +14564,10 @@
         "wishlist_synced_quantity_check": {
           "name": "wishlist_synced_quantity_check",
           "value": "\"wishlist_synced\".\"quantity\" between 1 and 99"
+        },
+        "wishlist_synced_held_check": {
+          "name": "wishlist_synced_held_check",
+          "value": "\"wishlist_synced\".\"held\" >= 0"
         }
       },
       "isRLSEnabled": false

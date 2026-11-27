@@ -31,7 +31,7 @@ describe.each(Object.entries(reads))("%s", (_, { sql, params }) => {
 
   it("drops a line whose every deck is hidden, and a hidden deck's copies from the want", () => {
     expect(q).toContain(`having bool_or(coalesce(sdk.id is not null`);
-    expect(q).toContain(`(sw.quantity - coalesce(sum(sd.quantity) filter (where not coalesce(sdk.id is not null`);
+    expect(q).toContain(`least(99, sw.held + coalesce(sum(sd.quantity) filter (where coalesce(sdk.id is not null`);
   });
 
   it("never hands the friend's deck ids on", () => {
@@ -58,11 +58,13 @@ describe("friendWishlistQuery", () => {
 });
 
 describe("friendWantedGapQuery", () => {
-  it("reads the union's gap for the named cards only", () => {
+  it("reads the union's gap for the named cards only, narrowed inside each side", () => {
     const q = flat(reads.friendWantedGapQuery.sql);
     expect(q).toMatch(/^select fg\.oracle_id, fg\.gap::int as gap from/);
-    expect(q).toContain(`where fg.oracle_id in ($`);
-    expect(reads.friendWantedGapQuery.params).toContain(CARD);
+    expect(q).toContain(`and hw.oracle_id in ($`);
+    expect(q).toContain(`and sw.oracle_id in ($`);
+    expect(q).not.toContain(`where fg.oracle_id in`);
+    expect(reads.friendWantedGapQuery.params.filter((p) => p === CARD)).toHaveLength(2);
   });
 });
 
