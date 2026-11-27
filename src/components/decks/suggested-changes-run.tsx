@@ -559,7 +559,7 @@ export function SuggestedChangesRun({
     : appliedSet
       // History B says when the set went in, and that the rest can still be picked.
       ? (oldRunParts
-        ? `${oldRunParts[0]} ${oldRunParts[1]}`
+        ? oldRunParts.filter(Boolean).join(" ")
         : sc.run.appliedLead(appliedSet.length / 2, lines.filter(isOpen).length))
       : cap < n ? sc.run.shortLead(adds.length, cuts.length, cap) : sc.results.lead(adds.length, cuts.length, n);
   // History B on desktop names the version the rest stay pickable on (the phone keeps the shorter line).

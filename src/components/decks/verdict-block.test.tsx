@@ -90,6 +90,9 @@ const draw = (key: keyof typeof SHAPES, permits = key as string) => {
   return verdict;
 };
 
+// The sentence is drawn as one span per copy row, so no element's own text holds it all: match the paragraph's text.
+const sentence = (text: string) => (_content: string, el: Element | null) => el?.tagName === "P" && el.textContent === text;
+
 describe("the head (Analysis tab handoff §2, row 2)", () => {
   // A RANGE draws both marks, the upper at 0.65 with a `/` between them, and names both brackets.
   // No label, no pill, and no `Split`: the redrawn box retires all three.
@@ -152,9 +155,7 @@ describe("the sub-line", () => {
   it("says what ruled the bracket below out, and counts it in words", () => {
     draw("2");
     expect(
-      screen.getByText(
-        "One extra-turn card, and Exhibition allows none at all. Nothing else in the 99 reaches further.",
-      ),
+      screen.getByText(sentence("One extra-turn card, and Exhibition allows none at all. Nothing else in the 99 reaches further.")),
     ).toBeTruthy();
   });
 
@@ -178,13 +179,13 @@ describe("the sub-line", () => {
         />,
       );
     let view = read(2, 1);
-    expect(screen.getByText("One combo that loops turns, and Core allows none at all. Nothing else in the 99 reaches further.")).toBeTruthy();
+    expect(screen.getByText(sentence("One combo that loops turns, and Core allows none at all. Nothing else in the 99 reaches further."))).toBeTruthy();
     view.unmount();
     view = read(3, 2);
-    expect(screen.getByText("Two combos that loop turns, and Upgraded allows none at all. Nothing else in the 99 reaches further.")).toBeTruthy();
+    expect(screen.getByText(sentence("Two combos that loop turns, and Upgraded allows none at all. Nothing else in the 99 reaches further."))).toBeTruthy();
     view.unmount();
     read(1, 1);
-    expect(screen.getByText("One extra-turn card, and Exhibition allows none at all. Nothing else in the 99 reaches further.")).toBeTruthy();
+    expect(screen.getByText(sentence("One extra-turn card, and Exhibition allows none at all. Nothing else in the 99 reaches further."))).toBeTruthy();
   });
 
   // THE INVARIANT, not a figure nothing can produce. `ruledOutAllowance`'s `allows only N`
@@ -204,9 +205,7 @@ describe("the sub-line", () => {
   it("reads a one-rule deck as its count in words", () => {
     draw("3");
     expect(
-      screen.getByText(
-        "Two game changers, and Core allows none at all. Nothing else in the 99 reaches further.",
-      ),
+      screen.getByText(sentence("Two game changers, and Core allows none at all. Nothing else in the 99 reaches further.")),
     ).toBeTruthy();
   });
 
@@ -216,10 +215,8 @@ describe("the sub-line", () => {
   it("reads a two-rule deck as both rules, joined", () => {
     draw("3-two-rules", "3");
     expect(
-      screen.getByText(
-        "One game changer and one two-card infinite, and Core allows none at all. Nothing else "
-        + "in the 99 reaches further.",
-      ),
+      screen.getByText(sentence("One game changer and one two-card infinite, and Core allows none at all. Nothing else "
+        + "in the 99 reaches further.")),
     ).toBeTruthy();
   });
 
@@ -227,9 +224,7 @@ describe("the sub-line", () => {
   it("says the combo assembled where nothing below was violated", () => {
     draw("4");
     expect(
-      screen.getByText(
-        `${deckAnalysisCopy.verdict.ruledOutAssembled("Upgraded")}. ${deckAnalysisCopy.verdict.nothingFurther}`,
-      ),
+      screen.getByText(sentence(`${deckAnalysisCopy.verdict.ruledOutAssembled("Upgraded")}. ${deckAnalysisCopy.verdict.nothingFurther}`)),
     ).toBeTruthy();
   });
 

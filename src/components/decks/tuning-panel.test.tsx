@@ -655,7 +655,8 @@ describe("TuningPanel: Locked (never cut)", () => {
   it("says why the press is disabled over an existing set too", async () => {
     await draw(deps([{ ...results, allLocked: "Kykar" }]));
     const sentence = lockedCardsCopy.tuning.allLocked("Kykar");
-    expect(screen.getByText((t) => t.includes(sentence) && t.includes(lockedCardsCopy.tuning.allLockedNote))).toBeInTheDocument();
+    expect(screen.getByText(sentence)).toBeInTheDocument();
+    expect(screen.getByText(lockedCardsCopy.tuning.allLockedNote)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
   });
 
