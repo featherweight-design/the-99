@@ -509,6 +509,23 @@ describe("the fold", () => {
     expect(screen.getAllByText("not in the 99 · from 6 cards").length).toBeGreaterThan(0);
   });
 
+  it("fans up to four token pictures on the folded band, aria-hidden, and none while open or with no art", () => {
+    const pic = (n: number) => ({ imageUri: `https://img/${n}.jpg`, imageUriSmall: `https://img/s${n}.jpg`, artCropUri: null, printings: 1, scryfallId: `s${n}`, setCode: "tst", collectorNumber: String(n) });
+    const six = Array.from({ length: 6 }, (_, i) => token({ oracleId: `p${i}`, name: `Tok${i}`, picture: pic(i) }));
+    const view = draw(ok(six));
+    const fan = () => toggle().querySelectorAll("img");
+    expect(fan().length).toBe(0);
+    fireEvent.click(toggle());
+    expect(fan().length).toBe(4);
+    expect(Array.from(fan()).every((i) => i.closest("[aria-hidden='true']"))).toBe(true);
+    // The count still says how many there are.
+    expect(toggle().textContent).toContain("6");
+    view.unmount();
+    draw(ok([token()]));
+    fireEvent.click(toggle());
+    expect(fan().length).toBe(0);
+  });
+
   it("is one preference for every deck: a fold written for one deck folds the next", () => {
     const first = draw(ok([token()]));
     fireEvent.click(toggle());
