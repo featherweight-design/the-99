@@ -9,6 +9,9 @@ const read = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/copy-editor/rows", () => ({ readEditorRows: read }));
 const enforce = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/rate/observe", () => ({ enforceHit: enforce }));
+const warn = vi.hoisted(() => vi.fn());
+const fail = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/sentry/capture", () => ({ captureServerWarning: warn, captureServerError: fail }));
 const dispatch = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/copy-editor/github", () => ({ dispatchCopyEdit: dispatch }));
 
@@ -32,6 +35,8 @@ beforeEach(() => {
   read.mockReset().mockResolvedValue([row, ro]);
   enforce.mockReset().mockResolvedValue(null);
   dispatch.mockReset().mockResolvedValue(true);
+  warn.mockReset();
+  fail.mockReset();
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -84,6 +89,14 @@ describe("POST /api/copy-edit/submit: the body", () => {
   it("is 400 for bad JSON and for a body the shape check refuses", async () => {
     expect((await post("{not json")).status).toBe(400);
     expect((await post({ edits: [{ key: "x" }] })).status).toBe(400);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("answers a refused edit with the parser's reason and the edit's key, and reports it", async () => {
+    const res = await post({ edits: [{ ...edit, to: "" }] });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "bad-edits", message: "an edit cannot leave a line empty", keys: [edit.key] });
+    expect(warn).toHaveBeenCalledWith("copy-edit-submit-bad-edits", "an edit cannot leave a line empty");
     expect(dispatch).not.toHaveBeenCalled();
   });
 
@@ -143,5 +156,6 @@ describe("POST /api/copy-edit/submit: the dispatch", () => {
   it("is 502 when GitHub refuses the dispatch", async () => {
     dispatch.mockResolvedValue(false);
     expect((await post({ edits: [edit] })).status).toBe(502);
+    expect(fail).toHaveBeenCalledWith("copy-edit-submit-dispatch", expect.any(Error));
   });
 });

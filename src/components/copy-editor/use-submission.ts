@@ -6,11 +6,11 @@ import type { Edit } from "../../lib/copy-editor/edits";
 import { readSent, readStatus, restoreEdits, submitEdits, writeSent, type Sent } from "../../lib/copy-editor/submit";
 
 export type Pr = { number: number; url: string };
-export type FailKind = "stale" | "rule" | "limit" | "unavailable" | "network" | "run";
+export type FailKind = "stale" | "rule" | "invalid" | "limit" | "unavailable" | "network" | "run";
 export type Sub =
   | { phase: "idle" }
   | { phase: "submitting" }
-  | { phase: "failed"; kind: FailKind; keys: string[]; runUrl?: string }
+  | { phase: "failed"; kind: FailKind; keys: string[]; runUrl?: string; reason?: string }
   | { phase: "sent"; branch: string; count: number; pr: Pr | null; lagging: boolean };
 
 /** Ask for the branch's state this often while it has no pull request; slower once it has one (waiting for the merge). */
@@ -40,7 +40,7 @@ export function useSubmission(edits: Edit[], replaceEdits: (next: Edit[]) => voi
       replaceEdits([]);
       setSub({ phase: "sent", branch: r.branch, count: sending.length, pr: null, lagging: false });
     } else {
-      setSub({ phase: "failed", kind: r.kind, keys: "keys" in r ? r.keys : [] });
+      setSub({ phase: "failed", kind: r.kind, keys: "keys" in r ? r.keys : [], reason: r.kind === "invalid" ? r.message : undefined });
     }
   }, [replaceEdits]);
 

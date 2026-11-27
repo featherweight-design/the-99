@@ -96,6 +96,9 @@ describe("validate", () => {
     expect(problems(row, "{t}, seen")).toEqual([]);
     expect(problems(row, "Seen {t} and {t}")).toEqual([]);
   });
+  it("refuses an emptied line, which the submit parser would refuse after the editor let it save", () => {
+    expect(problems(row, "")).toEqual(["no text (a line cannot be emptied)"]);
+  });
   it("refuses a fill-in the line's code does not pass, a renamed one included", () => {
     expect(problems(row, "Seen {t} {u}")).toEqual(["{u} is not a fill-in this line has ({t})"]);
     expect(problems(row, "Seen {x} {y}")[0]).toMatch(/^\{x\} \{y\} are not fill-ins/);

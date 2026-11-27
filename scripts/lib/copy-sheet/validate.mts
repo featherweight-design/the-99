@@ -34,6 +34,7 @@ export function wordCap(key: string): { seg: string; cap: number | undefined } {
 export function problems(row: CopyRow, next: string): string[] {
   const out: string[] = [];
   if (row.readOnly) return [`this row is read-only (${row.readOnly})`];
+  if (next === "") out.push("no text (a line cannot be emptied)");
   if (/[\r\n]/.test(next)) out.push("a line break in the text");
   if (next !== next.trim()) out.push("leading or trailing space");
   // Any fill-in the line's code passes may be used, moved, repeated or dropped; a name it does not pass is refused, which is

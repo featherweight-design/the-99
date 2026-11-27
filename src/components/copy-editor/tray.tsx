@@ -62,7 +62,7 @@ export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, on
   const failed = sub.phase === "failed" ? sub : null;
   const byKey = new Map((rows ?? []).map((r) => [r.key, r]));
   const staleKeys = new Set(failed?.kind === "stale" ? failed.keys : []);
-  const ruleKeys = new Set(failed?.kind === "rule" ? failed.keys : []);
+  const ruleKeys = new Set(failed?.kind === "rule" || failed?.kind === "invalid" ? failed.keys : []);
 
   return (
     <div {...{ [OVERLAY_ATTR]: "" }}>
@@ -89,7 +89,7 @@ export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, on
             </div>
             {failed && (
               <div role="alert" className="mb-3 rounded-[10px] border border-[color:var(--danger)] px-3 py-2 text-[13px] text-[color:var(--danger)]">
-                {failed.kind === "stale" ? t.failed.stale(failed.keys.length) : t.failed[failed.kind]}
+                {failed.kind === "stale" ? t.failed.stale(failed.keys.length) : failed.kind === "invalid" ? t.failed.invalid(failed.reason ?? "") : t.failed[failed.kind]}
                 {failed.runUrl && (
                   <>
                     {" "}

@@ -1,5 +1,6 @@
 // The copy editor's client side of Submit: post the tray's edits, read where the branch stands, and keep the last
 // submission in this browser so a reload still shows "PR #N open". Every call returns a value; none throws.
+import { captureClientError } from "../sentry/capture-client";
 import type { Edit } from "./edits";
 
 export const SENT_STORAGE_KEY = "the99.copySubmitted";
@@ -10,6 +11,8 @@ export type SubmitResult =
   | { kind: "stale"; keys: string[] }
   /** 422: the server's rules refused these rows (unknown key, read-only, copy rule). */
   | { kind: "rule"; keys: string[] }
+  /** 400: the route's parser refused the submission; `message` is its own fixed phrase and `keys` the edit it names, if any. */
+  | { kind: "invalid"; message: string; keys: string[] }
   | { kind: "limit" }
   | { kind: "unavailable" }
   | { kind: "network" };
@@ -21,13 +24,23 @@ export async function submitEdits(edits: readonly Edit[], doFetch: typeof fetch 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ edits }),
     });
-    const body = (await res.json().catch(() => ({}))) as { branch?: string; keys?: string[]; rows?: { key: string }[] };
+    const body = (await res.json().catch(() => ({}))) as { branch?: string; keys?: string[]; rows?: { key: string }[]; message?: unknown };
     if (res.status === 202 && typeof body.branch === "string") return { kind: "ok", branch: body.branch };
     if (res.status === 409) return { kind: "stale", keys: body.keys ?? [] };
     if (res.status === 422) return { kind: "rule", keys: (body.rows ?? []).map((r) => r.key) };
     if (res.status === 429) return { kind: "limit" };
+    if (res.status === 400) {
+      captureClientError("copy-editor-submit-invalid", new Error("400"));
+      // Only a short plain phrase is shown: the parser's reasons are all under 80 characters.
+      const message = typeof body.message === "string" && body.message.length <= 120 ? body.message : "";
+      return { kind: "invalid", message, keys: Array.isArray(body.keys) ? body.keys.filter((k): k is string => typeof k === "string") : [] };
+    }
+    // 502 (GitHub did not take the dispatch), 503 (not configured) or anything unplanned: the player sees "unavailable", and the page reports it.
+    captureClientError("copy-editor-submit-unavailable", new Error(String(res.status)));
     return { kind: "unavailable" };
-  } catch {
+  } catch (error) {
+    // An offline browser is an expected outcome, the tray says so; anything else threw before a response and is reported.
+    if (!(error instanceof TypeError)) captureClientError("copy-editor-submit-threw", error);
     return { kind: "network" };
   }
 }

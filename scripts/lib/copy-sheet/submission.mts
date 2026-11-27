@@ -22,8 +22,8 @@ export function editBranch(now: Date, suffix: string = globalThis.crypto.randomU
   return `copy-edit-${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}-${suffix}`;
 }
 
-/** The edits of a submission body `{ edits: [{ key, from, to }] }`, only those three fields of each, or the first thing wrong with it. */
-export function parseSubmission(raw: unknown): { edits: SubmittedEdit[] } | { error: string } {
+/** The edits of a submission body `{ edits: [{ key, from, to }] }`, only those three fields of each, or the first thing wrong with it (and the edit's key, when the fault is one edit's and it has one). */
+export function parseSubmission(raw: unknown): { edits: SubmittedEdit[] } | { error: string; key?: string } {
   const list = raw && typeof raw === "object" ? (raw as { edits?: unknown }).edits : undefined;
   if (!Array.isArray(list)) return { error: "edits must be a list" };
   if (list.length === 0) return { error: "nothing to submit" };
@@ -34,9 +34,10 @@ export function parseSubmission(raw: unknown): { edits: SubmittedEdit[] } | { er
     const e = item as Partial<Record<keyof SubmittedEdit, unknown>> | null;
     if (!e || typeof e !== "object" || typeof e.key !== "string" || typeof e.from !== "string" || typeof e.to !== "string") return { error: "each edit needs a key, from and to, all text" };
     if (e.key.length > MAX_TEXT || !KEY_RE.test(e.key)) return { error: "a key is not a copy key" };
-    if (e.from.length > MAX_TEXT || e.to.length > MAX_TEXT) return { error: `a text is over ${MAX_TEXT} characters` };
-    if (e.to === "" || e.to === e.from) return { error: "an edit must change the text" };
-    if (seen.has(e.key)) return { error: "a key appears twice" };
+    if (e.from.length > MAX_TEXT || e.to.length > MAX_TEXT) return { error: `a text is over ${MAX_TEXT} characters`, key: e.key };
+    if (e.to === "") return { error: "an edit cannot leave a line empty", key: e.key };
+    if (e.to === e.from) return { error: "an edit must change the text", key: e.key };
+    if (seen.has(e.key)) return { error: "a key appears twice", key: e.key };
     seen.add(e.key);
     edits.push({ key: e.key, from: e.from, to: e.to });
   }
