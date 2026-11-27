@@ -30,3 +30,14 @@
    useArtFade(ref, show ? (src ?? srcSet) : undefined);
    // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
    return <img ref={ref} alt={alt} src={show ? src : undefined} srcSet={show ? srcSet : undefined} {...rest} />;
+--- a/src/components/decks/deck-flip-strip.tsx
++++ b/src/components/decks/deck-flip-strip.tsx
+@@ -16,7 +16,7 @@
+ 
+ const noop = () => () => {};
+ const ready = () => true;
+-const notReady = () => false;
++const notReady = () => !!(globalThis as any).__EAGER;
+ 
+ /** Storage is a browser fact: the server and the hydration pass agree on absence, and the strip lands on the pass after. */
+ function readTrailRaw(): string | null {

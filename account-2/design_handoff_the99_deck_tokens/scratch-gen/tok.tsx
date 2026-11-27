@@ -91,12 +91,15 @@ export const TOKENS: any = { status: "ok", read: true, makerCount: 7, newestPric
   tok("Goblin", "Token Creature — Goblin", ["R"], "1", "1", ["Smokebraider"], "owned", TP("t-goblin.jpg"), 15, "FRC", "9"),
 ] };
 
+const FLIP = Array.from({ length: 22 }, (_, i) => ({ id: i === 1 ? "d1" : "f" + i, name: i === 1 ? "Ashen Banner Parade" : i === 0 ? "Abzan Counters" : "Brew " + String.fromCharCode(65 + i), createdAt: Date.UTC(2026, 0, 1) - i * 1000, lastPlayedAt: Date.UTC(2026, 10, 20) - i * 1000, sortPosition: i }));
 const shell = (over: any = {}) => () => (
   <DeckTokensProvider deckId="d1" read={TOKENS}>
     <ChangeCommanderProvider deckId="d1" deckName="Ashen Banner Parade" pair={false} hasVersion>
     <SwapToolsProvider deckId="d1" deckName="Ashen Banner Parade" storedLimitCents={null}>
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false} commanderIdentity={commander.colorIdentity}
-      arrivedFromImport={false} newestAsOf={new Date("2026-11-26")} versions={[{ number: 1, committedAt: new Date("2026-10-12"), cardCount: 99 } as any]}
+      arrivedFromImport={false} newestAsOf={new Date("2026-11-26")} versions={[{ number: 2, committedAt: new Date("2026-11-13"), cardCount: 99 } as any, { number: 1, committedAt: new Date("2026-10-12"), cardCount: 99 } as any]}
+            draft={{ version: { id: "v2", number: 2, committedAt: new Date("2026-11-13T18:00:00Z"), note: null, commanderOracleId: "x", partnerOracleId: null, commanderSince: new Date("2026-10-12"), partnerSince: null }, adds: [], addChanges: [], removes: [], names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(), claimsKnown: true } as any}
+            flipDecks={FLIP}
       nearCombos={{ total: 5, combos: [] } as any} provenance={provenanceForm(new Date("2026-11-26T08:00:00Z"), new Date("2026-11-27T03:00:00Z"))} {...over} />
     </SwapToolsProvider>
     </ChangeCommanderProvider>

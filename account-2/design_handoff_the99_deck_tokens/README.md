@@ -16,7 +16,7 @@ Goblin FRC 9).
 - T2-Folded: folded, the band shows up to four token pictures fanned at card shape (26x36 desktop, 27x38 phone, -11px
   overlap, ±7° tilt) before the chevron. No pictures, no fan.
 - T3-Cards: the same box around the Card view tiles.
-- A-StatusLine (recommended): `◎ 4 tokens from 7 cards ›` segment in TodoFoot after combos; press = landOnDeckTokens.
+- A-StatusLine (PICKED by Hugh 2026-11-27; R1b redrawn with the version segment "v2 · committed Nov 13, 2026" and the deck flip row "‹ All decks · 2 of 22 ‹ ›" in place): `◎ 4 tokens from 7 cards ›` segment in TodoFoot after combos; press = landOnDeckTokens.
 - B-RowMarks: the token glyph as a row mark (after bracket facts, fact ink, folds by FoldedMarks), key entry "makes a token".
 - C-ToBuy: a foot band in PriceStrip: "N tokens these cards make aren't in your collection · Tokens ›" (tokens read as not
   owned and not joined; nothing before a collection read).
