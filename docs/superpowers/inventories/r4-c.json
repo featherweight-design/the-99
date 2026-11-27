@@ -1,23 +1,12 @@
 {
   "feature": "R4 PR C: Export dialog tabs and shipped Shopping rows (deck page and /decks tile hosts), Help me choose band-title heads",
-  "note": "Needs a signed-in account whose deck has unowned cards. Env: R4C_DECK (deck id with Shopping > 0), R4C_DECK_NAME (its name, for the tile's 'Actions for' button). The /decks tile host mounts the dialog in a body portal outside <main>, so its Shopping tab is reached by keyboard (Tab from the close button lands on the Decklist tab, ArrowRight selects Shopping). Help me choose picked states need marker intake_reads rows c4c00000-0000-4000-8000-00000000000{1,2,3} for the reader (5, 3 and 12 picks over the c=g free list: restAt>0, restAt===0, restAt===-1) with model_calls rows; the run's note lists the seed. HELP_ME_CHOOSE needs to be on.",
+  "note": "Needs a signed-in account whose deck has unowned cards. Env: R4C_DECK (deck id with Shopping > 0), R4C_DECK_NAME (its name, for the tile's 'Actions for' button). The /decks tile host mounts the dialog in a body portal outside <main>, so its Shopping tab is reached by keyboard (Tab from the close button lands on the Decklist tab, ArrowRight selects Shopping). Help me choose picked states need marker intake_reads rows c4c00000-0000-4000-8000-00000000000{1,2,3} for the reader (5, 3 and 12 picks over the c=g free list: restAt>0, restAt===0, restAt===-1) with model_calls rows; the run's note lists the seed. HELP_ME_CHOOSE needs to be on. No \"shares\" block: the /decks tile menu loads ExportDialog by dynamic import, which check:shared reads as not imported, and the deck page and the tile menu are the same component by construction.",
   "out": "contact-sheets/r4-c",
-  "shares": [
-    {
-      "binding": "BandTitle",
-      "module": "src/components/decks/deck-box.tsx"
-    },
-    {
-      "binding": "ExportDialog",
-      "module": "src/components/decks/export-dialog.tsx"
-    }
-  ],
   "rows": [
     {
       "id": "export-deck-decklist",
       "label": "Deck page host: Export dialog, Decklist tab",
       "view": "src/components/decks/builder-shell.tsx",
-      "binding": "ExportDialog",
       "steps": [
         {
           "goto": "/decks/${R4C_DECK}",
@@ -37,7 +26,6 @@
       "id": "export-deck-shopping",
       "label": "Deck page host: Export dialog, Shopping list tab (unowned rows)",
       "view": "src/components/decks/builder-shell.tsx",
-      "binding": "ExportDialog",
       "steps": [
         {
           "goto": "/decks/${R4C_DECK}",
@@ -79,8 +67,7 @@
           "waitDialog": "Export deck",
           "settle": 900
         }
-      ],
-      "binding": "ExportDialog"
+      ]
     },
     {
       "id": "export-tile-shopping",
@@ -111,14 +98,12 @@
           "pressKey": "ArrowRight",
           "settle": 900
         }
-      ],
-      "binding": "ExportDialog"
+      ]
     },
     {
       "id": "choose-free",
       "label": "Help me choose results, no picks: Best fits, More commanders heads",
       "view": "src/components/intake/choose-results-view.tsx",
-      "binding": "BandTitle",
       "steps": [
         {
           "goto": "/decks/new/choose?c=g&v=results",
@@ -135,7 +120,6 @@
       "id": "choose-rest-after-picks",
       "label": "Help me choose, picks 5 (restAt>0): Best fits, More commanders, then The rest of your results divider",
       "view": "src/components/intake/choose-results-view.tsx",
-      "binding": "BandTitle",
       "steps": [
         {
           "goto": "/decks/new/choose?c=g&v=results&w=a+marker+deck&r=c4c00000-0000-4000-8000-000000000001",
@@ -152,7 +136,6 @@
       "id": "choose-rest-first",
       "label": "Help me choose, picks 3 (restAt===0): More commanders head hidden, divider leads",
       "view": "src/components/intake/choose-results-view.tsx",
-      "binding": "BandTitle",
       "steps": [
         {
           "goto": "/decks/new/choose?c=g&v=results&w=a+marker+deck&r=c4c00000-0000-4000-8000-000000000002",
@@ -169,7 +152,6 @@
       "id": "choose-all-picks",
       "label": "Help me choose, every row a pick (restAt===-1): More commanders alone, no divider",
       "view": "src/components/intake/choose-results-view.tsx",
-      "binding": "BandTitle",
       "steps": [
         {
           "goto": "/decks/new/choose?c=g&v=results&w=a+marker+deck&r=c4c00000-0000-4000-8000-000000000003",
