@@ -66,6 +66,7 @@ The kind lands before any writer, so the first trade written already reaches the
 - The standing check is `standing()` in `src/lib/social/feed-items.ts`, used by `storedFeedBranch` and the push resolver `storedItemsByKeyQuery`. Its `trade` branch reads `(data->>'trade')::uuid` under a `case when` guard. An `offer` or `counter` item stands while its trade is still open on that round; an `accept` stands while the trade is accepted or traded; a `decline` stands for its 14 days.
 - `push/message.ts` gains a `trade` variant and collapses it per key, as `spare-request`, so two friends' offers never fold into one push. Copy in `src/lib/copy/push.ts`. The push lands on `/friends/<publicId>/spares?trade=<id>`; until PR 5 mounts the sheet that page simply opens the friend's Spares tab.
 - The Settings row `Trades` (`news-section`), so a reader can turn the kind off from its first push.
+- The item's shape: `kind='trade'`, `friend_user_id` the other party, no `oracle_id`, `dedupe_key='<tradeId>:<round>:<event>'`, `data={trade, round, event}` with `event` one of `offer`, `counter`, `accept`, `decline`. Card lists are not stored: a revise rewrites a round's cards in place, so `src/lib/social/trade-feed.ts` reads them live from `trade_cards` for the round the item names, joined to the friendship on the viewer.
 
 ## Writes (PR 3, `src/lib/social/trades.ts`)
 

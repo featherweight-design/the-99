@@ -1,0 +1,19 @@
+{
+  "feature": "Friend trades PR 2: the `trade` feed kind on Home's What's new (an offer and a counter wait on the reader; an accept and a decline are news) and its News row in Settings, on by default",
+  "note": "Run on a SCRATCH branch seeded by `scripts/seed-trade-feed-fixture.mts` (four friends: Ann offers, Bea counters, Cal accepted, Dee declined). Read-only: nothing is pressed.",
+  "out": "contact-sheets/friend-trades-feed",
+  "rows": [
+    {
+      "id": "home-whats-new",
+      "label": "Home: What's new, the four trade events (a waiting offer or counter leads, ahead of a newer decline)",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-feed-trade-yours]", "settle": 2500 }]
+    },
+    {
+      "id": "settings-news",
+      "label": "Settings: News, the Trades row on from the start",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [{ "goto": "/settings", "wait": "[data-column-heads]", "settle": 1500 }]
+    }
+  ]
+}

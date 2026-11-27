@@ -17,6 +17,7 @@ vi.mock("../social/spare-offers", async (importOriginal) => ({
 }));
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
+import { tradeFeedSidesQuery } from "../social/trade-feed";
 import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, answerableKeys, splitLead, toViews, withAnswerDetails, withListTargets, withAsks, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
@@ -206,6 +207,24 @@ describe("toViews", () => {
     expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: named("Peter") }, answer: null });
   });
 
+  it("draws a trade from its live sides and opens the friend's Spares with the trade", () => {
+    const c = (name: string) => ({ oracleId: name, name, image: null, art: null, colorIdentity: null });
+    const item = { kind: "trade", key: "item:tr", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p q", displayName: named("Ann") }, data: { trade: "t1", round: 2, event: "counter" }, answer: null } as FeedItem;
+    const tradeSides = new Map([["t1:2", { theirs: [c("Sol Ring")], yours: [c("Arcane Signet")] }]]);
+    expect(toViews([item], { ...empty, tradeSides })[0]).toMatchObject({
+      href: "/friends/p%20q/spares?trade=t1", card: c("Sol Ring"), trade: { id: "t1", event: "counter", theirs: [c("Sol Ring")], yours: [c("Arcane Signet")] },
+    });
+  });
+
+  it("keeps a trade's press but draws no trade when its sides are gone or its data is malformed", () => {
+    const base = { kind: "trade", key: "item:tr", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Ann") }, answer: null };
+    const gone = toViews([{ ...base, data: { trade: "t1", round: 1, event: "offer" } } as FeedItem], empty)[0];
+    expect(gone).toMatchObject({ href: "/friends/p/spares?trade=t1", card: null });
+    expect(gone.trade).toBeUndefined();
+    const sides = new Map([["t1:1", { theirs: [], yours: [] }]]);
+    expect(toViews([{ ...base, data: { trade: "t1", round: 1, event: "withdraw" } } as FeedItem], { ...empty, tradeSides: sides })[0].trade).toBeUndefined();
+  });
+
   it("gives an answer to the reader's own ask its answer and a press to Your requests", () => {
     const item = { kind: "spare-request", key: "item:a", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Colin") }, data: { answer: "yes" }, answer: "yes" } as FeedItem;
     expect(toViews([item], empty)[0]).toMatchObject({ href: "/friends", answer: "yes", friend: { displayName: named("Colin") } });
@@ -309,6 +328,13 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
     const none = splitLead([match, seen], ["spare-request", "trade-match"], spent);
     expect(none.chosen && none.lead?.key).toBe("item:m");
     expect(answerableKeys([{ ...seen, offer: true }], [incoming()], []).size).toBe(0);
+  });
+
+  it("holds a seen trade offer or counter answerable, never an accept, a decline or a trade with no sides", () => {
+    const t = (key: string, event?: "offer" | "counter" | "accept" | "decline") =>
+      view({ key, kind: "trade", unseen: false, ...(event ? { trade: { id: "t1", event, theirs: [], yours: [] } } : {}) });
+    const open = answerableKeys([t("o", "offer"), t("c", "counter"), t("a", "accept"), t("d", "decline"), t("x")], [], []);
+    expect([...open].sort()).toEqual(["c", "o"]);
   });
 
   it("attaches the lead's own ask, by card and asker", () => {
@@ -444,5 +470,19 @@ describe("withListTargets", () => {
     expect(out.map((v) => v.href)).toEqual(["/decks/precons?q=FDC", null, null]);
     expect(out.map((v) => v.outbound)).toEqual(["/out/wizards/d1", "/out/wizards/d1", "/out/wizards/d2"]);
     expect(out[1]).toBe(views[1]);
+  });
+});
+
+describe("tradeFeedSidesQuery (friend trades PR 2)", () => {
+  const q = text(tradeFeedSidesQuery("viewer", [{ trade: "t1", round: 1 }])).replace(/\s+/g, " ");
+  it("aliases and qualifies every table's columns", () => {
+    expect(q).toContain('join "trades" ft on ft.id = fr.trade_id');
+    expect(q).toContain('join "trade_cards" ftc on ftc.trade_id = ft.id and ftc.round = fr.round');
+    expect(q).toContain('join "cards" fcd on fcd.oracle_id = ftc.oracle_id');
+    expect(q).toContain("fcd.name as name");
+  });
+  it("makes the viewer a party and joins the friendship on the viewer in the same statement", () => {
+    expect(q).toContain("ft.proposer_user_id = $");
+    expect(q).toMatch(/from "friend_links" ffl where ffl\.user_id = \$\d+ and ffl\.friend_user_id = \(case when ft\.proposer_user_id/);
   });
 });

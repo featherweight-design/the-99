@@ -7,6 +7,7 @@
  */
 import type { FeedView } from "../feed/home";
 import { LOG_PUSH_KIND, SEAT_PUSH_KIND } from "../feed/kinds";
+import { cardList } from "../copy/trades";
 import type { LogResult } from "../copy/push";
 import { reveal } from "../person-name/reveal";
 import type { SeatNotice } from "../social/rule-zero-notice";
@@ -44,6 +45,13 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
     case "spare-request":
       if (!card || !view.friend) return null;
       return { ...base, kind: "spare-request", friend: reveal(view.friend.displayName), card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}), ...(view.offer ? { offer: true as const } : {}) };
+    case "trade":
+      // No card is required (the item names none): the round's sides are. Without the friend or the sides, the push is dropped.
+      if (!view.friend || !view.trade) return null;
+      return {
+        ...base, kind: "trade", friend: reveal(view.friend.displayName), publicId: view.friend.publicId, trade: view.trade.id, event: view.trade.event,
+        theirs: cardList(view.trade.theirs.map((x) => x.name)), yours: cardList(view.trade.yours.map((x) => x.name)), image: card?.image ?? null,
+      };
     case "combo":
       if (!card || !view.combo || !view.opens) return null;
       return { ...base, kind: "combo", oracleId: view.opens, variantId: view.combo.variantId, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };

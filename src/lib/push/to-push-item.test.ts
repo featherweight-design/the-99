@@ -31,6 +31,15 @@ describe("a feed view as a push item", () => {
   it("spare request answer: carries the answer", () => {
     expect(toPushItem(view({ kind: "spare-request", friend, answer: "no" }), "b")).toMatchObject({ kind: "spare-request", answer: "no" });
   });
+  it("trade: the friend, the event and both card lists, or nothing without the trade", () => {
+    const c = (name: string) => ({ ...card, name });
+    const trade = { id: "t1", event: "offer" as const, theirs: [c("A"), c("B"), c("C")], yours: [c("D")] };
+    expect(toPushItem(view({ kind: "trade", friend, trade, card: c("A") }), "b")).toEqual({
+      kind: "trade", key: "k1", batch: "b", friend: "Colin", publicId: "p-colin", trade: "t1", event: "offer", theirs: "A, B and 1 more", yours: "D", image: "img",
+    });
+    expect(toPushItem(view({ kind: "trade", friend }), "b")).toBeNull();
+    expect(toPushItem(view({ kind: "trade", trade }), "b")).toBeNull();
+  });
   it("combo: the two pieces, the piece added and the piece Home opens", () => {
     expect(toPushItem(view({ kind: "combo", opens: "o9", combo: { pieces: ["A", "B"], added: "B", variantId: "1-2" } }), "b")).toMatchObject({
       kind: "combo", oracleId: "o9", variantId: "1-2", a: "A", b: "B", added: "B",

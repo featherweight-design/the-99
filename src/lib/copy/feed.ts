@@ -3,6 +3,7 @@
 import type { FeedKind } from "../feed/kinds";
 import { personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
 import { storeCopy } from "./store";
+import { tradeCopy } from "./trades";
 import { STORE_INFO } from "../stores/info";
 
 // The lines that name a friend. Push text names the friend as a plain string (`toPushItem` reveals it, the one server-side
@@ -72,6 +73,7 @@ export const feedCopy = {
       "price-drop": { name: "Price drops on your wishlist", line: "A card you want gets cheaper." },
       "trade-match": { name: "Trade matches", line: "A friend has a spare of a card on your wishlist." },
       "spare-request": { name: "Friends asking for your spares", line: "A friend asks for a card you have spare." },
+      trade: tradeCopy.feed.settings,
       combo: { name: "Combos you can make", line: "You now own both halves of a two-card combo." },
     } satisfies Record<FeedKind, { name: string; line: string }>,
     /** After a default-on kind's line (spare requests, board `Friend-Side`): it starts checked and stays so. */
@@ -142,6 +144,7 @@ export const feedCopy = {
       "price-drop": "a wishlist card gets cheaper",
       "trade-match": "a friend has a spare you want",
       "spare-request": "a friend asks for your spare",
+      trade: tradeCopy.feed.tease,
       combo: "you can make a new combo",
     } satisfies Record<FeedKind, string>,
     /**
@@ -157,6 +160,7 @@ export const feedCopy = {
       "price-drop": "price drops on your wishlist",
       "trade-match": "trade matches",
       "spare-request": "friends asking for your spares",
+      trade: tradeCopy.feed.quietName,
       combo: "combos you can make",
     } satisfies Record<FeedKind, string>,
     /**
@@ -200,6 +204,7 @@ export const feedCopy = {
       "price-drop": "Price drop",
       "trade-match": "Trade match",
       "spare-request": "Spare request",
+      trade: tradeCopy.feed.kicker,
       combo: "Combo",
     } satisfies Record<FeedKind, string>,
     /** Each kind's one title. */
