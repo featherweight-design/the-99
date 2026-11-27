@@ -1,6 +1,6 @@
 {
   "feature": "R4 PR C: Export dialog tabs and shipped Shopping rows (deck page and /decks tile hosts), Help me choose band-title heads",
-  "note": "Needs a signed-in account whose deck has unowned cards. Env: R4C_DECK (deck id with Shopping > 0), R4C_DECK_NAME (its name, for the tile's 'Actions for' button). The /decks tile host mounts the dialog in a body portal outside <main>, so its Shopping tab is reached by keyboard (Tab from the close button lands on the Decklist tab, ArrowRight selects Shopping). Help me choose picked states need marker intake_reads rows c4c00000-0000-4000-8000-00000000000{1,2,3} for the reader (5, 3 and 12 picks over the c=g free list: restAt>0, restAt===0, restAt===-1) with model_calls rows; the run's note lists the seed. HELP_ME_CHOOSE needs to be on. No \"shares\" block: the /decks tile menu loads ExportDialog by dynamic import, which check:shared reads as not imported, and the deck page and the tile menu are the same component by construction.",
+  "note": "Needs a signed-in account whose deck has unowned cards. Env: R4C_DECK (deck id with Shopping > 0), R4C_DECK_NAME (its name, for the tile's 'Actions for' button). The /decks tile host mounts the dialog in a body portal outside <main>, so its Shopping tab is reached by keyboard (Tab from the close button lands on the Decklist tab, ArrowRight selects Shopping). Help me choose picked states need marker intake_reads rows c4c00000-0000-4000-8000-00000000000{1,2,3} for the reader (5, 3 and 12 picks over the c=g free list: restAt>0, restAt===0, restAt===-1) with model_calls rows; the run's note lists the seed. HELP_ME_CHOOSE needs to be on.",
   "out": "contact-sheets/r4-c",
   "rows": [
     {
@@ -20,7 +20,8 @@
           "waitDialog": "Export deck",
           "settle": 900
         }
-      ]
+      ],
+      "binding": "ExportDialog"
     },
     {
       "id": "export-deck-shopping",
@@ -43,7 +44,8 @@
           "click": "[role=dialog] [role=tab]:visible:has-text('Shopping list')",
           "settle": 900
         }
-      ]
+      ],
+      "binding": "ExportDialog"
     },
     {
       "id": "export-tile-decklist",
@@ -67,7 +69,8 @@
           "waitDialog": "Export deck",
           "settle": 900
         }
-      ]
+      ],
+      "binding": "ExportDialog"
     },
     {
       "id": "export-tile-shopping",
@@ -98,7 +101,8 @@
           "pressKey": "ArrowRight",
           "settle": 900
         }
-      ]
+      ],
+      "binding": "ExportDialog"
     },
     {
       "id": "choose-free",
@@ -114,7 +118,8 @@
           "scrollTo": "section[aria-labelledby=best-fits] > h3:last-child",
           "settle": 500
         }
-      ]
+      ],
+      "binding": "BandTitle"
     },
     {
       "id": "choose-rest-after-picks",
@@ -130,7 +135,8 @@
           "scrollTo": "section[aria-labelledby=best-fits] > h3:last-child",
           "settle": 500
         }
-      ]
+      ],
+      "binding": "BandTitle"
     },
     {
       "id": "choose-rest-first",
@@ -146,7 +152,8 @@
           "scrollTo": "[data-testid=rest-divider]",
           "settle": 500
         }
-      ]
+      ],
+      "binding": "BandTitle"
     },
     {
       "id": "choose-all-picks",
@@ -162,7 +169,18 @@
           "scrollTo": "section[aria-labelledby=best-fits] > h3:last-child",
           "settle": 500
         }
-      ]
+      ],
+      "binding": "BandTitle"
+    }
+  ],
+  "shares": [
+    {
+      "binding": "BandTitle",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "ExportDialog",
+      "module": "src/components/decks/export-dialog.tsx"
     }
   ]
 }

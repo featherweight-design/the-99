@@ -22,6 +22,8 @@ import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 
 /** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
 const MENU_WIDTH = 186;
+/** The dialog's code, fetched beside the read; one named export, the shape `check:shared` follows through a dynamic import. */
+const loadExportDialog = () => import("./export-dialog").then((m) => m.ExportDialog);
 /**
  * The newest Export press across every tile. Each tile's busy flag is its own, so a second tile's menu can
  * press Export while the first tile's read is still out; only the newest press may open a dialog, or two
@@ -303,7 +305,7 @@ export function DeckCardOverflow({
     setBusy(true);
     setExportFailed(false);
     try {
-      const [read, mod] = await Promise.all([readDeckExport(deckId), import("./export-dialog")]);
+      const [read, Dialog] = await Promise.all([readDeckExport(deckId), loadExportDialog()]);
       // A newer press on another tile superseded this one: its answer is dropped, success or failure.
       if (ticket !== latestExport) return;
       if (!read.ok) {
@@ -314,7 +316,7 @@ export function DeckCardOverflow({
       setMode("menu");
       setExporting({ read: { deckName: read.deckName, commanderName: read.commanderName, partnerName: read.partnerName,
         commanderPrinting: read.commanderPrinting, partnerPrinting: read.partnerPrinting,
-        decklistCards: read.decklistCards, shoppingCards: read.shoppingCards }, Dialog: mod.ExportDialog });
+        decklistCards: read.decklistCards, shoppingCards: read.shoppingCards }, Dialog });
     } catch {
       if (ticket === latestExport) setExportFailed(true);
     } finally {
