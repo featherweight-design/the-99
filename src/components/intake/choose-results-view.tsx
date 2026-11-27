@@ -10,6 +10,8 @@
 
 import { useMemo } from "react";
 
+import { BandTitle } from "../decks/deck-box";
+
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import type { ChooseParams } from "../../lib/intake/params";
 import { figures, narrowOptions, orderLine, type Labels } from "../../lib/intake/present";
@@ -166,15 +168,18 @@ export function ChooseResultsView({
       {gone && !picked ? gone : null}
       {best.length > 0 && (
         <section aria-labelledby="best-fits" className="flex flex-col gap-[10px]">
-          <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent-text)]">
-            {copy.results.bestFits}
+          <h3 id="best-fits" className="m-0 font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[17px]">
+            <BandTitle title={copy.results.bestFits} />
           </h3>
           <ol data-dim={dim || undefined} className={`m-0 p-0 list-none grid grid-cols-1 gap-[10px] md:grid-cols-[repeat(3,minmax(0,1fr))] md:gap-[14px] ${dim ? "opacity-[0.45]" : ""}`}>
             {best.map((r, i) => row(r, i + 1))}
           </ol>
-          <h3 className="m-0 mt-[6px] font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]">
-            {copy.results.moreCommanders}
-          </h3>
+          {/* The rest divider names what follows when it comes first, so the second head is not drawn over it. */}
+          {restAt === 0 ? null : (
+            <h3 className="m-0 font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[17px] mt-[14px]">
+              <BandTitle title={copy.results.moreCommanders} />
+            </h3>
+          )}
         </section>
       )}
 
@@ -195,9 +200,7 @@ export function ChooseResultsView({
           >
             {copy.results.more}
           </button>
-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-            {failed ? copy.results.moreFailed : copy.results.moreNote}
-          </span>
+          {failed ? <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.results.moreFailed}</span> : null}
         </div>
       )}
     </HoverPreviewProvider>
@@ -207,9 +210,8 @@ export function ChooseResultsView({
 /** Between the read's picks and the rest of the results, in the free order (the read addendum R1). */
 function RestDivider({ owned }: { owned: boolean }) {
   return (
-    <li data-testid="rest-divider" role="presentation" className="flex items-center gap-[12px] mt-[8px]">
-      <span className="font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)] whitespace-nowrap">{copy.results.restHead}</span>
-      <span aria-hidden className="flex-1 h-px bg-[color:var(--border)]" />
+    <li data-testid="rest-divider" role="presentation" className="flex items-center justify-between gap-[12px] mt-[14px]">
+      <span className="m-0 font-display text-[15px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[17px] whitespace-nowrap"><BandTitle title={copy.results.restHead} /></span>
       {/* The tail names the owned order, so it is drawn only when that is the rest's order. */}
       {owned && <span className="hidden md:inline font-mono text-[10.5px] text-[color:var(--fg-faint)] whitespace-nowrap">{copy.results.restTail}</span>}
     </li>

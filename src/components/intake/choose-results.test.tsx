@@ -110,7 +110,7 @@ describe("the results under a read (the read addendum R1)", () => {
     expect(screen.getAllByTestId("row-reason")[0].textContent).toBe("Unlike Omnath, it wins with lands.");
     // One divider, after the tenth pick and before the first free row.
     const divider = screen.getByTestId("rest-divider");
-    expect(divider.textContent).toBe("The rest of your resultsordered by cards you already have");
+    expect(divider.textContent).toBe(`◆${helpMeChooseCopy.results.restHead}${helpMeChooseCopy.results.restTail}`);
     const items = [...divider.parentElement!.children];
     const at = items.indexOf(divider);
     expect(items[at - 1].querySelector("[data-testid='row-reason']")).toBeTruthy();
@@ -119,7 +119,7 @@ describe("the results under a read (the read addendum R1)", () => {
 
   it("draws the divider's tail only when the rest are in the owned order", () => {
     draw(picked(14, 10, "fit"), "done");
-    expect(screen.getByTestId("rest-divider").textContent).toBe(helpMeChooseCopy.results.restHead);
+    expect(screen.getByTestId("rest-divider").textContent).toBe(`◆${helpMeChooseCopy.results.restHead}`);
   });
 
   it("draws no divider with no picks, or when every row is a pick", () => {

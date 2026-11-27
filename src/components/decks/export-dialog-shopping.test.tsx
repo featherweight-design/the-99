@@ -8,7 +8,25 @@ import { describe, expect, it, vi } from "vitest";
 import { exportLinkOutCopy, exportShoppingCopy, ownedStateCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import type { Store } from "../../lib/stores/rows";
 import { StoreProvider } from "../stores/store-provider";
+import type { ExportShoppingCard } from "../../lib/decks/export-data";
 import { ExportDialog } from "./export-dialog";
+
+function shoppingCard(name: string, quantity: number, owned: boolean): ExportShoppingCard {
+  return {
+    oracleId: `oracle-${name}`,
+    name,
+    typeLine: "Artifact",
+    cardTypeGroup: "Other",
+    role: "other",
+    cmc: 1,
+    owned,
+    quantity,
+    auto: false,
+    printedName: null,
+    printedSetCode: "cmm",
+    printedCollectorNumber: "400",
+  };
+}
 
 function openShoppingTab(store: Store = "manapool") {
   render(
@@ -18,10 +36,7 @@ function openShoppingTab(store: Store = "manapool") {
       commanderName="Kykar, Wind's Fury"
       partnerName={null}
       decklistCards={[{ name: "Mountain", quantity: 30 }]}
-      shoppingCards={[
-        { name: "Sol Ring", quantity: 1, owned: false },
-        { name: "Cultivate", quantity: 2, owned: true },
-      ]}
+      shoppingCards={[shoppingCard("Sol Ring", 1, false), shoppingCard("Cultivate", 2, true)]}
       open
       onClose={vi.fn()}
     />
@@ -29,14 +44,14 @@ function openShoppingTab(store: Store = "manapool") {
   );
   // Both the mobile and the desktop subtree mount; the tab is switched on the
   // shared state, so clicking either moves both.
-  fireEvent.click(screen.getAllByRole("button", { name: exportTabCopy.shopping })[0]);
+  fireEvent.click(screen.getAllByRole("tab", { name: exportTabCopy.shopping })[0]);
 }
 
 describe("ExportDialog shopping tab", () => {
   it("reads each row's ownership rather than calling every row unowned", () => {
     openShoppingTab();
-    expect(screen.getAllByLabelText(ownedStateCopy.notOwned).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText("Owned").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(ownedStateCopy.notOwned).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(ownedStateCopy.owned).length).toBeGreaterThan(0);
   });
 
   // "3 cards · unowned" was a false sentence the moment a spoken-for card could
@@ -55,6 +70,6 @@ describe("ExportDialog shopping tab", () => {
     cleanup();
     openShoppingTab("tcgplayer");
     expect(screen.queryByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeNull();
-    expect(screen.getAllByLabelText(ownedStateCopy.notOwned).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(ownedStateCopy.notOwned).length).toBeGreaterThan(0);
   });
 });
