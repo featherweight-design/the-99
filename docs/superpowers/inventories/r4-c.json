@@ -1,0 +1,186 @@
+{
+  "feature": "R4 PR C: Export dialog tabs and shipped Shopping rows (deck page and /decks tile hosts), Help me choose band-title heads",
+  "note": "Needs a signed-in account whose deck has unowned cards. Env: R4C_DECK (deck id with Shopping > 0), R4C_DECK_NAME (its name, for the tile's 'Actions for' button). The /decks tile host mounts the dialog in a body portal outside <main>, so its Shopping tab is reached by keyboard (Tab from the close button lands on the Decklist tab, ArrowRight selects Shopping). Help me choose picked states need marker intake_reads rows c4c00000-0000-4000-8000-00000000000{1,2,3} for the reader (5, 3 and 12 picks over the c=g free list: restAt>0, restAt===0, restAt===-1) with model_calls rows; the run's note lists the seed. HELP_ME_CHOOSE needs to be on.",
+  "out": "contact-sheets/r4-c",
+  "shares": [
+    {
+      "binding": "BandTitle",
+      "module": "src/components/decks/deck-box.tsx"
+    },
+    {
+      "binding": "ExportDialog",
+      "module": "src/components/decks/export-dialog.tsx"
+    }
+  ],
+  "rows": [
+    {
+      "id": "export-deck-decklist",
+      "label": "Deck page host: Export dialog, Decklist tab",
+      "view": "src/components/decks/builder-shell.tsx",
+      "binding": "ExportDialog",
+      "steps": [
+        {
+          "goto": "/decks/${R4C_DECK}",
+          "wait": "button:visible:has-text('Export')",
+          "settle": 2500
+        },
+        {
+          "click": "button:visible:has-text('Export')"
+        },
+        {
+          "waitDialog": "Export deck",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "export-deck-shopping",
+      "label": "Deck page host: Export dialog, Shopping list tab (unowned rows)",
+      "view": "src/components/decks/builder-shell.tsx",
+      "binding": "ExportDialog",
+      "steps": [
+        {
+          "goto": "/decks/${R4C_DECK}",
+          "wait": "button:visible:has-text('Export')",
+          "settle": 2500
+        },
+        {
+          "click": "button:visible:has-text('Export')"
+        },
+        {
+          "waitDialog": "Export deck",
+          "settle": 900
+        },
+        {
+          "click": "[role=dialog] [role=tab]:visible:has-text('Shopping list')",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "export-tile-decklist",
+      "label": "/decks tile menu host: Export dialog, Decklist tab",
+      "view": "src/components/decks/deck-card-overflow.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for ${R4C_DECK_NAME}$",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Export"
+        },
+        {
+          "waitDialog": "Export deck",
+          "settle": 900
+        }
+      ],
+      "binding": "ExportDialog"
+    },
+    {
+      "id": "export-tile-shopping",
+      "label": "/decks tile menu host: Export dialog, Shopping list tab (unowned rows)",
+      "view": "src/components/decks/deck-card-overflow.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for ${R4C_DECK_NAME}$",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Export"
+        },
+        {
+          "waitDialog": "Export deck",
+          "settle": 900
+        },
+        {
+          "pressKey": "Tab"
+        },
+        {
+          "pressKey": "ArrowRight",
+          "settle": 900
+        }
+      ],
+      "binding": "ExportDialog"
+    },
+    {
+      "id": "choose-free",
+      "label": "Help me choose results, no picks: Best fits, More commanders heads",
+      "view": "src/components/intake/choose-results-view.tsx",
+      "binding": "BandTitle",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=g&v=results",
+          "wait": "[data-testid=order-line]",
+          "settle": 5000
+        },
+        {
+          "scrollTo": "section[aria-labelledby=best-fits] > h3:last-child",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "choose-rest-after-picks",
+      "label": "Help me choose, picks 5 (restAt>0): Best fits, More commanders, then The rest of your results divider",
+      "view": "src/components/intake/choose-results-view.tsx",
+      "binding": "BandTitle",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=g&v=results&w=a+marker+deck&r=c4c00000-0000-4000-8000-000000000001",
+          "wait": "[data-testid=read-panel]",
+          "settle": 4500
+        },
+        {
+          "scrollTo": "section[aria-labelledby=best-fits] > h3:last-child",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "choose-rest-first",
+      "label": "Help me choose, picks 3 (restAt===0): More commanders head hidden, divider leads",
+      "view": "src/components/intake/choose-results-view.tsx",
+      "binding": "BandTitle",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=g&v=results&w=a+marker+deck&r=c4c00000-0000-4000-8000-000000000002",
+          "wait": "[data-testid=read-panel]",
+          "settle": 4500
+        },
+        {
+          "scrollTo": "[data-testid=rest-divider]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "choose-all-picks",
+      "label": "Help me choose, every row a pick (restAt===-1): More commanders alone, no divider",
+      "view": "src/components/intake/choose-results-view.tsx",
+      "binding": "BandTitle",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=g&v=results&w=a+marker+deck&r=c4c00000-0000-4000-8000-000000000003",
+          "wait": "[data-testid=read-panel]",
+          "settle": 4500
+        },
+        {
+          "scrollTo": "section[aria-labelledby=best-fits] > h3:last-child",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}
