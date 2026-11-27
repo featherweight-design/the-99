@@ -11,6 +11,8 @@ const count = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : 
 export const combosCloseCopy = {
   /** The status line's segment: `∞ 5 combos one piece away ›`. Never drawn at zero. */
   segment: (comboCount: number) => `${count(comboCount, "combo", "combos")} one piece away`,
+  /** Below `md`: `∞ 5 near combos ›`. The press keeps `segment` as its accessible name. */
+  segmentShort: (comboCount: number) => count(comboCount, "near combo", "near combos"),
   /** The segment's caret, after the words. */
   caret: "›",
 

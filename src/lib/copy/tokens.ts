@@ -18,6 +18,8 @@ export const tokensCopy = {
   /** The deck's status line segment: `4 tokens from 7 cards ›`. Navigation only: it moves no figure and no status. Never drawn at zero. */
   statusLine: {
     segment: (tokenCount: number, makers: number) => `${tokens(tokenCount)} from ${cards(makers)}`,
+    /** Below `md`: `◎ 4 tokens ›`. The press keeps `segment` as its accessible name. */
+    segmentShort: (tokenCount: number) => tokens(tokenCount),
     caret: "›",
   },
 
