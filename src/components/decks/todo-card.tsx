@@ -36,7 +36,7 @@ export interface TodoCardProps {
   foot?: TodoFootFacts;
 }
 
-const NO_FOOT: TodoFootFacts = { version: null, proxies: 0, provenance: null, otherDrafts: null, nearCombos: null };
+const NO_FOOT: TodoFootFacts = { version: null, proxies: 0, provenance: null, otherDrafts: null, nearCombos: null, tokens: null };
 
 export function TodoCard({ todo, deckName, renderRow, foot = NO_FOOT }: TodoCardProps) {
   const quiet = todo.rows.length === 0;

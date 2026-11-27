@@ -6,7 +6,8 @@
 
 import { useStoredView } from "../ui/use-stored-view";
 import { DECK_GROUPING_KEY, isDeckGrouping } from "../../lib/copy/deck-sort";
-import { SHOW_DECK_TOKENS } from "./deck-tokens-landing";
+import { landOnDeckTokens, SHOW_DECK_TOKENS } from "./deck-tokens-landing";
+import { useDeckTokens } from "./deck-tokens-context";
 import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useContext, useEffect, useRef, useTransition } from "react";
@@ -506,6 +507,11 @@ export function BuilderShell({
   // Combos one piece away, the list (combos close), open for the visit.
   const nearComboCount = nearCombos?.total ?? 0;
   const [combosSheet, setCombosSheet] = useState(false);
+  // The status line's Tokens segment: the deck's own read (the provider is above this shell), drawn only for an ok read with a token.
+  const deckTokens = useDeckTokens();
+  const tokensFact = deckTokens?.read.status === "ok" && deckTokens.read.tokens.length > 0
+    ? { count: deckTokens.read.tokens.length, makers: deckTokens.read.makerCount, onOpen: landOnDeckTokens }
+    : null;
   useDeckTitleFocusOnClose(combosSheet);
   // With none left the sheet closes itself, once the reader is back on its list: never from under a
   // combo the reader is reading (or a card stacked on it).
@@ -1887,6 +1893,7 @@ export function BuilderShell({
                   ? { count: commitments.softClaimed, onOpen: () => setPassSheet({ kind: "drafts" }) }
                   : null,
                 nearCombos: nearComboCount > 0 ? { count: nearComboCount, onOpen: () => setCombosSheet(true) } : null,
+                tokens: tokensFact,
               }}
               renderRow={(row) =>
                 row.kind === "fillFailed" ? (

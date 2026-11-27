@@ -4,6 +4,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { tokensCopy } from "../../lib/copy/tokens";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { deckTodo, type TodoFacts } from "../../lib/decks/todo";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
@@ -267,6 +268,54 @@ describe("the combos-one-piece-away segment", () => {
     draw({ ...NONE, nearCombos: { count: 2, onOpen } });
     expect(segment()!.tagName).toBe("BUTTON");
     expect(segment()).toHaveAttribute("aria-haspopup", "dialog");
+    fireEvent.click(segment()!);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+// The deck's Tokens segment (deck tokens, PR 2): after the combos, navigation only.
+describe("the tokens segment", () => {
+  const segment = () => document.querySelector("[data-tokens-segment]") as HTMLElement | null;
+  const words = (count: number, makers: number) => `${tokensCopy.statusLine.segment(count, makers)}${tokensCopy.statusLine.caret}`;
+
+  it("draws nothing at zero or with no read", () => {
+    const zero = draw({ ...FULL, tokens: { count: 0, makers: 0, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toBeNull();
+    zero.unmount();
+    draw({ ...FULL, tokens: null }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toBeNull();
+  });
+
+  it("says 1 token from 1 card or N tokens from M cards, after the combos and before proxies", () => {
+    const one = draw({ ...FULL, nearCombos: { count: 2, onOpen: vi.fn() }, tokens: { count: 1, makers: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toHaveTextContent(words(1, 1));
+    expect(tokensCopy.statusLine.segment(1, 1)).toBe("1 token from 1 card");
+    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(2)}${combosCloseCopy.caret}`, words(1, 1), proxyCopy.deckHeader.line(1)].join(JOIN))).toBe(true);
+    one.unmount();
+    draw({ ...FULL, tokens: { count: 4, makers: 7, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(screen.getByRole("button", { name: tokensCopy.statusLine.segment(4, 7) })).toBe(segment());
+    expect(tokensCopy.statusLine.segment(4, 7)).toBe("4 tokens from 7 cards");
+  });
+
+  it("counts toward the quiet strip: a brew with nothing to do but tokens still draws it", () => {
+    draw({ ...NONE, noVersion: true, tokens: { count: 3, makers: 2, onOpen: vi.fn() } });
+    expect(foot()).not.toBeNull();
+    expect(foot().textContent).toBe(words(3, 2));
+  });
+
+  it("keeps a whole 44px touch target in the strip and in the to-do card's foot", () => {
+    const card = draw({ ...FULL, tokens: { count: 2, makers: 2, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()!.className).toContain("[@media(pointer:coarse)]:py-[13px]");
+    card.unmount();
+    draw({ ...NONE, tokens: { count: 2, makers: 2, onOpen: vi.fn() } });
+    expect(segment()!.className).toContain(TOUCH_HIT);
+  });
+
+  it("lands on the Tokens group on a press, and is a plain button, not a dialog", () => {
+    const onOpen = vi.fn();
+    draw({ ...NONE, tokens: { count: 2, makers: 2, onOpen } });
+    expect(segment()!.tagName).toBe("BUTTON");
+    expect(segment()).not.toHaveAttribute("aria-haspopup");
     fireEvent.click(segment()!);
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
