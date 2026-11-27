@@ -15,28 +15,28 @@
    "y": 0,
    "w": 1400,
    "h": 900,
-   "title": "Main \u00b7 the pattern and what changes"
+   "title": "Main · the pattern and what changes"
   },
   "R1-Consider.dc.html": {
    "x": 0,
    "y": 1020,
    "w": 1770,
    "h": 1738,
-   "title": "R1 Consider \u00b7 desktop + phone"
+   "title": "R1 Consider · desktop + phone"
   },
   "R1-Mana.dc.html": {
    "x": 1850,
    "y": 1020,
    "w": 1770,
    "h": 1334,
-   "title": "R1 Mana Balance \u00b7 desktop + phone"
+   "title": "R1 Mana Balance · desktop + phone"
   },
   "R2-Tuning.dc.html": {
    "x": 0,
    "y": 2878,
    "w": 1770,
    "h": 1702,
-   "title": "R2 Tuning landing with The deck\u2019s strategy"
+   "title": "R2 Tuning landing with The deck’s strategy"
   },
   "R2-Focus.dc.html": {
    "x": 1850,
@@ -50,21 +50,21 @@
    "y": 2878,
    "w": 1770,
    "h": 1123,
-   "title": "R2 History \u00b7 month boxes"
+   "title": "R2 History · month boxes"
   },
   "R3-Mix.dc.html": {
    "x": 0,
    "y": 4700,
    "w": 1770,
    "h": 937,
-   "title": "R3 Recommended mix \u00b7 over state + Why open on phone"
+   "title": "R3 Recommended mix · over state + Why open on phone"
   },
   "R3-YourDeck.dc.html": {
    "x": 3700,
    "y": 4700,
    "w": 1770,
    "h": 2250,
-   "title": "R3 Your deck \u203a All and Shopping"
+   "title": "R3 Your deck › All and Shopping"
   },
   "R3-Analysis.dc.html": {
    "x": 5550,
@@ -85,84 +85,105 @@
    "y": 1020,
    "w": 1000,
    "h": 900,
-   "title": "R1 Phone tool picker \u00b7 replaces \u2039 Tuning"
+   "title": "R1 Phone tool picker · replaces ‹ Tuning"
   },
   "R3-MixWhy.dc.html": {
    "x": 1850,
    "y": 4700,
    "w": 1770,
    "h": 929,
-   "title": "R3 Why these numbers? open \u00b7 desktop"
+   "title": "R3 Why these numbers? open · desktop"
   },
   "R4-Precons.dc.html": {
    "x": 0,
    "y": 7110,
    "w": 2280,
    "h": 4714,
-   "title": "R4 Precons \u00b7 Announced box and year boxes"
+   "title": "R4 Precons · Announced box and year boxes"
   },
   "R4-PreconPick.dc.html": {
    "x": 2400,
    "y": 7110,
    "w": 1830,
    "h": 3014,
-   "title": "R4 New deck \u203a From a precon \u00b7 year boxes"
+   "title": "R4 New deck › From a precon · year boxes"
   },
   "R4-PreconOpen.dc.html": {
    "x": 4350,
    "y": 7110,
    "w": 1830,
    "h": 3414,
-   "title": "R4 Open precon \u00b7 Overview box"
+   "title": "R4 Open precon · Overview box"
   },
   "R4-Cart.dc.html": {
    "x": 0,
    "y": 11944,
    "w": 1830,
    "h": 2614,
-   "title": "R4 Decks \u203a All shopping cart \u00b7 Decks box"
+   "title": "R4 Decks › All shopping cart · Decks box"
   },
   "R4-Export.dc.html": {
    "x": 1950,
    "y": 11944,
    "w": 3190,
    "h": 2134,
-   "title": "R4 Export and Export \u203a Shopping"
+   "title": "R4 Export and Export › Shopping"
   },
   "R4-Friends.dc.html": {
    "x": 5260,
    "y": 11944,
    "w": 1830,
    "h": 3214,
-   "title": "R4 Friends and Pods \u00b7 section bands"
+   "title": "R4 Friends and Pods · section bands"
   },
   "R4-Home.dc.html": {
    "x": 0,
    "y": 15278,
    "w": 1830,
    "h": 3014,
-   "title": "R4 Home at zero decks \u00b7 No decks yet head"
+   "title": "R4 Home at zero decks · No decks yet head"
   },
   "R4-Analysis.dc.html": {
    "x": 1950,
    "y": 15278,
    "w": 1830,
    "h": 2102,
-   "title": "R4 Analysis before a read \u00b7 Overview box"
+   "title": "R4 Analysis before a read · Overview box"
   },
   "R4-HelpMeChoose.dc.html": {
    "x": 3900,
    "y": 15278,
    "w": 3640,
    "h": 4414,
-   "title": "R4 Help me choose results \u00b7 heads"
+   "title": "R4 Help me choose results · heads"
   },
   "R4-Settings.dc.html": {
    "x": 0,
    "y": 19812,
    "w": 1830,
    "h": 4414,
-   "title": "R4 Settings \u00b7 section heads"
+   "title": "R4 Settings · section heads"
+  },
+  "R5-All.dc.html": {
+   "x": 0,
+   "y": 24400,
+   "w": 3680,
+   "h": 2738,
+   "title": "R5 Your deck › All · key back at the top"
+  },
+  "R5-Shopping.dc.html": {
+   "x": 3800,
+   "y": 24400,
+   "w": 3680,
+   "h": 2438,
+   "title": "R5 Your deck › Shopping · keys back at the top"
+  },
+  "R5-Consider.dc.html": {
+   "x": 0,
+   "y": 27258,
+   "w": 3680,
+   "h": 5168,
+   "title": "R5 Tuning › Consider · key back at the top"
   }
  },
  "order": [
@@ -187,7 +208,10 @@
   "R4-Home.dc.html",
   "R4-Analysis.dc.html",
   "R4-HelpMeChoose.dc.html",
-  "R4-Settings.dc.html"
+  "R4-Settings.dc.html",
+  "R5-All.dc.html",
+  "R5-Shopping.dc.html",
+  "R5-Consider.dc.html"
  ],
  "notes": {},
  "designSystems": []
