@@ -5,6 +5,7 @@
 // order and view are also remembered per browser. Everything here is a view over rows the server
 // summarised. Tiles are the default view (R4 §1); rows stay one press away.
 
+import { DeckBox, DeckBoxBand } from "../deck-box";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useTarget } from "../../discovery/targets-provider";
@@ -316,16 +317,12 @@ export function PreconListView({
         <ArrivalOrder>
         <div className="flex flex-col gap-[22px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
           {groupByYear(shown).map((g) => (
-            <section key={g.year} aria-labelledby={`precons-${g.year}`} className={`flex flex-col ${view === "tiles" ? "gap-[10px]" : "gap-[8px]"}`}>
-              <h2
-                id={`precons-${g.year}`}
-                className="m-0 flex items-baseline gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px] font-display text-[17px] font-normal text-[color:var(--fg)]"
-              >
-                {g.year}
-                <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.list.year(g.rows.length)}</span>
-              </h2>
-              <ul className={listClass}>{g.rows.map(item)}</ul>
-            </section>
+            <DeckBox key={g.year} aria-labelledby={`precons-${g.year}`} className="!mt-0">
+              <DeckBoxBand id={`precons-${g.year}`} title={g.year} count={copy.list.year(g.rows.length)} />
+              <div className="p-[12px] md:p-[14px]">
+                <ul className={listClass}>{g.rows.map(item)}</ul>
+              </div>
+            </DeckBox>
           ))}
         </div>
         </ArrivalOrder>

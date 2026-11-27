@@ -12,6 +12,8 @@
 // while a filter is on and a set matches it (the reader asked); otherwise this browser's last press holds
 // (`the99:precons:announced`, mirrored into a cookie so the server draws it).
 
+import { PANEL } from "../../social/section-panel";
+import { BAND_GROUND, BAND_HEIGHT, BAND_RULE } from "../deck-box";
 import { Chevron } from "../../ui/chevron";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { preconDay, preconsCopy } from "../../../lib/copy/precons";
@@ -186,18 +188,19 @@ export function AnnouncedGroup({
     // scroll, a dialog nobody can see or leave.
     <CardDetailProvider viewPrintings={viewPrintings}>
     <HoverPreviewProvider>
-    <section id="announced" aria-labelledby="announced-head" className="flex flex-col" data-testid="announced-group">
+    <section id="announced" aria-labelledby="announced-head" className={`${PANEL} !mt-0`} data-testid="announced-group">
       <h2 id="announced-head" className="m-0 font-normal">
         <button
           type="button"
           aria-expanded={open}
           aria-controls="announced-sets"
           onClick={toggle}
-          className={`flex min-h-[44px] w-full cursor-pointer items-center gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] bg-transparent p-0 text-left font-display text-[17px] font-normal text-[color:var(--fg)] md:min-h-[34px] md:pb-[7px] focus-visible:rounded-[4px] ${FOCUS_RING}`}
+          className={`flex ${BAND_HEIGHT} w-full cursor-pointer items-center gap-[8px] border-0 py-[8px] pl-[14px] pr-[10px] text-left md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${open ? BAND_RULE : ""} ${FOCUS_RING}`}
         >
+          <span aria-hidden className="text-[color:var(--accent-text)]">◆</span>
           {copy.heading}
           {/* R1b-2: "1 set · new", the mark in the count's own line, no box. */}
-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+          <span className="ml-[2px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">
             {count}
             {hasNew && <NewMark lead={false} />}
           </span>
@@ -213,11 +216,10 @@ export function AnnouncedGroup({
         data-settled={settled ? "true" : "false"}
         className={`grid ${settled && !landOn ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
       >
-        {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
-            matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
-        <div className={`-mx-[4px] min-h-0 overflow-hidden px-[4px] ${open ? "-mb-[4px] pb-[4px]" : ""}`}>
+        {/* The clip the collapse needs, with padding past the rows so a row's 2px ring at its 2px offset draws whole. */}
+        <div className="min-h-0 overflow-hidden px-[12px] md:px-[14px]">
           {view === "tiles" ? (
-            <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
+            <ul className="m-0 flex list-none flex-col gap-[10px] p-0 py-[12px]">
               {matches.map((m) => (
                 <AnnouncedSet
                   key={m.set.code}
@@ -232,7 +234,7 @@ export function AnnouncedGroup({
               ))}
             </ul>
           ) : (
-            <ul className="m-0 flex list-none flex-col gap-[8px] p-0 pt-[10px]">
+            <ul className="m-0 flex list-none flex-col gap-[8px] p-0 py-[12px]">
               {matches.map((m) => (
                 <AnnouncedRow key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} identity={matchIdentity(m)} />
               ))}

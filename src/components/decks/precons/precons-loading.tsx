@@ -20,6 +20,8 @@ import { PICK_ENTRY_HREF, PICK_PARAM, PICK_VALUE, pickEntry } from "../../../lib
 import { StallWatch } from "../../shell/nav-stall";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { BAR, RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
+import { PANEL } from "../../social/section-panel";
+import { BAND_GROUND, BAND_HEIGHT, BAND_RULE } from "../deck-box";
 import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
 import { TOUCH_HIT } from "../../ui/touch-hit";
 
@@ -74,7 +76,7 @@ export function PreconsLoading({ storedView = null }: { storedView?: "tiles" | "
           </div>
         </div>
         <div className="flex flex-col gap-[10px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
-          <span className="flex h-[34px] items-start pt-[2px]"><span className="block h-[17px] w-[64px] rounded-[3px] bg-[color:var(--elevated)]" /></span>
+          <span className={`flex ${BAND_HEIGHT} items-center px-[14px] md:px-[16px] ${BAND_GROUND} ${BAND_RULE}`}><span className="block h-[17px] w-[64px] rounded-[3px] bg-[color:var(--elevated)]" /></span>
           {view === "tiles" ? (
             <ul className={TILES_CLASS}>
               {Array.from({ length: TILE_COUNT }, (_, i) => <TileSkeleton key={i} index={i} />)}
@@ -120,8 +122,8 @@ function PreconPickLoading({ entry }: { entry: "home" | "collection" }) {
           <span className="m-[10px_0_0] flex h-[16px] items-center md:h-[17px]"><span className={`${BAR} h-[10px] w-[180px]`} /></span>
         </div>
         <div className="flex flex-1 flex-col gap-[18px] overflow-hidden p-[8px_16px_24px] md:mx-auto md:w-full md:max-w-[900px] md:px-0">
-          <section className="flex flex-col">
-            <span className="flex h-[34px] items-start border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px]">
+          <section className={`${PANEL} !mt-0 flex flex-col`}>
+            <span className={`flex ${BAND_HEIGHT} items-center px-[14px] md:px-[16px] ${BAND_GROUND} ${BAND_RULE}`}>
               <span className={`${BAR} h-[17px] w-[64px]`} />
             </span>
             <ul className="m-0 list-none p-0">

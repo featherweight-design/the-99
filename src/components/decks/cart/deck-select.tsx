@@ -5,6 +5,8 @@
 // shows the list; the phone folds it under its head.
 
 import { useId, useState } from "react";
+import { PANEL } from "../../social/section-panel";
+import { BAND_GROUND, BAND_HEIGHT, BAND_RULE, BandTitle } from "../deck-box";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { formatCents } from "../../../lib/decks/price";
 import type { CartDeck } from "../../../lib/decks/cart";
@@ -46,10 +48,9 @@ export function DeckSelect({
     <section
       // About's label 2 on the cart's capture is boxed on this (`scripts/lib/about-locators.mjs`).
       data-cart-decks
-      className="order-2 flex min-w-0 flex-col rounded-[12px] border border-[color:var(--border)] px-[14px] pt-[2px] pb-[4px] md:order-1 md:min-h-0"
-      style={{ background: "var(--surface)" }}
+      className={`${PANEL} !mt-0 order-2 flex min-w-0 flex-col md:order-1 md:min-h-0`}
     >
-      <div className="flex min-h-[44px] items-center gap-[10px]">
+      <div className={`flex ${BAND_HEIGHT} items-center gap-[10px] py-[4px] pl-[14px] pr-[10px] md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${open ? BAND_RULE : ""} md:[border-bottom:1px_solid_var(--border)]`}>
         {/* Phone: the head is the fold's toggle, label then `Select all` then the chevron (the
             canvas order). The two toggles are separate buttons, never nested with `Select all`;
             the chevron's is a pointer target only, so a keyboard meets one toggle. Desktop never folds. */}
@@ -61,14 +62,12 @@ export function DeckSelect({
           aria-label={copy.selections.toggleAria(open)}
           className="flex min-h-[44px] flex-1 items-center text-left md:hidden"
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
-            {copy.selections.headPhone(on, decks.length)}
-          </span>
+          <BandTitle title={copy.selections.title} count={copy.selections.countPhone(on, decks.length)} />
         </button>
-        <span className="hidden flex-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:block">
-          {copy.selections.head(on, decks.length)}
+        <span className="hidden flex-1 md:block">
+          <BandTitle title={copy.selections.title} count={copy.selections.count(on, decks.length)} />
         </span>
-        {bulk ? <span className={open ? "" : "hidden md:inline"}>{bulk}</span> : null}
+        {bulk ? <span className={`font-sans text-[13px] font-medium ${open ? "" : "hidden md:inline"}`}>{bulk}</span> : null}
         <button
           type="button"
           tabIndex={-1}
@@ -84,12 +83,12 @@ export function DeckSelect({
           inside it, which keeps a long deck list from pushing the cards a screen down; the desktop column
           scrolls the decks under its head (the page there is one screen tall, 2026-10-11). */}
       <div id={listId} className={`max-h-[30dvh] min-h-0 overflow-y-auto overscroll-contain md:max-h-none ${open ? "" : "hidden md:block"}`}>
-        <ul className="m-0 list-none p-0">
-          {decks.map((d) => {
+        <ul className="m-0 list-none px-[14px] md:px-[16px]">
+          {decks.map((d, i) => {
             const isOn = selected.has(d.id);
             return (
-              <li key={d.id}>
-                <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] border-t border-[color:var(--border)] pt-[11px] pb-[10px]">
+              <li key={d.id} className={i ? "border-t border-[color:var(--border)]" : ""}>
+                <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] pt-[11px] pb-[10px]">
                   <Checkbox checked={isOn} onChange={() => onToggle(d.id)} ariaLabel={copy.selections.aria(d.name, isOn)} className="mt-[1px]" />
                   <span
                     className="min-w-0 flex-1 text-[13px] leading-[1.4] [text-wrap:pretty]"
@@ -110,7 +109,7 @@ export function DeckSelect({
             );
           })}
         </ul>
-        <p className="m-0 border-t border-[color:var(--border)] py-[9px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+        <p className="m-0 border-t border-[color:var(--border)] px-[14px] py-[10px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)] md:px-[16px]">
           {copy.selections.note}
         </p>
       </div>

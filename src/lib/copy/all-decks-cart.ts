@@ -86,8 +86,9 @@ export const allDecksCartCopy = {
   },
 
   selections: {
-    head: (selectedCount: number, totalCount: number) => `Decks · ${n(selectedCount)} of ${n(totalCount)}`,
-    headPhone: (selectedCount: number, totalCount: number) => `Decks · ${n(selectedCount)} of ${n(totalCount)} selected`,
+    title: "Decks",
+    count: (selectedCount: number, totalCount: number) => `${n(selectedCount)} of ${n(totalCount)}`,
+    countPhone: (selectedCount: number, totalCount: number) => `${n(selectedCount)} of ${n(totalCount)} selected`,
     /** The phone fold's toggle, for a reader who cannot see the chevron. */
     toggleAria: (open: boolean) => (open ? "Hide the decks" : "Show the decks"),
     selectAll: "Select all",

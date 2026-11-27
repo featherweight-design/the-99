@@ -5,6 +5,7 @@
 // once ticked; a sticky foot counts the boxes, their cards and tokens. Each box is added with its own id
 // (`addPrecons`), so a retry is answered from what committed, and a box that lands unticks with `✓ added just now`.
 
+import { DeckBox, DeckBoxBand } from "../deck-box";
 import Link from "next/link";
 import { SteadyLabel } from "../../ui/steady-label";
 import { useRouter } from "next/navigation";
@@ -272,14 +273,8 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
         className={`flex flex-1 flex-col gap-[18px] p-[8px_16px_24px] md:mx-auto md:w-full md:max-w-[900px] md:px-0 ${pending ? "opacity-[.55]" : ""}`}
       >
         {groupByYear(shown).map((g) => (
-          <section key={g.year} aria-labelledby={`pick-${g.year}`} className="flex flex-col">
-            <h2
-              id={`pick-${g.year}`}
-              className="m-0 flex items-baseline gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px] font-display text-[17px] font-normal text-[color:var(--fg)]"
-            >
-              {g.year}
-              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{preconsCopy.list.year(g.rows.length)}</span>
-            </h2>
+          <DeckBox key={g.year} aria-labelledby={`pick-${g.year}`} className="!mt-0">
+            <DeckBoxBand id={`pick-${g.year}`} title={g.year} count={preconsCopy.list.year(g.rows.length)} />
             <ul className="m-0 list-none p-0">
               {g.rows.map((r) => (
                 <PickRow
@@ -293,7 +288,7 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
                 />
               ))}
             </ul>
-          </section>
+          </DeckBox>
         ))}
       </div>
 

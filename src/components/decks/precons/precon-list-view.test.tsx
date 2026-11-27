@@ -36,7 +36,7 @@ describe("PreconListView", () => {
   it("lists newest first under year heads, with the shared deck linked", () => {
     view();
     const heads = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(heads[0]).toMatch(/^2026/);
+    expect(heads[0]).toMatch(/^◆2026/);
     expect(screen.getByRole("link", { name: "HD - Eldrazi" })).toHaveAttribute("href", "/decks/d1");
   });
 
@@ -196,8 +196,8 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
   it("sits above the newest year in Newest order", () => {
     draw();
     const heads = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(heads[0]).toMatch(/^Announced/);
-    expect(heads[1]).toMatch(/^2026/);
+    expect(heads[0]).toMatch(/^◆Announced/);
+    expect(heads[1]).toMatch(/^◆2026/);
   });
 
   it("is hidden under Most owned (T7)", () => {
