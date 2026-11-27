@@ -3,6 +3,7 @@
 // §Create — Pre-filled (/decks/new?commander=…)
 // Full-card display (desktop) / thumb (mobile) + name input + Create/Change buttons.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { commanderGradient } from "../../lib/cards/gradients";
@@ -135,7 +136,7 @@ export function CreatePreFilled({
     // The picks the create places too: the read must see the deck the create builds.
     handOffBracketReach(id, asked, picks)
       .then((r) => land({ status: "done", reach: r }))
-      .catch(() => land({ status: "failed" }));
+      .catch((e) => { captureClientError("deck.bracket-reach", e); land({ status: "failed" }); });
     return () => { live = false; };
   }, [readKey]);
   const mustChoose = needsBracketChoice(reach);
@@ -169,6 +170,7 @@ export function CreatePreFilled({
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
         rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: build === "empty" ? "scratch" : "free" }));
+        captureClientError("deck.create-free", err);
         setError(addPanelCopy.createPicker.failed);
       }
     });
@@ -182,6 +184,7 @@ export function CreatePreFilled({
         await createDeck(oracleId, trimmed, selectedOracleIds, null, handOff?.create ?? null, "guided", picksOut);
       } catch (err) {
         rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "guided" }));
+        captureClientError("deck.create-guided", err);
         setSheet(false);
         setError(addPanelCopy.createPicker.failed);
       }

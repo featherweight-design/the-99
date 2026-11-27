@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { deleteDeck } from "../../app/decks/actions";
@@ -57,6 +58,7 @@ export function DeleteMode({
         // on a route whose deck is gone — the same trap `create-picker.tsx`
         // documents. Rethrow first, then handle what is left: a real outage.
         unstable_rethrow(err);
+        captureClientError("deck.delete", err);
         inFlight.current = false;
         onBusy(false);
         setError(c.failed);

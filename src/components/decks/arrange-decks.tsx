@@ -11,6 +11,7 @@
 // `reorderDecks` call) and `onCancel` leaves. Leaving with a changed order asks first, in the box
 // `discard-draft` draws for its own question: the same plate, danger rule and answer geometry.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deckOrderCopy as copy } from "../../lib/copy/deck-order";
@@ -258,7 +259,7 @@ export function ArrangeDecks({
     if (saving) return;
     setSaving(true);
     setFailed(false);
-    const ok = await onDone(order).catch(() => false);
+    const ok = await onDone(order).catch((e) => { captureClientError("deck.arrange", e); return false; });
     if (!ok) {
       setSaving(false);
       setFailed(true);

@@ -4,6 +4,7 @@
 // receipt says which decks the copies covered, read after the write (lock 7), and a line the cart
 // no longer lists keeps a held slot where it was until the cart is next read.
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { markBoughtForDecks, readCartChooser } from "../../../app/decks/mark-bought-actions";
 import type { ContestedCard } from "../../../lib/collection/summary-read";
@@ -261,7 +262,7 @@ function CartConfirm({
   useEffect(() => {
     if (!multi) return;
     let live = true;
-    readCartChooser(line.oracleId, deckKey.split(",")).then((c) => { if (live) setChooserCard(c); }).catch(() => {});
+    readCartChooser(line.oracleId, deckKey.split(",")).then((c) => { if (live) setChooserCard(c); }).catch((e) => { captureClientError("cart.chooser", e); });
     return () => { live = false; };
   }, [line.oracleId, deckKey, multi]);
   const choosing = (quantity: number) => chooserCard !== null && quantity < deckIds.length;

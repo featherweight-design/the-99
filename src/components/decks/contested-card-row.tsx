@@ -15,6 +15,7 @@
 // THE ORDER IS THE EXPLANATION, so `this deck` is tagged and never promoted: moving a player's
 // own deck to the top would hide why it lost.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
 import { addedCopyCopy } from "../../lib/copy/added-copy";
@@ -459,7 +460,8 @@ export function ContestedCardRow({
         const said = refusalSentence(result.cause, fresh ?? card, deckName);
         if (said) setAnnounce(said);
       }
-      } catch {
+      } catch (e) {
+        captureClientError("contested.write", e);
         // Swallowed HERE and nowhere else: a thrown action is a transport failure, and the app's
         // shipped treatment for that is not a refusal sentence on this row — the three sentences
         // it owns each name a reason the server gave, and inventing a fourth for "we do not know"

@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createFolderAction, moveDeckAction } from "../../app/decks/folder-actions";
@@ -68,7 +69,7 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
       setCurrent(to);
       setAnnounced(to.name ? folderCopy.move.announceFiled(to.name) : folderCopy.move.announceUnfiled);
       startMove(async () => {
-        const write = queue.current.then(() => moveDeckAction(deckId, to.id).catch(() => "threw" as const));
+        const write = queue.current.then(() => moveDeckAction(deckId, to.id).catch((e) => { captureClientError("deck.shelf-move", e); return "threw" as const; }));
         queue.current = write;
         const answer = await write;
         // A rejection may have committed with its response lost, and no payload is coming for it.

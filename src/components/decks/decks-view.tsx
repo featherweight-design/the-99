@@ -8,6 +8,7 @@
 // with `history.replaceState` instead, which is what AGENTS.md's "Caching a
 // list a reader flips between" asks for on a re-parameterised list.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -451,7 +452,7 @@ export function DecksView({
           // A new entry: Back goes to the view the reader came from.
           pushUrl(`${path}?${now}`);
         })
-        .catch(() => { if (next === "games" && mounted.current) setGamesFailed(true); })
+        .catch((e) => { captureClientError("decks.view-switch", e); if (next === "games" && mounted.current) setGamesFailed(true); })
         .finally(() => { if (mounted.current) setPending(false); });
       return;
     }
@@ -612,7 +613,7 @@ export function DecksView({
         // revalidated for exactly that reason, and the prediction dropping is
         // the whole response. A rejection is a failure they can act on, and
         // silence there would leave them believing the move landed.
-        const answer = await moveDeckAction(deckId, to.id).catch(() => "threw" as const);
+        const answer = await moveDeckAction(deckId, to.id).catch((e) => { captureClientError("decks.move", e); return "threw" as const; });
         if (answer === "threw") {
           say(failed);
           // THE ONE PATH THAT STILL REFRESHES. Every other outcome reaches the
@@ -715,7 +716,7 @@ export function DecksView({
     new Promise<boolean>((resolve) => {
       startMove(async () => {
         fileOptimistic({ order: ids });
-        resolve(await reorderDecksAction(ids).catch(() => false));
+        resolve(await reorderDecksAction(ids).catch((e) => { captureClientError("decks.reorder", e); return false; }));
       });
     });
   const onArrangeDone = async (ids: string[]) => {

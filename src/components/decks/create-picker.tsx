@@ -13,6 +13,7 @@
 // so those are the only things the mode switches on — everything below the row
 // is shared markup.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CSSProperties } from "react";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
@@ -376,6 +377,7 @@ export function CreatePicker(props: CreatePickerProps) {
         // successful create painted "Failed to create deck" for the frame or
         // two the navigation took.
         rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "scratch" }));
+        captureClientError("deck.create-scratch", err);
         setError(addPanelCopy.createPicker.failed);
         // Released only on failure: success navigates away, and reopening the
         // door mid-navigation is what this guard exists to prevent.

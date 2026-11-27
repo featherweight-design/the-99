@@ -9,6 +9,7 @@
 // short (call B: the source deck is passed as `ignoreDeckId`, on this undo only), then in flight,
 // then done or failed. A failed undo withdraws Undo and points to History (the UndoRow rule).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -285,7 +286,8 @@ export function GotItReceipt({
       const p = await previewRevert(written.entryId, deckId, ...picks);
       if ("alreadyReverted" in p) return done(true);
       fail();
-    } catch {
+    } catch (e) {
+      captureClientError("gotit.reconcile", e);
       fail(false);
     }
   }
@@ -314,7 +316,8 @@ export function GotItReceipt({
         return void check();
       }
       fail();
-    } catch {
+    } catch (e) {
+      captureClientError("gotit.revert", e);
       await reconcile();
     }
   }
@@ -333,7 +336,8 @@ export function GotItReceipt({
         return;
       }
       await revert(p.expected);
-    } catch {
+    } catch (e) {
+      captureClientError("gotit.check", e);
       fail();
     }
   }

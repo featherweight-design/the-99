@@ -8,6 +8,7 @@
 // controls, the chips and the count and put one line and one way out in the list's place (Small items 9, A1). Month heads
 // count the WHOLE month under the filter from the first read's aggregates, not the window.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { loadMoreGamesAction } from "../../app/decks/game-history-actions";
 import { gameHistoryCopy as copy } from "../../lib/copy/game-history";
@@ -96,7 +97,8 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
         const ids = new Set(h.games.map((g) => g.id));
         return { ...h, games: [...h.games, ...res.games.filter((g) => !ids.has(g.id))], next: res.next, moreFailed: false };
       });
-    } catch {
+    } catch (e) {
+      captureClientError("games.more", e);
       // A request that never reached the server reads as the same failed state.
       apply((h) => ({ ...h, moreFailed: true }));
     } finally {

@@ -17,6 +17,7 @@
 // held by whoever owns the body being replaced. It is not a panel and not an
 // overlay; the surface around it is already the box the question is asked inside.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState, useTransition, type Ref } from "react";
 import { useRouter } from "next/navigation";
 
@@ -326,7 +327,8 @@ export function DiscardConfirm({
                 // the player just discarded.
                 await flushBasicCounts();
                 result = await discardDeckDraft(deckId, version.id);
-              } catch {
+              } catch (e) {
+                captureClientError("deck.discard", e);
                 // NOT `refused`. A refusal is the server declining before it
                 // wrote; a throw can also be the reply to a restore that already
                 // committed being lost on the way back. Saying "nothing has
