@@ -1,0 +1,2 @@
+{ "compilerOptions": { "jsx": "react-jsx", "module": "esnext", "moduleResolution": "bundler", "target": "es2022", "strict": false, "esModuleInterop": true, "baseUrl": ".",
+  "paths": { "@/*": ["./src/*"], "@clerk/nextjs": ["./stubs/clerk.tsx"], "next/navigation": ["./stubs/nav.ts"] } } }
