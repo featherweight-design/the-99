@@ -117,6 +117,8 @@ export interface SpineBandProps {
    * owner's two Settings rules. Absent while the switch is off: no menu row, no mark.
    */
   friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
+  /** Keep off my wishlist (cart on your wishlist, M1): the header menu's row, present only while Settings' switch is on. */
+  wishlistKeep?: { kept: boolean };
   /** The flip strip's state (deck flip order), drawn by the phone band; the desktop row is BuilderSpine's. Absent: nothing to flip to. */
   flipStrip?: DeckFlip | null;
 }
@@ -137,6 +139,7 @@ export function SpineDesktop({
   onOpenNotices,
   move,
   friendHide,
+  wishlistKeep,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
@@ -725,6 +728,7 @@ export function SpineDesktop({
                 placement="header"
                 move={move}
                 friends={friendHide ? { hidden: friendHide.hidden, statusPill: status, prefs: friendHide.prefs, built, size: bodySize, canCommit: Boolean(offerFirstCommit) } : undefined}
+                wishlist={wishlistKeep}
               />
             </div>
           )}

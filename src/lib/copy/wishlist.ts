@@ -94,6 +94,12 @@ export const wishlistCopy = {
     emptyTitle: (name: string) => `${name}’s wishlist is empty`,
     emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want, until they have them.`,
   },
+
+  // Cart on your wishlist (M1): the deck ⋯ menu's row under Hidden from friends, drawn only while Settings' switch is on.
+  deckMenu: {
+    keepOff: "Keep off my wishlist",
+    failed: "We couldn’t save that. Try again.", // toast, role alert
+  },
 };
 
 /** Wishlist printing (handoff R1): a line that names the printing it wants. Reused: `priceCopy.tag.soldOut` for `sold out`. */

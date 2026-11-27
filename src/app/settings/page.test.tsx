@@ -32,6 +32,8 @@ vi.mock("../../lib/collection/payload", () => ({ loadCollectionList: m.loadColle
 vi.mock("../../lib/feed/prefs", () => ({ loadNewsSettings: m.loadNewsSettings }));
 vi.mock("../../components/settings/spares-section", () => ({ SparesSection: () => null }));
 vi.mock("../../components/settings/friend-decks-section", () => ({ FriendDecksSection: () => null }));
+vi.mock("../../lib/wishlist/sync-settings", () => ({ loadWishlistSyncSettings: async () => ({ on: false, decks: [] }) }));
+vi.mock("../../components/settings/wishlist-section", () => ({ WishlistSection: () => null }));
 vi.mock("../../components/settings/news-section", () => ({ NewsSection: () => null }));
 vi.mock("../../components/settings/store-section", () => ({ StoreSection: () => null }));
 vi.mock("../../lib/stores/preference", () => ({ readerStore: m.readerStore, readerStoreForPage: m.readerStoreForPage }));

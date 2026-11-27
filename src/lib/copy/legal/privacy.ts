@@ -19,7 +19,7 @@ export const privacyDoc: LegalDoc = {
         { kind: "p", lead: "Your decks.", text: "Lists, versions, proxies, locks, folders and notes, plus what you write about a deck: its intent, your notes, and the notes on games you log." },
         { kind: "p", lead: "Your games.", text: "When you log a game with a friend, your record keeps their display name and deck name as they were that day, so your history still reads right if they rename things later." },
         { kind: "p", lead: "Smart tools.", text: "The Overview, Suggested changes, Help me choose and the other tools that use a credit keep what they produced, so you can read it again. Each run also records which tool ran, how many tokens it used, and what it cost." },
-        { kind: "p", lead: "Wishlist, friends and pods.", text: "The cards you want and how many; who you’re friends with; your pods and what you share in them." },
+        { kind: "p", lead: "Wishlist, friends and pods.", text: "The cards you want and how many. If you turn it on in Settings, that includes the cards Shopping lists for your decks and which deck needs each. Who you’re friends with; your pods and what you share in them." },
         { kind: "p", lead: "Credits and purchases.", text: "Your credit balance and where each credit came from. For a purchase we keep Stripe’s ids, the amount, the tax, the currency, the billing country and the status. Your card number never reaches The 99: you type it into Stripe’s checkout." },
         { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting. An invite is valid for up to 7 days, and we erase the address once the invite is resolved or has expired. If that cleanup is delayed, the next sweep does it.` },
         { kind: "p", lead: "Flyer sign-ups.", text: `If you start a sign-up from a flyer, we hold the email you type for 10 minutes while you finish, or up to an hour once you have entered the emailed code, and keep a code in a cookie in your browser to match it to you. Finishing the sign-up erases the email from our records. If you walk away, the hourly cleanup erases it after the hold ends, so it can sit for up to about two hours. Clerk holds the address as an invitation until that cleanup cancels it. To stop abuse, the sign-up form counts visits per visitor, keyed to a scrambled form of your network address plus the day, never the address itself. Scrambled is not anonymous: someone holding a list of addresses could match them. The count is cleared out as later visits are counted.` },
@@ -62,7 +62,7 @@ export const privacyDoc: LegalDoc = {
           kind: "list",
           items: [
             { text: "your spares, if you share them with a pod you’re both in;" },
-            { text: "your wishlist: the card and how many you want;" },
+            { text: "your wishlist: the card and how many you want, never which deck needs it;" },
             { text: "a deck’s name and commanders, so you can seat it at a game." },
           ],
         },

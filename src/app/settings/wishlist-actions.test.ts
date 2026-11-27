@@ -1,0 +1,59 @@
+// Settings › Wishlist's actions (cart on your wishlist, call 1 and M1): what each refuses before it writes, and that a
+// write refreshes Settings and every deck page.
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const m = vi.hoisted(() => ({ sync: vi.fn(), off: vi.fn(), revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
+vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
+vi.mock("../../lib/wishlist/sync", () => ({ setWishlistSync: m.sync }));
+vi.mock("../../lib/wishlist/sync-settings", () => ({ MAX_DECKS_PER_WRITE: 3, setDecksOffWishlist: m.off }));
+
+import { setDecksOffWishlistAction, setWishlistSyncAction } from "./wishlist-actions";
+
+const D1 = "11111111-1111-4111-8111-111111111111";
+const D2 = "22222222-2222-4222-8222-222222222222";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.off.mockResolvedValue(true);
+});
+
+describe("setWishlistSyncAction", () => {
+  it("writes a boolean and refreshes Settings and the deck pages", async () => {
+    expect(await setWishlistSyncAction(true)).toEqual({ ok: true });
+    expect(m.sync).toHaveBeenCalledWith("u1", true);
+    expect(m.revalidatePath).toHaveBeenCalledWith("/settings");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/decks", "layout");
+  });
+
+  it("refuses anything but a boolean, writing nothing", async () => {
+    expect(await setWishlistSyncAction("true")).toEqual({ ok: false, reason: "invalid" });
+    expect(m.sync).not.toHaveBeenCalled();
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("setDecksOffWishlistAction", () => {
+  it("writes the reader's decks and refreshes", async () => {
+    expect(await setDecksOffWishlistAction([D1, D2], true)).toEqual({ ok: true });
+    expect(m.off).toHaveBeenCalledWith("u1", [D1, D2], true);
+    expect(m.revalidatePath).toHaveBeenCalledWith("/decks", "layout");
+  });
+
+  it.each([
+    ["an empty list", [], true],
+    ["a list over the cap", [D1, D2, D1, D2], true],
+    ["a non-uuid", [D1, "nope"], true],
+    ["a non-array", D1, true],
+    ["a non-boolean", [D1], "yes"],
+  ])("refuses %s before any write", async (_name, ids, off) => {
+    expect(await setDecksOffWishlistAction(ids, off)).toEqual({ ok: false, reason: "invalid" });
+    expect(m.off).not.toHaveBeenCalled();
+  });
+
+  it("says invalid, and refreshes nothing, when a deck is not the reader's", async () => {
+    m.off.mockResolvedValue(false);
+    expect(await setDecksOffWishlistAction([D1], false)).toEqual({ ok: false, reason: "invalid" });
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});

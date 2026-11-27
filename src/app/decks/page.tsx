@@ -26,6 +26,7 @@ import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
+import { readWishlistSync } from "../../lib/wishlist/sync-pref";
 import { loadGameHistory } from "../../lib/games/history";
 import { gamesFilterFromParams } from "../../lib/games/history-filter";
 import { toGamesPayload, type GamesPayload } from "../../lib/games/history-wire";
@@ -79,7 +80,7 @@ export default async function DecksPage({
   // cached payload rather than inside it; a failed read keeps the line and drops the meta.
   const preconSummary = readPreconSummary();
   const data = await cachePageForUser(userId, "decks", [store], async (env) => {
-    const [decks, shopping, folders] = await Promise.all([
+    const [decks, shopping, folders, wishlistOn] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move
       // under it. The server hands back this order and the client re-sorts from
       // there without a request.
@@ -108,6 +109,9 @@ export default async function DecksPage({
       // a folder holding no decks has no deck row to be named by, and landing on
       // that empty shelf is the whole loop the create flow teaches.
       perf.timed("folders", () => listFolders(userId)),
+      // Keep off my wishlist (cart on your wishlist, M1): the ⋯ row draws only while Settings' switch is on. In the
+      // payload: `user_prefs` carries the data stamp trigger, so turning it on or off moves this page's key.
+      perf.timed("wishlistSync", () => readWishlistSync(userId)),
     ]);
 
     // Only the zero state prints these two, and `getRankedList` recomputes the
@@ -123,7 +127,7 @@ export default async function DecksPage({
 
     return {
       value: {
-        decks, folders, shopping,
+        decks, folders, shopping, wishlistOn,
         // The true count, from the one definition (Hugh, 2026-09-28): the old cap of nine
         // understated every real collection. 0 draws no line.
         buildable: buildableCount(ranked) ?? 0,
@@ -168,6 +172,8 @@ export default async function DecksPage({
         shopping={data.shopping}
         precons={preconSummary ? { summary: await preconSummary } : null}
         friendPrefs={friendPrefs}
+        // A payload stored before the field existed has none: no row until the stamp moves.
+        wishlistOn={data.wishlistOn === true}
         buildable={data.buildable}
         cards={data.cards}
         // One clock for the whole page, read on the server. Every relative date
