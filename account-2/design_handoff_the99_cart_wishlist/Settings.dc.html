@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Settings, Wishlist section</title>
+<title>Settings, Wishlist section and the deck menu</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -12,20 +12,34 @@
 body{margin:0}
 </style>
 </helmet>
-<div style="width: 1878px; height: 2350px; box-sizing: border-box; padding: 48px 64px 64px; background: #161412; color: #e9e3d8; font-family: system-ui, -apple-system, sans-serif; display: flex; gap: 60px; align-items: flex-start">
+<div style="width: 1878px; height: 3200px; box-sizing: border-box; padding: 48px 64px 64px; background: #161412; color: #e9e3d8; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 50px">
+<div style="display: flex; gap: 60px; align-items: flex-start">
 <div style="display: flex; flex-direction: column; gap: 14px; width: 1300px">
-<p style="margin: 0; font-size: 22px; font-weight: 700">S1 · Settings, switch on</p>
-<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 44px">A new Wishlist section between Spares and Your decks, drawn as Your decks draws its rows. Ashen Banner Parade is unticked, so its cards leave the wishlist. Gisa's Ghouls needs nothing yet.</p>
-<img src="/_blob/b81094cd4c3a169b21a657bf37076869" alt="Settings with the Wishlist section, desktop" style="width: 1300px; height: 1814px; border-radius: 10px; display: block">
+<p style="margin: 0; font-size: 22px; font-weight: 700">S1b · Settings, switch on</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 44px">One switch takes every deck, new ones too, so nothing is ticked deck by deck. The section is the same height at 5 decks or 50: one line names the decks you left out, and the foot says where to do it.</p>
+<img src="/_blob/1480b50b18dc89e4b67c3b8630f828ad" alt="Settings with the Wishlist section, desktop" style="width: 1300px; height: 1609px; border-radius: 10px; display: block">
 </div>
 <div style="display: flex; flex-direction: column; gap: 14px; width: 390px">
 <p style="margin: 0; font-size: 22px; font-weight: 700">Phone</p>
 <p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 44px">The same rows at full width.</p>
-<img src="/_blob/6ad71ef04de87c8eeec76edefba1966b" alt="Settings with the Wishlist section, phone" style="width: 390px; height: 2160px; border-radius: 10px; display: block">
+<img src="/_blob/6707577a85891d513f254aa5c92ae97f" alt="Settings with the Wishlist section, phone" style="width: 390px; height: 1955px; border-radius: 10px; display: block">
+</div>
+</div>
+<div style="display: flex; gap: 60px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 14px; width: 1300px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">M1 · The deck's ⋯ menu, Decks list</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 44px">"Keep off my wishlist" sits under Hidden from friends, as the same checkbox row. It shows only while the switch is on. The deck page header's ⋯ menu gets the same row. Shown over the shipped Decks page.</p>
+<img src="/_blob/4c1772a5de858464c9f0c2c25e87c528" alt="Deck menu with Keep off my wishlist ticked, desktop" style="width: 1300px; height: 900px; border-radius: 10px; display: block">
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; width: 390px">
+<p style="margin: 0; font-size: 22px; font-weight: 700">Phone</p>
+<p style="margin: 0; font-size: 15px; color: #b9b1a3; height: 44px">Scrolled to the first tile.</p>
+<img src="/_blob/25fc9c216f606f1677bc5c37c565af92" alt="Deck menu with Keep off my wishlist ticked, phone" style="width: 390px; height: 514px; border-radius: 10px; display: block">
+</div>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1878,"height":2350}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1878,"height":3200}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

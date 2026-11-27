@@ -1,6 +1,6 @@
 # Cart on your wishlist · R1
 
-Account 2, 2026-11-27. Status: **R1 for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/VhLtmwDv6aMtudcYG7kXuN
+Account 2, 2026-11-27. Status: **R1 for Hugh's review** (R1b: per-deck ticks moved from Settings to the deck ⋯ menu). Canvas (Design type): https://claude.ai/artifact/VhLtmwDv6aMtudcYG7kXuN
 (Main, Wishlist-Desktop, Wishlist-Phone, Offer, Settings, Friend, Notices).
 
 Hugh's ask (2026-11-27): move the cart to the wishlist, or keep the two in sync (opt-in), so friends see what you're shopping
@@ -15,10 +15,13 @@ Every frame is rendered from main with the shipped components and the shipped CS
 
 ## Calls
 
-1. **One switch, Settings › Wishlist** (board `Settings`). A new section after Spares, drawn as Your decks draws its rows
-   (shipped `Checkbox`, name, line, indented sub rows): `Add the cards my decks need` / `They follow your decks: on when a deck
-   needs a card you don’t own, off once you have it or cut it.` Under it every deck, ticked, with a mono `N cards`; unticking a
-   deck takes its cards off. Foot: `A new deck is ticked. Cards you add yourself never change here.` Default off.
+1. **One switch, Settings › Wishlist** (board `Settings`, R1b after Hugh asked about 20+ decks). A new section after Spares,
+   drawn as Your decks draws its rows: `Add the cards my decks need` / `Every deck, new ones too. A card leaves once you have it or
+   cut it.` Every deck is in, new decks too; nothing is ticked deck by deck. When any are left out, a line under it:
+   `Leaving out Ashen Banner Parade.` / `Leaving out 3 decks: …`. Foot: `To leave a deck out, tick Keep off my wishlist in its ⋯
+   menu. Cards you add yourself never change here.` Default off. Same height at any deck count.
+   **Keep off my wishlist** (board `Settings`, M1): a checkbox row in the deck's ⋯ menu under Hidden from friends (tile and
+   header placements), the same row geometry, shown only while the switch is on. Ticking it takes that deck's cards off.
 2. **Offered once on the Wishlist tab** (board `Offer`), while the switch is off and the reader's decks need a card they own none
    of: the collected strip's shell, bookmark glyph, `Your decks need 12 cards you don’t own.` + `Put them here so friends can see
    them. They follow your decks, and leave once you have them.`, ghost `Add them`, ✕ `Not now`. Add them = switch on, all decks
@@ -57,7 +60,7 @@ Every frame is rendered from main with the shipped components and the shipped CS
 - G1 `wishlist_items` needs a source (hand vs synced) and the synced decks per line, or a separate synced table read into the tab.
 - G2 sync job: recompute on deck commit/draft write, collection write and setting change, from `loadDeckBuyRows` (all decks, not the
   cart's selection, which is a view).
-- G3 offer dismissal + per-deck untick stored in `user_prefs`.
+- G3 offer dismissal in `user_prefs`; Keep off my wishlist as a deck column beside `hidden_from_friends`.
 - G4 trade-match roll-up: a per friend per day item (dedupe key stays card+friend for "told once"), push cap per day.
 - G5 price-drop job skips synced lines.
 - G6 copy review.
@@ -66,4 +69,4 @@ Every frame is rendered from main with the shipped components and the shipped CS
 
 SSR recipe (friends_link): copy main, drop `@fwd-stack/*`, `npm install --ignore-scripts`, `tsconfig.scratch.json` + `stubs/`,
 `patch -p1 < proposal.diff`, `node css.mjs`, `DATABASE_URL=postgres://x:y@localhost/z npx tsx dz/render.tsx`, `FULL=1 node dz/shoot.cjs`.
-The render also sets `HydratedImg` to draw `src` on the server (render only, not in the diff). Card art from account-1 card_search.
+The render also sets `HydratedImg`, and opens the ⋯ menu from `globalThis.__OPEN` (render only, not in the diff); M1 is the SSR menu over the shipped About Decks captures. It also sets `HydratedImg` to draw `src` on the server (render only, not in the diff). Card art from account-1 card_search.

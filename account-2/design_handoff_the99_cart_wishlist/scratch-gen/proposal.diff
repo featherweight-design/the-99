@@ -98,6 +98,51 @@
          <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
        </span>
        {item.friend && (
+--- a/src/components/decks/deck-card-overflow.tsx
++++ b/src/components/decks/deck-card-overflow.tsx
+@@ -60,6 +60,8 @@
+   onAmong?: () => void;
+   /** Hidden from friends (`SOCIAL_FRIENDS_ENABLED` for the reader): absent while the switch is off, and the row with it. */
+   friends?: DeckFriendsHide;
++  /** Cart on your wishlist (proposal): Keep off my wishlist, only while Settings' Add the cards my decks need is on. */
++  wishlist?: { kept: boolean };
+ }
+ 
+ /** What the Hidden from friends row needs: the deck's own flag, its status and the owner's two Settings rules, and what the why-it-is-hidden block says. */
+@@ -186,6 +188,7 @@
+   move,
+   onAmong,
+   friends,
++  wishlist,
+ }: DeckCardOverflowProps) {
+   const header = placement === "header";
+   const closeAfterCreate = move?.closeAfterCreate ?? null;
+@@ -536,6 +539,25 @@
+                   </button>
+                 )
+               ) : null}
++              {/* Keep off my wishlist (cart on your wishlist), under Hidden from friends: the same checkbox row. */}
++              {wishlist ? (
++                <button
++                  type="button"
++                  role="checkbox"
++                  aria-checked={wishlist.kept}
++                  data-keep-off-wishlist={wishlist.kept ? "on" : "off"}
++                  disabled={busy}
++                  className={`${ITEM} first:border-t-0 gap-[10px] cursor-pointer bg-transparent text-[color:var(--fg)]`}
++                >
++                  <span className="min-w-0">Keep off my wishlist</span>
++                  <span
++                    aria-hidden
++                    className={`${HIDE_BOX} ${wishlist.kept ? "border-[color:var(--accent)] bg-[color:var(--accent)]" : "border-[color:var(--border-dashed)] bg-transparent"}`}
++                  >
++                    {wishlist.kept ? "✓" : null}
++                  </span>
++                </button>
++              ) : null}
+               <button
+                 ref={deleteRow}
+                 type="button"
 --- /dev/null
 +++ b/src/components/wishlist/wishlist-groups.tsx
 @@ -0,0 +1,78 @@
@@ -181,11 +226,12 @@
 +}
 --- /dev/null
 +++ b/src/components/settings/wishlist-section.tsx
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,42 @@
 +"use client";
-+// Settings' Wishlist section (Cart on your wishlist R1, proposal): the one switch that keeps the cards the reader's
-+// decks need on their wishlist, and under it every deck, ticked unless the reader left it out. Drawn as Your decks
-+// draws its rows (`friend-decks-section.tsx`): the shipped Checkbox, a name and a line, the sub rows indented.
++// Settings' Wishlist section (Cart on your wishlist R1b, proposal): the one switch that keeps the cards the reader's
++// decks need on their wishlist. Every deck is in unless the reader ticks Keep off my wishlist in that deck's ⋯ menu, so
++// the section is the same height for 5 decks or 50; a line names the decks left out. Drawn as Your decks draws its rows
++// (`friend-decks-section.tsx`): the shipped Checkbox, a name and a line, a mono foot.
 +
 +import { BandText } from "../decks/deck-box";
 +import { SECTION_HEAD } from "../social/friends-list";
@@ -194,38 +240,30 @@
 +export const wishlistSettingsCopy = {
 +  head: "Wishlist",
 +  explain: "Friends see your wishlist, and their spares are matched against it.",
-+  sync: { name: "Add the cards my decks need", line: "They follow your decks: on when a deck needs a card you don’t own, off once you have it or cut it." },
-+  deckLine: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
-+  foot: "A new deck is ticked. Cards you add yourself never change here.",
++  sync: { name: "Add the cards my decks need", line: "Every deck, new ones too. A card leaves once you have it or cut it." },
++  leftOut: (names: string[]) => (names.length === 1 ? `Leaving out ${names[0]}.` : `Leaving out ${names.length} decks: ${names.join(", ")}.`),
++  foot: "To leave a deck out, tick Keep off my wishlist in its ⋯ menu. Cards you add yourself never change here.",
 +} as const;
 +const c = wishlistSettingsCopy;
 +
-+export function WishlistSection({ on, decks }: { on: boolean; decks: { name: string; cards: number; in: boolean }[] }) {
++export function WishlistSection({ on, leftOut }: { on: boolean; leftOut: string[] }) {
 +  return (
 +    <section aria-labelledby="settings-wishlist" className="mt-[26px] md:mt-[34px]">
 +      <h2 id="settings-wishlist" className={SECTION_HEAD}><BandText text={c.head} /></h2>
 +      <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
 +      <ul className="m-0 mt-[4px] list-none p-0">
-+        <li className="[&+&]:[border-top:1px_solid_var(--border)]">
++        <li>
 +          <label className="flex min-h-[44px] cursor-pointer items-start gap-[12px] rounded-[8px] py-[8px]">
 +            <Checkbox checked={on} onChange={() => {}} className="mt-[1px]" />
 +            <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
 +              <b className="font-sans text-[14px] font-medium text-[color:var(--fg)]">{c.sync.name}</b>
 +              <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{c.sync.line}</span>
++              {on && leftOut.length > 0 ? (
++                <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-body)]">{c.leftOut(leftOut)}</span>
++              ) : null}
 +            </span>
 +          </label>
 +        </li>
-+        {decks.map((d) => (
-+          <li key={d.name} className="[&+&]:[border-top:1px_solid_var(--border)]">
-+            <label className={`flex min-h-[44px] items-start gap-[12px] rounded-[8px] py-[8px] pl-[30px] ${on ? "cursor-pointer" : "cursor-default opacity-[.45]"}`}>
-+              <Checkbox checked={on && d.in} disabled={!on} onChange={() => {}} className="mt-[1px]" />
-+              <span className="flex min-w-0 flex-1 items-baseline justify-between gap-[12px]">
-+                <b className="font-sans text-[14px] font-medium text-[color:var(--fg)]">{d.name}</b>
-+                <span className="flex-none font-mono text-[11.5px] text-[color:var(--fg-faint)]">{c.deckLine(d.cards)}</span>
-+              </span>
-+            </label>
-+          </li>
-+        ))}
 +      </ul>
 +      <p className="m-0 mt-[10px] font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
 +    </section>

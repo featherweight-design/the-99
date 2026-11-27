@@ -1,6 +1,6 @@
 // Cart on your wishlist R1 (account 2, 2026-11-27): every frame is the shipped shell and the shipped page, rendered with
 // the shipped CSS, with this round's proposal applied (wishlist-groups.tsx, wishlist-section.tsx, the rolled trade match).
-import { app, done } from "./shell";
+import { app, done, frames } from "./shell";
 import { CollectionPlaceHead } from "../src/components/collection/collection-place-head";
 import { WishlistView } from "../src/components/wishlist/wishlist-view";
 import { SettingsView } from "../src/components/settings/settings-view";
@@ -13,6 +13,9 @@ import { FriendStrip } from "../src/components/social/friend-strip";
 import { FriendWishlist } from "../src/components/social/friend-wishlist";
 import { WhatsNew } from "../src/components/home/whats-new";
 import { named } from "../src/lib/person-name/mint";
+import { DeckCardOverflow } from "../src/components/decks/deck-card-overflow";
+import { renderToString } from "react-dom/server";
+import { writeFileSync } from "node:fs";
 
 const NOW = new Date("2026-11-27T03:00:00Z");
 let seq = 0;
@@ -61,7 +64,7 @@ const settings = (on: boolean) => (
   <SettingsView>
     <NewsSection kinds={news} />
     <SparesSection spareMin={2} pods={[named("The Bros")]} kept={[]} />
-    <WishlistSection on={on} decks={DECKS.map((d) => ({ name: d.name, cards: d.tiles.length, in: true })).concat([{ name: "Gisa's Ghouls", cards: 0, in: true }]).map((d, i) => ({ ...d, in: i !== 3 }))} />
+    <WishlistSection on={on} leftOut={["Ashen Banner Parade"]} />
     <FriendDecksSection prefs={{ seeDecks: true, seeUnfinished: false }} />
   </SettingsView>
 );
@@ -108,4 +111,18 @@ app("N0-desk", "desk", home(old), { path: "/" });
 app("N0-phone", "phone", home(old), { path: "/" });
 app("N1-desk", "desk", home(rolled), { path: "/" });
 app("N1-phone", "phone", home(rolled), { path: "/" });
+// M: the Decks list's ⋯ menu on Ashen Banner Parade, open, over the shipped Decks capture (About pages, amonkhet).
+(globalThis as any).__OPEN = true;
+const menu = (
+  <DeckCardOverflow deckId="d4" deckName="Ashen Banner Parade" built={99} placement="tile"
+    move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }}
+    onAmong={() => {}}
+    friends={{ hidden: false, statusPill: "To buy", prefs: { seeDecks: true, seeUnfinished: false }, built: 99, size: 99, canCommit: false }}
+    wishlist={{ kept: true }} />
+);
+const over = (bg: string, w: number, h: number, right: number, top: number, shift = 0, fh = h) => `<div style="position:relative;width:${w}px;height:${fh}px;overflow:hidden;background:url(${bg}) 0 ${-shift}px/${w}px ${h}px no-repeat"><div style="position:absolute;left:${right - 23}px;top:${top}px;width:23px">${renderToString(menu)}</div></div>`;
+writeFileSync("dz/frames/M1-desk.html", over("art/d-decks2.webp", 1300, 900, 472, 354));
+writeFileSync("dz/frames/M1-phone.html", over("art/p-decks.webp", 390, 844, 372, 465 - 330, 330, 514));
+frames.push({ id: "M1-desk", dev: "desk", vh: 900 }, { id: "M1-phone", dev: "phone", vh: 514 });
+(globalThis as any).__OPEN = false;
 done();
