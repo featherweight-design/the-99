@@ -401,6 +401,7 @@
     "probe:stats-press": "node scripts/probe-stats-press.mjs",
     "probe:card-view-radius": "node scripts/probe-card-view-radius.mjs",
     "probe:cuts-panel": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-panel.mts",
+    "probe:recommended-paging": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-recommended-paging.mts",
     "probe:tuning-about": "node scripts/probe-tuning-about.mjs",
     "probe:tuning-tab": "node scripts/probe-tuning-tab.mjs",
     "probe:tuning-optimistic": "node scripts/probe-tuning-optimistic.mjs",

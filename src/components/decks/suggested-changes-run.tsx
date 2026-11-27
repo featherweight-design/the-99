@@ -373,10 +373,14 @@ export function SuggestedChangesRun({
     const c = chip(side);
     const started = side === "add" || !waiting || live.phase === "cuts" || rows.length > 0;
     const askedOf = side === "add" ? askFor(n) : cutAskOf(n, waiting ? live.cutAsk : report?.v2?.cutAsk);
+    // The lines in the order they are DRAWN (grouped, a group at a time): card details pages through this order.
+    const groups = started && grouped(side) ? groupLines(rows, grouping, figures, isPicked) : null;
+    const drawn = groups ? groups.flatMap((g) => g.lines) : rows;
     const line = (l: LineItem) => (
       <li key={l.id}>
         <SuggestedChangesPickLine
           item={l}
+          siblings={drawn}
           permits={permits}
           newestPriceAsOf={newestPriceAsOf}
           picked={isPicked(l)}
@@ -427,8 +431,8 @@ export function SuggestedChangesRun({
           )}
         </div>
         {whyHeld ? <WhySideLine side={side} parts={null} art={whyArt} /> : why?.[side] ? <WhySideLine side={side} parts={why[side]} art={whyArt} /> : null}
-        {!started ? null : grouped(side) ? (
-          groupLines(rows, grouping, figures, isPicked).map((g, gi) => (
+        {!started ? null : groups ? (
+          groups.map((g, gi) => (
             <div key={g.key} data-sc-group={g.key} className={`flex flex-col gap-[8px] ${gi > 0 ? "mt-[4px]" : ""}`}>
               <h4
                 className="m-0 flex flex-wrap items-baseline gap-x-[8px] px-[2px] pb-[2px] pt-[8px] font-mono text-[10.5px]"
