@@ -849,9 +849,15 @@ export function CardDetailProvider({
       },
     );
   }, []);
+  // Where the combo came from wants it back (the Show all sheet): run once, when the reader closes the combo view (its ✕, Escape,
+  // the scrim or Back). Replaced by the next combo this opens and spent by the close, so it never fires for any other way the view ends.
+  const feedComboClosed = useRef<(() => void) | null>(null);
   const closeFeedCombo = useCallback(() => {
     feedComboRead.current++;
     setFeedCombo(null);
+    const back = feedComboClosed.current;
+    feedComboClosed.current = null;
+    back?.();
   }, []);
 
   const open = useCallback(
@@ -859,7 +865,7 @@ export function CardDetailProvider({
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string }; view?: "fits" },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string }; view?: "fits"; onComboClosed?: () => void },
     ) => {
       warmCardModal();
       // Every open restates where it lands, so an older ask for Find a deck never outlives it.
@@ -870,6 +876,7 @@ export function CardDetailProvider({
         if (opts?.combo && opts.comboVariantId && opts.comboOnly) {
         const focused = document.activeElement;
         const opener = opts && "opener" in opts ? opts.opener : focused instanceof HTMLElement && focused !== document.body ? focused : null;
+        feedComboClosed.current = opts.onComboClosed ?? null;
         openFeedCombo(oracleId, opts.comboVariantId, opts.comboOnly.added, opener);
         return;
       }

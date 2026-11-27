@@ -27,6 +27,7 @@ import { ComboGlyph } from "../cards/combo-glyph";
 import { NavIcon } from "../shell/nav-icons";
 import { FEED_SHOWN, ShowAllFooter } from "../feed/show-all";
 import { FEED_DAY, FEED_ROWS, FeedSheet } from "../feed/feed-sheet";
+import { useFeedSheet } from "../feed/use-feed-sheet";
 import { captureToolEvent } from "../../lib/analytics/posthog";
 import { feedCountBucket } from "../../lib/analytics/tool-events";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
@@ -102,7 +103,7 @@ function ArchiveFoot() {
 export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, wide = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean;
   /** Quiet Home (fewer than two of table, game to log, lead): What's new sits in the main column, so its rows keep the wide layout at every width. */
   wide?: boolean; className?: string }) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const sheet = useFeedSheet();
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
   const heldLead = useHeldLead();
   const displaced = displaceLead(served, heldLead?.key ?? null);
@@ -213,10 +214,10 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
             <HoverPreviewProvider className="flex flex-col">
               <Rows wide={wide} items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
-                setSheetOpen(true);
+                sheet.show();
                 captureToolEvent("feed_show_all", { count: feedCountBucket(feed.items.length) });
               }} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
-              {sheetOpen && feed.items.length > 0 && (
+              {sheet.open && feed.items.length > 0 && (
                 <FeedSheet
                   items={feed.items}
                   now={now}
@@ -227,9 +228,12 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
                   onDismiss={dismissed.dismiss}
                   onClear={(keys) => {
                     clearAll(null, keys);
-                    if (keys.length >= feed.items.length) setSheetOpen(false);
+                    if (keys.length >= feed.items.length) sheet.close();
                   }}
-                  onClose={() => setSheetOpen(false)}
+                  place={sheet.place}
+                  onComboOpen={sheet.giveWay}
+                  onComboClosed={sheet.comboClosed}
+                  onClose={sheet.close}
                 />
               )}
             </HoverPreviewProvider>

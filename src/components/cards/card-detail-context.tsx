@@ -79,7 +79,7 @@ export type CardDetailContextValue = {
      * its back goes to the card's details. A card whose own payload shuts the door (not Commander-legal, no deck)
      * lands on its details.
      */
-    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string }; view?: "fits" },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string }; view?: "fits"; onComboClosed?: () => void },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;

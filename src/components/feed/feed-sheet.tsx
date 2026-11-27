@@ -7,7 +7,7 @@
 // page already holds: no fetch.
 
 import Link from "next/link";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
@@ -19,6 +19,7 @@ import { FEED_KINDS, type FeedKind } from "../../lib/feed/kinds";
 import { useAnswerSheet } from "../home/answer-sheet";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FeedItemRow, type FeedFaces } from "./feed-item";
+import type { SheetPlace } from "./use-feed-sheet";
 
 const c = feedCopy.home;
 const s = feedSheetCopy;
@@ -48,7 +49,7 @@ const chipName = (k: FeedKind): string => s.kinds[k] ?? feedCopy.news.kinds[k].n
 
 const FOCUS = "focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)]";
 
-export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, onClear, onClose }: {
+export function FeedSheet({ items, now, zone, faces, unseen, aside, place, onDismiss, onClear, onClose, onComboOpen, onComboClosed }: {
   items: FeedView[];
   now: string;
   zone: string | null;
@@ -61,13 +62,20 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
   /** Clear all: the keys the chip shows (less the row whose answer is opening), and whether a chip narrowed them. */
   onClear: (keys: string[], filtered: boolean) => void;
   onClose: () => void;
+  /** Where the sheet was left when a combo row's press gave way to its combo: the list, the chip and the row come back. */
+  place?: SheetPlace | null;
+  /** A combo row's press went through: this is where the sheet stands, to be kept while it closes. */
+  onComboOpen?: (at: SheetPlace) => void;
+  /** The reader closed that combo view. */
+  onComboClosed?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   useDialogA11y(ref, onClose, { initialFocusRef: headingRef });
   const inertRef = useInertWhileOpen(true);
   const pending = useAnswerSheet()?.pending ?? null;
-  const [kind, setKind] = useState<FeedKind | null>(null);
+  const [kind, setKind] = useState<FeedKind | null>(place?.kind ?? null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const kinds = useMemo(() => kindCounts(items), [items]);
   // A chip whose kind has no row left (the last one hidden or cleared) falls back to All.
   const active = kind && kinds.some((k) => k.kind === kind) ? kind : null;
@@ -76,16 +84,29 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
   // A combo row's press opens the combo view in the page, under `<main>`, which this sheet holds inert while it is up (the sheet is
   // portalled to `<body>`, so `<main>` is its sibling). Left open, the combo draws and takes no press, and the app reads as frozen
   // (#3371). So the sheet gives way after the press goes through (a tick later: unmounting the row inside its own click drops the open).
-  const giveWayToCombo = () => {
-    setTimeout(onClose, 0);
+  const giveWayToCombo = (key: string) => {
+    onComboOpen?.({ key, scroll: bodyRef.current?.scrollTop ?? 0, kind: active });
   };
+  // Coming back from a combo: the list at the scroll it had and focus on the row that was pressed. After the rows are in the
+  // document (a layout effect runs once this render's children exist, never before them) and after the dialog's own focus on its
+  // heading, which its effect, declared above, has already taken.
+  useLayoutEffect(() => {
+    if (place && bodyRef.current) bodyRef.current.scrollTop = place.scroll;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, at the return
+  }, []);
+  useEffect(() => {
+    if (!place) return;
+    const row = [...(ref.current?.querySelectorAll<HTMLElement>("[data-feed-key]") ?? [])].find((el) => el.dataset.feedKey === place.key);
+    row?.querySelector<HTMLElement>("[data-feed-press]")?.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, at the return
+  }, []);
   const group = (label: string, rows: FeedView[], after: boolean) =>
     rows.length === 0 ? null : (
       <section key={label} aria-label={label} className={`flex flex-col ${after ? "[border-top:1px_solid_var(--border)]" : ""}`}>
         <p className={`${FEED_DAY} !pt-[12px] !pb-[2px] md:!px-[18px]`}>{label}</p>
         <ul className={FEED_ROWS}>
           {rows.map((i) => (
-            <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact onComboOpen={giveWayToCombo} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+            <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact onComboOpen={() => giveWayToCombo(i.key)} onComboClosed={onComboClosed} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
           ))}
         </ul>
       </section>
@@ -152,7 +173,7 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
             )}
           </div>
         </div>
-        <div data-dismiss-scope data-feed-sheet-body className="flex min-h-0 flex-auto flex-col overflow-y-auto overscroll-contain">
+        <div ref={bodyRef} data-dismiss-scope data-feed-sheet-body className="flex min-h-0 flex-auto flex-col overflow-y-auto overscroll-contain">
           {group(c.today, groups.today, false)}
           {group(s.thisWeek, groups.week, groups.today.length > 0)}
           {group(c.earlier, groups.earlier, groups.today.length + groups.week.length > 0)}
