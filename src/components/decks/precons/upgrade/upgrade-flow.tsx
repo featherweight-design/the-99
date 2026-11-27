@@ -23,6 +23,7 @@ import { picksOf, type UpgradeActionDeps } from "./upgrade-lines";
 import { markUpgradeSeenAction, pickUpgradeLineAction, upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
 import { CreditsText } from "../../../ui/credits-text";
 import { SheetGrabber } from "../../../ui/sheet-grabber";
+import { captureClientError } from "../../../../lib/sentry/capture-client";
 import { IntroStep } from "./intro-step";
 import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pick-steps";
 import { StepTracker } from "./step-tracker";
@@ -174,7 +175,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     const id = unseenId;
     marked.current.add(id);
     onSeen?.(id);
-    markUpgradeSeenAction(id).catch(() => { marked.current.delete(id); });
+    markUpgradeSeenAction(id).catch((e) => { captureClientError("upgrade.seen", e); marked.current.delete(id); });
   }, [unseenId, onSeen]);
 
   // The drawn "scrolls on" cue: a fade and a mono label while a pick step has more below the fold. The review of changes draws none.

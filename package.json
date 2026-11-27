@@ -51,6 +51,7 @@
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:border-collision": "node scripts/check-border-collision.mjs",
     "check:modal-entry": "node scripts/check-modal-entry.mjs",
+    "check:silent-catch": "node scripts/check-silent-catch.mjs",
     "check:steady-labels": "node scripts/check-steady-labels.mjs",
     "check:db-pool": "node scripts/check-db-pool.mjs",
     "db:backfill:added-at": "tsx scripts/backfill-added-at.ts",

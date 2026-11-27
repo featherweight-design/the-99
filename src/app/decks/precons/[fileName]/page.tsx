@@ -5,6 +5,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
+import { captureServerError } from "../../../../lib/sentry/capture";
 import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
 import { requestFlags } from "../../../../lib/flags/request";
@@ -53,6 +54,7 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
     ? readUpgrade(userId, name, LIVE_DEPS, env).catch((error) => {
       // not a fallback: the panel is drawn beside the cached payload, never stored in it.
       console.error("precons: the upgrade panel could not be read", error);
+      captureServerError("precons.upgrade-panel-read", error);
       return null;
     })
     : Promise.resolve(null);
