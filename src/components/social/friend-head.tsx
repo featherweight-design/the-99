@@ -33,9 +33,9 @@ export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number })
   async function remove() {
     setRemoving(true);
     const out = await unfriendAction(friend.publicId).catch((e) => {
-    captureClientError("friend.unfriend", e);
-    return null;
-  });
+      captureClientError("friend.unfriend", e);
+      return null;
+    });
     // `notFriend`: already gone, which is done (E12). Either way this page no longer exists for the reader.
     if (out?.ok || (out && !out.ok && out.reason === "notFriend")) {
       router.replace("/friends");
