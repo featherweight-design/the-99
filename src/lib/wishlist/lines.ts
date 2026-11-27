@@ -27,6 +27,8 @@ export type LineSide = SQL;
 /** Narrows a side to the cards `oracleIds` names, inside the side so the planner never builds the whole union. */
 export function oracleFilter(column: SQL, oracleIds?: readonly string[]): SQL {
   if (!oracleIds) return sql``;
+  // An empty list matches nothing (`in ()` is not valid SQL).
+  if (oracleIds.length === 0) return sql` and false`;
   return sql` and ${column} in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
 }
 

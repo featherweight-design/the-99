@@ -73,3 +73,11 @@ describe("friendsWantedPairsQuery", () => {
     expect(flat(reads.friendsWantedPairsQuery.sql)).toMatch(/^select distinct fsp\.public_id::text as public_id, fp\.oracle_id from/);
   });
 });
+
+describe("an empty card list", () => {
+  it("narrows each side to nothing rather than rendering an invalid in ()", () => {
+    const q = flat(render(friendWantedGapQuery("viewer", FRIEND, [])).sql);
+    expect(q.match(/\) and false/g)).toHaveLength(2);
+    expect(q).not.toContain(`in ()`);
+  });
+});

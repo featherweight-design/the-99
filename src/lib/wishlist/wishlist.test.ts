@@ -1,5 +1,26 @@
-import { describe, expect, it } from "vitest";
-import { cleanQuantity, wantFloor } from "./wishlist";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { describe, expect, it, vi } from "vitest";
+
+const execute = vi.hoisted(() => vi.fn());
+vi.mock("../../db", () => ({ db: { execute } }));
+
+import { cleanQuantity, loadWishlist, wantFloor } from "./wishlist";
+
+describe("loadWishlist", () => {
+  it("runs the owner's union and maps each row, source and deck ids included", async () => {
+    execute.mockResolvedValueOnce({ rows: [
+      { oracle_id: "o1", scryfall_id: null, quantity: "4", owned: "1", added_at: "2026-11-27T10:00:00Z", source: "hand", deck_ids: ["d1", "d2"] },
+      { oracle_id: "o2", scryfall_id: "s2", quantity: 2, owned: 0, added_at: "2026-11-26T10:00:00Z", source: "deck", deck_ids: null },
+    ] });
+    const lines = await loadWishlist("owner");
+    const { sql } = new PgDialect().sqlToQuery(execute.mock.calls[0][0]);
+    expect(sql).toContain(`full join (select ss.*`);
+    expect(lines).toEqual([
+      { oracleId: "o1", scryfallId: null, quantity: 4, owned: 1, addedAt: new Date("2026-11-27T10:00:00Z"), source: "hand", deckIds: ["d1", "d2"] },
+      { oracleId: "o2", scryfallId: "s2", quantity: 2, owned: 0, addedAt: new Date("2026-11-26T10:00:00Z"), source: "deck", deckIds: [] },
+    ]);
+  });
+});
 
 describe("cleanQuantity", () => {
   it("takes a whole number from 1 to 99, as a number or a form string", () => {

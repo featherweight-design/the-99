@@ -45,7 +45,7 @@ export type WishlistLine = {
  * (`lines.ts`, whose `ownerLinesQuery` a test renders), with what it holds of each, newest first. A collected line is
  * left out here rather than deleted (G5: a read never deletes).
  */
-export async function wishlistLinesQuery(ownerId: string): Promise<WishlistLine[]> {
+export async function loadWishlist(ownerId: string): Promise<WishlistLine[]> {
   const { rows } = await db.execute<UnionRow>(ownerLinesQuery(ownerId));
   return rows.map((r) => ({
     oracleId: r.oracle_id,
@@ -56,10 +56,6 @@ export async function wishlistLinesQuery(ownerId: string): Promise<WishlistLine[
     source: r.source,
     deckIds: r.deck_ids ?? [],
   }));
-}
-
-export async function loadWishlist(viewerId: string): Promise<WishlistLine[]> {
-  return wishlistLinesQuery(viewerId);
 }
 
 /** A wishlist tile (Social R2 G1): the line, and the card it names as the collection's own grid draws it. */
@@ -91,7 +87,7 @@ export type WishlistTiles = { tiles: WishlistTile[]; newestAsOf: Date | null };
  * viewer's store (store preference; the tile never names it). Mana Pool when none is given.
  */
 export async function loadWishlistTiles(viewerId: string, store: Store = "manapool"): Promise<WishlistTiles> {
-  const lines = await wishlistLinesQuery(viewerId);
+  const lines = await loadWishlist(viewerId);
   if (lines.length === 0) return { tiles: [], newestAsOf: null };
   const ids = lines.map((l) => l.oracleId);
   const chosen = lines.flatMap((l) => (l.scryfallId ? [l.scryfallId] : []));
