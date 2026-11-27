@@ -6,6 +6,7 @@ import { useCallback, useId, useRef, useState, type RefObject } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { SegmentedSwitch } from "../ui/segmented-switch";
+import { HoverPreviewProvider } from "./hover-preview";
 import { DecklistRow } from "./decklist-row";
 import type { ExportShoppingCard } from "../../lib/decks/export-data";
 import { downloadTextFile } from "../../lib/decks/download";
@@ -496,16 +497,19 @@ function DialogContent({
 
 /**
  * The Shopping tab's rows: the shipped read-only `DecklistRow`, so a row here is the row the deck page draws. The row
- * needs a card-detail provider: the deck page has one, and the /decks tile menu mounts one around this dialog.
+ * needs a card-detail provider (the deck page has one, and the /decks tile menu mounts one around this dialog) and
+ * the hover preview's own, which the rows borrow.
  */
 function ShoppingRows({ cards, isMobile }: { cards: ExportShoppingCard[]; isMobile: boolean }) {
   return (
-    <ul className={`m-0 flex list-none flex-col gap-[4px] ${isMobile ? "px-[14px] pb-[12px] pt-[8px]" : "px-[22px] pb-[12px] pt-[4px]"}`}>
-      {cards.map((card) => (
-        <li key={card.oracleId}>
-          <DecklistRow deckId={EXPORT_DECK_ID} readOnly card={card} newestAsOf={null} />
-        </li>
-      ))}
-    </ul>
+    <HoverPreviewProvider>
+      <ul className={`m-0 flex list-none flex-col gap-[4px] ${isMobile ? "px-[14px] pb-[12px] pt-[8px]" : "px-[22px] pb-[12px] pt-[4px]"}`}>
+        {cards.map((card) => (
+          <li key={card.oracleId}>
+            <DecklistRow deckId={EXPORT_DECK_ID} readOnly card={card} newestAsOf={null} />
+          </li>
+        ))}
+      </ul>
+    </HoverPreviewProvider>
   );
 }
