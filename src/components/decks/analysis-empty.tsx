@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { PANEL } from "../social/section-panel";
@@ -109,7 +110,8 @@ export function AnalysisEmpty({
         if (result.ok) setDescriptionAnnounced(deckDescriptionCopy.announce.descriptionSaved);
         else setDescriptionRefused(result.message);
         return result;
-      } catch {
+      } catch (e) {
+        captureClientError("deck.description", e);
         const result: DeckMutationResult = { ok: false, message: deckDescriptionCopy.description.refused };
         setDescriptionRefused(result.message);
         return result;

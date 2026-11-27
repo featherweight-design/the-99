@@ -23,6 +23,7 @@ function readTrailRaw(): string | null {
   try {
     return window.sessionStorage.getItem(FLIP_KEY);
   } catch {
+    // silent-catch: expected: refusal. A browser that refuses storage keeps the strip's state in memory alone.
     return null;
   }
 }

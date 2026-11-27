@@ -7,6 +7,7 @@
 // behind a LIVE figure, nothing otherwise, and a card's only printing is selected (gotItPreset).
 // Nothing is written until Add; Cancel, Escape, the ✕ and a press outside write nothing.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { loadPrintingChoices } from "../../app/collection/edit-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -157,7 +158,7 @@ export function GotItConfirmForm<F>({
         setSelected(preset.scryfallId);
         setFinish(preset.finish);
       })
-      .catch(() => live && setLoadFailed(true));
+      .catch((e) => { captureClientError("gotit.printings", e); if (live) setLoadFailed(true); });
     return () => {
       live = false;
     };
@@ -234,7 +235,8 @@ export function GotItConfirmForm<F>({
         // Refused or the catalog no longer holds it: nothing was written; the choices stay (B9).
         setNotice("failed");
       }
-    } catch {
+    } catch (e) {
+      captureClientError("gotit.record", e);
       // The id is kept, so a retry of a press that did commit records once.
       setNotice("failed");
     } finally {

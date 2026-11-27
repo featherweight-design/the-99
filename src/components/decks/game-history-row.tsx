@@ -2,6 +2,7 @@
 // One logged game. The row is also the only correction path — §4 has no edit
 // action — so its × opens the app's one delete confirm, floating under it.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { deleteGame } from "../../app/decks/actions";
 import { gameLogCopy } from "../../lib/copy/game-log";
@@ -68,7 +69,8 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       let outcome: Awaited<ReturnType<typeof deleteGame>>;
       try {
         outcome = await deleteGame(deckId, game.id);
-      } catch {
+      } catch (e) {
+        captureClientError("games.delete", e);
         // A request that never reached the server (offline, a dropped connection) deleted
         // nothing either, so it reads as the same refusal rather than escaping to the page.
         outcome = { ok: false, message: gameLogCopy.history.deleteRefused };

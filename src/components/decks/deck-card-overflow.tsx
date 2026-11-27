@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -318,7 +319,8 @@ export function DeckCardOverflow({
       setExporting({ read: { deckName: read.deckName, commanderName: read.commanderName, partnerName: read.partnerName,
         commanderPrinting: read.commanderPrinting, partnerPrinting: read.partnerPrinting,
         decklistCards: read.decklistCards, shoppingCards: read.shoppingCards }, Dialog });
-    } catch {
+    } catch (e) {
+      captureClientError("deck.export", e);
       if (ticket === latestExport) setExportFailed(true);
     } finally {
       setBusy(false);
@@ -349,7 +351,8 @@ export function DeckCardOverflow({
     try {
       const r = await setDeckHiddenFromFriendsAction(deckId, !friends.hidden);
       if (!r.ok) fail();
-    } catch {
+    } catch (e) {
+      captureClientError("deck.hide-friends", e);
       fail();
     }
   }

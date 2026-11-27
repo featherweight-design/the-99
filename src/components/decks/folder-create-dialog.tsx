@@ -13,6 +13,7 @@
 // panel form blur lands before the button's click and double-submits
 // (`rename-form.tsx:21-23`).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -76,7 +77,8 @@ export function FolderCreateDialog({
       if (refusal === "duplicate") setError(folderCopy.create.duplicate(trimmed));
       else if (refusal) setError(folderCopy.create.refused);
       else onDismiss();
-    } catch {
+    } catch (e) {
+      captureClientError("folder.create", e);
       // A thrown action — an outage, a timeout — is not a name refusal, and
       // saying so would tell a reader their perfectly good name is invalid. It
       // must also not leave the field read-only with a dead button.

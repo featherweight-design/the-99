@@ -8,6 +8,7 @@
 // The row holds no state of its own beyond which seat's picker is open; the seats, the result and the pod size
 // are the form's, so what is saved is what is drawn.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/opponent-actions";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
@@ -202,7 +203,7 @@ export function GameSeats({
   const [pods, setPods] = useState<PickerPod[]>([]);
   useEffect(() => {
     let live = true;
-    listPickerPodsAction().then((list) => { if (live) setPods(list); }).catch(() => {});
+    listPickerPodsAction().then((list) => { if (live) setPods(list); }).catch((e) => { captureClientError("games.pods", e); });
     return () => { live = false; };
   }, []);
   // The seats each chip's press made (key and friend), by pod: a chip undoes only those, and only while the seat still
@@ -259,7 +260,8 @@ export function GameSeats({
       const keys = onPod(fill.podSize, fill.add);
       setPodFilled((held) => ({ ...held, [pod.id]: fill.add.map((f, i) => ({ key: keys[i], friend: f.publicId })) }));
       if (fill.unseated.length > 0) setPodNote(copy.podLeftOut(names(fill.unseated)));
-    } catch {
+    } catch (e) {
+      captureClientError("games.pod-fill", e);
       if (mounted.current) setPodNote(copy.podFailed);
     } finally {
       if (mounted.current) {
