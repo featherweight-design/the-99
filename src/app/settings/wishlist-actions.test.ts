@@ -6,7 +6,8 @@ const m = vi.hoisted(() => ({ sync: vi.fn(), off: vi.fn(), revalidatePath: vi.fn
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../lib/wishlist/sync", () => ({ setWishlistSync: m.sync }));
-vi.mock("../../lib/wishlist/sync-settings", () => ({ MAX_DECKS_PER_WRITE: 3, setDecksOffWishlist: m.off }));
+vi.mock("../../lib/wishlist/sync-settings", () => ({ setDecksOffWishlist: m.off }));
+vi.mock("../../lib/wishlist/deck-write-cap", () => ({ MAX_DECKS_PER_WRITE: 3 }));
 
 import { setDecksOffWishlistAction, setWishlistSyncAction } from "./wishlist-actions";
 

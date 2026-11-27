@@ -11,6 +11,7 @@ import { db } from "../../db";
 import { decks, wishlistSyncSkips } from "../../db/schema";
 import { loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import { readWishlistSync } from "./sync-pref";
+import { captureServerError } from "../sentry/capture";
 
 /** One deck in the picker: its name, whether it is left out, and the cards Shopping lists for it. */
 export type WishlistSyncDeck = { id: string; name: string; off: boolean; toBuy: number };
@@ -42,17 +43,22 @@ export async function loadWishlistSyncSettings(userId: string): Promise<Wishlist
     db.select({ id: decks.id, name: decks.name, off: decks.offWishlist }).from(decks)
       .where(eq(decks.userId, userId)).orderBy(asc(decks.name), asc(decks.id)),
   ]);
-  if (!on || rows.length === 0) return { on, decks: rows.map((r) => ({ ...r, toBuy: 0 })) };
-  const [needs, skipRows] = await Promise.all([
-    loadDeckBuyRows(userId),
-    db.select({ oracleId: wishlistSyncSkips.oracleId }).from(wishlistSyncSkips).where(eq(wishlistSyncSkips.userId, userId)),
-  ]);
-  const counts = toBuyByDeck(needs, new Set(skipRows.map((r) => r.oracleId)));
-  return { on, decks: rows.map((r) => ({ ...r, toBuy: counts.get(r.id) ?? 0 })) };
+  const none = { on, decks: rows.map((r) => ({ ...r, toBuy: 0 })) };
+  if (!on || rows.length === 0) return none;
+  // The counts are the picker's detail, never the page: a failed read is reported and draws every count as 0.
+  try {
+    const [needs, skipRows] = await Promise.all([
+      loadDeckBuyRows(userId),
+      db.select({ oracleId: wishlistSyncSkips.oracleId }).from(wishlistSyncSkips).where(eq(wishlistSyncSkips.userId, userId)),
+    ]);
+    const counts = toBuyByDeck(needs, new Set(skipRows.map((r) => r.oracleId)));
+    return { on, decks: rows.map((r) => ({ ...r, toBuy: counts.get(r.id) ?? 0 })) };
+  } catch (error) {
+    captureServerError("settings.wishlist-counts-read", error);
+    return none;
+  }
 }
 
-/** The most decks one write names: the picker's Clear sends every chosen deck. */
-export const MAX_DECKS_PER_WRITE = 500;
 
 /**
  * Leaves the given decks out of the sync, or puts them back. False, writing nothing, when any id is not one of the

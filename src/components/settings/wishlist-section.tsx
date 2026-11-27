@@ -14,6 +14,7 @@ import { BandText } from "../decks/deck-box";
 import { setDecksOffWishlistAction, setWishlistSyncAction } from "../../app/settings/wishlist-actions";
 import { settingsCopy, wishlistDecksPanelCopy } from "../../lib/copy/settings";
 import type { WishlistSyncSettings } from "../../lib/wishlist/sync-settings";
+import { MAX_DECKS_PER_WRITE } from "../../lib/wishlist/deck-write-cap";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { Checkbox } from "../ui/checkbox";
@@ -21,6 +22,16 @@ import { FilterPanel } from "../ui/filter-panel";
 import { captureClientError } from "../../lib/sentry/capture-client";
 
 const c = settingsCopy.wishlist;
+
+/** The decks left out after a press: `ids` added (left out) or removed (put back). A new set. */
+function applyOff(prev: ReadonlySet<string>, ids: readonly string[], leaveOut: boolean): Set<string> {
+  const next = new Set(prev);
+  for (const id of ids) {
+    if (leaveOut) next.add(id);
+    else next.delete(id);
+  }
+  return next;
+}
 
 const keptOff = (s: WishlistSyncSettings) => new Set(s.decks.filter((d) => d.off).map((d) => d.id));
 
@@ -44,9 +55,9 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
     saved.current = { on: settings.on, off: keptOff(settings) };
   }, [settings]);
 
-  const fail = () => {
+  // A refused save puts back only its own control: the switch, or the decks.
+  const failSwitch = () => {
     setOn(saved.current.on);
-    setOff(new Set(saved.current.off));
     setToast({ id: ++toastSeq.current, text: c.failed });
   };
 
@@ -58,42 +69,43 @@ export function WishlistSection({ settings }: { settings: WishlistSyncSettings }
     try {
       const r = await setWishlistSyncAction(next);
       if (r.ok) saved.current = { ...saved.current, on: next };
-      else fail();
+      else failSwitch();
     } catch (e) {
       captureClientError("settings.wishlist-sync", e);
-      fail();
+      failSwitch();
     } finally {
       setSaving(false);
     }
   }
 
-  // The picker's writes, chained so each lands after the one before it.
+  // The picker's writes, chained so each lands after the one before it. A failure puts every deck back to what the
+  // server last accepted and drops the writes queued behind it (their ticks went with the reset), so the picker and
+  // the server never disagree. Clear sends its decks in batches the action accepts.
   const queue = useRef<Promise<void>>(Promise.resolve());
+  const generation = useRef(0);
+  const failDecks = () => {
+    generation.current += 1;
+    setOff(new Set(saved.current.off));
+    setToast({ id: ++toastSeq.current, text: c.failed });
+  };
   function saveDecks(ids: string[], leaveOut: boolean) {
     if (ids.length === 0) return;
-    setOff((prev) => {
-      const next = new Set(prev);
-      for (const id of ids) {
-        if (leaveOut) next.add(id);
-        else next.delete(id);
-      }
-      return next;
-    });
-    queue.current = queue.current.then(async () => {
-      try {
-        const r = await setDecksOffWishlistAction(ids, leaveOut);
-        if (!r.ok) return fail();
-        const next = new Set(saved.current.off);
-        for (const id of ids) {
-          if (leaveOut) next.add(id);
-          else next.delete(id);
+    setOff((prev) => applyOff(prev, ids, leaveOut));
+    const gen = generation.current;
+    for (let i = 0; i < ids.length; i += MAX_DECKS_PER_WRITE) {
+      const batch = ids.slice(i, i + MAX_DECKS_PER_WRITE);
+      queue.current = queue.current.then(async () => {
+        if (gen !== generation.current) return;
+        try {
+          const r = await setDecksOffWishlistAction(batch, leaveOut);
+          if (!r.ok) return failDecks();
+          saved.current = { ...saved.current, off: applyOff(saved.current.off, batch, leaveOut) };
+        } catch (e) {
+          captureClientError("settings.wishlist-decks", e);
+          failDecks();
         }
-        saved.current = { ...saved.current, off: next };
-      } catch (e) {
-        captureClientError("settings.wishlist-decks", e);
-        fail();
-      }
-    });
+      });
+    }
   }
 
   const nameOf = (id: string) => settings.decks.find((d) => d.id === id)?.name ?? "";

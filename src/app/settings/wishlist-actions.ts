@@ -11,7 +11,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { setWishlistSync } from "../../lib/wishlist/sync";
-import { MAX_DECKS_PER_WRITE, setDecksOffWishlist } from "../../lib/wishlist/sync-settings";
+import { setDecksOffWishlist } from "../../lib/wishlist/sync-settings";
+import { MAX_DECKS_PER_WRITE } from "../../lib/wishlist/deck-write-cap";
 import { isUuid } from "../../lib/uuid";
 
 export type WishlistSyncOutcome = { ok: true } | { ok: false; reason: "invalid" };

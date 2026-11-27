@@ -1,6 +1,6 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
-// account menu. Notifications comes first, then Spares, then Wishlist (cart on your wishlist, call 1), then Your decks (friend decks README 4b), then Account (account
-// settings handoff call 1). Account's name is the reader's profile name, made on first use as /friends makes it
+// account menu. Notifications comes first, then Spares, then Wishlist (cart on your wishlist, call 1), then Your
+// decks (friend decks README 4b), then Account (account settings handoff call 1). Account's name is the reader's profile name, made on first use as /friends makes it
 // (`ensureSenderProfile`, READINESS clarification 3); its email and sign-in methods are Clerk's. Clerk's read is a Backend
 // round trip, so Account streams in behind its own Suspense boundary and the rest of the page never waits on it.
 //
