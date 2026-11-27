@@ -94,6 +94,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   navigation only: its press is `landOnDeckTokens`, so it opens the Tokens box and focuses its heading from Shopping, Analysis
   and Games alike, and it moves no status, roll-up or count (the `decklist.test.tsx` pins stand). Like a lone combos segment it
   counts toward `footHasSegments`, so a brew or an empty deck whose commander makes tokens draws the quiet strip for it.
+  **Phone short forms** (deck tokens PR 3): below `md` the strip draws `v2 · Nov 13`, `∞ 5 near combos ›` and `◎ 4 tokens ›`, so it
+  stays on one line; from `md` up it keeps the full wording. CSS picks the form (`ShortOrFull`, both in the markup), so the server and
+  the browser print the same thing. The year goes within the current year through `formatPlayed`. Each press keeps the full sentence
+  as its `aria-label`. `probe:deck-tokens-short-forms` pins 390, 767, 768, 769 and 1300.
 
 ## From AGENTS.md (moved 2026-10-28)
 

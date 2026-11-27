@@ -116,6 +116,8 @@ export const deckVersioningCopy = {
     // Committed and clean: the whole of versioning's permanent footprint, the to-do card foot's
     // first segment (omitted while the pending row shows).
     versionLine: (version: number, date: string) => `v${version} · committed ${date}`,
+    // Below `md` the line drops "committed" and the year within the current year, so the strip stays on one line.
+    versionLineShort: (version: number, date: string) => `v${version} · ${date}`,
 
     // A versionless deck at a full body. Design's call, not the spec's — see READINESS.
     firstCommitCta: "Commit as v1",

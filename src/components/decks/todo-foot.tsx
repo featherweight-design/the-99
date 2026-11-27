@@ -17,7 +17,7 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { topOffCopy } from "../../lib/copy/top-off";
-import { formatDeckDate } from "../../lib/decks/format";
+import { formatDeckDate, formatPlayed } from "../../lib/decks/format";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { TOUCH_HIT } from "../ui/touch-hit";
@@ -112,7 +112,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   if (facts.version) {
     segments.push({
       key: "version",
-      node: <VersionSegment className={cell} text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt, zone))} />,
+      node: <VersionSegment className={cell} full={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt, zone))} short={deckVersioningCopy.pending.versionLineShort(facts.version.number, formatPlayed(facts.version.committedAt, new Date(), zone))} />,
     });
   }
   else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });
@@ -187,18 +187,30 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
  */
 // 11px at line-height 1.7 is ~18.7px; 13px above and below makes the button itself 44 tall.
 const CARD_FOOT_TOUCH = "[@media(pointer:coarse)]:py-[13px]";
-function LinkSegment({ glyph, label, caret, onOpen, className, quiet, marker, popup }: { glyph: ReactNode; label: string; caret: string; onOpen: () => void; className: string; quiet: boolean; marker: string; popup?: boolean }) {
+/** The short form below `md`, the full wording from `md` up: chosen by CSS, so the server and the browser print the same markup. */
+function ShortOrFull({ short, full }: { short: string; full: string }) {
+  return (
+    <>
+      <span className="md:hidden">{short}</span>
+      <span className="hidden md:inline">{full}</span>
+    </>
+  );
+}
+
+function LinkSegment({ glyph, label, short, caret, onOpen, className, quiet, marker, popup }: { glyph: ReactNode; label: string; short: string; caret: string; onOpen: () => void; className: string; quiet: boolean; marker: string; popup?: boolean }) {
   return (
     <button
       type="button"
       aria-haspopup={popup ? "dialog" : undefined}
+      // The short form is all a phone draws, so the full sentence is the press's accessible name on both.
+      aria-label={label}
       onClick={onOpen}
       {...{ [marker]: "" }}
       className={`${className} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
     >
       <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
         {glyph}
-        <span>{label}</span>
+        <span><ShortOrFull short={short} full={label} /></span>
         <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{caret}</span>
       </span>
     </button>
@@ -206,7 +218,7 @@ function LinkSegment({ glyph, label, caret, onOpen, className, quiet, marker, po
 }
 
 function NearCombosSegment({ count, onOpen, className, quiet }: { count: number; onOpen: () => void; className: string; quiet: boolean }) {
-  return <LinkSegment glyph={<ComboGlyph size={13} />} label={combosCloseCopy.segment(count)} caret={combosCloseCopy.caret} onOpen={onOpen} className={className} quiet={quiet} marker="data-combos-close" popup />;
+  return <LinkSegment glyph={<ComboGlyph size={13} />} label={combosCloseCopy.segment(count)} short={combosCloseCopy.segmentShort(count)} caret={combosCloseCopy.caret} onOpen={onOpen} className={className} quiet={quiet} marker="data-combos-close" popup />;
 }
 
 /**
@@ -214,13 +226,13 @@ function NearCombosSegment({ count, onOpen, className, quiet }: { count: number;
  * lands on the Tokens group (`landOnDeckTokens`) from any panel, and it moves no count or status.
  */
 function TokensSegment({ count, makers, onOpen, className, quiet }: { count: number; makers: number; onOpen: () => void; className: string; quiet: boolean }) {
-  return <LinkSegment glyph={<TokenGlyph />} label={tokensCopy.statusLine.segment(count, makers)} caret={tokensCopy.statusLine.caret} onOpen={onOpen} className={className} quiet={quiet} marker="data-tokens-segment" />;
+  return <LinkSegment glyph={<TokenGlyph />} label={tokensCopy.statusLine.segment(count, makers)} short={tokensCopy.statusLine.segmentShort(count)} caret={tokensCopy.statusLine.caret} onOpen={onOpen} className={className} quiet={quiet} marker="data-tokens-segment" />;
 }
 
 /** The committed version line, and where a commit lands. Focusable but not a tab stop
  *  (`tabIndex={-1}`): a statement, not a control, reachable programmatically once, the paint after
  *  the commit sheet or a discard navigated here. See `COMMIT_RECEIPT_HASH` for why that matters. */
-function VersionSegment({ text, className }: { text: string; className: string }) {
+function VersionSegment({ full, short, className }: { full: string; short: string; className: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const hash = window.location.hash;
@@ -231,7 +243,7 @@ function VersionSegment({ text, className }: { text: string; className: string }
   }, []);
   return (
     <span ref={ref} tabIndex={-1} className={`${className} outline-none`}>
-      {text}
+      <ShortOrFull short={short} full={full} />
     </span>
   );
 }

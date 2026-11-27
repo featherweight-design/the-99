@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { formatDeckDate, formatShortDeckDate } from "../../lib/decks/format";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -42,13 +43,19 @@ function draw(foot: TodoFootFacts, facts: TodoFacts = QUIET) {
 // Each segment carries its own leading `·`, joined by a no-break space (Small items 7, addendum 7).
 const JOIN = `${copy.footSeparator}\u00a0`;
 const foot = () => document.querySelector("[data-todo-foot]") as HTMLElement;
+// jsdom draws no media query, so both forms of a segment are in the DOM. `wide` reads what a viewer from `md` up sees.
+const wide = (el: Element) => {
+  const clone = el.cloneNode(true) as Element;
+  for (const short of clone.querySelectorAll(".md\\:hidden")) short.remove();
+  return clone.textContent;
+};
 const provenance = () => screen.getByRole("button", { name: topOffCopy.ledger.header("31") });
 const drafts = () => screen.getByRole("button", { name: availabilityCopy.deckRollup.softFoot(4) });
 
 describe("the to-do card's foot", () => {
   it("states version · proxies · provenance · other drafts, in that order, one separator between each", () => {
     draw(FULL, { ...QUIET, unresolved: 2 });
-    expect(foot().textContent).toBe(
+    expect(wide(foot())).toBe(
       [VERSION, proxyCopy.deckHeader.line(1), `${topOffCopy.ledger.header("31")}${copy.disclosureClosed}`, `${availabilityCopy.deckRollup.softFoot(4)}${copy.disclosureClosed}`].join(JOIN),
     );
   });
@@ -72,7 +79,7 @@ describe("the to-do card's foot", () => {
   // A brew has no version to state (deck messages, A9 and A17: the board's foot reads `No version yet`).
   it("says No version yet on a brew's card, in the version's place, and a committed version wins", () => {
     draw({ ...NONE, noVersion: true }, { ...QUIET, unresolved: 2 });
-    expect(foot().textContent).toBe(copy.noVersion);
+    expect(wide(foot())).toBe(copy.noVersion);
   });
 
   it("leaves the quiet strip of a brew silent, as shipped", () => {
@@ -82,13 +89,13 @@ describe("the to-do card's foot", () => {
 
   it("states the version rather than No version yet when both are given", () => {
     draw({ ...FULL, noVersion: true }, { ...QUIET, unresolved: 2 });
-    expect(foot().textContent).toContain(VERSION);
-    expect(foot().textContent).not.toContain(copy.noVersion);
+    expect(wide(foot())).toContain(VERSION);
+    expect(wide(foot())).not.toContain(copy.noVersion);
   });
 
   it("leaves an absent segment out with no stray separator, and plain facts are not presses", () => {
     draw({ ...NONE, proxies: 2, otherDrafts: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
-    expect(foot().textContent).toBe(`${proxyCopy.deckHeader.line(2)}${JOIN}${availabilityCopy.deckRollup.softFoot(1)}${copy.disclosureClosed}`);
+    expect(wide(foot())).toBe(`${proxyCopy.deckHeader.line(2)}${JOIN}${availabilityCopy.deckRollup.softFoot(1)}${copy.disclosureClosed}`);
     expect(screen.queryByRole("button", { name: proxyCopy.deckHeader.line(2) })).toBeNull();
   });
 
@@ -213,7 +220,7 @@ describe("the version segment", () => {
   it.each([COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH])("takes focus when %s lands it here, and drops the hash", (hash) => {
     history.replaceState(null, "", `/decks/d${hash}`);
     draw({ ...NONE, version: FULL.version });
-    expect(document.activeElement).toBe(screen.getByText(VERSION));
+    expect(document.activeElement).toBe(screen.getByText(VERSION).closest("[tabindex]"));
     expect(window.location.hash).toBe("");
   });
 
@@ -238,9 +245,9 @@ describe("the combos-one-piece-away segment", () => {
 
   it("says 1 combo or N combos, after the version and before proxies", () => {
     const one = draw({ ...FULL, nearCombos: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
-    expect(segment()).toHaveTextContent(`${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`);
+    expect(wide(segment()!)).toBe(`${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`);
     expect(combosCloseCopy.segment(1)).toBe("1 combo one piece away");
-    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`, proxyCopy.deckHeader.line(1)].join(JOIN))).toBe(true);
+    expect(wide(foot())!.startsWith([VERSION, `${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`, proxyCopy.deckHeader.line(1)].join(JOIN))).toBe(true);
     one.unmount();
     draw({ ...FULL, nearCombos: { count: 5, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
     expect(screen.getByRole("button", { name: "5 combos one piece away" })).toBe(segment());
@@ -249,7 +256,7 @@ describe("the combos-one-piece-away segment", () => {
   it("counts toward the quiet strip: a brew with nothing to do but combos still draws it", () => {
     draw({ ...NONE, noVersion: true, nearCombos: { count: 3, onOpen: vi.fn() } });
     expect(foot()).not.toBeNull();
-    expect(foot().textContent).toBe(`${combosCloseCopy.segment(3)}${combosCloseCopy.caret}`);
+    expect(wide(foot())).toBe(`${combosCloseCopy.segment(3)}${combosCloseCopy.caret}`);
   });
 
   // The card clips its children (`overflow-hidden`), so a hit reaching past the foot would be cut:
@@ -288,9 +295,9 @@ describe("the tokens segment", () => {
 
   it("says 1 token from 1 card or N tokens from M cards, after the combos and before proxies", () => {
     const one = draw({ ...FULL, nearCombos: { count: 2, onOpen: vi.fn() }, tokens: { count: 1, makers: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
-    expect(segment()).toHaveTextContent(words(1, 1));
+    expect(wide(segment()!)).toBe(words(1, 1));
     expect(tokensCopy.statusLine.segment(1, 1)).toBe("1 token from 1 card");
-    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(2)}${combosCloseCopy.caret}`, words(1, 1), proxyCopy.deckHeader.line(1)].join(JOIN))).toBe(true);
+    expect(wide(foot())!.startsWith([VERSION, `${combosCloseCopy.segment(2)}${combosCloseCopy.caret}`, words(1, 1), proxyCopy.deckHeader.line(1)].join(JOIN))).toBe(true);
     one.unmount();
     draw({ ...FULL, tokens: { count: 4, makers: 7, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
     expect(screen.getByRole("button", { name: tokensCopy.statusLine.segment(4, 7) })).toBe(segment());
@@ -300,7 +307,7 @@ describe("the tokens segment", () => {
   it("counts toward the quiet strip: a brew with nothing to do but tokens still draws it", () => {
     draw({ ...NONE, noVersion: true, tokens: { count: 3, makers: 2, onOpen: vi.fn() } });
     expect(foot()).not.toBeNull();
-    expect(foot().textContent).toBe(words(3, 2));
+    expect(wide(foot())).toBe(words(3, 2));
   });
 
   it("keeps a whole 44px touch target in the strip and in the to-do card's foot", () => {
@@ -318,5 +325,35 @@ describe("the tokens segment", () => {
     expect(segment()).not.toHaveAttribute("aria-haspopup");
     fireEvent.click(segment()!);
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Below `md` the strip uses short forms so it stays on one line; each press keeps its full sentence as its name.
+describe("the phone short forms", () => {
+  const now = new Date("2026-11-27T12:00:00Z");
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
+  });
+  afterEach(() => vi.useRealTimers());
+  const short = (el: Element) => el.querySelector(".md\\:hidden")!.textContent;
+
+  it("drops the year inside the current year, keeps it for an earlier one", () => {
+    const inYear = draw({ ...NONE, version: FULL.version });
+    expect(short(screen.getByText(VERSION).closest("[tabindex]")!)).toBe(deckVersioningCopy.pending.versionLineShort(2, formatShortDeckDate(FULL.version!.committedAt)));
+    inYear.unmount();
+    const earlier = new Date("2025-09-01T00:00:00Z");
+    draw({ ...NONE, version: { number: 2, committedAt: earlier } });
+    expect(short(document.querySelector("[tabindex]")!)).toBe(deckVersioningCopy.pending.versionLineShort(2, formatDeckDate(earlier)));
+  });
+
+  it("draws the short combos and tokens labels, each press named by its full sentence", () => {
+    draw({ ...FULL, nearCombos: { count: 5, onOpen: vi.fn() }, tokens: { count: 4, makers: 7, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    const combos = document.querySelector("[data-combos-close]")!;
+    const tokens = document.querySelector("[data-tokens-segment]")!;
+    expect(short(combos)).toBe(combosCloseCopy.segmentShort(5));
+    expect(short(tokens)).toBe(tokensCopy.statusLine.segmentShort(4));
+    expect(combos).toHaveAttribute("aria-label", combosCloseCopy.segment(5));
+    expect(tokens).toHaveAttribute("aria-label", tokensCopy.statusLine.segment(4, 7));
   });
 });
