@@ -42,4 +42,15 @@ describe("captureClientError", () => {
     captureClientError("test.loop", new Error("again"));
     expect(captured).toHaveLength(3);
   });
+
+  it("stays silent for an abort and while offline, and does not spend the tag on them", () => {
+    captureClientError("test.quiet", Object.assign(new Error("x"), { name: "AbortError" }));
+    expect(captured).toHaveLength(0);
+    vi.stubGlobal("navigator", { onLine: false });
+    captureClientError("test.quiet", new Error("x"));
+    expect(captured).toHaveLength(0);
+    vi.unstubAllGlobals();
+    captureClientError("test.quiet", new Error("x"));
+    expect(captured).toHaveLength(1);
+  });
 });

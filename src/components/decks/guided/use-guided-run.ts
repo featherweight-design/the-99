@@ -58,8 +58,8 @@ export function useGuidedRun(deckId: string, initial: GuidedState): GuidedRun {
     startGuidedAction(deckId, picksOfRun(run))
       .then(async (r) => {
         // A started run is never called refused: a read that fails after `ok` is tried once more, and the run's own poll takes over.
-        const read = () => readGuidedStateAction(deckId).catch((e) => { captureClientError("guided.read", e); return null; });
-        const next = r.ok ? (await read()) ?? (await read()) : null;
+        const read = (last: boolean) => readGuidedStateAction(deckId).catch((e) => { if (last) captureClientError("guided.read", e); return null; });
+        const next = r.ok ? (await read(false)) ?? (await read(true)) : null;
         if (!alive.current) return;
         if (next) { setRun(next); } else if (!r.ok) setRefused(true);
       })

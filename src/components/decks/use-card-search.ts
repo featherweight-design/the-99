@@ -148,7 +148,7 @@ export function useCardSearch({
           // user typing another character is no reason to stop saying so — a
           // guarded log would hide a wholly broken action behind fast typing.
           console.error(err);
-          captureClientError("builder.search", err);
+          if (!timedOut) captureClientError("builder.search", err);
           if (deadline !== null) clearTimeout(deadline);
           // Back to "no search has happened", never to "no results". An empty
           // list makes a claim a failed request has not earned.
