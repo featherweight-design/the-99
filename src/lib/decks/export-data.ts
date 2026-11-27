@@ -8,13 +8,24 @@ import type { DeckDetailCard } from "./grouping";
 import type { DeckCommander } from "./read";
 import { commanderShoppingRows, isShoppingCard } from "./shopping";
 
+/**
+ * One Shopping row as the dialog draws it: the shipped read-only `DecklistRow`'s own card, cut to the fields
+ * that row reads. The oracle id and the printing (set, number, art, foil) ride along so the row is the one
+ * the deck page draws, not a name-keyed imitation of it.
+ */
+export type ExportShoppingCard = Pick<
+  DeckDetailCard,
+  | "oracleId" | "name" | "typeLine" | "cardTypeGroup" | "role" | "cmc" | "owned" | "quantity" | "auto"
+  | "printedName" | "printedSetCode" | "printedCollectorNumber" | "printedFoil" | "manaCost" | "imageUri"
+>;
+
 export type DeckExportData = {
   commanderName: string;
   partnerName: string | null;
   commanderPrinting: { setCode?: string; collectorNumber?: string };
   partnerPrinting: { setCode?: string; collectorNumber?: string } | null;
   decklistCards: DecklistCard[];
-  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
+  shoppingCards: ExportShoppingCard[];
 };
 
 export function deckExportData(
@@ -60,10 +71,21 @@ export function deckExportData(
       ...commanderShoppingRows(commander, partner, cards),
       ...cards.filter(isShoppingCard),
     ].map((c) => ({
+      oracleId: c.oracleId,
       name: c.name,
+      typeLine: c.typeLine,
+      cardTypeGroup: c.cardTypeGroup,
       role: c.role,
-      quantity: c.quantity,
+      cmc: c.cmc,
       owned: c.owned,
+      quantity: c.quantity,
+      auto: c.auto,
+      printedName: c.printedName,
+      printedSetCode: c.printedSetCode,
+      printedCollectorNumber: c.printedCollectorNumber,
+      printedFoil: c.printedFoil,
+      manaCost: c.manaCost,
+      imageUri: c.imageUri,
     })),
   };
 }

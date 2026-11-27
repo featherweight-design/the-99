@@ -2,10 +2,13 @@
 // ExportDialog — §Export Dialog / Sheet: modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
 // Task 10. Reuses useDialogA11y for focus trap, Escape, focus-return.
 
-import { useCallback, useRef, useState, type RefObject } from "react";
+import { useCallback, useId, useRef, useState, type RefObject } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
-import { OwnershipDot } from "../ui/ownership-dot";
+import { SegmentedSwitch } from "../ui/segmented-switch";
+import { HoverPreviewProvider } from "./hover-preview";
+import { DecklistRow } from "./decklist-row";
+import type { ExportShoppingCard } from "../../lib/decks/export-data";
 import { downloadTextFile } from "../../lib/decks/download";
 import {
   bodyLine,
@@ -29,12 +32,14 @@ import {
   exportShoppingCopy,
   exportTabCopy,
   overCopy,
-  ownedStateCopy,
 } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 import { deckBodySize } from "../../lib/decks/deck-size";
 
 type Tab = "decklist" | "shopping";
+
+/** The row asks for a deck id to key its owned ring on; an export is of no deck's list, so one fixed key. */
+const EXPORT_DECK_ID = "export";
 
 interface ExportDialogProps {
   deckName: string;
@@ -50,7 +55,7 @@ interface ExportDialogProps {
   decklistCards: DecklistCard[];
   /** What the Shopping filter shows: cards you do not own, plus cards you own
       whose every copy is spoken for by another deck. Never a basic land. */
-  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
+  shoppingCards: ExportShoppingCard[];
   open: boolean;
   onClose: () => void;
   /**
@@ -218,7 +223,7 @@ interface DialogContentProps {
   tab: Tab;
   setTab: (t: Tab) => void;
   activeText: string;
-  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
+  shoppingCards: ExportShoppingCard[];
   commanderLines: string[];
   bodyLines: string[];
   totalCards: number;
@@ -250,6 +255,8 @@ function DialogContent({
   // A whole-list link, so only for a store with a cart (store choice, call 6). The Shopping tab's list and its copy
   // button stand in for any other store, as the paste row does on the strip.
   const store = useStoreInfo();
+  // Both layouts mount, so the tab ids carry the layout's own id.
+  const tabIds = useId();
   const shoppingUrl = store.cart ? manapoolAddDeckUrl(shoppingCards) : null;
 
   return (
@@ -297,14 +304,7 @@ function DialogContent({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center bg-[color:var(--surface-raised)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              fontSize: 14,
-              cursor: "pointer",
-            }}
+            className="-mr-[8px] flex h-[36px] w-[36px] cursor-pointer items-center justify-center border-none bg-transparent text-[15px] text-[color:var(--fg-muted)]"
             aria-label={exportDialogCopy.closeAria}
           >
             ✕
@@ -312,65 +312,31 @@ function DialogContent({
         )}
       </div>
 
-      {/* Tab pills */}
-      <div
-        className="flex flex-none"
-        style={{
-          gap: 8,
-          padding: isMobile ? "14px 18px 0" : "0 24px 16px",
-        }}
-      >
-        {/* Decklist tab */}
-        <button
-          type="button"
-          onClick={() => setTab("decklist")}
-          className={[
-            TOUCH_HIT,
-            "font-sans text-[13px]",
-            tab === "decklist"
-              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)] border-none"
-              : "font-medium text-[color:var(--fg-muted)] bg-transparent border border-solid border-[color:var(--border-strong)]",
-          ].join(" ")}
-          style={{
-            borderRadius: isMobile ? 999 : 8,
-            padding: isMobile ? "6px 15px" : "8px 16px",
-            cursor: "pointer",
-          }}
-        >
-          {exportTabCopy.decklist}
-        </button>
-        {/* Shopping list tab */}
-        <button
-          type="button"
-          onClick={() => setTab("shopping")}
-          className={[
-            TOUCH_HIT,
-            "font-sans text-[13px]",
-            tab === "shopping"
-              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--warning)] border-none"
-              : [
-                  "font-medium bg-transparent border border-solid",
-                  isMobile
-                    ? "text-[color:var(--warning)] border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]"
-                    : "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]",
-                ].join(" "),
-          ].join(" ")}
-          style={{
-            borderRadius: isMobile ? 999 : 8,
-            padding: isMobile ? "6px 15px" : "8px 16px",
-            cursor: "pointer",
-          }}
-        >
-          {exportTabCopy.shopping}
-        </button>
+      <div className="flex flex-none" style={{ padding: isMobile ? "14px 18px 0" : "0 24px 16px" }}>
+        <SegmentedSwitch
+          kind="tabs"
+          ariaLabel={exportDialogCopy.title}
+          segments={[
+            { value: "decklist", label: exportTabCopy.decklist },
+            { value: "shopping", label: exportTabCopy.shopping },
+          ]}
+          value={tab}
+          onChange={setTab}
+          fill={isMobile}
+          ids={{ tab: (v) => `${tabIds}-tab-${v}`, panel: (v) => `${tabIds}-panel-${v}` }}
+        />
       </div>
-
       {/* Body. min-h-0 is load-bearing: a flex item's default min-height is its
           content, so without it the body refuses to shrink and the modal's
           max-height has nothing to give. */}
       {/* `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of this body at either
           end from chaining into the page behind the dialog. */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+      <div
+        role="tabpanel"
+        id={`${tabIds}-panel-${tab}`}
+        aria-labelledby={`${tabIds}-tab-${tab}`}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+      >
         {tab === "decklist" ? (
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
@@ -452,40 +418,6 @@ function DialogContent({
         ) : (
           /* Shopping tab body */
           <div>
-            {/* Info callout — desktop only */}
-            {!isMobile && <div
-              className="flex items-center"
-              style={{
-                gap: 9,
-                margin: "0 24px 10px",
-                background: "var(--surface-sunken)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                padding: "9px 12px",
-              }}
-            >
-              {/* "i" info icon */}
-              <div
-                className="flex items-center justify-center flex-none font-mono"
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 999,
-                  border: "1.5px solid var(--fg-faint)",
-                  color: "var(--fg-faint)",
-                  fontSize: 10,
-                }}
-              >
-                i
-              </div>
-              <span
-                className="font-mono"
-                style={{ fontSize: 11, color: "var(--fg-faint)" }}
-              >
-                {priceCopy.export.pricingNote}
-              </span>
-            </div>}
-
             {/* Count meta */}
             <p
               className="font-mono"
@@ -501,83 +433,15 @@ function DialogContent({
               )}
             </p>
 
-            {/* Mobile "names only" note */}
-            {isMobile && (
-              <p
-                className="font-mono"
-                style={{
-                  fontSize: 9.5,
-                  color: "var(--fg-locked)",
-                  padding: "0 20px 2px",
-                  margin: 0,
-                }}
-              >
-                {priceCopy.export.pricingNote}
-              </p>
-            )}
+            {/* The pricing note: one plain line at both widths. */}
+            <p
+              className={`m-0 font-mono text-[color:var(--fg-locked)] ${isMobile ? "px-[20px] pb-[2px] text-[9.5px]" : "px-[26px] pb-[10px] text-[11px]"}`}
+            >
+              {priceCopy.export.pricingNote}
+            </p>
 
-            {/* Item rows */}
-            <div>
-              {shoppingCards.map((card) => (
-                <div
-                  key={card.name}
-                  className="flex items-center"
-                  style={{
-                    gap: isMobile ? 10 : 12,
-                    padding: isMobile ? "8px 10px" : "9px 16px",
-                    borderBottom: `1px solid ${isMobile ? "var(--surface)" : "var(--surface-rail)"}`,
-                  }}
-                >
-                  {/* Quantity — real per-card count (basics can run multiples) */}
-                  <span
-                    className="font-mono"
-                    style={{ fontSize: 12, color: "var(--fg-faint)" }}
-                  >
-                    {card.quantity}
-                  </span>
-                  {/* Ownership dot (desktop). The list is no longer unowned-only
-                      — a spoken-for row is a card you own whose copies are all
-                      claimed elsewhere — so the dot reads the row, as the
-                      decklist's does, and carries the word the dot alone
-                      cannot now imply. */}
-                  {!isMobile && (
-                    <OwnershipDot
-                      owned={card.owned}
-                      className="w-[7px] h-[7px]"
-                      label={card.owned ? ownedStateCopy.owned : ownedStateCopy.notOwned}
-                    />
-                  )}
-                  {/* Card name */}
-                  <span
-                    className="font-sans flex-1"
-                    style={{
-                      fontSize: isMobile ? 13 : 14,
-                      color: "var(--fg)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {card.name}
-                  </span>
-                  {/* Role chip (desktop) */}
-                  {!isMobile && card.role && (
-                    <span
-                      className="font-mono"
-                      style={{
-                        fontSize: 10,
-                        color: "var(--fg-faint)",
-                        background: "var(--surface-raised)",
-                        borderRadius: 5,
-                        padding: "2px 8px",
-                      }}
-                    >
-                      {card.role}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+            {/* The shipped decklist row, read only (the precon page's). */}
+            <ShoppingRows cards={shoppingCards} isMobile={isMobile} />
           </div>
         )}
       </div>
@@ -611,15 +475,6 @@ function DialogContent({
           <span className="hidden md:inline">{exportDialogCopy.download}</span>
         </GhostButton>
 
-        {/* Desktop: "Moxfield · Archidekt ready" note (inline with footer, ml-auto) */}
-        {!isMobile && (
-          <span
-            className="font-mono"
-            style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: "auto" }}
-          >
-            {exportDialogCopy.ready}
-          </span>
-        )}
       </div>
 
       {/* Buy the shopping list at Mana Pool, the store with a cart. Absent, not disabled, on the
@@ -637,5 +492,24 @@ function DialogContent({
       )}
       </div>
     </>
+  );
+}
+
+/**
+ * The Shopping tab's rows: the shipped read-only `DecklistRow`, so a row here is the row the deck page draws. The row
+ * needs a card-detail provider (the deck page has one, and the /decks tile menu mounts one around this dialog) and
+ * the hover preview's own, which the rows borrow.
+ */
+function ShoppingRows({ cards, isMobile }: { cards: ExportShoppingCard[]; isMobile: boolean }) {
+  return (
+    <HoverPreviewProvider>
+      <ul className={`m-0 flex list-none flex-col gap-[4px] ${isMobile ? "px-[14px] pb-[12px] pt-[8px]" : "px-[22px] pb-[12px] pt-[4px]"}`}>
+        {cards.map((card) => (
+          <li key={card.oracleId}>
+            <DecklistRow deckId={EXPORT_DECK_ID} readOnly card={card} newestAsOf={null} />
+          </li>
+        ))}
+      </ul>
+    </HoverPreviewProvider>
   );
 }

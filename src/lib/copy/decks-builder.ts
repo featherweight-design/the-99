@@ -606,8 +606,6 @@ export const exportDialogCopy = {
   title: "Export deck",
   sub: "Plain text · Moxfield · Archidekt ready",
   closeAria: "Close export dialog",
-  /** The dialog's last line on a wide screen; the phone's button is just the extension. */
-  ready: "Moxfield · Archidekt ready",
   downloadShort: ".txt",
   download: "Download .txt",
   copy: "Copy to clipboard",
