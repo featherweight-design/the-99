@@ -4,6 +4,7 @@
 // (addendum A2c). One run belongs to the precon, so both read the same panel and press the same action; this is the state
 // they share: the panel, what this tab's press made of the run, the watch on a run begun elsewhere, and the confirm.
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { captureClientError } from "../../../../lib/sentry/capture";
 import { pressUpgradeAction, readUpgradeAction } from "../../../../lib/precons/upgrade/actions";
 import { viewOf, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
@@ -56,7 +57,7 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     reading.current = true;
     const seq = ++readSeq.current;
     try {
-      const next = await readUpgradeAction(fileName).catch(() => null);
+      const next = await readUpgradeAction(fileName).catch((e) => { captureClientError("upgrade.read", e); return null; });
       if (next && seq === readSeq.current) {
         const id = watched.current;
         const run = id ? next.runs.find((r) => r.id === id) : undefined;
@@ -113,9 +114,14 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
         if (kept && !before.has(kept.id)) land();
       } else if (res.reason === "inFlight") setLocal(null);
       else if (res.reason === "allowance" || res.reason === "ownerShare" || res.reason === "paused") settle({ kind: "none" });
-      else settle({ kind: "failed", picks });
-    } catch {
+      else {
+        // notOffered, noPool, tooBig: the panel offered a press the server would not run, so the page and the server disagree.
+        captureClientError(`upgrade.confirm.${res.reason}`, new Error(res.reason));
+        settle({ kind: "failed", picks });
+      }
+    } catch (e) {
       // A lapsed session or a lost connection: nothing is known of the run, so the flow offers the same picks again.
+      captureClientError("upgrade.confirm", e);
       settle({ kind: "failed", picks });
       void refresh(true);
     }

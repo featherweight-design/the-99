@@ -148,6 +148,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the second pass added the variant rule and the `.ts` and `.css` files, and found none
   outstanding: 90 bare tokens in `src`, every one overridden at its own variant.
 
+- `pnpm check:silent-catch` fails when a non-test file under `src` that opens with `"use client"` has a `catch`
+  clause or `.catch(` call that neither calls `captureClientError(tag, err)` (`src/lib/sentry/capture.ts`), nor
+  rethrows, nor carries `// silent-catch: expected: refusal | out-of-credits | abort | offline` on its line, the
+  line above or inside it. A marker with no reason or an unknown one is a finding. Existing silent sites sit in
+  the ratchet `scripts/silent-catch-baseline.json` (a count per file): a file may not exceed its count, and a
+  count above the real number is stale and fails too, so every sweep PR must lower it; the sweep ends with an
+  empty baseline. Limit: a file without the directive that still runs in the browser is not scanned. Server
+  catches are out of scope (`captureServerError`). `pnpm check:silent-catch --write-baseline` regenerates the
+  ratchet; use it only to shrink it. The failure path (add a silent catch to a client file, expect exit 1) ran in
+  its PR.
+
 - `pnpm check:modal-entry` fails when a non-test file under `src` carries a JSX `aria-modal` attribute and
   neither names a phone entry class (`anim-sheet-in-phone`, `anim-sheet-in`, `anim-sheet-up`) nor imports a shell
   that draws it (`ui/sheet`, `social-modal`, `receipt-modal`), unless the file is in `ALLOW` in

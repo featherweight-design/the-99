@@ -28,6 +28,7 @@ import { UpgradeFlow } from "./upgrade-flow";
 import { runningLabel, useLinePulse, useUpgradeRun, type Picks } from "./use-upgrade-run";
 import { useClock } from "./wait-view";
 import { captureEngagement } from "../../../../lib/analytics/posthog";
+import { captureClientError } from "../../../../lib/sentry/capture";
 
 const copy = preconUpgradeDeckCopy;
 
@@ -102,7 +103,8 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
       // Shut since the page drew (the deck changed in another tab) or the run is gone: the flow stays, and the page reads again.
       onFailed(copy.applyFailed);
       router.refresh();
-    } catch {
+    } catch (e) {
+      captureClientError("upgrade.apply", e);
       onFailed(copy.applyFailed);
     } finally {
       setApplying(false);
@@ -197,7 +199,8 @@ function AppliedToast({ deckId, applied, onDone, onFailed }: { deckId: string; a
       onDone();
       // The box's list and commander are back, and so is the band.
       router.refresh();
-    } catch {
+    } catch (e) {
+      captureClientError("upgrade.undo", e);
       onFailed(copy.undoFailed);
     }
   }

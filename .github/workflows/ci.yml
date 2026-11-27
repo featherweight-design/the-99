@@ -146,6 +146,12 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:modal-entry
 
+      # A client catch that settles to a failed view, a toast or nothing hides the failure from Sentry. It must call
+      # captureClientError, rethrow, or carry a `silent-catch: expected: <reason>` marker; the baseline only shrinks.
+      - name: Silent client catches
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:silent-catch
+
       # A button that swaps to a shorter label while pending shrinks under the pointer unless the label is a SteadyLabel.
       - name: Steady pending labels
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
