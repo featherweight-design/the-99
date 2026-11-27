@@ -7,6 +7,7 @@
 // reader flips between"), never Next's `staleTimes`. The address is written with `mirrorUrl`, defaults as absences, and
 // every parameter this view does not own is read back off the live URL.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readGameHistory } from "../../app/decks/game-history-actions";
 import { GAMES_FILTER_PARAMS, gamesFilterKey, gamesFilterToParams } from "../../lib/games/history-filter";
@@ -59,7 +60,8 @@ export function useGamesFilters(data: GamesPayload, onData: (next: GamesPayload)
         onData(res);
         mirrorUrl(gamesFilterUrl(next));
       })
-      .catch(() => {
+      .catch((e) => {
+        captureClientError("games.filter", e);
         if (ticket.current !== mine) return;
         setAsked(null);
         setFailed(next);

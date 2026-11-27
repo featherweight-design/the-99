@@ -14,6 +14,7 @@
 // button or a link (`update-diff-row.tsx`). One mechanism in one place beats a
 // `stopPropagation` in every control the plate happens to contain.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { twMerge } from "tailwind-merge";
 import type { PullResult } from "../../app/decks/actions";
@@ -256,7 +257,8 @@ function SinglePull({
               let result: PullResult;
               try {
                 result = await wiring.pullCard(claim.id, card.oracleId, deckId);
-              } catch {
+              } catch (e) {
+                captureClientError("deck.pull-single", e);
                 // A throw rather than a refusal — a network or database failure,
                 // or the server's ownership guard — and the same fallback every
                 // other deck mutation gives that class of failure. The removal's
@@ -425,7 +427,8 @@ function SourcePicker({
       let result: PullResult;
       try {
         result = await wiring.pullCard(chosen.id, card.oracleId, deckId);
-      } catch {
+      } catch (e) {
+        captureClientError("deck.pull-source", e);
         setError(DECK_REMOVE_FALLBACK_MESSAGE);
         return;
       }

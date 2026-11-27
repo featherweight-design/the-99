@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState, useTransition, type MouseEvent } from "react";
 import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
 import { tokensCopy } from "../../lib/copy/tokens";
@@ -75,7 +76,8 @@ export function useTokenPress() {
       try {
         const r = await write();
         if (!r.ok) refuse(token);
-      } catch {
+      } catch (e) {
+        captureClientError("token.press", e);
         refuse(token);
       }
     });

@@ -7,6 +7,7 @@
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
@@ -233,7 +234,7 @@ export function TuningHub({
         if (ask === latest.current) setTiles(t);
       })
       // A failed read leaves the tiles without a status line; every tool still opens.
-      .catch(() => {})
+      .catch((e) => { captureClientError("tuning.tiles", e); })
       .finally(() => { setBaselineRead(true); });
   }, [deckId]);
 

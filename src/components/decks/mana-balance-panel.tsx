@@ -10,6 +10,7 @@
 // appears only after a short delay so a fast read never flashes it. The stable heading
 // (`#mana-heading`) is drawn in the ready and failed states only, so the hub's focus waits for it.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { readManaBalance } from "../../app/decks/mana-actions";
@@ -62,8 +63,9 @@ export function ManaBalancePanel({
       // Null is a refusal or a catalog read that failed: either way there is no count to draw.
       setData(next);
       setFailed(next === null);
-    } catch {
+    } catch (e) {
       if (mine !== asked.current) return;
+      captureClientError("mana.balance-read", e);
       setData(null);
       setFailed(true);
     }

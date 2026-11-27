@@ -8,6 +8,7 @@
 // baseline from md; the press is 96px at 390 and 132px from md, and on the phone its hit area is
 // stretched over the whole row by a pseudo-element, so there is still one control per row.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { Fragment, type ReactNode, type Ref, useEffect, useRef, useTransition } from "react";
 import { fillDeck } from "../../app/decks/actions";
@@ -208,7 +209,8 @@ export function FillFailedRow({ deckId, next }: { deckId: string; next: boolean 
     startTransition(async () => {
       try {
         await fillDeck(deckId);
-      } catch {
+      } catch (e) {
+        captureClientError("deck.fill-retry", e);
         // The row already says the fill failed, so a rejected retry changes nothing the player can
         // see — except that an escaped rejection would reach an error boundary and remove the retry.
       }

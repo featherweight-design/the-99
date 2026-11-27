@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { strategyName } from "@/lib/copy/strategy-focus";
 import { parseStrategyKey } from "@/lib/strategy/focus";
 import type { StrategyKey } from "@/lib/strategy/score";
@@ -476,7 +477,8 @@ export function TuningPanel({
       setState(next);
       stateRef.current = next;
       return next;
-    } catch {
+    } catch (e) {
+      captureClientError("tuning.read", e);
       return null;
     }
   }, [deps, deckId, reviewRunId]);
@@ -571,7 +573,8 @@ export function TuningPanel({
               });
             }
             return true;
-          } catch {
+          } catch (e) {
+            captureClientError("tuning.limits-save", e);
             setLimitsError(deckDescriptionCopy.limits.refused);
             keys.forEach((key) => failedLimitFields.current.add(key));
             return false;
@@ -660,7 +663,7 @@ export function TuningPanel({
       return { ok: failedLimitFields.current.size === 0, touched: true };
     }
     if (limitsInFlight.current === 0) return { ok: failedLimitFields.current.size === 0, touched: false };
-    await limitsChain.current.catch(() => undefined);
+    await limitsChain.current.catch((e) => { captureClientError("tuning.limits-chain", e); });
     return { ok: failedLimitFields.current.size === 0, touched: true };
   }, [scheduleSend]);
   useEffect(() => {
@@ -975,7 +978,10 @@ export function TuningPanel({
     if (v2Opts) {
       const rev = intakeRev.current;
       const answer = await deps.run(deckId, { ...v2Opts, runId }).catch(
-        (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
+        (e): DeckMutationResult => {
+          captureClientError("tuning.run-v2", e);
+          return { ok: false, message: deckTuningCopy.run.refused };
+        },
       );
       if (token.current !== mine) return;
       if (isSameRequest(answer)) {
@@ -1020,7 +1026,10 @@ export function TuningPanel({
     setAnnounced(deckTuningCopy.announce.started);
     // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
     const running = deps.run(deckId, { ...(anyway ? { anyway: true } : {}), runId, notes }).catch(
-      (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
+      (e): DeckMutationResult => {
+        captureClientError("tuning.run", e);
+        return { ok: false, message: deckTuningCopy.run.refused };
+      },
     );
     // The checklist ticks on a pure client-side stagger (H35, PR 3), never on a real read
     // landing — it shows the page's own already-known figures. A result that lands before the
@@ -1088,7 +1097,10 @@ export function TuningPanel({
     ownRun.current = null;
     // Token-checked AFTER the read too: a panel left while this read is in flight must not be
     // drawn or announced over.
-    const next = waited ?? await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
+    const next = waited ?? await deps.read(deckId, leftReview.current ? null : reviewRunId).catch((e) => {
+      captureClientError("tuning.read-after-run", e);
+      return null;
+    });
     if (token.current !== mine) return;
     if (next) {
       setState(next);
@@ -1160,7 +1172,10 @@ export function TuningPanel({
       // `savedIntent` set indefinitely and blocking a LATER external edit from syncing in.
       const normalized = normalizeIntent(plainText(descDraft));
       const result = await onSaveDescription(descDraft).catch(
-        (): DeckMutationResult => ({ ok: false, message: deckDescriptionCopy.description.refused }),
+        (e): DeckMutationResult => {
+          captureClientError("tuning.description-save", e);
+          return { ok: false, message: deckDescriptionCopy.description.refused };
+        },
       );
       if (!result.ok) {
         setDescRefused(result.message);

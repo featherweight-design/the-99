@@ -13,6 +13,7 @@
 // edit that is the player's own trade or Undo re-reads that color instead. A trade applied from here
 // is kept there too, for its Undo, until the player leaves the deck.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
 import { applyManaTrade, readManaHelpFor, readManaHelpReview, undoManaTrade, type ManaTradeResult } from "../../app/decks/mana-actions";
@@ -157,7 +158,8 @@ export function ImproveDoor({
     let help: ManaHelp | null = null;
     try {
       help = await read(deckId, color);
-    } catch {
+    } catch (e) {
+      captureClientError("mana.help-read", e);
       help = null;
     }
     if (mine !== asked.current) return;
@@ -181,7 +183,10 @@ export function ImproveDoor({
     const at = visitToken(deckId);
     setBusy(key);
     setRefused(null);
-    const result = await trades.apply(deckId, color, key, trade.out.id).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
+    const result = await trades.apply(deckId, color, key, trade.out.id).catch((e): ManaTradeResult => {
+      captureClientError("mana.trade-apply", e);
+      return { ok: false, message: deckTuningCopy.card.applyRefused };
+    });
     setBusy(null);
     if (!isVisit(at)) return;
     if (!result.ok) {
@@ -199,7 +204,10 @@ export function ImproveDoor({
     const at = visitToken(deckId);
     setBusy(a.applyId);
     setRefused(null);
-    const result = await trades.undo(a.applyId).catch((): DeckMutationResult => ({ ok: false, message: deckTuningCopy.card.undoRefused }));
+    const result = await trades.undo(a.applyId).catch((e): DeckMutationResult => {
+      captureClientError("mana.trade-undo", e);
+      return { ok: false, message: deckTuningCopy.card.undoRefused };
+    });
     setBusy(null);
     if (!isVisit(at)) return;
     if (!result.ok) {

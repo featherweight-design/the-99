@@ -7,6 +7,7 @@
 // moves, never `useOptimistic`, whose value is dropped the moment the action's transition ends and
 // would snap the row back before the panel's re-read lands.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -90,7 +91,8 @@ export function useOptimisticVerdict(server: RowVerdict, id?: string) {
     let result: DeckMutationResult;
     try {
       result = await action();
-    } catch {
+    } catch (e) {
+      captureClientError("deck.verdict", e);
       result = { ok: false, message: refusal };
     }
     busy.current = false;

@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useState, useTransition } from "react";
 import { renameDeck } from "../../app/decks/actions";
 import { renameCopy } from "../../lib/copy/decks-builder";
@@ -64,7 +65,8 @@ export function useDeckRename(deckId: string, currentName: string, onDone: () =>
       try {
         await renameDeck(deckId, trimmed);
         onDone();
-      } catch {
+      } catch (e) {
+        captureClientError("deck.rename", e);
         setError(renameCopy.errorFailed);
       }
     });

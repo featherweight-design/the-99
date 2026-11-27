@@ -11,6 +11,7 @@
 // a panel form blur lands before the button's click and double-submits
 // (`rename-form.tsx:21-23`).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -317,7 +318,10 @@ function RenameFolder({
     inFlight.current = true;
     onBusy(true);
     startTransition(async () => {
-      const result = await renameFolderAction(folderId, trimmed).catch(() => null);
+      const result = await renameFolderAction(folderId, trimmed).catch((e) => {
+        captureClientError("folder.rename", e);
+        return null;
+      });
       inFlight.current = false;
       if (result?.ok) return onDone(result.folder.name);
       onBusy(false);
@@ -419,7 +423,10 @@ function DeleteFolder({
       // the other thing entirely — an outage — and treating it as done would
       // walk the reader off to All decks reporting a deletion that never
       // happened.
-      const answer = await deleteFolderAction(folderId).catch(() => "threw" as const);
+      const answer = await deleteFolderAction(folderId).catch((e) => {
+        captureClientError("folder.delete", e);
+        return "threw" as const;
+      });
       inFlight.current = false;
       if (answer === "threw") {
         onBusy(false);

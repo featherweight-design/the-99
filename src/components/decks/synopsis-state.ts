@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchSynopsis, retrySynopsisSections, writeSynopsis } from "../../app/decks/synopsis-actions";
@@ -77,7 +78,10 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const mine = ++generation.current;
     const key = askedKey.current;
     // A failed read keeps the answer on screen; the next key or press asks again.
-    const got = await fetchSynopsis(deckId).catch(() => null);
+    const got = await fetchSynopsis(deckId).catch((e) => {
+      captureClientError("synopsis.read", e);
+      return null;
+    });
     if (mine !== generation.current) return;
     if (got && "synopsis" in got) setAnswer({ state: got, key, deckId });
     // It superseded any read still out, so it answers for the latest one as well, and does so on a
@@ -113,7 +117,10 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     setBusy(true);
     setPressedFor(deckId);
     try {
-      await run().catch(() => null);
+      await run().catch((e) => {
+        captureClientError("synopsis.press", e);
+        return null;
+      });
       // Whatever the press returned, the stored state is the truth the tab draws. BUSY HOLDS
       // THROUGH THE RE-READ: cleared first, the answer from before the press would draw a live
       // write over a run that has already landed, and a second press would spend again.

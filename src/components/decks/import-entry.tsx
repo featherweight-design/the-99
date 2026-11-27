@@ -6,6 +6,7 @@
 // and a decklist arrives here by paste or by file instead (#282). MODES below is
 // the seam if a third door ever opens.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { importDeck, type ImportCommanderCandidate } from "../../app/decks/import-actions";
@@ -256,6 +257,7 @@ export function ImportEntry({ compact = false, ownDefault = false }: {
         // gibberish, so those fall back to the generic body.
         const message = e instanceof Error ? e.message : "";
         const tooLarge = isDeckImportTooLargeMessage(message);
+        if (!tooLarge) captureClientError("deck.import", e);
         // A ticked press that threw may have added the cards and made the deck with its answer lost. Its Try again
         // carries the same id, so it lands on that deck. The size cap refuses before any write, so it stays the
         // player's to fix.

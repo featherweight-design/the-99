@@ -14,6 +14,7 @@
 // The search is `searchOpponentCommandersAction`: the whole catalog, commander-legal, no owned filter. A reply
 // that arrives after a newer keystroke is dropped, so a slow answer for "yu" never lands over "yuriko".
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { listFriendDecksAction, listPickerFriendsAction, searchOpponentBackgroundsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -72,7 +73,7 @@ function useCommanderSearch(query: string, run: (q: string) => Promise<OpponentC
       setSearch({ state: "busy" });
       run(q)
         .then((items) => { if (asked.current === ticket) setSearch({ state: "done", items }); })
-        .catch(() => { if (asked.current === ticket) setSearch({ state: "failed" }); });
+        .catch((e) => { captureClientError("seat.commander-search", e); if (asked.current === ticket) setSearch({ state: "failed" }); });
     }, KEYSTROKE_MS);
     return () => window.clearTimeout(timer);
   }, [query, run]);
@@ -173,7 +174,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
     let live = true;
     listFriendDecksAction(friend.publicId)
       .then((items) => { if (live) setDecks({ state: "done", items }); })
-      .catch(() => { if (live) setDecks({ state: "failed" }); });
+      .catch((e) => { captureClientError("seat.friend-decks", e); if (live) setDecks({ state: "failed" }); });
     return () => { live = false; };
   }, [friend.publicId]);
   const who = asFriend(friend);
@@ -364,7 +365,7 @@ function Body({
     let live = true;
     listPickerFriendsAction()
       .then((items) => { if (live) setFriends({ state: "done", items }); })
-      .catch(() => { if (live) setFriends({ state: "failed" }); });
+      .catch((e) => { captureClientError("seat.friends", e); if (live) setFriends({ state: "failed" }); });
     return () => { live = false; };
   }, []);
 

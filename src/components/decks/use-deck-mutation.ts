@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
@@ -67,7 +68,8 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
       try {
         applyOptimistic?.();
         result = await mutate();
-      } catch {
+      } catch (e) {
+        captureClientError("deck.mutation", e);
         result = { ok: false, message: fallbackMessage };
       } finally {
         inFlightRef.current = false;
