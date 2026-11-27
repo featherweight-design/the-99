@@ -1,7 +1,8 @@
 /**
  * The wishlist as one set of lines (cart on your wishlist, G1): the lines the player added by hand (`wishlist_items`)
- * and the lines their decks put there (`wishlist_synced`), one row per card. Every reader of wanted lines reads this
- * union instead of `wishlist_items` alone; the owner through `ownerLinesQuery` here, a friend through
+ * and the lines their decks put there (`wishlist_synced`), one row per card. Readers of wanted lines move onto this
+ * union instead of `wishlist_items` alone (card search, spares, spare offers, trade match and card details follow in
+ * later PRs, before anything writes a synced line); the owner through `ownerLinesQuery` here, a friend through
  * `src/lib/social/wishlist.ts`, which supplies its own synced side (only the decks that friend can see, H1) and the
  * friendship grant.
  *
