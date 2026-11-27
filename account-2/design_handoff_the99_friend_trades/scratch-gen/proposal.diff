@@ -1,0 +1,820 @@
+diff --git a/src/components/feed/feed-item.tsx b/src/components/feed/feed-item.tsx
+index 29ef70d..970d524 100644
+--- a/src/components/feed/feed-item.tsx
++++ b/src/components/feed/feed-item.tsx
+@@ -42,6 +42,7 @@ import { feedAge } from "../../lib/feed/age";
+ import { shortName } from "../../lib/cards/short-name";
+ import { dropLines, saleAhead } from "../../lib/feed/drop-lines";
+ 
++import { tradeCopy, cardList } from "../../lib/copy/trades";
+ const c = feedCopy.home;
+ 
+ /** A friend's face, by public id: the Home friends read's own faces, so no new read draws them. */
+@@ -88,6 +89,16 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
+       }
+       if (item.answer) return { ...answerText(item, friend, card), press: c.press.answer };
+       return { title: c.title.spareRequest(friend, card), line: c.line.spareRequest, press: null };
++    case "trade": {
++      // Friend trades (proposal, D7): one row per push kind, the push's own words; the press opens the friend's Trade tab.
++      const tr = (item as any).trade as { push: "offer" | "counter" | "accept" | "decline"; theirs: string[]; yours: string[] };
++      const f = tradeCopy.feed;
++      const theirs = cardList(tr.theirs), yours = cardList(tr.yours);
++      if (tr.push === "offer") return { title: f.offer(friend), line: f.offerLine(theirs, yours), press: f.press };
++      if (tr.push === "counter") return { title: f.counter(friend), line: f.counterLine(theirs, yours), press: f.pressCounter };
++      if (tr.push === "accept") return { title: f.accept(friend), line: f.acceptLine, press: f.press };
++      return { title: f.decline(friend), line: f.declineLine, press: f.press };
++    }
+     case "combo":
+       return {
+         title: item.combo ? c.title.combo(item.combo.pieces[0], item.combo.pieces[1]) : c.kicker.combo,
+@@ -343,7 +354,12 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
+   if (item.post) return <PostPicture item={item} box={box} />;
+   const art = (
+     <>
+-      <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
++      {/* A trade (proposal): the reader's first card fanned behind the friend's, as the Trades row draws it. */}
++      {(item as any).trade?.yourImage ? (
++        // eslint-disable-next-line @next/next/no-img-element
++        <img src={(item as any).trade.yourImage} alt="" className="absolute -left-[5px] top-[1px] block h-[60px] w-[43px] -rotate-[9deg] rounded-[3px] object-cover opacity-90 shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
++      ) : null}
++      <span className={`relative block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${(item as any).trade ? "rotate-[3deg]" : ""}`}>
+         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
+       </span>
+       {item.friend && (
+diff --git a/src/components/home/lead-story.tsx b/src/components/home/lead-story.tsx
+index d4f7c54..db5a038 100644
+--- a/src/components/home/lead-story.tsx
++++ b/src/components/home/lead-story.tsx
+@@ -19,6 +19,8 @@
+ // are in (Announcements UI 6b, board Lead-Story `.yg2`) leads with See the lists filled, into Precons, and Read the
+ // post beside it as a ghost (`--fg-muted`).
+ 
++import { tradeCopy } from "../../lib/copy/trades";
++import { personAttrs as _pa } from "../../lib/person-name";
+ import { useRef, useState } from "react";
+ import type { FeedView } from "../../lib/feed/home";
+ import { spareCopy } from "../../lib/copy/social";
+@@ -91,7 +93,7 @@ export function LeadStory({
+ }) {
+   const feed = feedText(item);
+   const ask = item.ask ?? null;
+-  const [answered, setAnswered] = useState<Answer | null>(null);
++  const [answered, setAnswered] = useState<Answer | null>((globalThis as any).__ANSWERED ?? null);
+   const root = useRef<HTMLElement | null>(null);
+   const land = useLandFocus(root);
+   const { busy, answer, toast } = useSpareAnswer(shared);
+@@ -170,6 +172,12 @@ export function LeadStory({
+         {lists && <p data-lead-lists className="m-0 font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
+         {/* The action line (board `Dismiss-X`, `.d4n .ld .la`): the press, or Yes, No and the days left, then the ✕ at
+             its end. The ✕ is not in this line: it holds the card's top right corner. */}
++        {/* Friend trades (proposal, D1): a Yes receipt's one press, Ask back, the lead's filled press. */}
++        {receipt && answered === "yes" && !offer ? (
++          <div data-lead-actions className="mt-[6px] flex min-w-0 items-center gap-[8px]">
++            <a {..._pa({ "aria-label": tradeCopy.askBackAria(friend) }, "inline-flex h-[40px] items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] font-sans text-[13.5px] font-semibold whitespace-nowrap text-[color:var(--bg)] no-underline md:h-[36px] md:text-[13px]")}>{tradeCopy.askBack} ›</a>
++          </div>
++        ) : null}
+         {(text.press || (ask && !receipt)) && (
+           <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-start gap-[8px] md:items-center">
+             {two && text.press ? (
+diff --git a/src/components/settings/news-section.tsx b/src/components/settings/news-section.tsx
+index 6e88bd2..c76e0f7 100644
+--- a/src/components/settings/news-section.tsx
++++ b/src/components/settings/news-section.tsx
+@@ -100,7 +100,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
+   const [saving, setSaving] = useState(false);
+ 
+   // This device: unknown until the browser has been read (the server cannot know it), then one of the six states.
+-  const [device, setDevice] = useState<DeviceView | null>(null);
++  const [device, setDevice] = useState<DeviceView | null>((globalThis as any).__DEVICE ?? null);
+   // A subscribe or unsubscribe in flight holds the device box.
+   const [deviceBusy, setDeviceBusy] = useState(false);
+   const [sheet, setSheet] = useState(false);
+diff --git a/src/components/social/friend-strip.tsx b/src/components/social/friend-strip.tsx
+index 34e6eaa..b205c2b 100644
+--- a/src/components/social/friend-strip.tsx
++++ b/src/components/social/friend-strip.tsx
+@@ -5,11 +5,12 @@
+ 
+ import { usePathname } from "next/navigation";
+ import { socialCopy } from "../../lib/copy/social";
++import { tradeCopy } from "../../lib/copy/trades";
+ import { PlaceStrip, type PlaceTab } from "../place/place-strip";
+ 
+ const p = socialCopy.friendPage;
+ 
+-export type FriendTab = "spares" | "wishlist" | "decks";
++export type FriendTab = "spares" | "wishlist" | "decks" | "trade";
+ 
+ /** Which tab a path is, for a friend's public id; null for any other path. */
+ export function friendTabFromPathname(pathname: string, publicId: string): FriendTab | null {
+@@ -17,6 +18,8 @@ export function friendTabFromPathname(pathname: string, publicId: string): Frien
+   if (pathname === base) return "decks";
+   if (pathname === `${base}/wishlist`) return "wishlist";
+   if (pathname === `${base}/spares`) return "spares";
++  // Friend trades (proposal): the fourth tab, the live trade with this friend or a new one.
++  if (pathname === `${base}/trade`) return "trade";
+   return null;
+ }
+ 
+@@ -37,7 +40,9 @@ export function FriendStrip({
+     { place: "decks", href: base, label: p.tabs.decks, count: counts.decks },
+     { place: "wishlist", href: `${base}/wishlist`, label: p.tabs.wishlist, count: counts.wishlist },
+     { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares },
++    // Always drawn (a friend with no spares still has your spares to ask about): its figure is the cards in the live trade.
++    { place: "trade", href: `${base}/trade`, label: tradeCopy.tab, count: counts.trade },
+   ];
+-  const tabs = all.filter((t) => t.count !== undefined || t.place === current);
++  const tabs = all.filter((t) => t.count !== undefined || t.place === current || t.place === "trade");
+   return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} fill />;
+ }
+diff --git a/src/components/social/requests-box.tsx b/src/components/social/requests-box.tsx
+index a491c06..dc9bc4b 100644
+--- a/src/components/social/requests-box.tsx
++++ b/src/components/social/requests-box.tsx
+@@ -10,11 +10,16 @@ import { historyCopy } from "../../lib/copy/request-history";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { SegmentedSwitch } from "../ui/segmented-switch";
+ import { PANEL, PanelEmpty } from "./section-panel";
++import { tradeCopy } from "../../lib/copy/trades";
+ 
+-type Tab = "waiting" | "mine";
++type Tab = "waiting" | "mine" | "trades";
+ const b = historyCopy.box;
+ 
+-export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnswer, history }: {
++export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnswer, history, trades, tradesCount = 0, tradeWaits = false }: {
++  /** Friend trades (proposal): the third tab, every trade the reader is in. */
++  trades?: ReactNode; tradesCount?: number;
++  /** A trade waits on the reader: the tab takes the accent, as Waiting on you's does. */
++  tradeWaits?: boolean;
+   waiting: ReactNode;
+   mine: ReactNode;
+   waitingCount: number;
+@@ -23,7 +28,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
+   /** The reader has a request history to open. */
+   history: boolean;
+ }) {
+-  const [tab, setTab] = useState<Tab>(waitingCount > 0 ? "waiting" : "mine");
++  const [tab, setTab] = useState<Tab>((globalThis as any).__TAB ?? (waitingCount > 0 ? "waiting" : "mine"));
+   const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
+   return (
+     <section aria-label={b.label} data-testid="requests-box" className={PANEL}>
+@@ -47,6 +52,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
+               ),
+               count: count(mineCount),
+             },
++            ...(trades !== undefined ? [{ value: "trades" as const, label: <span className={tradeWaits ? "text-[color:var(--accent-text)]" : undefined}>{tradeCopy.listTab}</span>, count: count(tradesCount) }] : []),
+           ]}
+         />
+       </div>
+@@ -59,6 +65,11 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
+         <div className="peer">{mine}</div>
+         {mineCount === 0 ? <div className="peer-has-[[data-testid=your-requests]]:hidden"><PanelEmpty title={b.mineEmpty.title} body={b.mineEmpty.body} /></div> : null}
+       </div>
++      {trades !== undefined ? (
++        <div role="tabpanel" aria-label={tradeCopy.listTab} hidden={tab !== "trades"}>
++          {tradesCount > 0 ? trades : <PanelEmpty title={tradeCopy.empty.listTitle} body={tradeCopy.empty.listBody} />}
++        </div>
++      ) : null}
+       {history ? (
+         <div className="flex justify-end pr-[6px] [border-top:1px_solid_var(--border)]">
+           <Link href="/friends/requests" className="flex min-h-[44px] items-center px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] no-underline md:min-h-[36px]">{b.history}<PendingReporter href="/friends/requests" /></Link>
+diff --git a/src/components/social/trade-rows.tsx b/src/components/social/trade-rows.tsx
+new file mode 100644
+index 0000000..84dcb54
+--- /dev/null
++++ b/src/components/social/trade-rows.tsx
+@@ -0,0 +1,92 @@
++"use client";
++// Friend trades R1 (proposal): the Requests box's third tab, Trades. Every trade the reader is in, the ones waiting on
++// them first, then newest, in Waiting on you's own row (`ASK_ROW`: picture, kicker with the age, title, one line, the
++// action line, the ✕ at its end). The picture is the shipped 46x64 card with the friend's face on its corner, the
++// reader's first card fanned behind it, so a trade reads as two cards at a glance. The whole row opens the friend's
++// Trade tab; a row that waits on a mark carries Mark traded in place. Ended trades (traded, declined, withdrawn,
++// no answer) stay until ✕ clears them, as Your requests does.
++import type { ReactNode } from "react";
++import { PersonInitials, PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
++import { FadingImg } from "../ui/hydrated-art";
++import { ART_CROP_TRIM } from "../ui/art-crop-trim";
++import { KICKER_AGE } from "../feed/kicker-age";
++import { DismissButton } from "../feed/dismiss";
++import { tradeCopy as t } from "../../lib/copy/trades";
++
++export type TradeRowView = {
++  key: string;
++  friend: { displayName: ThirdPartyName; commander: { artCropUri: string | null } | null };
++  theirCard: string | null;
++  yourCard: string | null;
++  kind: string | PersonParts;
++  ink: "accent" | "success" | "faint" | "warning";
++  age: string;
++  title: string | PersonParts;
++  line: string | PersonParts;
++  /** The action line's end: a link, a press, or nothing. */
++  action?: { label: string; filled?: boolean } | null;
++  unseen?: boolean;
++  clear?: boolean;
++};
++
++const ROW = "relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px] [&+&]:[border-top:1px_solid_var(--border)]";
++const ACTIONS = "col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]";
++const KIND = "truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em]";
++const INK = { accent: "text-[color:var(--accent-text)]", success: "text-[color:var(--success)]", faint: "text-[color:var(--fg-faint)]", warning: "text-[color:var(--warning)]" };
++
++export function TradePicture({ theirs, yours, friend, className = "" }: {
++  theirs: string | null; yours: string | null; friend: TradeRowView["friend"]; className?: string;
++}) {
++  return (
++    <span aria-hidden className={`relative h-[64px] w-[46px] ${className}`}>
++      {yours ? (
++        <FadingImg src={yours} alt="" className="absolute -left-[5px] top-[1px] block h-[60px] w-[43px] -rotate-[9deg] rounded-[3px] object-cover opacity-90 shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
++      ) : null}
++      {theirs ? (
++        <FadingImg src={theirs} alt="" className="relative block h-[64px] w-[46px] rotate-[3deg] rounded-[3px] object-cover shadow-[0_2px_8px_rgba(0,0,0,.55)]" />
++      ) : (
++        <span className="relative block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
++      )}
++      <span className={`absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)] ${friend.commander?.artCropUri ? ART_CROP_TRIM.box : ""}`}>
++        {friend.commander?.artCropUri
++          ? <FadingImg src={friend.commander.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />
++          : <PersonInitials n={friend.displayName} />}
++      </span>
++    </span>
++  );
++}
++
++export function TradeRows({ rows, empty }: { rows: readonly TradeRowView[]; empty?: ReactNode }) {
++  if (rows.length === 0) return <>{empty}</>;
++  return (
++    <ul data-testid="trades" className="m-0 flex list-none flex-col p-0">
++      {rows.map((r) => (
++        <li key={r.key} data-testid="trade-row" className={ROW}>
++          <TradePicture theirs={r.theirCard} yours={r.yourCard} friend={r.friend} className="row-span-2 self-start md:row-span-1 md:self-center" />
++          <div className={`flex min-w-0 flex-col gap-[3px] ${r.clear ? "pr-[30px]" : ""}`}>
++            <p className="m-0 flex min-w-0 items-center gap-[7px]">
++              {r.unseen ? <span aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" /> : null}
++              <span className={`${KIND} ${INK[r.ink]}`}><PersonText text={r.kind} /></span>
++              <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{r.age}</small>
++            </p>
++            <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]"><PersonText text={r.title} /></p>
++            <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]"><PersonText text={r.line} /></p>
++          </div>
++          {/* An ended trade's ✕ holds the row's top right corner, as Your requests' does. */}
++          {r.clear ? <span className="absolute right-[4px] top-[6px]"><DismissButton title={r.title} onPress={() => {}} /></span> : null}
++          {r.action ? (
++            <div className={ACTIONS}>
++              {r.action ? (
++                r.action.filled ? (
++                  <button type="button" className="relative z-[1] inline-flex h-[36px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] px-[16px] font-sans text-[13px] font-medium [border:1px_solid_var(--fg)] bg-[color:var(--fg)] text-[color:var(--bg)]">{r.action.label}</button>
++                ) : (
++                  <a className="flex min-h-[32px] items-center whitespace-nowrap font-sans text-[13px] font-medium text-[color:var(--accent-text)] no-underline after:absolute after:inset-0 after:content-['']">{r.action.label}</a>
++                )
++              ) : null}
++            </div>
++          ) : null}
++        </li>
++      ))}
++    </ul>
++  );
++}
+diff --git a/src/components/social/trade-tab.tsx b/src/components/social/trade-tab.tsx
+new file mode 100644
+index 0000000..5581403
+--- /dev/null
++++ b/src/components/social/trade-tab.tsx
+@@ -0,0 +1,253 @@
++"use client";
++// Friend trades R1 (proposal; brief 2026-11-27-friend-trades.md): a friend page's Trade tab, the fourth in the strip
++// (`FriendStrip`). One live trade per friend at a time, so the tab IS that trade: composed when there is none, else the
++// trade in its state. Built from shipped parts only:
++// - the box is `DeckBox` with the To buy box's cells (`price-strip.tsx`): a mono label, the 17px figure, the mono notes;
++// - card pictures are the Spares tab's tiles (63/88, `TILE_BOX`), each opening card details;
++// - Yes and No are `AnswerPresses` (`spare-answer.tsx`), with the days left beside them, as every ask answers;
++// - the picker's band is the Requests box's `SegmentedSwitch` band; its body is the Spares tab's chassis and grid.
++// Totals are each side's own figure at the price the app already draws (`summarisePrices`), never a comparison.
++import type { ReactNode } from "react";
++import { DeckBox, DeckBoxBand, DeckBoxFoot } from "../decks/deck-box";
++import { SegmentedSwitch } from "../ui/segmented-switch";
++import { GhostButton, PrimaryButton, ACTION_SIZE } from "../ui/button";
++import { HydratedImg } from "../ui/hydrated-art";
++import { PersonText, type ThirdPartyName } from "../../lib/person-name";
++import { formatCents } from "../../lib/decks/price";
++import { priceCopy } from "../../lib/copy/price";
++import { socialCopy } from "../../lib/copy/social";
++import { tradeCopy as t } from "../../lib/copy/trades";
++import { AnswerPresses } from "./spare-answer";
++import { PanelEmpty } from "./section-panel";
++import { SparesChassis } from "./spares-chassis";
++import { NO_SPARE_FILTERS, type SpareBrowseLine } from "../../lib/social/spare-browse";
++
++export type TradeCard = {
++  oracleId: string; name: string; imageUri: string | null; spare: number; cents: number | null;
++  /** In a counter, against the offer it replaces. */
++  change?: "added" | "removed";
++  /** Stopped being spare since it was put in (D6). */
++  gone?: boolean;
++  /** Ask back: the card the reader already said yes to. */
++  agreed?: boolean;
++};
++
++export type TradeState =
++  | "draft" | "askBack" | "theirs" | "yours" | "counterDraft" | "theirCounter"
++  | "accepted" | "themMarked" | "youMarked" | "traded" | "look" | "lookYours";
++
++export type TradeTabProps = {
++  friend: string | ThirdPartyName;
++  state: TradeState;
++  fromThem: TradeCard[];
++  fromYou: TradeCard[];
++  daysLeft: number;
++  /** A counter's totals in the offer it replaces, and that offer's day. */
++  was?: { them: number; you: number; day: string };
++  /** The picker, open on this side, with these spares; null hides it. */
++  picker?: { side: "them" | "you"; theirs: SpareBrowseLine[]; yours: SpareBrowseLine[]; picked: Set<string> } | null;
++  tradedDay?: string;
++};
++
++const LABEL = "font-mono text-[10px] font-medium uppercase tracking-[.12em]";
++const NOTE = "m-0 font-mono text-[11px] leading-[1.5]";
++const CELL = "flex min-w-0 flex-col gap-[8px] px-[14px] py-[14px] md:px-[16px] [border-left:1px_solid_var(--border)] first:[border-left:0]";
++const TILE_BOX = "relative block w-full cursor-pointer overflow-hidden p-0 [aspect-ratio:63/88] [border-radius:4.5%/3.2%] [border:1px_solid_var(--border)] bg-[color:var(--surface-sunken)]";
++const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--accent)]";
++
++function sum(cards: TradeCard[]) {
++  const live = cards.filter((c) => c.change !== "removed");
++  const priced = live.filter((c) => c.cents !== null);
++  return { n: live.length, priced: priced.length, cents: priced.reduce((s, c) => s + (c.cents ?? 0), 0) };
++}
++
++/** One card in the box: the tile at card shape, its caption when the trade marks it. Opens card details. */
++function BoxCard({ card }: { card: TradeCard }) {
++  const out = card.change === "removed" || card.gone;
++  const note = card.gone ? t.gone : card.change === "added" ? t.added : card.change === "removed" ? t.removed : card.agreed ? t.agreed : null;
++  const ink = card.gone ? "text-[color:var(--warning)]" : card.change === "added" ? "text-[color:var(--accent-text)]" : card.agreed ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
++  return (
++    <li className="flex w-[64px] min-w-0 flex-col gap-[5px] md:w-[78px]">
++      <button type="button" aria-label={card.name} className={`${TILE_BOX} ${card.change === "added" ? RING : ""} ${out ? "opacity-45" : ""}`}>
++        {card.imageUri ? <HydratedImg eager src={card.imageUri} alt="" className="absolute inset-0 block h-full w-full object-cover" /> : null}
++      </button>
++      {note ? <span className={`font-mono text-[9.5px] uppercase leading-[1.3] tracking-[.08em] ${ink}`}>{note}</span> : null}
++    </li>
++  );
++}
++
++function Side({ label, cards, empty, was }: { label: ReactNode; cards: TradeCard[]; empty: ReactNode; was?: number }) {
++  const s = sum(cards);
++  return (
++    <div className={CELL}>
++      <span className={LABEL} style={{ color: "var(--fg-faint)" }}>{label}</span>
++      {cards.length ? (
++        <ul className="m-0 flex list-none flex-wrap gap-[8px] p-0 md:gap-[10px]">{cards.map((c) => <BoxCard key={c.oracleId + (c.change ?? "")} card={c} />)}</ul>
++      ) : (
++        <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{empty}</p>
++      )}
++      {s.n === 0 && !cards.length ? null : <div className="mt-[2px] flex flex-col gap-[3px]">
++        <span className="flex items-baseline gap-[8px]">
++          <span className="text-[17px] font-semibold" style={{ color: "var(--fg)" }}>{s.priced ? formatCents(s.cents) : s.n ? priceCopy.strip.box.unpriced : "—"}</span>
++          <span className={NOTE} style={{ color: "var(--fg-faint)" }}>{t.cards(s.n)}</span>
++        </span>
++        {s.priced > 0 && s.priced < s.n ? <span className={NOTE} style={{ color: "var(--fg-faint)" }}>{priceCopy.strip.pricedClause(s.priced, s.n)}</span> : null}
++        {was !== undefined ? <span className={NOTE} style={{ color: "var(--fg-muted)" }}>{t.was(formatCents(was))}</span> : null}
++      </div>}
++    </div>
++  );
++}
++
++const LINK = "inline-flex min-h-[44px] items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium cursor-pointer md:min-h-[36px]";
++
++export function TradeTab(props: TradeTabProps) {
++  const { friend, state, fromThem, fromYou, daysLeft, was, picker } = props;
++  const both = sum(fromThem).n > 0 && sum(fromYou).n > 0;
++  const band =
++    state === "draft" ? t.band.draft(friend)
++    : state === "askBack" ? t.band.askBack(friend)
++    : state === "theirs" ? t.band.theirs(friend)
++    : state === "yours" ? t.band.yours
++    : state === "counterDraft" ? t.band.counterDraft
++    : state === "theirCounter" ? t.band.theirCounter(friend)
++    : state === "accepted" || state === "themMarked" || state === "youMarked" ? t.band.accepted
++    : state === "traded" ? t.band.traded
++    : t.band.look;
++  // The band's end says the days only where nothing below says them: Yes and No carry them, as every ask does.
++  const aside = state === "yours" ? t.daysLeft(daysLeft) : null;
++  const lookCard = [...fromThem, ...fromYou].find((c) => c.gone);
++  const pressRow = "flex flex-wrap items-center gap-x-[14px] gap-y-[6px]";
++  let foot: ReactNode = null;
++  switch (state) {
++    case "draft":
++    case "askBack":
++    case "counterDraft":
++      foot = (
++        <div className={pressRow}>
++          {/* No dead press (Hugh 2026-11-17): Send appears once each side has a card; until then the line says what it waits on. */}
++          {both ? <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{state === "counterDraft" ? t.sendCounter : state === "askBack" ? t.sendAskBack : t.send}</PrimaryButton> : null}
++          {state === "counterDraft" ? <button type="button" className={`${LINK} text-[color:var(--fg-muted)]`}>{t.cancelCounter}</button> : null}
++          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
++            <PersonText text={!both ? t.needsBoth(friend) : state === "askBack" ? t.askBackFoot(friend, fromYou[0]?.name.split(",")[0] ?? "") : state === "counterDraft" ? t.counterFoot(friend) : t.answerBy(friend, 14)} />
++          </p>
++        </div>
++      );
++      break;
++    case "theirs":
++    case "theirCounter":
++      foot = (
++        <div className={pressRow}>
++          <AnswerPresses friend={friend} card="" daysLeft={daysLeft} busy={null} locked={false} onAnswer={() => {}} size="row" />
++          <button type="button" className={`${LINK} text-[color:var(--accent-text)]`}>{t.counter}</button>
++          {state === "theirCounter" && was ? <p className="m-0 basis-full text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{t.replacesYours(was.day)}.</p> : null}
++        </div>
++      );
++      break;
++    case "yours":
++      foot = (
++        <div className={pressRow}>
++          <GhostButton className={`${ACTION_SIZE} font-medium`}>{t.withdraw}</GhostButton>
++          <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]"><PersonText text={t.waiting(friend)} /></p>
++        </div>
++      );
++      break;
++    case "accepted":
++    case "themMarked":
++      foot = (
++        <div className={pressRow}>
++          <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{t.markTraded}</PrimaryButton>
++          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={state === "accepted" ? t.acceptedFoot : t.themMarked(friend)} /></p>
++          <button type="button" className={`${LINK} ml-auto text-[color:var(--fg-muted)]`}>{t.callOff}</button>
++        </div>
++      );
++      break;
++    case "youMarked":
++      foot = <p className="m-0 py-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={t.youMarked(friend)} /></p>;
++      break;
++    case "traded":
++      foot = (
++        <div className={pressRow}>
++          <p className="m-0 py-[8px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{t.tradedFoot(props.tradedDay ?? "")}</p>
++          <button type="button" className={`${LINK} md:ml-auto text-[color:var(--accent-text)]`}>{t.newTrade}</button>
++        </div>
++      );
++      break;
++    case "look":
++    case "lookYours":
++      foot = (
++        <div className="flex flex-col gap-[6px]">
++          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
++            <PersonText text={state === "look" ? t.lookLine(lookCard?.name.split(",")[0] ?? "", friend) : t.lookLineYours(lookCard?.name.split(",")[0] ?? "")} />
++          </p>
++          <div className={pressRow}>
++            <PrimaryButton className={`${ACTION_SIZE} font-medium`}>{t.counter}</PrimaryButton>
++            <GhostButton className={`${ACTION_SIZE} font-medium`}>{t.withdraw}</GhostButton>
++            <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{t.daysLeft(daysLeft)}</span>
++          </div>
++        </div>
++      );
++      break;
++  }
++  const received = state === "theirs" || state === "theirCounter";
++  const wash = state === "traded" ? "bg-[color:color-mix(in_oklab,var(--success)_6%,var(--surface-inset))]" : "";
++  return (
++    <div className="mt-[18px] md:mt-[22px]">
++      <DeckBox className={`!mt-0 md:!mt-0 ${wash}`} data-trade-state={state}>
++        <DeckBoxBand title={<PersonText text={band} />} aside={aside ? <span className="min-w-0 truncate font-mono text-[11px] font-normal text-[color:var(--fg-muted)]"><PersonText text={aside} /></span> : null} />
++        <div className="grid grid-cols-2">
++          <Side label={<PersonText text={t.side.them(friend)} />} cards={fromThem} was={was?.them} empty={<PersonText text={t.pickTheirs(friend)} />} />
++          <Side label={t.side.you} cards={fromYou} was={was?.you} empty={t.pickYours} />
++        </div>
++        <p className={`${NOTE} px-[14px] pb-[12px] md:px-[16px]`} style={{ color: "var(--fg-locked)" }}>
++          {priceCopy.strip.provenance} · {priceCopy.strip.lastChecked("Monday")}
++        </p>
++        {foot ? <DeckBoxFoot className={received ? "!py-[10px]" : ""}>{foot}</DeckBoxFoot> : null}
++      </DeckBox>
++      {picker ? <Picker friend={friend} picker={picker} /> : null}
++    </div>
++  );
++}
++
++function Picker({ friend, picker }: { friend: string | ThirdPartyName; picker: NonNullable<TradeTabProps["picker"]> }) {
++  const lines = picker.side === "them" ? picker.theirs : picker.yours;
++  const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
++  return (
++    <DeckBox className="!mt-[14px] md:!mt-[18px]">
++      <div className="flex bg-[color:var(--surface-rail)] p-[6px] [border-bottom:1px_solid_var(--border)]">
++        <SegmentedSwitch kind="tabs" ariaLabel="Spares" size="compact" fill value={picker.side} onChange={() => {}}
++          segments={[
++            { value: "them", label: <PersonText text={t.pick.theirs(friend)} />, count: count(picker.theirs.length) },
++            { value: "you", label: t.pick.yours, count: count(picker.yours.length) },
++          ]} />
++      </div>
++      {lines.length === 0 ? (
++        picker.side === "you"
++          ? <PanelEmpty title={t.empty.yoursTitle} body={t.empty.yoursBody} action={<a className="mt-[6px] inline-flex min-h-[44px] items-center text-[13px] font-medium text-[color:var(--accent-text)] no-underline"><PersonText text={t.empty.yoursAction(friend)} />&nbsp;›</a>} />
++          : <PanelEmpty title={(<PersonText text={t.empty.theirsTitle(friend)} />) as unknown as string} body={(<PersonText text={t.empty.theirsBody(friend)} />) as unknown as string} />
++      ) : (
++        <div className="px-[12px] pb-[16px] pt-[4px] md:px-[16px] md:pb-[20px]">
++          <SparesChassis lines={lines} shown={lines.length} filters={NO_SPARE_FILTERS} onFilters={() => {}} sort="wanted" onSort={() => {}} />
++          <ul className="m-0 mt-[14px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[14px] p-0 md:grid-cols-4 md:gap-[20px] xl:grid-cols-6">
++            {lines.map((line) => {
++              const inTrade = picker.picked.has(line.oracleId);
++              return (
++                <li key={line.oracleId} className="flex min-w-0 flex-col gap-[6px]">
++                  <button type="button" aria-label={line.name} className={`${TILE_BOX} ${inTrade ? RING : ""}`}>
++                    {line.imageUri ? <HydratedImg eager src={line.imageUri} alt="" className="absolute inset-0 block h-full w-full object-cover" /> : null}
++                  </button>
++                  <span className="flex items-center justify-between gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">
++                    <span className="truncate">{socialCopy.friendPage.spares.count(line.spare)}</span>
++                    <button type="button" aria-pressed={inTrade} aria-label={inTrade ? t.inAria(line.name) : t.addAria(line.name)}
++                      className={`inline-flex h-[32px] flex-none cursor-pointer items-center gap-[5px] rounded-[7px] px-[10px] font-sans text-[12.5px] font-medium md:h-[28px] ${inTrade ? "bg-[color:color-mix(in_oklab,var(--success)_14%,transparent)] text-[color:var(--success)] [border:1px_solid_color-mix(in_oklab,var(--success)_40%,transparent)]" : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"}`}>
++                      {inTrade ? <>✓ {t.inPress}</> : <>+ {t.addPress}</>}
++                    </button>
++                  </span>
++                </li>
++              );
++            })}
++          </ul>
++        </div>
++      )}
++    </DeckBox>
++  );
++}
+diff --git a/src/components/social/waiting-on-you.tsx b/src/components/social/waiting-on-you.tsx
+index 1df70fe..0269aa1 100644
+--- a/src/components/social/waiting-on-you.tsx
++++ b/src/components/social/waiting-on-you.tsx
+@@ -31,6 +31,7 @@ import { KICKER_AGE } from "../feed/kicker-age";
+ import { BAND, PANEL } from "./section-panel";
+ import { BandText } from "../decks/deck-box";
+ import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
++import { tradeCopy } from "../../lib/copy/trades";
+ import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
+ 
+ const w = socialCopy.waiting;
+@@ -69,7 +70,7 @@ const TITLE = "m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg
+ const DETAIL = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]";
+ 
+ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly WaitingRow[]; now: Date; bare?: boolean }) {
+-  const [receipts, setReceipts] = useState<ReadonlyMap<string, Receipt>>(() => new Map());
++  const [receipts, setReceipts] = useState<ReadonlyMap<string, Receipt>>(() => (globalThis as any).__RECEIPTS ?? new Map());
+   const { expanded, root, expand } = useShowAll();
+   const listRef = useRef<HTMLUListElement | null>(null);
+   const land = useLandFocus(listRef);
+@@ -327,6 +328,15 @@ function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answ
+         <p className={TITLE}><PersonText text={text.title} /></p>
+         <p className={DETAIL}><PersonText text={text.detail} /></p>
+       </div>
++      {/* Friend trades (proposal, D1): after a Yes to an ask (not an offer), Ask back opens the asker's Trade tab with this
++          card already on your side, the yes kept whatever they answer. */}
++      {yes && receipt.row.offer === undefined ? (
++        <div className={ACTIONS}>
++          <a {...personAttrs({ "aria-label": tradeCopy.askBackAria(ask.asker.displayName) }, "flex min-h-[32px] items-center gap-[4px] whitespace-nowrap text-[13px] font-medium text-[color:var(--accent-text)] no-underline")}>
++            {tradeCopy.askBack}<span aria-hidden>›</span>
++          </a>
++        </div>
++      ) : null}
+     </li>
+   );
+ }
+diff --git a/src/lib/copy/feed.ts b/src/lib/copy/feed.ts
+index 4da1a2f..b4a719a 100644
+--- a/src/lib/copy/feed.ts
++++ b/src/lib/copy/feed.ts
+@@ -1,3 +1,4 @@
++import { tradeCopy } from "./trades";
+ // The news feed (menu and Home handoff; plan `2026-10-22-menu-home.md` PR 4). `news` is Settings' Notifications
+ // section (announcements handoff R1b-1, `R1b-Settings.dc.html`), placeholder copy from the board.
+ import type { FeedKind } from "../feed/kinds";
+@@ -72,6 +73,7 @@ export const feedCopy = {
+       "price-drop": { name: "Price drops on your wishlist", line: "A card you want gets cheaper." },
+       "trade-match": { name: "Trade matches", line: "A friend has a spare of a card on your wishlist." },
+       "spare-request": { name: "Friends asking for your spares", line: "A friend asks for a card you have spare." },
++      trade: tradeCopy.feed.settings,
+       combo: { name: "Combos you can make", line: "You now own both halves of a two-card combo." },
+     } satisfies Record<FeedKind, { name: string; line: string }>,
+     /** After a default-on kind's line (spare requests, board `Friend-Side`): it starts checked and stays so. */
+@@ -142,6 +144,7 @@ export const feedCopy = {
+       "price-drop": "a wishlist card gets cheaper",
+       "trade-match": "a friend has a spare you want",
+       "spare-request": "a friend asks for your spare",
++      trade: tradeCopy.feed.tease,
+       combo: "you can make a new combo",
+     } satisfies Record<FeedKind, string>,
+     /**
+@@ -157,6 +160,7 @@ export const feedCopy = {
+       "price-drop": "price drops on your wishlist",
+       "trade-match": "trade matches",
+       "spare-request": "friends asking for your spares",
++      trade: tradeCopy.feed.quietName,
+       combo: "combos you can make",
+     } satisfies Record<FeedKind, string>,
+     /**
+@@ -200,6 +204,7 @@ export const feedCopy = {
+       "price-drop": "Price drop",
+       "trade-match": "Trade match",
+       "spare-request": "Spare request",
++      trade: tradeCopy.feed.kicker,
+       combo: "Combo",
+     } satisfies Record<FeedKind, string>,
+     /** Each kind's one title. */
+diff --git a/src/lib/copy/trades.ts b/src/lib/copy/trades.ts
+new file mode 100644
+index 0000000..109e196
+--- /dev/null
++++ b/src/lib/copy/trades.ts
+@@ -0,0 +1,159 @@
++// Friend trades R1 (brief 2026-11-27-friend-trades.md, D1 to D7): every new string. DRAFT, for `/copy-review`.
++// Vocabulary follows spare requests: Requested, Accepted, Declined (never Rejected); "spare" is a copy none of the
++// holder's decks use. Totals are a figure each side, never a comparison: no string here says fair, even, short, over,
++// better, worse or a difference between the sides.
++import { personText, type ThirdPartyName } from "../person-name";
++
++type Name = string | ThirdPartyName;
++
++/** "Ghalta", "Ghalta and Sai", "Ghalta, Sai and 2 more". */
++export function cardList(names: readonly string[]): string {
++  if (names.length === 0) return "";
++  if (names.length === 1) return names[0];
++  if (names.length === 2) return `${names[0]} and ${names[1]}`;
++  return names.length === 3 ? `${names[0]}, ${names[1]} and ${names[2]}` : `${names[0]}, ${names[1]} and ${names.length - 2} more`;
++}
++
++const days = (n: number) => (n === 1 ? "1 day left" : `${n} days left`);
++
++export const tradeCopy = {
++  /** The friend strip's fourth tab. */
++  tab: "Trade",
++  /** The box's side labels (mono, uppercase by CSS) and the counts under the figure. */
++  side: { them: (f: Name) => personText`From ${f}`, you: "From you" },
++  cards: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
++  total: "Total",
++  noneYet: "Nothing yet",
++  pickTheirs: (f: Name) => personText`Pick from ${f}’s spares below.`,
++  pickYours: "Pick from your spares below.",
++  /** A counter's figure, under the new one: the side's total in the offer it replaces. */
++  was: (figure: string) => `was ${figure}`,
++  /** Under a card in a counter: new to this side, or taken out of it. */
++  added: "Added",
++  removed: "Taken out",
++  /** Under a card that stopped being spare (needs a look). */
++  gone: "No longer spare",
++  /** Under the card the reader already said yes to (Ask back). */
++  agreed: "Already a yes",
++  daysLeft: days,
++  /** The box's bands, by state. */
++  band: {
++    draft: (f: Name) => personText`Propose a trade to ${f}`,
++    askBack: (f: Name) => personText`Ask ${f} back`,
++    theirs: (f: Name) => personText`${f}’s offer`,
++    yours: "Your offer",
++    counterDraft: "Your counter",
++    theirCounter: (f: Name) => personText`${f}’s counter`,
++    accepted: "Accepted",
++    traded: "Traded",
++    look: "Needs a look",
++  },
++  /** The band's end: the trade's days, the whole trade's (D6), never reset by a counter. */
++  replaces: (f: Name, day: string) => personText`Replaces ${f}’s offer of ${day}`,
++  replacesYours: (day: string) => `Replaces your offer of ${day}`,
++  /** The foot's presses and lines. */
++  send: "Send offer",
++  sendCounter: "Send counter",
++  sendAskBack: "Send",
++  counter: "Counter",
++  withdraw: "Withdraw",
++  callOff: "Call it off",
++  cancelCounter: "Keep their offer",
++  markTraded: "Mark traded",
++  clear: "Clear",
++  newTrade: "Propose a new trade",
++  answerBy: (f: Name, n: number) => personText`${f} has ${n} days to answer.`,
++  askBackFoot: (f: Name, card: string) => personText`${f} has 14 days to answer. Your yes on ${card} stands either way.`,
++  counterFoot: (f: Name) => personText`Your counter replaces ${f}’s offer. The days left stay as they are.`,
++  /** Send waits on a card on each side; the line says why, in place of a dead press (Hugh 2026-11-17). */
++  needsBoth: (f: Name) => personText`Pick a card from ${f} and one of yours to send.`,
++  waiting: (f: Name) => personText`Waiting on ${f}.`,
++  acceptedFoot: "Hand them over when you meet, then mark it traded.",
++  themMarked: (f: Name) => personText`${f} marked it traded. Mark it once you have yours.`,
++  youMarked: (f: Name) => personText`You marked it traded. Waiting on ${f}.`,
++  tradedFoot: (day: string) => `Traded ${day}. Your collection stays as it is until you change it.`,
++  lookLine: (card: string, f: Name) => personText`${card} is no longer spare for ${f}, so this can’t be accepted as it is.`,
++  lookLineYours: (card: string) => `${card} is no longer spare for you. Counter without it, or withdraw.`,
++  /** The picker's band: the switch's two tabs. */
++  pick: { theirs: (f: Name) => personText`${f}’s spares`, yours: "Your spares" },
++  /** A picker tile's toggle: one press in, the same press out (aria-pressed). */
++  addPress: "Add",
++  inPress: "In the trade",
++  addAria: (card: string) => `Add ${card} to the trade`,
++  inAria: (card: string) => `${card} is in the trade. Select to take it out`,
++  /** Empty states (open question 6). */
++  empty: {
++    yoursTitle: "You have no spares to offer",
++    yoursBody: "A spare is a copy none of your decks use, past your threshold in Settings › Spares.",
++    yoursAction: (f: Name) => personText`Ask ${f} for a spare instead`,
++    theirsTitle: (f: Name) => personText`${f} has no spares right now`,
++    theirsBody: (f: Name) => personText`Their spares show here once ${f}’s decks leave copies free.`,
++    listTitle: "No trades yet",
++    listBody: "Propose one from a friend’s Trade tab, or ask back after you say yes to a spare request.",
++  },
++  /** Ask back, on the holder's Yes receipt (open question 7). */
++  askBack: "Ask back",
++  askBackAria: (f: Name) => personText`Ask ${f} for a spare in return`,
++  /** The Requests box's third tab. */
++  listTab: "Trades",
++  /** One trade as a Trades row: kicker (uppercase by CSS), title, line, press. */
++  row: {
++    kind: {
++      offer: "Trade offer",
++      offered: "Offered",
++      countered: "Countered",
++      accepted: "Accepted",
++      themMarked: (f: Name) => personText`Traded by ${f}`,
++      youMarked: "Traded by you",
++      traded: "Traded",
++      declined: "Declined",
++      withdrawn: "Withdrawn",
++      expired: "No answer",
++      look: "Needs a look",
++    },
++    offer: (f: Name, theirs: string, yours: string) => personText`${f} offers ${theirs} for your ${yours}`,
++    offered: (f: Name, theirs: string, yours: string) => personText`You offered ${yours} to ${f} for ${theirs}`,
++    countered: (f: Name) => personText`${f} countered your trade`,
++    counteredLine: (theirs: string, yours: string, n: number) => `Now ${theirs} for your ${yours} · ${days(n)}`,
++    accepted: (f: Name) => personText`${f} accepted your trade`,
++    acceptedYou: (f: Name) => personText`You accepted ${f}’s trade`,
++    acceptedLine: "Hand them over, then mark it traded.",
++    themMarked: (f: Name) => personText`${f} marked the trade done`,
++    themMarkedLine: "Mark it too once yours are in hand.",
++    youMarked: (f: Name) => personText`You marked the trade with ${f} done`,
++    youMarkedLine: (f: Name) => personText`Waiting on ${f} to mark it too.`,
++    traded: (f: Name) => personText`You and ${f} traded`,
++    tradedLine: (theirs: string, yours: string, day: string) => `${theirs} for ${yours} · ${day}. Your collection stays as it is.`,
++    declined: (f: Name) => personText`${f} declined your trade`,
++    declinedYou: (f: Name) => personText`You declined ${f}’s trade`,
++    withdrawn: (f: Name) => personText`${f} withdrew the trade`,
++    nothingElse: "Nothing else changes.",
++    expired: (f: Name) => personText`${f} didn’t answer your trade`,
++    expiredLine: (n: number) => `Offered ${n} days ago.`,
++    look: (card: string) => `${card} is no longer spare`,
++    lookLine: (f: Name, n: number) => personText`${f}’s trade can’t go ahead as it is · ${days(n)}`,
++    waitingLine: (f: Name, n: number) => personText`Waiting on ${f} · ${days(n)}`,
++    open: "Open ›",
++    answer: "Answer ›",
++    seeCounter: "See the counter ›",
++    look2: "Take a look ›",
++  },
++  /** The feed kind (D7): its Settings row, kicker, and one title and line per push kind. Push copy is the same words. */
++  feed: {
++    kind: "trade",
++    settings: { name: "Trades", line: "A friend offers, counters, accepts or declines a trade with you." },
++    kicker: "Trade",
++    tease: "a friend offers you a trade",
++    quietName: "trades",
++    offer: (f: Name) => personText`${f} offers a trade`,
++    offerLine: (theirs: string, yours: string) => `${theirs} for your ${yours}.`,
++    counter: (f: Name) => personText`${f} countered your trade`,
++    counterLine: (theirs: string, yours: string) => `Now ${theirs} for your ${yours}.`,
++    accept: (f: Name) => personText`${f} accepted your trade`,
++    acceptLine: "Hand them over, then mark it traded.",
++    decline: (f: Name) => personText`${f} declined your trade`,
++    declineLine: "Nothing else changes.",
++    press: "See the trade",
++    pressCounter: "See the counter",
++  },
++} as const;
+diff --git a/src/lib/feed/kinds.ts b/src/lib/feed/kinds.ts
+index ea12a12..1953ffc 100644
+--- a/src/lib/feed/kinds.ts
++++ b/src/lib/feed/kinds.ts
+@@ -20,14 +20,14 @@ export const ANNOUNCEMENT_KINDS = ["secret-lair", "commander-decklists", "wizard
+ export type AnnouncementFeedKind = (typeof ANNOUNCEMENT_KINDS)[number];
+ 
+ /** In Settings' order: the three Announcements kinds sit after New precons (handoff README, call 7). */
+-export const FEED_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS, "price-drop", "trade-match", "spare-request", "combo"] as const;
++export const FEED_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS, "price-drop", "trade-match", "spare-request", "trade", "combo"] as const;
+ 
+ export type FeedKind = (typeof FEED_KINDS)[number];
+ 
+ export const CATALOG_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
+ export type CatalogKind = (typeof CATALOG_KINDS)[number];
+ 
+-export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "combo"] as const satisfies readonly FeedKind[];
++export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "trade", "combo"] as const satisfies readonly FeedKind[];
+ export type StoredKind = (typeof STORED_KINDS)[number];
+ 
+ const ANNOUNCEMENT_SET = new Set<string>(ANNOUNCEMENT_KINDS);
+@@ -61,7 +61,7 @@ export const PUSH_OUTBOX_ALL_KINDS = [...PUSH_OUTBOX_KINDS, SEAT_PUSH_KIND, LOG_
+  * answer, so it is heard of by default, and Wizards' own announcements start on (handoff README, call 7). A default-on kind is on while it is stamped in `feed_kinds` or absent from both
+  * `feed_kinds` and `feed_kinds_declined`; turned off, it moves to `feed_kinds_declined`. Every other kind starts off.
+  */
+-export const DEFAULT_ON_KINDS = ["spare-request", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
++export const DEFAULT_ON_KINDS = ["spare-request", "trade", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
+ export const isDefaultOn = (k: FeedKind): boolean => (DEFAULT_ON_KINDS as readonly FeedKind[]).includes(k);
+ 
+ const KIND_SET = new Set<string>(FEED_KINDS);
+@@ -75,7 +75,7 @@ export const isStoredKind = (k: unknown): k is StoredKind => typeof k === "strin
+  * Home, waiting on you first. Every kind appears exactly once here or in `NEVER_LEADS`.
+  */
+ export const LEAD_PRIORITY: readonly FeedKind[] = [
+-  "spare-request", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair",
++  "spare-request", "trade", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair",
+ ];
+ 
+ /** The kinds that are only ever a row (Announcements call 2: Wizards news never leads). */
