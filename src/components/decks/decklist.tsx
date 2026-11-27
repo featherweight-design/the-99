@@ -74,8 +74,8 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useGotIt } from "./got-it";
 import { reveal } from "../../lib/ui/reveal";
 
-/** The keys' box at the TOP of a list (Hugh 2026-11-27: a long page's key is met before its first row; only a
- *  small in-view section keeps its key at the foot). A hairline box that vanishes when no key draws. */
+/** The keys' box at the TOP of a list (Hugh 2026-11-27: a long page's key is met before its first row; a foot is
+ *  only for a small section that fits in view, which no list here is). A hairline box that vanishes when no key draws. */
 const KEYS_HEAD = "flex flex-col gap-[8px] rounded-[12px] border border-[color:var(--border)] px-[14px] py-[11px] md:px-[16px] empty:hidden";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
