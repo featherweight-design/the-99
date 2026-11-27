@@ -1,0 +1,269 @@
+--- a/src/components/decks/tokens-group.tsx
++++ b/src/components/decks/tokens-group.tsx
+@@ -13,9 +13,13 @@
+ import { TokenRow } from "./token-row";
+ import { TokenTile } from "./token-tile";
+ import { ArrivalOrder } from "../ui/arrival-queue";
++import { PANEL } from "../social/section-panel";
++import { BAND_GROUND, BAND_HEIGHT, BAND_RULE } from "./deck-box";
++import { Chevron } from "../ui/chevron";
++import { tokConcept } from "./token-glyph";
+ 
+ const HEADING = "deck-tokens-heading";
+-const PANEL = "deck-tokens-panel";
++const PANEL_ID = "deck-tokens-panel";
+ 
+ /**
+  * Whether the Tokens group is folded: one preference for every deck, as the deck's view is ("I keep tokens
+@@ -69,19 +73,91 @@
+   const siblings = read.tokens.map((t) => ({ oracleId: t.oracleId, name: t.name, imageUri: t.picture?.imageUri ?? null }));
+   const toggle = {
+     open,
+-    panelId: PANEL,
++    panelId: PANEL_ID,
+     onToggle: () => {
+       setLanded(false);
+       chooseFold(open ? "closed" : "open");
+     },
+   };
++  const body = (
++    <HoverPreviewProvider>
++      <ArrivalOrder>
++      {cards ? (
++        <ul className="m-0 grid list-none grid-cols-2 items-stretch gap-[12px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
++          {read.tokens.map((t) => (
++            <TokenTile key={t.oracleId} deckId={deckId} token={t} siblings={siblings} />
++          ))}
++        </ul>
++      ) : (
++        <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
++          {read.tokens.map((t) => (
++            <TokenRow key={t.oracleId} deckId={deckId} token={t} newestAsOf={read.newestPriceAsOf} siblings={siblings} />
++          ))}
++        </ul>
++      )}
++      </ArrivalOrder>
++    </HoverPreviewProvider>
++  );
++  if (tokConcept()) {
++    // PROPOSAL (base, every concept): the Tokens group is a deck box (DeckBox anatomy, the Announced group's folding band).
++    // The box itself says "not the deck": every group of the 99 above it is a bare head over rows.
++    const fan = read.tokens.filter((t) => t.picture?.imageUriSmall).slice(0, 4);
++    return (
++      <section aria-labelledby={HEADING} className={`${PANEL} !mt-[18px] md:!mt-[24px]`} data-tokens-box="">
++        <h3 id={HEADING} tabIndex={-1} className="m-0 font-normal">
++          <button
++            type="button"
++            aria-expanded={open}
++            aria-controls={open ? PANEL_ID : undefined}
++            onClick={toggle.onToggle}
++            className={`flex ${BAND_HEIGHT} w-full cursor-pointer items-center gap-[10px] border-0 py-[8px] pl-[14px] pr-[10px] text-left md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${open ? BAND_RULE : ""}`}
++          >
++            <span className="flex min-w-0 flex-col">
++              <span>
++                <span aria-hidden className="mr-[8px] text-[color:var(--accent-text)]">◆</span>
++                {tokensCopy.group.label}
++                <span className="ml-[8px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">{read.tokens.length}</span>
++              </span>
++              {/* The phone's sub-line moves into the band, under the title. */}
++              <span className="font-mono text-[10.5px] font-normal leading-[1.5] text-[color:var(--fg-locked)] md:hidden">{note}</span>
++            </span>
++            <span className="ml-auto hidden font-mono text-[10.5px] font-normal text-[color:var(--fg-locked)] md:inline">{note}</span>
++            {/* Folded, the band shows what it holds: the tokens' own art, fanned at card shape. */}
++            {!open && fan.length > 0 ? (
++              <span aria-hidden className="ml-auto flex flex-none items-center pl-[4px] md:ml-[6px]">
++                {fan.map((t, i) => (
++                  <img
++                    key={t.oracleId}
++                    src={t.picture!.imageUriSmall!}
++                    alt=""
++                    className="h-[38px] w-[27px] flex-none rounded-[2px] object-cover shadow-[0_2px_6px_rgba(0,0,0,0.45)] [border:1px_solid_var(--border-strong)] md:h-[36px] md:w-[26px]"
++                    style={{ marginLeft: i ? -11 : 0, transform: `rotate(${(i - (fan.length - 1) / 2) * 7}deg)`, zIndex: fan.length - i }}
++                  />
++                ))}
++              </span>
++            ) : null}
++            <Chevron kind="disclosure" open={open} className={`${open || fan.length === 0 ? "ml-auto md:ml-[6px]" : "ml-[2px]"} flex-none text-[color:var(--fg-muted)]`} />
++          </button>
++        </h3>
++        {open ? (
++          <div id={PANEL_ID} className="px-[12px] py-[12px] md:px-[14px] md:py-[14px]">{body}</div>
++        ) : null}
++        {open && !read.read ? (
++          <div className="flex flex-col px-[14px] py-[10px] md:px-[16px] [border-top:1px_solid_var(--border)]">
++            <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{tokensCopy.unknown.body}</p>
++            <Link href="/collection" className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent-text)] md:min-h-[30px]">{tokensCopy.unknown.action}</Link>
++          </div>
++        ) : null}
++      </section>
++    );
++  }
+   return (
+     <section aria-labelledby={HEADING} className="mt-[16px] md:mt-[20px]">
+       <DecklistGroupHeader label={tokensCopy.group.label} count={read.tokens.length} note={note} headingId={HEADING} focusable toggle={toggle} />
+       {/* The phone has no right-hand note: it reads as a sub-line under the label. */}
+       <p className="m-0 mb-[8px] font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{note}</p>
+       {open ? (
+-        <div id={PANEL}>
++        <div id={PANEL_ID}>
+           {read.read ? null : (
+             <div className="mb-[10px] rounded-[9px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[13px] pb-[4px] pt-[10px] md:pb-[6px]">
+               <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{tokensCopy.unknown.body}</p>
+--- a/src/components/decks/todo-foot.tsx
++++ b/src/components/decks/todo-foot.tsx
+@@ -22,6 +22,9 @@
+ import { TOUCH_HIT } from "../ui/touch-hit";
+ import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
+ import { useZone } from "../zone-context";
++import { useDeckTokens } from "./deck-tokens-context";
++import { landOnDeckTokens } from "./deck-tokens-landing";
++import { TokenGlyph, tokConcept } from "./token-glyph";
+ 
+ const copy = deckVersioningCopy.todoCard;
+ 
+@@ -60,6 +63,7 @@
+ 
+ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
+   const zone = useZone();
++  const deckTokens = useDeckTokens();
+   const [open, setOpen] = useState(false);
+   const ids = useId();
+   // A segment that leaves while open (the last auto card kept) takes its disclosure with it, so it
+@@ -109,6 +113,20 @@
+   if (hasNearCombos(facts)) {
+     segments.push({ key: "combos", node: <NearCombosSegment className={cell} quiet={quiet} count={facts.nearCombos.count} onOpen={facts.nearCombos.onOpen} /> });
+   }
++  // PROPOSAL A: the deck's tokens are a segment of the status line, after combos: `◎ 4 tokens from 7 cards ›` lands on the box.
++  if (tokConcept() === "A" && deckTokens?.read.status === "ok" && deckTokens.read.tokens.length > 0) {
++    const t = deckTokens.read;
++    segments.push({ key: "tokens", node: (
++      <button type="button" onClick={landOnDeckTokens} data-tokens-segment=""
++        className={`${cell} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}>
++        <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
++          <TokenGlyph size={13} className="text-[color:var(--accent-text)]" />
++          <span>{`${t.tokens.length} tokens from ${t.makerCount} cards`}</span>
++          <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">›</span>
++        </span>
++      </button>
++    ) });
++  }
+   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
+   if (facts.provenance) {
+     segments.push({
+--- a/src/components/decks/decklist-row.tsx
++++ b/src/components/decks/decklist-row.tsx
+@@ -31,6 +31,9 @@
+ import { BuyTag } from "./buy-tag";
+ import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-context";
+ import { FoldedMarks, type FoldMark } from "../cards/folded-marks";
++import { useDeckTokens } from "./deck-tokens-context";
++import { TokenGlyph, tokConcept } from "./token-glyph";
++import { tokensCopy } from "../../lib/copy/tokens";
+ import { ComboMark } from "../cards/combo-mark";
+ import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+ import { FactTooltip } from "../cards/fact-tooltip";
+@@ -268,8 +271,18 @@
+       ? comboAwarenessCopy.deckTooltip.inDeckMore(combo.name, card.comboOtherPartners)
+       : comboAwarenessCopy.deckTooltip.inDeck(combo.name)
+     : null;
++  // PROPOSAL B: a card that makes one of the deck's tokens carries the token mark, after the bracket facts.
++  const deckTokensB = useDeckTokens();
++  const madeB = tokConcept() === "B" && deckTokensB?.read.status === "ok"
++    ? deckTokensB.read.tokens.filter((t) => t.makers.some((m) => m.oracleId === card.oracleId)).map((t) => t.name)
++    : [];
+   const marks: FoldMark[] = [
+     ...(card.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
++    ...(madeB.length ? [{ kind: "combo" as const, sentence: tokensCopy.details.line(madeB), glyph: (
++      <span title={tokensCopy.details.line(madeB)} data-token-mark="" className="inline-flex items-center" style={{ color: "var(--fact)", filter: "drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent))" }}>
++        <TokenGlyph size={13} /><span className="sr-only">{tokensCopy.details.line(madeB)}</span>
++      </span>
++    ) }] : []),
+     ...(comboSentence
+       ? [{ kind: "combo" as const, sentence: comboSentence, glyph: <ComboMark partnerName={combo!.name} otherPartners={card.comboOtherPartners} scope="deck" /> }]
+       : []),
+--- a/src/components/decks/decklist.tsx
++++ b/src/components/decks/decklist.tsx
+@@ -56,6 +56,8 @@
+ import { DecklistGroup } from "./decklist-group";
+ import { DecklistGroupHeader } from "./decklist-group-header";
+ import { TokensGroup } from "./tokens-group";
++import { useDeckTokens } from "./deck-tokens-context";
++import { TokenGlyph, tokConcept } from "./token-glyph";
+ import { TokensShoppingGroup } from "./tokens-shopping-group";
+ import { DecklistRow } from "./decklist-row";
+ import { HoverPreviewProvider } from "./hover-preview";
+@@ -454,9 +456,16 @@
+     [commander, partner, cards],
+   );
+ 
++  const deckTokensB = useDeckTokens();
+   const markKey = useMemo(
+-    () => buildMarkKeyEntries({ cards, filter, inCardView, commanderRows: commanderShopping, shoppingKeyDraws }),
+-    [cards, filter, inCardView, commanderShopping, shoppingKeyDraws],
++    () => [
++      ...buildMarkKeyEntries({ cards, filter, inCardView, commanderRows: commanderShopping, shoppingKeyDraws }),
++      // PROPOSAL B: the token mark's key entry, wherever a row draws it.
++      ...(tokConcept() === "B" && !inCardView && deckTokensB?.read.status === "ok" && deckTokensB.read.tokens.length
++        ? [{ id: "token", sample: <span style={{ color: "var(--fact)" }} className="inline-flex"><TokenGlyph size={13} /></span>, word: "makes a token" }]
++        : []),
++    ],
++    [cards, filter, inCardView, commanderShopping, shoppingKeyDraws, deckTokensB],
+   );
+ 
+   // The same entries with the lock's included, in the order they will really have (it sits before the facts).
+--- a/src/components/decks/price-strip.tsx
++++ b/src/components/decks/price-strip.tsx
+@@ -17,6 +17,9 @@
+ import { formatLimit } from "../../lib/swaps/limit";
+ import { useSwapTools } from "../../lib/swaps/context";
+ import { DeckBox, DeckBoxBand, DeckBoxFoot } from "./deck-box";
++import { useDeckTokens } from "./deck-tokens-context";
++import { landOnDeckTokens } from "./deck-tokens-landing";
++import { TokenGlyph, tokConcept } from "./token-glyph";
+ import { tokensCopy } from "../../lib/copy/tokens";
+ import type { TokenShopping } from "../../lib/tokens/shopping";
+ import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
+@@ -103,6 +106,7 @@
+   const store = useStoreInfo();
+   const tools = useSwapTools();
+   const headingId = useId();
++  const deckTokensC = useDeckTokens();
+   const dated = stripDate(summary, provenance, tokens, tokenProvenance, tokenOwnProvenance);
+   if (!dated) return null;
+ 
+@@ -208,6 +212,21 @@
+           {behindNotes ? <span className={noteClass} style={{ color: "var(--fg-locked)" }}>{behindNotes}</span> : null}
+         </div>
+       </div>
++      {/* PROPOSAL C: the tokens this deck's cards make and the reader lacks, said once in the To buy box, with the way to them. */}
++      {tokConcept() === "C" && deckTokensC?.read.status === "ok" && deckTokensC.read.read ? (() => {
++        const lack = deckTokensC.read.tokens.filter((t) => t.state === "not" && !t.joined);
++        return lack.length ? (
++          <DeckBoxFoot className="!gap-0 !py-0">
++            <div className="flex min-h-[44px] flex-wrap items-center gap-x-[10px]">
++              <span className="inline-flex items-center gap-[7px] font-mono text-[11.5px]" style={{ color: "var(--fg-muted)" }}>
++                <TokenGlyph size={13} className="text-[color:var(--accent-text)]" />
++                {lack.length === 1 ? "1 token these cards make isn’t in your collection" : `${lack.length} tokens these cards make aren’t in your collection`}
++              </span>
++              <button type="button" onClick={landOnDeckTokens} className="inline-flex min-h-[44px] items-center border-0 bg-transparent p-0 font-mono text-[11.5px] cursor-pointer text-[color:var(--accent-text)]">Tokens ›</button>
++            </div>
++          </DeckBoxFoot>
++        ) : null;
++      })() : null}
+       {/* The 44px is the ROW's height, never the link's box: the link stays inline text with a full-height target. */}
+       {!store.cart && shoppingCards.length > 0 ? (
+         <DeckBoxFoot>
+--- /dev/null
++++ b/src/components/decks/token-glyph.tsx
+@@ -0,0 +1,11 @@
++// Tokens surfacing R1 (proposal): the Tokens strategy glyph (strategy-icon.tsx), drawn as the deck's token mark.
++import { STRATEGY_GLYPHS } from "./strategy-icon";
++export function TokenGlyph({ size = 13, className = "" }: { size?: number; className?: string }) {
++  return (
++    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`flex-none ${className}`}>
++      {STRATEGY_GLYPHS.tokens}
++    </svg>
++  );
++}
++/** Which concept the scratch render draws: undefined is main as shipped. */
++export const tokConcept = (): undefined | "base" | "A" | "B" | "C" => (globalThis as any).__TOK;

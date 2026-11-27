@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A Strip on one or two lines</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0;background:#0f0d0a;font-family:system-ui,sans-serif;color:#EDE6D8}</style></helmet>
+<div style="width: 1830px; box-sizing: border-box; padding: 40px; background: #0f0d0a; display: flex; flex-direction: column">
+<p style="margin: 0 0 8px; font-size: 28px; font-weight: 600">A · The status strip on one line, or two at most (phone)</p>
+<p style="margin: 0 0 28px; font-size: 16px; line-height: 1.5; color: #C0B8A6; max-width: 1500px">On phone each segment wraps whole, so R1b stacked three 39px rows. Both options keep the full wording from tablet up, where everything already fits on one line. Below md they use short forms, and the full sentence stays as each press’s accessible name. <b style="color:#EDE6D8">A1 · one line (recommended):</b> “v2 · Nov 13 · ∞ 5 near combos › · ◎ 4 tokens ›” (the year is dropped within the current year). It’s one row shorter than shipped today, with about 100px spare for one more segment before a second line. <b style="color:#EDE6D8">A2 · two lines:</b> the version keeps its full line, and every link segment shares line 2 (“∞ 5 combos one piece away › · ◎ 4 tokens ›”). It’s the same height as shipped today, and new segments join line 2.</p>
+<p style="margin: 0 0 12px; font: 600 15px ui-monospace, monospace; letter-spacing: .12em; color: #948B78">PHONE · BEFORE / R1b / A1 / A2</p>
+<div style="display: flex; gap: 60px; align-items: flex-start; margin-bottom: 56px">
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 13px ui-monospace, monospace; color: #948B78">Shipped · 2 lines</span><img src="art/A-before-phone.jpg" width="390" height="981" alt="Shipped strip on phone" style="display: block; border: 1px solid #2B241B"></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 13px ui-monospace, monospace; color: #948B78">R1b · 3 lines</span><img src="art/A-after-phone.jpg" width="390" height="1020" alt="R1b strip with tokens on phone" style="display: block; border: 1px solid #2B241B"></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 13px ui-monospace, monospace; color: #CF8745">A1 · 1 line (recommended)</span><img src="art/A1-after-phone.jpg" width="390" height="942" alt="One-line strip on phone" style="display: block; border: 1px solid #2B241B"></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 13px ui-monospace, monospace; color: #CF8745">A2 · 2 lines</span><img src="art/A2-after-phone.jpg" width="390" height="981" alt="Two-line strip on phone" style="display: block; border: 1px solid #2B241B"></div>
+</div>
+<p style="margin: 0 0 12px; font: 600 15px ui-monospace, monospace; letter-spacing: .12em; color: #948B78">DESKTOP · BOTH OPTIONS (full wording, one line)</p>
+<img src="art/A-after-desk.jpg" width="1300" height="768" alt="Desktop strip on one line" style="display: block; border: 1px solid #2B241B">
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1830,"height":2180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
