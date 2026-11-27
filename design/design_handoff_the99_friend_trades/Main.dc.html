@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friend trades · R1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#e8a25b}a:hover{color:#f2bd85}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1140px; box-sizing: border-box; padding: 64px 72px; background: #161412; color: #e9e3d8; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; letter-spacing: .12em; color: #e8a25b">THE 99 · ACCOUNT 2 · R1 · 2026-11-27</p>
+<h1 style="margin: 0; font-size: 44px; font-weight: 700">Friend trades</h1>
+<p style="margin: 0; font-size: 18px; line-height: 1.55; color: #c9c1b3; max-width: 1200px">A trade is a spare ask with cards on both sides. It lives on the friend's page as a fourth tab, Trade, and every way in lands there: Ask back, a push, a What's new row and a Trades row. Every frame is the shipped shell and page, rendered with the shipped CSS and real card art; only the trade parts are new. Friends: Colin, Peter, Max, Chris.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 13px; font-size: 15px; line-height: 1.55; color: #d9d2c4">
+<h2 style="margin: 0; font-size: 20px; color: #e9e3d8">Calls (Open for Design, 1 to 7)</h2>
+<p style="margin: 0"><b>1. A page, not a sheet.</b> The friend strip gains Trade after Spares. One live trade with each friend at a time, so the tab is that trade: composed when there is none, else the trade in its state. Both sides' spares and both totals need room a sheet doesn't have on a phone, and a push needs somewhere to land. Board P.</p>
+<p style="margin: 0"><b>2. Picking.</b> One box holds both sides. Under it, a picker box whose band is the Requests box's switch (Colin's spares · Your spares) and whose body is the Spares tab's own chassis and grid. A tile opens card details, as every card does; Add under it is the pick, and the same press takes it out. Only spares are listed, so a card you can't offer never appears. Send shows once each side has a card; until then the line says what it waits on.</p>
+<p style="margin: 0"><b>3. A counter reads against the offer it replaces</b> in the same box: ADDED (ringed) and TAKEN OUT (faded) under the cards, "was $16.99" under each total, the foot naming the offer it replaces. Days left run from the first offer (D6). Board C.</p>
+<p style="margin: 0"><b>4. Every state.</b> On the tab: boards R, C, D, L. In a list: board S, the Requests box's new third tab, Trades, in Waiting on you's own row (kicker, title, line, action). Ended trades (traded, declined, withdrawn, no answer) wait there for ✕; the tab goes back to composing.</p>
+<p style="margin: 0"><b>5. Feed rows.</b> A new kind, kicker Trade, one row per push (offer, counter, accept, decline), the push using the same words. An offer or a counter waits on you, so it can lead Home. Board N.</p>
+<p style="margin: 0"><b>6. Empty states</b> use the Requests box's empty mark: no spares of yours (with a way to ask instead), none of theirs, no trades yet. Board E.</p>
+<p style="margin: 0"><b>7. Ask back</b> sits on the Yes receipt, wherever the holder says yes (Waiting on you, Home's lead, the What's new row). It opens the asker's Trade tab with that card on your side, marked Already a yes. Board A.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 13px; font-size: 15px; line-height: 1.55; color: #d9d2c4">
+<h2 style="margin: 0; font-size: 20px; color: #e9e3d8">Held to the locks</h2>
+<p style="margin: 0"><b>Totals are advisory (D4).</b> Each side's own figure, drawn as the To buy box's Total cell, with its "1 of 2 priced" clause and the store's provenance line. No difference, no comparison, no colour on either figure.</p>
+<p style="margin: 0"><b>Reused, not redrawn:</b> Yes and No with the days left (AnswerPresses), the receipts and their success wash, DeckBox and its band, the Spares tab's chassis, tiles and counts, the feed row, the Settings row.</p>
+<p style="margin: 0"><b>Traded (D5)</b> needs both marks and moves nothing: "Your collection stays as it is until you change it." <b>Needs a look (D6)</b> shows to both people, the gone card faded with NO LONGER SPARE, and takes Yes away with the reason.</p>
+<p style="margin: 0"><b>Settings (D7):</b> a Trades row after Friends asking for your spares, on from the start, in app and push.</p>
+<h2 style="margin: 12px 0 0; font-size: 20px; color: #e9e3d8">For you to decide</h2>
+<p style="margin: 0"><b>Q1.</b> The brief puts Ask back on answer-sheet.tsx, but that sheet is the asker's view of a friend's answer. Ask back belongs to the person who said yes, so I put it on the Yes receipt. Keep it there?</p>
+<p style="margin: 0"><b>Q2.</b> One live trade per friend at a time. I'd keep it: the tab stays one trade, and a second waits until the first ends.</p>
+<p style="margin: 0"><b>Q3.</b> One copy of each card per trade in v1 (a card with 2 spare goes in once). I'd keep it for v1.</p>
+<p style="margin: 0"><b>Q4.</b> After an accept, Call it off lets either side end it, and the other sees Withdrawn. I'd keep it, so an accepted trade is never stuck.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1140}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
