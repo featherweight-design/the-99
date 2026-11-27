@@ -76,7 +76,7 @@ export const addPanelCopy = {
     showAllAria: (role: string, cardCount: number) =>
       `Show all ${cardCount} ${role} ${cardCount === 1 ? "suggestion" : "suggestions"}`,
     collapse: "Show fewer",
-    // The key row at the foot of the shelves (deck details refresh, PR 1; copy-reviewed).
+    // The key row above the shelves (deck details refresh, PR 1; copy-reviewed).
     keyAdd: "Add puts the card in the deck. Add · to buy also puts it on Shopping.",
     keyFolded: "Folded shelves stay folded on this deck.",
   },

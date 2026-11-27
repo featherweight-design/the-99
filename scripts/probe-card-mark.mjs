@@ -46,7 +46,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage, PAGE } from "./lib/surface.mjs";
+import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
@@ -83,6 +83,11 @@ const WIDTHS = [
  * mounts while passing: every one of those clears 12. An exact figure is the ruling.
  */
 const SIZE = 16;
+/** What a deck page draws once its lazy list has arrived: a decklist row (list view) or the keys head (either view: the card view persists across visits and draws tiles, no rows). */
+const DECK_ROWS = "[data-decklist-row]";
+const DECK_READY = "[data-decklist-row], [data-keys-head]";
+/** A real deck link on /decks (the `new` and `import` CTAs match a naive `/decks/x` test). */
+const DECK_LINK = "a[href^='/decks/']:not([href='/decks/new']):not([href='/decks/import'])";
 const SIZE_TOLERANCE_PX = 0.5;
 
 /**
@@ -204,9 +209,19 @@ async function searchFor(page, term) {
  * photographing the About page". A probe that cannot tell which page it is on cannot report
  * anything about the one it meant to visit.
  */
-async function goTo(page, path) {
+async function goTo(page, path, ready = null) {
   await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
   await onPage(page, "h1").first().waitFor({ state: "attached", timeout: 30_000 });
+  // THE PAGE'S OWN READY ELEMENT, not a sleep: the `h1` is the shell's and is attached long
+  // before the lazy list under it. A caller names the element its page draws when ready
+  // (a deck's first `[data-decklist-row]`, /decks' first deck link) and the wait is on that.
+  if (ready) {
+    try {
+      await onPage(page, ready).first().waitFor({ state: "attached", timeout: 30_000 });
+    } catch {
+      return { ok: false, landed: `${new URL(page.url()).pathname} (ready element ${ready} never drew in 30s)`, wanted: path };
+    }
+  }
   const landed = new URL(page.url()).pathname;
   const wanted = path.split("?")[0];
   if (landed !== wanted) {
@@ -236,25 +251,16 @@ async function findMarkedDeck(page) {
       `/about, and its specimen deck links read as this account's decks`);
     return null;
   }
-  // WAIT FOR THE LIST, not just for an `h1`. The shell's heading is attached long before
-  // the decks are, so reading the anchors here returned only the `new`/`import` CTAs and
-  // the probe reported "this account owns no decks at all" about an account that owns one.
-  // A race that resolves to an empty list is indistinguishable from an empty list.
-  await page
-    .waitForFunction(
-      (scope) => {
-        const root = document.querySelector(scope);
-        const links = [...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
-          .map((a) => a.getAttribute("href"))
-          .filter((h) => h && h.split("/").length === 3 && !["new", "import"].includes(h.split("/")[2]));
-        // Either a deck has appeared, or the list has settled with none — the empty state
-        // names itself, so the two are told apart rather than waited through.
-        return links.length > 0 || Boolean(root?.textContent?.includes("No decks"));
-      },
-      PAGE,
-      { timeout: 15_000 },
-    )
-    .catch(() => {});
+  // WAIT FOR THE LIST'S OWN ELEMENT, not just for an `h1`. The shell's heading is attached long
+  // before the decks are, so reading the anchors first returned only the CTAs and the probe
+  // reported "this account owns no decks at all" about an account that owns one. Either a deck
+  // link appears, or the empty state names itself; a timeout is a FAILURE, never swallowed.
+  try {
+    await onPage(page, `${DECK_LINK}, :text("No decks")`).first().waitFor({ state: "attached", timeout: 30_000 });
+  } catch {
+    report("decklist row · the /decks list drew a deck link or its empty state", false, "neither appeared in 30s");
+    return null;
+  }
   const hrefs = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
     return [...new Set([...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
@@ -265,9 +271,8 @@ async function findMarkedDeck(page) {
       .filter((h) => h && h.split("/").length === 3 && !["new", "import"].includes(h.split("/")[2])))];
   }, PAGE);
   for (const href of hrefs.slice(0, DECK_SCAN_LIMIT)) {
-    const deckNav = await goTo(page, href);
+    const deckNav = await goTo(page, href, DECK_ROWS);
     if (!deckNav.ok) continue;
-    await page.waitForTimeout(1500);
     const drawn = (await marks(page)).filter((m) => !m.inKey);
     if (drawn.length > 0) return { href, truncated: false, seen: 0, total: hrefs.length };
   }
@@ -300,7 +305,7 @@ async function run() {
       // by a press is a surface a URL-driven sweep cannot see.
       const cardViewSurface = async () => {
         if (!deckHref) return;
-        const nav = await goTo(page, deckHref);
+        const nav = await goTo(page, deckHref, DECK_READY);
         if (!report(`${label}px · deck card view · reached the deck`, nav.ok,
             nav.ok ? undefined : `redirected to ${nav.landed}`)) return;
         const toggle = onPage(page, 'button[aria-label="Card view"]').first();
@@ -365,6 +370,94 @@ async function run() {
         }
       };
 
+      // R5 (2026-11-27): THE KEYS OPEN THE LIST. On a page too long to scroll to a foot a key
+      // there is never met, so the box sits ABOVE the first group (or shelf) on every big
+      // surface. `keyFirst` above covers the All list and its card view through the marks;
+      // these two cover the surfaces reached by a press or a tab and the one with its own key.
+      // The assertion is document order (`compareDocumentPosition`), plus a geometric
+      // check that the box ends above the first row, so a box hoisted by CSS alone fails too.
+      const keysTopSurfaces = async () => {
+        const shopHref = process.env.PROBE_SHOPPING_DECK ? `/decks/${process.env.PROBE_SHOPPING_DECK}` : deckHref;
+        if (!shopHref) return;
+        // 1. SHOPPING, FILLED: the keys box under the To buy box, before the first group.
+        const nav = await goTo(page, shopHref, DECK_ROWS);
+        if (report(`${label}px · shopping · reached the deck`, nav.ok, nav.ok ? undefined : `redirected to ${nav.landed}`)) {
+          const pill = onPageRole(page, "tab", /^Shopping \d+$/).filter({ visible: true }).first();
+          if (!(await pill.count())) {
+            report(`${label}px · shopping · the deck has something to buy`, false,
+              "no Shopping tab with a count: the deck buys nothing, so this measured nothing — set PROBE_SHOPPING_DECK");
+          } else {
+            await pill.click();
+            const head = onPage(page, "[data-keys-head]").first();
+            await head.waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+            await onPage(page, DECK_ROWS).first().waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+            await head.evaluate((el) => el.scrollIntoView({ block: "center" })).catch(() => {});
+            const r = await page.evaluate((scope) => {
+              const root = document.querySelector(scope);
+              const head = root?.querySelector("[data-keys-head]");
+              const row = root?.querySelector("[data-decklist-row]");
+              if (!head) return { hasHead: false };
+              const rect = head.getBoundingClientRect();
+              const cs = getComputedStyle(head);
+              // The To buy box: the first element before the head whose own text starts "To buy".
+              let toBuy = null;
+              for (const el of root.querySelectorAll("*")) {
+                if (el === head || head.contains(el)) break;
+                const own = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join("").trim();
+                if (/^to buy\b/i.test(own)) { toBuy = el; break; }
+              }
+              const follows = (a, b) => Boolean(a && b && a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+              return {
+                hasHead: true,
+                visible: rect.width > 0 && rect.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && Number(cs.opacity) > 0,
+                hasToBuy: Boolean(toBuy),
+                afterToBuy: follows(toBuy, head),
+                beforeRow: follows(head, row),
+                aboveRow: Boolean(row) && rect.bottom <= row.getBoundingClientRect().top + 1,
+                hasRow: Boolean(row),
+              };
+            }, PAGE);
+            report(`${label}px · shopping · the keys box exists`, r.hasHead, r.hasHead ? "" : "no [data-keys-head]");
+            if (r.hasHead) {
+              report(`${label}px · shopping · and it is drawn`, r.visible);
+              report(`${label}px · shopping · and it follows the To buy box`, r.hasToBuy && r.afterToBuy,
+                r.hasToBuy ? "" : "no To buy element found — NOT a pass");
+              report(`${label}px · shopping · and it precedes the first group's rows`, r.hasRow && r.beforeRow && r.aboveRow,
+                r.hasRow ? `${r.beforeRow ? "before" : "AFTER"} in the document, ${r.aboveRow ? "above" : "NOT above"} on screen` : "no row drawn — NOT a pass");
+            }
+          }
+        }
+        // 2. TUNING > CONSIDER: the key box (the MarkKey group inside the panel) before the first shelf.
+        const cNav = await goTo(page, `${shopHref}?tab=consider`, null);
+        if (report(`${label}px · consider · reached the deck`, cNav.ok, cNav.ok ? undefined : `redirected to ${cNav.landed}`)) {
+          const shelf = onPage(page, '#panel-tuning [data-testid="shelf-label"]').first();
+          const drew = await shelf.waitFor({ state: "attached", timeout: 30_000 }).then(() => true).catch(() => false);
+          if (!report(`${label}px · consider · a shelf drew`, drew, drew ? "" : "no shelf in 30s — NOT a pass")) return;
+          const c = await page.evaluate(() => {
+            const panel = document.querySelector("#panel-tuning");
+            const key = [...(panel?.querySelectorAll('[role="group"]') ?? [])]
+              .find((g) => g.querySelector('[data-testid^="card-fact-"]'));
+            const shelf = panel?.querySelector('[data-testid="shelf-label"]');
+            if (!key) return { hasKey: false };
+            key.scrollIntoView({ block: "center" });
+            const r = key.getBoundingClientRect();
+            const cs = getComputedStyle(key);
+            return {
+              hasKey: true,
+              visible: r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && r.bottom > 0 && r.top < innerHeight,
+              keyFirst: Boolean(shelf && key.compareDocumentPosition(shelf) & Node.DOCUMENT_POSITION_FOLLOWING),
+              aboveShelf: Boolean(shelf) && r.bottom <= shelf.getBoundingClientRect().top + 1,
+            };
+          });
+          report(`${label}px · consider · the key box exists`, c.hasKey, c.hasKey ? "" : "no key group in the Tuning panel");
+          if (c.hasKey) {
+            report(`${label}px · consider · and it is drawn`, c.visible);
+            report(`${label}px · consider · and it precedes the first shelf`, c.keyFirst && c.aboveShelf,
+              `${c.keyFirst ? "before" : "AFTER"} in the document, ${c.aboveShelf ? "above" : "NOT above"} on screen`);
+          }
+        }
+      };
+
       for (const [surface, url, search] of [
         ...(deckHref ? [["decklist row", deckHref, null]] : []),
         ["collection rows", "/collection?view=rows", CARD],
@@ -379,7 +472,7 @@ async function run() {
         // `attached`, never `visible`: a collapsed title is zero-width, which Playwright
         // calls hidden, and waiting on visibility turns a layout defect into a 30s timeout
         // that abandons every width after the first.
-        const nav = await goTo(page, url);
+        const nav = await goTo(page, url, surface === "decklist row" ? DECK_ROWS : null);
         if (!report(`${label}px · ${surface} · reached the route`, nav.ok,
             nav.ok ? undefined : `redirected to ${nav.landed}`)) continue;
         if (search) await searchFor(page, search);
@@ -633,6 +726,8 @@ async function run() {
           markedH && plainH ? `marked ${markedH}px vs unmarked ${plainH}px`
                             : `marked ${markedH}px, unmarked ${plainH}px — nothing to compare`);
       }
+      // BEFORE the card view: that press persists the view for the visits after it.
+      await keysTopSurfaces();
       await cardViewSurface();
 
       // THE MODAL. The one surface that spells the facts out, and the one whose loader had

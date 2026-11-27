@@ -596,6 +596,20 @@ export function ConsiderPanel({
             />
           </div>
 
+          {/* THE KEY, once for the panel rather than once per shelf: the marks are one vocabulary and a
+              reader learns it once. A box ABOVE the shelves (Hugh 2026-11-27): met before the first glyph, on a page too long to scroll to a foot.
+
+              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
+              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
+              candidates". See `AddSurfaceMarkKey`. */}
+          <DeckBox className="!mt-0 mb-[14px]">
+            <div className="flex flex-col gap-[8px] px-[14px] py-[12px] md:px-[16px]">
+              <AddSurfaceMarkKey />
+              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyAdd}</p>
+              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyFolded}</p>
+            </div>
+          </DeckBox>
+
           {shelves.map((shelf, i) => (
             <ShelfSection
               // Keyed on deckId too, not just the shelf key: `BuilderShell` is
@@ -635,19 +649,6 @@ export function ConsiderPanel({
               onSeeCards={onSeeCards}
             />
           ))}
-          {/* THE KEY, once for the panel rather than once per shelf: the marks are one vocabulary and a
-              reader learns it once. A box below the shelves, as the board draws it.
-
-              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
-              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
-              candidates". See `AddSurfaceMarkKey`. */}
-          <DeckBox className="!mt-[16px] md:!mt-[20px]">
-            <div className="flex flex-col gap-[8px] px-[14px] py-[12px] md:px-[16px]">
-              <AddSurfaceMarkKey />
-              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyAdd}</p>
-              <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{addPanelCopy.consider.keyFolded}</p>
-            </div>
-          </DeckBox>
         </>
       )}
     </section>
