@@ -15,11 +15,13 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { tokensCopy } from "../../lib/copy/tokens";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { formatDeckDate } from "../../lib/decks/format";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { TOUCH_HIT } from "../ui/touch-hit";
+import { TokenGlyph } from "./token-glyph";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
 import { useZone } from "../zone-context";
 
@@ -41,6 +43,9 @@ export interface TodoFootFacts {
   /** The combos this deck is one piece away from (combos close, `Deck-Page.dc.html` `.cbs`), and the
    *  press that opens their list. Null or absent when there are none: no segment at zero. */
   nearCombos?: { count: number; onOpen: () => void } | null;
+  /** The tokens this deck makes and the cards that make them (the read's `ok` state with at least one token), and the press
+   *  that lands on the Tokens group. Null or absent otherwise: no segment at zero, none for an absent or failed read. */
+  tokens?: { count: number; makers: number; onOpen: () => void } | null;
 }
 
 export function footHasSegments(f: TodoFootFacts, quiet: boolean): boolean {
@@ -48,6 +53,7 @@ export function footHasSegments(f: TodoFootFacts, quiet: boolean): boolean {
     f.version !== null
     || (!quiet && f.noVersion === true)
     || hasNearCombos(f)
+    || hasTokens(f)
     || f.proxies > 0
     || f.provenance !== null
     || f.otherDrafts !== null
@@ -56,6 +62,10 @@ export function footHasSegments(f: TodoFootFacts, quiet: boolean): boolean {
 
 function hasNearCombos(f: TodoFootFacts): f is TodoFootFacts & { nearCombos: { count: number; onOpen: () => void } } {
   return f.nearCombos != null && f.nearCombos.count > 0;
+}
+
+function hasTokens(f: TodoFootFacts): f is TodoFootFacts & { tokens: { count: number; makers: number; onOpen: () => void } } {
+  return f.tokens != null && f.tokens.count > 0;
 }
 
 export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
@@ -108,6 +118,9 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });
   if (hasNearCombos(facts)) {
     segments.push({ key: "combos", node: <NearCombosSegment className={cell} quiet={quiet} count={facts.nearCombos.count} onOpen={facts.nearCombos.onOpen} /> });
+  }
+  if (hasTokens(facts)) {
+    segments.push({ key: "tokens", node: <TokensSegment className={cell} quiet={quiet} count={facts.tokens.count} makers={facts.tokens.makers} onOpen={facts.tokens.onOpen} /> });
   }
   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
   if (facts.provenance) {
@@ -187,6 +200,28 @@ function NearCombosSegment({ count, onOpen, className, quiet }: { count: number;
         <ComboGlyph size={13} />
         <span>{combosCloseCopy.segment(count)}</span>
         <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{combosCloseCopy.caret}</span>
+      </span>
+    </button>
+  );
+}
+
+/**
+ * `◎ 4 tokens from 7 cards ›`: after the combos, drawn like them (the glyph, body ink, a faint caret, one dotted rule) with the
+ * same hit rules. A link, not a figure: its press lands on the Tokens group (`landOnDeckTokens`) from any panel, and it moves
+ * no count or status.
+ */
+function TokensSegment({ count, makers, onOpen, className, quiet }: { count: number; makers: number; onOpen: () => void; className: string; quiet: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      data-tokens-segment
+      className={`${className} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
+    >
+      <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
+        <TokenGlyph />
+        <span>{tokensCopy.statusLine.segment(count, makers)}</span>
+        <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{tokensCopy.statusLine.caret}</span>
       </span>
     </button>
   );

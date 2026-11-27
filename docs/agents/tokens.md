@@ -84,6 +84,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   card no token comes from. The About entry `deck-tokens` keeps `DECK_TOKENS_ENABLED` as its historical identity through `AboutSwitch` (the switch is retired; always shown) and is
   `since: 14`, the current version: it was announced when its switch flipped, so the line **bumped nothing** and
   only re-pinned the content hash.
+  **Status line** (deck tokens PR 2): the deck's status line draws `◎ 4 tokens from 7 cards ›` after the combos segment
+  (`TodoFootFacts.tokens`, built in `builder-shell.tsx` from the provider's read, `ok` with at least one token only). It is
+  navigation only: its press is `landOnDeckTokens`, so it opens the Tokens box and focuses its heading from Shopping, Analysis
+  and Games alike, and it moves no status, roll-up or count (the `decklist.test.tsx` pins stand). Like a lone combos segment it
+  counts toward `footHasSegments`, so a brew or an empty deck whose commander makes tokens draws the quiet strip for it.
 
 ## From AGENTS.md (moved 2026-10-28)
 

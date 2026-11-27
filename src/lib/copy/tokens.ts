@@ -15,6 +15,12 @@ export const tokensCopy = {
     failed: "Tokens couldn’t be read just now.",
   },
 
+  /** The deck's status line segment: `4 tokens from 7 cards ›`. Navigation only: it moves no figure and no status. Never drawn at zero. */
+  statusLine: {
+    segment: (tokenCount: number, makers: number) => `${tokens(tokenCount)} from ${cards(makers)}`,
+    caret: "›",
+  },
+
   /** No token-read marker for the account yet. Said once, at the head of the group. */
   unknown: {
     body: "Your collection hasn’t been read for tokens yet. Press I have one on the ones you own, or upload your collection again and they’ll be read from it.",
