@@ -95,7 +95,7 @@ export function Bring() {
                       ))}
                     </ol>
                     <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{[s.requirement, app.bothColumns, app.foot].filter((line): line is NonNullable<typeof line> => Boolean(line)).map((line, i) => (
-                      <Fragment key={line}>
+                      <Fragment key={i}>
                         {i > 0 && " "}
                         <span>{line}</span>
                       </Fragment>

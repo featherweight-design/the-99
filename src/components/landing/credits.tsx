@@ -102,7 +102,7 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
   const twice = claims.upgrade !== null && coversEveryToolTwice(welcome, claims.upgrade);
   const covers = three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : twice ? (claims.suggestedTwo ? c.twiceV2 : c.twice) : null;
   // Each copy line is its own text node (drawn below in its own span) so the copy editor can match it to its row; joined into one string it matches none.
-  const sentence = [covers, buying ? (covers ? c.keepGoing : c.moreCredits) : null].filter((line): line is NonNullable<typeof line> => line !== null);
+  const sentence = [covers, buying ? (covers ? c.keepGoing : c.moreCredits) : null].filter((line): line is NonNullable<typeof line> => Boolean(line));
   return (
     <div
       data-testid="landing-value"
@@ -130,7 +130,7 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
       {(sentence.length > 0 || buying) && (
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">
           {sentence.map((line, i) => (
-            <Fragment key={line}>
+            <Fragment key={i}>
               {i > 0 && " "}
               <span>{line}</span>
             </Fragment>

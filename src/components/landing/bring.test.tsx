@@ -17,12 +17,13 @@ const text = (parts: readonly GuideText[]) => parts.map((p) => (typeof p === "st
 describe("Bring", () => {
   it("draws the requirement and the both-columns line of a guide as their own text nodes, so the copy editor finds each row", () => {
     render(<Bring />);
-    const moxfield = collectionSources.apps[1];
+    const moxfield = collectionSources.apps.find((a) => a.id === "moxfield")!;
     press(moxfield.name);
     const panel = document.getElementById(screen.getByRole("button", { name: new RegExp(`^${moxfield.name}`) }).getAttribute("aria-controls") ?? "") as HTMLElement;
     const row = (key: string, text: string): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "" });
     const index = indexRows([row("cs#requirement", collectionSources.requirement), row("cs#bothColumns", moxfield.bothColumns!)]);
     expect(scanPage(index, panel).map((e) => e.matches[0].row.key)).toEqual(["cs#requirement", "cs#bothColumns"]);
+    expect(panel.textContent).toContain(`${collectionSources.requirement} ${moxfield.bothColumns}`);
   });
 
   it("leads with the first-timer path, then a row per source", () => {
