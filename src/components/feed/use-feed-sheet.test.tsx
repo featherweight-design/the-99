@@ -62,8 +62,7 @@ describe("useFeedSheet", () => {
     const { comboClosed } = result.current;
     unmount();
     comboClosed();
-    vi.advanceTimersByTime(1);
-    // The unmounted hook set nothing: its place was dropped by the unmount, so there was nothing to reopen.
-    expect(result.current.open).toBe(false);
+    // The unmount dropped the place, so a late combo close schedules no reopen. (result.current is frozen after unmount, so it cannot show this; a pending timer can.)
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
