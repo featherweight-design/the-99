@@ -26,6 +26,8 @@ describe("recordFeedItem queues its push in the SAME statement", () => {
 
   it("queues only when the feed insert wrote a row, under the opaque item key and never the writer's dedupe key", () => {
     expect(r.sql).toContain("where exists (select 1 from wrote)");
+    // A writer that passes no push condition gets exactly that guard, nothing ANDed on.
+    expect(r.sql).not.toMatch(/exists \(select 1 from wrote\) and/);
     expect(r.sql).toContain("'item:' || (select wrote.id::text from wrote limit 1)");
     const outbox = r.sql.slice(r.sql.indexOf('pushed as (insert into "push_outbox"'));
     expect(outbox).not.toContain("dedupe_key");
