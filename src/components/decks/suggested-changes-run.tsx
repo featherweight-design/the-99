@@ -547,6 +547,9 @@ export function SuggestedChangesRun({
     const at = set.map((l) => l.verdictAt).filter((v): v is string => !!v).sort().at(-1);
     return at ? historyDay(at) : past!.date;
   };
+  // History B's lead is two copy rows; each draws in its own span so the copy editor finds both (`lead` below only gates).
+  const oldRunParts = !waiting && !past?.stale && appliedSet && past
+    ? [h.oldRunLead(appliedSet.length / 2, appliedDay(appliedSet)), h.oldRunRest(lines.filter(isOpen).length)] as const : null;
   const lead = waiting ? null : past?.stale
     // History C: the lists, then what was applied from them and when.
     ? (appliedOn("add") + appliedOn("cut") > 0
@@ -554,8 +557,8 @@ export function SuggestedChangesRun({
       : h.staleListsOnly(adds.length, cuts.length))
     : appliedSet
       // History B says when the set went in, and that the rest can still be picked.
-      ? (past
-        ? [h.oldRunLead(appliedSet.length / 2, appliedDay(appliedSet)), h.oldRunRest(lines.filter(isOpen).length)].filter(Boolean).join(" ")
+      ? (oldRunParts
+        ? `${oldRunParts[0]} ${oldRunParts[1]}`
         : sc.run.appliedLead(appliedSet.length / 2, lines.filter(isOpen).length))
       : cap < n ? sc.run.shortLead(adds.length, cuts.length, cap) : sc.results.lead(adds.length, cuts.length, n);
   // History B on desktop names the version the rest stay pickable on (the phone keeps the shorter line).
@@ -563,8 +566,10 @@ export function SuggestedChangesRun({
   const leadWide = !waiting && past && !past.stale && appliedSet && past.version != null && lines.some(isOpen)
     ? ` ${h.oldRunRestVersion(lines.filter(isOpen).length, past.version)}` : null;
   // History C's lead is bold up to its ` · ` (`5 to add and 5 to cut · 2 + 2 applied on Oct 19.`); every other at its first stop.
-  const leadFull = lead === null ? null : past?.stale && lead.includes(" · ")
-    ? [lead.slice(0, lead.indexOf(" · ")), lead.slice(lead.indexOf(" · "))] as const : leadSentence(lead, ". ");
+  const leadFull: readonly [ReactNode, ReactNode] | null = lead === null ? null : oldRunParts
+    ? [<span key="a">{oldRunParts[0]}</span>, oldRunParts[1] ? <> <span>{oldRunParts[1]}</span></> : ""] as const
+    : past?.stale && lead.includes(" · ")
+      ? [lead.slice(0, lead.indexOf(" · ")), lead.slice(lead.indexOf(" · "))] as const : leadSentence(lead, ". ");
   const leadParts = demo && leadFull ? ([leadFull[0], ""] as const) : leadFull;
   const confirmBracket = bracketText(outcome);
 

@@ -20,6 +20,7 @@
 
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
+import { CopyLines } from "../copy-lines";
 import { deckVersioningCopy, historyOriginCopy } from "../../lib/copy/deck-versioning";
 import { preconMonth, preconsCopy } from "../../lib/copy/precons";
 import { formatDeckDate } from "../../lib/decks/format";
@@ -108,11 +109,10 @@ function MetaLine({
   phone: boolean;
 }) {
   const zone = useZone();
-  const parts = [
-    phone
-      ? `${formatDeckDate(version.committedAt, zone)} · ${copy.cardCount(version.cardCount)}`
-      : copy.committed(formatDeckDate(version.committedAt, zone), version.cardCount),
-  ];
+  // The date is data and sits in its own span; each copy row draws in its own span too (CopyLines).
+  const parts = phone
+    ? [formatDeckDate(version.committedAt, zone), copy.cardCount(version.cardCount)]
+    : [copy.committed(formatDeckDate(version.committedAt, zone), version.cardCount)];
   if (version.manaValue !== null) parts.push(copy.manaValue(version.manaValue.toFixed(2)));
   // Never on the current version: it is still accumulating games, so a tally
   // beside it would be a figure that is wrong by the next evening.
@@ -125,7 +125,7 @@ function MetaLine({
         phone ? "mt-[4px]" : "mt-[2px]"
       }`}
     >
-      {parts.join(" · ")}
+      <CopyLines lines={parts} sep=" · " />
     </span>
   );
 }

@@ -29,6 +29,7 @@ import { foilMarkCopy } from "../../../lib/copy/foil-mark";
 import { useStoredView } from "../../ui/use-stored-view";
 import { ViewToggle } from "../../ui/view-toggle";
 import { useState } from "react";
+import { CopyLines } from "../../copy-lines";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { EditionSwitch } from "./edition-switch";
 import { PreconOverview } from "./precon-overview";
@@ -346,7 +347,7 @@ export function OpenPreconView({ precon, fromNew, edition: initialEdition = "reg
           {groups.map(([label, group]) => {
             const o = groupOwned(group);
             const lands = label === "Lands";
-            const note = copy.group.own(o.owned, o.of) + (lands && basicCopies > 0 ? ` · ${copy.group.basics(basicCopies)}` : "");
+            const note = <CopyLines lines={[copy.group.own(o.owned, o.of), lands && basicCopies > 0 ? copy.group.basics(basicCopies) : null]} sep=" · " />;
             return (
               <DecklistGroup
                 key={label}

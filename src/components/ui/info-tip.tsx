@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 
 /** The ⓘ and its tooltip: a press pins it open on any device, a mouse hovering or the keyboard focusing it shows
@@ -13,7 +13,7 @@ import { twMerge } from "tailwind-merge";
 export function InfoTip({
   id, lines, label, className = "self-center", buttonClassName = "", tipClassName = "", phoneAbove = false,
 }: {
-  id: string; lines: readonly string[]; label: string;
+  id: string; lines: readonly ReactNode[]; label: string;
   /** The root's own classes. A caller that has to place the ⓘ itself passes `contents` here and puts the
    *  position on `buttonClassName`, so the tooltip still anchors to the caller's field and not to a box the
    *  size of the ⓘ (Deck notes: it was squeezed against the screen edge on a phone). */
@@ -99,7 +99,7 @@ export function InfoTip({
         hidden={!open}
         className={twMerge("absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden", phoneAbove && "max-md:bottom-[calc(100%+6px)] max-md:top-auto", tipClassName)}
       >
-        {lines.map((l) => <span key={l}>{l}</span>)}
+        {lines.map((l, i) => <span key={typeof l === "string" ? l : i}>{l}</span>)}
       </span>
     </span>
   );

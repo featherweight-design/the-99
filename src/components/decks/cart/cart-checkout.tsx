@@ -2,6 +2,7 @@
 // box is PriceStrip's, copied rather than mounted: PriceStrip draws nothing on a failed price read,
 // and the cart keeps its link then (T2), because the link carries names and quantities only.
 
+import { CopyLines } from "../../copy-lines";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
 import { priceCopy } from "../../../lib/copy/price";
@@ -39,13 +40,14 @@ export function CartCheckout({
   const first = !priced
     ? copy.checkout.unread
     : anyPriced ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store);
-  const provenanceLine = [
+  const provenanceLines = [
     first,
     // A market figure is an average of sales, said beside the figure it qualifies (call 4).
     ...(anyPriced && store.figure === "market" ? [storeCopy.marketNote] : []),
     ...(priced && provenance ? [priceCopy.strip.lastChecked(provenance.when)] : []),
     ...(priced && provenance?.behind ? [priceCopy.strip.behind] : []),
-  ].join(" · ");
+  ];
+  const provenanceLine = <CopyLines lines={provenanceLines} sep=" · " />;
   return (
     <div
       // About's label 1 on the cart's capture is boxed on this (`scripts/lib/about-locators.mjs`).

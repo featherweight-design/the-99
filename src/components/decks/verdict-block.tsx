@@ -199,8 +199,8 @@ function SubLine({ reading }: { reading: ReturnType<typeof verdictSubLine> }) {
   return (
     <p className="mt-[12px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] [text-wrap:pretty] md:mt-[14px] md:text-[13px] md:leading-[1.6]">
       {reading.kind === "assembled"
-        ? `${copy.ruledOutAssembled(BRACKET_NAMES[reading.below])}. ${copy.nothingFurther}`
-        : `${ruledOutClause(reading.below, reading.reasons)} ${copy.nothingFurther}`}
+        ? <><span>{copy.ruledOutAssembled(BRACKET_NAMES[reading.below])}</span>{". "}<span>{copy.nothingFurther}</span></>
+        : <>{ruledOutClause(reading.below, reading.reasons)}{" "}<span>{copy.nothingFurther}</span></>}
     </p>
   );
 }

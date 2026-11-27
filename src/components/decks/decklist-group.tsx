@@ -29,7 +29,7 @@ interface DecklistGroupProps {
   /** The whole decklist in display order, for the detail modal's Prev/Next. */
   siblings?: readonly Sibling[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
-  note?: string;
+  note?: ReactNode;
   /** Passed straight to the header — the draft note is brass, others quiet. */
   noteColor?: string;
   /** Passed straight to the header: the draft note shows on a phone too (small items 2). */
