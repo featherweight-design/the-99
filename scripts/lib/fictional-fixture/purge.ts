@@ -77,6 +77,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   token_ownership: ["user_id"],
   token_printing_holdings: ["user_id"],
   token_reads: ["user_id"],
+  trades: ["proposer_user_id", "recipient_user_id", "offered_by_user_id", "ended_by_user_id"],
   user_data_stamps: ["user_id"],
   user_prefs: ["user_id"],
   wishlist_collected: ["user_id"],
@@ -109,6 +110,7 @@ export const FK_CHILDREN: readonly string[] = [
   "deck_cards", "deck_cut_items", "deck_game_axes", "deck_locks", "deck_printings", "deck_proxies",
   "deck_suggestion_items", "deck_unresolved_rows", "deck_version_cards", "deck_version_synopses", "deck_versions",
   "fill_pass_cards", "fill_passes", "model_call_parts", "rule_zero_tables",
+  "trade_cards", "trade_rounds",
 ];
 
 /** Per-user data with no user column and no foreign key: payments, webhooks, the waitlist. */

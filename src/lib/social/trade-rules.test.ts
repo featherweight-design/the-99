@@ -152,8 +152,11 @@ describe("who may do what", () => {
   });
 
   it("stops counters at the round cap", () => {
-    expect(canAct(trade({ round: TRADE_ROUND_MAX - 1 }), P, "counter", NOW)).toBe(true);
+    // Round 19 is the proposer's, so the recipient counters with round 20; round 20 is the recipient's, and the
+    // proposer may not counter past the cap.
+    expect(canAct(trade({ round: TRADE_ROUND_MAX - 1 }), R, "counter", NOW)).toBe(true);
     expect(canAct(trade({ round: TRADE_ROUND_MAX }), P, "counter", NOW)).toBe(false);
+    expect(canAct(trade({ round: TRADE_ROUND_MAX }), P, "decline", NOW)).toBe(true);
   });
 
   it("marks and rescinds only an accepted trade, each side marking once", () => {
