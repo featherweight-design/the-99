@@ -12,6 +12,7 @@
 // closed (design state 9), and this component unmounts on close, so both are
 // held by LastSlotsStrip and passed down.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import type { ComponentProps } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -261,7 +262,8 @@ export function TopOffList({
         setBulkError(r.message);
         onAnnounce(r.message);
       })
-      .catch(() => {
+      .catch((e) => {
+        captureClientError("topoff.bulk", e);
         if (!live) return;
         // A rejected call — a deck deleted while the list was open, or a transport failure —
         // is a refusal the player can read rather than an unhandled rejection that leaves two
@@ -573,7 +575,8 @@ export function TopOffList({
           : topOffCopy.announce.addedNoBuy(String(result.added), String(result.total), bodySize),
       );
       onClose();
-    } catch {
+    } catch (e) {
+      captureClientError("topoff.commit", e);
       // A call that never arrived and one that arrived and failed are the same
       // event to the player, and the deck is unchanged either way — including
       // for a reader, who has only the announcement to go on.

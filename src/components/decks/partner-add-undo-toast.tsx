@@ -6,6 +6,7 @@
 // lost on a reload or navigation: nothing is stored. Any other draft edit dismisses it, which is the caller's
 // `onDone`; this toast knows nothing of the draft, so a lasting undo can replace it.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState } from "react";
 import { undoPartnerAdd } from "../../lib/commander-change/actions";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
@@ -41,7 +42,8 @@ export function PartnerAddUndoToast({
     try {
       const result = await undoPartnerAdd(deckId, stays, partner, cut);
       setPhase(result.ok ? "undone" : "refused");
-    } catch {
+    } catch (e) {
+      captureClientError("partner.undo", e);
       // The answer was lost: say it was refused rather than claim the pair is back.
       setPhase("refused");
     }

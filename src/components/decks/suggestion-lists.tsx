@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState } from "react";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -51,7 +52,7 @@ export function SuggestionLists({
     let made = 0;
     let refusedWith: string | null = null;
     for (const line of open) {
-      const result = await actions.apply(line.id).catch((): { ok: false; message: string } => ({ ok: false, message: copy.applyRefused }));
+      const result = await actions.apply(line.id).catch((e): { ok: false; message: string } => { captureClientError("suggested.list-apply", e); return { ok: false, message: copy.applyRefused }; });
       if (!result.ok) {
         setRefused(result.message);
         refusedWith = result.message;

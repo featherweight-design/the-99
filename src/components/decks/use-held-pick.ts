@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 /** What a pick's write answers: the value the server stored, or a refusal. Null is a request that failed. */
@@ -86,7 +87,7 @@ export function useHeldPick<T>(
     const forDeck = deckId;
     setValue(next);
     setRefused(false);
-    const write = queue.current.then(() => send(forDeck, next).catch(() => null));
+    const write = queue.current.then(() => send(forDeck, next).catch((e) => { captureClientError("held.send", e); return null; }));
     queue.current = write;
     startTransition(async () => {
       const result = await write;

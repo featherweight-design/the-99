@@ -11,6 +11,7 @@
 // - K13 `UnlinkPrecon`: the open precon's `Unlink`; `UnlinkDialog` is its confirm, which v0's panel
 //   opens too (precons PR 6b).
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { startTransition, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { linkPrecon, unlinkPrecon } from "../../../app/decks/precon-link-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
@@ -41,7 +42,8 @@ function useLinkWrite(onDone: () => void) {
       try {
         await write();
         onDone();
-      } catch {
+      } catch (e) {
+        captureClientError("precons.link", e);
         setFailed(true);
       } finally {
         inFlight.current = false;

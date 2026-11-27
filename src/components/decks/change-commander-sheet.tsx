@@ -6,6 +6,7 @@
 // body at 700; a card opened from any name or plate STACKS on it through the shared card modal,
 // whose way back reads `← Change commander`.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { HoverPreviewProvider } from "./hover-preview";
 import { ModalChrome } from "./receipt-modal";
@@ -112,7 +113,7 @@ export function ChangeCommanderSheet({
     let live = true;
     readChangeCandidates(deckId)
       .then((data) => { if (live) setPhase(data ? { kind: "ready", data: withShownNames(data) } : { kind: "failed" }); })
-      .catch(() => { if (live) setPhase({ kind: "failed" }); });
+      .catch((e) => { captureClientError("commander.candidates", e); if (live) setPhase({ kind: "failed" }); });
     return () => { live = false; };
   }, [deckId, attempt]);
 
@@ -792,7 +793,8 @@ function Confirm({
       // Announced from the provider: this sheet is gone by the time a reader would hear it.
       door?.announce((nuPair ? copy.confirm.announcedPair : copy.confirm.announced)(nuShort));
       onDone();
-    } catch {
+    } catch (e) {
+      captureClientError("commander.change", e);
       setFailed(true);
     } finally {
       setWriting(false);

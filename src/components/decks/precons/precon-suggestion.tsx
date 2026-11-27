@@ -5,6 +5,7 @@
 // between the deck header and its tabs. A count of cards and never a verdict. `Link it` opens the
 // confirm (K3); ✕ hides it for this deck and precon, remembered on the account (deck messages A11, `user_prefs`).
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { useState } from "react";
 import { preconMonth, preconsCopy } from "../../../lib/copy/precons";
 import { dismissPreconSuggestions } from "../../../app/decks/precon-link-actions";
@@ -39,7 +40,7 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
   const dismiss = () => {
     const names = shown.map((m) => m.fileName);
     setGone((prev) => new Set([...prev, ...names]));
-    void dismissPreconSuggestions(deckId, names).catch(() => {});
+    void dismissPreconSuggestions(deckId, names).catch((e) => { captureClientError("precons.dismiss", e); });
   };
   const dialog = confirming && (
     <ConfirmLinkDialog deckId={deckId} deckName={deckName} match={confirming} onDismiss={() => setConfirming(null)} />

@@ -11,6 +11,7 @@
  * Take is PR 4b's: a press that swaps needs its receipt, its refusal and its undo, and a Take drawn
  * without them would be a control that does nothing. The row's grid keeps its first two columns.
  */
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { Fragment, useCallback, useEffect, useRef, useState, type Ref } from "react";
 
 import { printedFaceName } from "../../lib/collection/browse";
@@ -398,7 +399,7 @@ export function StandInsSheet({
     if (!deckId) return;
     loadStandInsAction(deckId, card.oracleId, full.current)
       .then((r) => setLoad(r ? { state: "ready", read: r } : { state: "failed" }))
-      .catch(() => setLoad({ state: "failed" }));
+      .catch((e) => { captureClientError("standins.load", e); setLoad({ state: "failed" }); });
   }, [deckId, card.oracleId]);
 
   // Expanded groups, by heading. Held here rather than in each group, because the stacked card's
@@ -424,7 +425,7 @@ export function StandInsSheet({
         setLoad({ state: "ready", read: r });
         open(true);
       })
-      .catch(() => {})
+      .catch((e) => { captureClientError("standins.load-all", e); })
       .finally(() => setFetchingAll(false));
   };
 
@@ -526,7 +527,8 @@ export function StandInsSheet({
       } else {
         setRefused({ addId: row.oracleId, reason: result.reason });
       }
-    } catch {
+    } catch (e) {
+      captureClientError("standins.take", e);
       setFailedTake(row.oracleId);
     } finally {
       inFlight.current = false;
@@ -548,7 +550,8 @@ export function StandInsSheet({
       } else {
         setUndoFailed(true);
       }
-    } catch {
+    } catch (e) {
+      captureClientError("standins.undo", e);
       setUndoFailed(true);
     } finally {
       setUndoing(false);

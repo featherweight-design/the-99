@@ -4,6 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useStoredView } from "../ui/use-stored-view";
 import { DECK_GROUPING_KEY, isDeckGrouping } from "../../lib/copy/deck-sort";
 import { landOnDeckTokens, SHOW_DECK_TOKENS } from "./deck-tokens-landing";
@@ -847,7 +848,7 @@ export function BuilderShell({
       if (!live) return;
       setNotices(n);
       setNoticesShown((shown) => (shown && n ? n : shown));
-    }).catch(() => {});
+    }).catch((e) => { captureClientError("builder.notices-peek", e); });
     return () => { live = false; };
   }, [deck.id, readingAt, listKey, initialNotices]);
   // Which deck's sheet is open NOW (null: none), readable from the reply's continuation:
@@ -875,7 +876,7 @@ export function BuilderShell({
       if (!n || deckNow.current !== id) return;
       setNotices(n);
       if (noticesOpenFor.current === id) setNoticesShown(n);
-    }).catch(() => {});
+    }).catch((e) => { captureClientError("builder.notices-arrival", e); });
   }, [deck.id, openNoticesOnArrival]);
   const openNoticesSheet = () => {
     const id = deck.id;
@@ -887,7 +888,7 @@ export function BuilderShell({
       // except for a legality set the server refused because the cards moved while it opened.
       setNotices(n);
       if (noticesOpenFor.current === id) setNoticesShown(n);
-    }).catch(() => {});
+    }).catch((e) => { captureClientError("builder.notices-open", e); });
   };
   const closeNoticesSheet = () => {
     noticesOpenFor.current = null;
@@ -1404,7 +1405,8 @@ export function BuilderShell({
                 builtFragment(remaining, bodySize),
               ),
         );
-      } catch {
+      } catch (e) {
+        captureClientError("builder.sweep", e);
         // No explicit rollback: the transition ends here and React drops the
         // predictions with it, putting the rows back from the server list.
         setAutoError(recommendationsCopy.auto.sweepFailed);
@@ -1429,7 +1431,8 @@ export function BuilderShell({
         setAnnouncement(
           recommendationsCopy.auto.keptAllAnnounce(String(kept), String(keptCount + kept)),
         );
-      } catch {
+      } catch (e) {
+        captureClientError("builder.keep-all", e);
         setAutoError(recommendationsCopy.auto.keepAllFailed);
       }
     });
@@ -1458,7 +1461,8 @@ export function BuilderShell({
         ),
       );
       setSweptRows(null);
-    } catch {
+    } catch (e) {
+      captureClientError("builder.restore", e);
       // Keep the receipt so Undo stays reachable — the rows are still gone, so
       // the sweep's "the deck is unchanged" would be the wrong action and false.
       setAutoError(recommendationsCopy.auto.restoreFailed);

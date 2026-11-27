@@ -5,6 +5,7 @@
 // once ticked; a sticky foot counts the boxes, their cards and tokens. Each box is added with its own id
 // (`addPrecons`), so a retry is answered from what committed, and a box that lands unticks with `✓ added just now`.
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { DeckBox, DeckBoxBand } from "../deck-box";
 import Link from "next/link";
 import { SteadyLabel } from "../../ui/steady-label";
@@ -53,14 +54,14 @@ function readAttempts(account: string | null | undefined): Attempts {
       if ((a.edition === "regular" || a.edition === "collector") && typeof a.id === "string") out[row] = { edition: a.edition, id: a.id };
     }
     return out;
-  } catch { return {}; }
+  } catch { /* silent-catch: expected: refusal. A browser that refuses storage leaves the picker with no kept attempts. */ return {}; }
 }
 function writeAttempts(account: string | null | undefined, attempts: Attempts) {
   if (!account) return;
   try {
     if (Object.keys(attempts).length === 0) window.sessionStorage.removeItem(attemptsKey(account));
     else window.sessionStorage.setItem(attemptsKey(account), JSON.stringify(attempts));
-  } catch { /* a convenience here, never a requirement */ }
+  } catch { /* silent-catch: expected: refusal. A browser that refuses storage keeps the attempts in memory alone. */ }
 }
 
 export function PreconPickView({ rows, entry, initial, hasCollection = false, added = {} }: {
@@ -99,7 +100,7 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
       try {
         if (new URL(url, location.href).pathname !== location.pathname) departed.current = true;
       } catch {
-        // A destination the URL parser refuses is not a route this page can reach.
+        // silent-catch: expected: refusal. A destination the URL parser refuses is not a route this page can reach.
       }
     };
     const onClick = (e: MouseEvent) => {
@@ -195,7 +196,8 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
     let outcomes: PickOutcome[];
     try {
       outcomes = await addPrecons(requests);
-    } catch {
+    } catch (e) {
+      captureClientError("precons.add", e);
       // A picker the reader has left neither redraws nor touches the kept attempts: the next one restores them itself.
       if (!mounted.current) return;
       // It may have committed with its answer lost: the ticks and ids stay, so Try again cannot add a box twice.

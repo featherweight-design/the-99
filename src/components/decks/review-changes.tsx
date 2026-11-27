@@ -13,6 +13,7 @@
 // and already opens the card modal from the name. A fork would have had to be
 // taught all three, and would have got one of them wrong.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import type { PreferredPrinting } from "../../lib/collection/browse";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import Link from "next/link";
@@ -753,7 +754,8 @@ export function ReviewChanges({
           // `relock` (L1): a card that left locked comes back locked. The server wakes the dormant
           // lock only if there is one, so a card that was never locked returns as it left.
           result = await addCardToDeck(deckId, card.oracleId, { relock: true });
-        } catch {
+        } catch (e) {
+          captureClientError("review.restore", e);
           // The latch is NOT opened. A throw can be an add that landed and lost
           // its reply, so the next write would be computing its receipt — and
           // the commit sheet its figures — off a list that is already wrong. The

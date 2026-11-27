@@ -20,6 +20,9 @@ const FRAME = /^\s+at\s.*:\d+:\d+\)?$|^[\w$.<>/-]*@\S+:\d+:\d+$/;
  */
 export function captureClientError(tag: string, error: unknown): void {
   if (SEEN_TAGS.has(tag)) return;
+  // Expected outcomes stay silent without each site checking: no connection, or a request the page itself aborted.
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  if ((error as { name?: unknown } | null)?.name === "AbortError") return;
   SEEN_TAGS.add(tag);
   const e = error as { name?: unknown; stack?: unknown } | null;
   const reported = new Error(tag);

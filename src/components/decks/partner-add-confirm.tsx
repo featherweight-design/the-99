@@ -3,6 +3,7 @@
 // leaves chosen on Suggested changes' Pick line. The write is `changeCommander` with the cut; the Undo that
 // follows is the provider's toast.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useMemo, useState } from "react";
 import { BuyTag } from "./buy-tag";
 import { DeckSearchField } from "./deck-filter-column";
@@ -71,7 +72,7 @@ export function PartnerAddConfirm({
     let live = true;
     readOpenedCards(deckId, partner.oracleId)
       .then((r) => { if (live) setOpened(r?.cards ?? []); })
-      .catch(() => { if (live) setOpened([]); });
+      .catch((e) => { captureClientError("partner.opened", e); if (live) setOpened([]); });
     return () => { live = false; };
   }, [deckId, partner.oracleId, option.opens.length]);
 
@@ -114,7 +115,8 @@ export function PartnerAddConfirm({
         names: { stays: commanderShort, partner: partnerShort, cut: picked && needsCut ? shortName(picked.name) : null },
       });
       onDone();
-    } catch {
+    } catch (e) {
+      captureClientError("partner.add", e);
       setFailed(true);
     } finally {
       setWriting(false);

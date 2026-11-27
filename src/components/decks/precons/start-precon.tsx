@@ -5,6 +5,7 @@
 // modal at 900 and a bottom sheet at 390: the commander, the name (prefilled, focused, selected),
 // three facts, and any card the start keeps that is not legal in Commander. The deck starts committed (Hugh, 2026-10-14).
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { useAuth } from "@clerk/nextjs";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createDeckFromPrecon, startPreconOwned } from "../../../app/decks/precon-actions";
@@ -57,14 +58,14 @@ export type StartPreconProps = {
 const attemptKey = (account: string, fileName: string) => `the99:precon-add-attempt:${account}:${fileName}`;
 function readAttempt(account: string | null | undefined, fileName: string): string | null {
   if (!account) return null;
-  try { return window.sessionStorage.getItem(attemptKey(account, fileName)); } catch { return null; }
+  try { return window.sessionStorage.getItem(attemptKey(account, fileName)); } catch { /* silent-catch: expected: refusal. A browser that refuses storage leaves the id in memory alone. */ return null; }
 }
 function writeAttempt(account: string | null | undefined, fileName: string, id: string | null) {
   if (!account) return;
   try {
     if (id === null) window.sessionStorage.removeItem(attemptKey(account, fileName));
     else window.sessionStorage.setItem(attemptKey(account, fileName), id);
-  } catch { /* storage is a convenience here, never a requirement */ }
+  } catch { /* silent-catch: expected: refusal. A browser that refuses storage keeps the id in memory alone. */ }
 }
 
 /**
@@ -233,6 +234,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.
         rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "precon" }));
+        captureClientError("precons.start", err);
         inFlight.current = false;
         setPending(false);
         setFailed("start");
