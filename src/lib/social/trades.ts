@@ -6,7 +6,8 @@
  * Every write follows `spare-requests.ts`:
  * - Outside the transaction: the friend (`resolveFriend`, or the trade's own row joined to the live friendship), and
  *   every card on the offer checked spare AS ITS RECEIVER SEES IT (`loadFriendSpares(receiver, ids)`, filtered to the
- *   holder). That read runs in its own snapshots, as an ask's does.
+ *   holder). That read runs in its own snapshots, as an ask's does, so a card made not-spare between the check and the
+ *   statement still lands: no write path locks a spare, and an accepted trade with such a card is ended by Rescind.
  * - Then ONE transaction: the pair's advisory lock (`tradeLockQuery`), so one pair's trade writes are decided one at a
  *   time; both friendship rows FOR SHARE in the purge's order (`lockFriendshipQuery`); the cap, for a propose; ONE
  *   conditional statement naming the viewer's party and role, the live friendship, the status, the unexpired floor
@@ -226,6 +227,17 @@ export function proposeInsertQuery(
  * unanswered offer per friend (Q10, `held`); `fromRequestId` names the viewer's own Yes to that friend's ask, whose card
  * is put on the viewer's side, and a second trade from it is `used`.
  */
+/** The constraint a Postgres error names, wherever the driver put it (Drizzle wraps it in `cause`). */
+function constraintOf(error: unknown): string | null {
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && typeof current === "object" && current !== null; depth += 1) {
+    const name = (current as { constraint?: unknown }).constraint;
+    if (typeof name === "string") return name;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return null;
+}
+
 export async function proposeTrade(
   viewerId: string, friendPublicId: unknown, rawSides: unknown, fromRequestId: unknown = null, now = new Date(),
 ): Promise<ProposeOutcome> {
@@ -233,8 +245,13 @@ export async function proposeTrade(
   if (!sides) return { ok: false, reason: "gone" };
   if (fromRequestId != null && !isUuid(fromRequestId)) return { ok: false, reason: "gone" };
   if (!isUuid(friendPublicId)) return { ok: false, reason: "not-friend" };
-  const friendId = await resolveFriend(viewerId, friendPublicId);
+  const [friendId, ownRows] = await Promise.all([
+    resolveFriend(viewerId, friendPublicId),
+    db.execute<{ public_id: string }>(ownPublicIdQuery(viewerId)),
+  ]);
   if (!friendId) return { ok: false, reason: "not-friend" };
+  const [own] = ownRows.rows;
+  if (!own) return { ok: false, reason: "not-friend" };
 
   let yours = sides.yours;
   if (fromRequestId != null) {
@@ -245,8 +262,6 @@ export async function proposeTrade(
       yours = [...yours, req.oracle_id];
     }
   }
-  const [own] = (await db.execute<{ public_id: string }>(ownPublicIdQuery(viewerId))).rows;
-  if (!own) return { ok: false, reason: "not-friend" };
   const offer = { theirs: sides.theirs, yours };
   if (await anyGone({ userId: viewerId, publicId: own.public_id }, { userId: friendId, publicId: friendPublicId }, offer)) {
     return { ok: false, reason: "not-spare" };
@@ -268,7 +283,7 @@ export async function proposeTrade(
     });
   } catch (e) {
     // `trades_from_request_once`: one trade per spare request, however two presses race.
-    if (isUniqueViolation(e)) return { ok: false, reason: "used" };
+    if (isUniqueViolation(e) && constraintOf(e) === "trades_from_request_once") return { ok: false, reason: "used" };
     throw e;
   }
 }
@@ -343,8 +358,12 @@ export async function reviseTrade(viewerId: string, tradeId: unknown, seenRound:
   if (!head || head.round !== seenRound || head.offeredByUserId !== viewerId) return { ok: false, reason: "gone" };
   const p = partiesOf(head, viewerId);
   // Only while Needs a look: the offer as it stands has a card that is no longer spare.
-  if (!(await anyGone(p.viewer, p.friend, sidesOf(p.role, await loadRoundCards(tradeId, seenRound))))) return { ok: false, reason: "gone" };
-  if (await anyGone(p.viewer, p.friend, sides)) return { ok: false, reason: "not-spare" };
+  const [oldGone, newGone] = await Promise.all([
+    loadRoundCards(tradeId, seenRound).then((cards) => anyGone(p.viewer, p.friend, sidesOf(p.role, cards))),
+    anyGone(p.viewer, p.friend, sides),
+  ]);
+  if (!oldGone) return { ok: false, reason: "gone" };
+  if (newGone) return { ok: false, reason: "not-spare" };
   return inTradeTransaction(viewerId, p.friend.userId, async (tx): Promise<TradeOutcome> => {
     if (!landed(await tx.execute(reviseRoundQuery(viewerId, tradeId, seenRound, now)))) return { ok: false, reason: "gone" };
     await tx.execute(roundCardsDeleteQuery(tradeId, seenRound));

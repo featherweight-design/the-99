@@ -238,8 +238,8 @@ describe("proposeTrade", () => {
 
   it("from a request: the request's card goes on the viewer's side, and a second trade from it is used", async () => {
     vi.mocked(db.execute)
-      .mockResolvedValueOnce({ rows: [{ oracle_id: C }] } as never)
-      .mockResolvedValueOnce({ rows: [{ public_id: PV }] } as never);
+      .mockResolvedValueOnce({ rows: [{ public_id: PV }] } as never)
+      .mockResolvedValueOnce({ rows: [{ oracle_id: C }] } as never);
     const tx = respond();
     await proposeTrade("v", PF, SIDES, REQ, NOW);
     const insert = tx.execute.mock.calls.map((c) => render((c as unknown as [SQL])[0])).find((r) => r.q.startsWith("with t as"))!;
@@ -247,18 +247,32 @@ describe("proposeTrade", () => {
     expect(insert.params).toEqual(expect.arrayContaining(["proposer", C]));
 
     vi.mocked(db.execute)
-      .mockResolvedValueOnce({ rows: [{ oracle_id: C }] } as never)
-      .mockResolvedValueOnce({ rows: [{ public_id: PV }] } as never);
+      .mockResolvedValueOnce({ rows: [{ public_id: PV }] } as never)
+      .mockResolvedValueOnce({ rows: [{ oracle_id: C }] } as never);
     txAnswering((q) => {
       if (q.includes("sfl")) return LINKS;
-      if (q.startsWith("with t as")) throw Object.assign(new Error("dup"), { code: "23505" });
+      if (q.startsWith("with t as")) throw Object.assign(new Error("dup"), { cause: { code: "23505", constraint: "trades_from_request_once" } });
       return { rows: [] };
     });
     expect(await proposeTrade("v", PF, SIDES, REQ, NOW)).toEqual({ ok: false, reason: "used" });
   });
 
+  it("a unique violation on any other constraint is not read as used", async () => {
+    vi.mocked(db.execute)
+      .mockResolvedValueOnce({ rows: [{ public_id: PV }] } as never)
+      .mockResolvedValueOnce({ rows: [{ oracle_id: C }] } as never);
+    txAnswering((q) => {
+      if (q.includes("sfl")) return LINKS;
+      if (q.startsWith("with t as")) throw Object.assign(new Error("dup"), { code: "23505", constraint: "some_other_key" });
+      return { rows: [] };
+    });
+    await expect(proposeTrade("v", PF, SIDES, REQ, NOW)).rejects.toThrow("dup");
+  });
+
   it("a request that is not the viewer's Yes to this friend refuses", async () => {
-    vi.mocked(db.execute).mockResolvedValueOnce({ rows: [] } as never);
+    vi.mocked(db.execute)
+      .mockResolvedValueOnce({ rows: [{ public_id: PV }] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never);
     expect(await proposeTrade("v", PF, SIDES, REQ, NOW)).toEqual({ ok: false, reason: "gone" });
   });
 
