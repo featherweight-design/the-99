@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { landingCopy } from "../../lib/copy/landing";
 import type { LandingClaims } from "../../lib/public/landing-claims";
 import { CountUp } from "../ui/count-up";
@@ -100,7 +101,8 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
   const three = claims.upgrade === null && welcome !== null && coversEveryToolThreeTimes(welcome);
   const twice = claims.upgrade !== null && coversEveryToolTwice(welcome, claims.upgrade);
   const covers = three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : twice ? (claims.suggestedTwo ? c.twiceV2 : c.twice) : null;
-  const sentence = [covers, buying ? (covers ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
+  // Each copy line is its own text node (drawn below in its own span) so the copy editor can match it to its row; joined into one string it matches none.
+  const sentence = [covers, buying ? (covers ? c.keepGoing : c.moreCredits) : null].filter((line): line is NonNullable<typeof line> => Boolean(line));
   return (
     <div
       data-testid="landing-value"
@@ -125,9 +127,14 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
           <small className="mt-[2px] block text-[12.5px] font-normal text-[color:var(--fg-muted)]">{c.daily.note}</small>
         </span>
       </div>
-      {(sentence !== "" || buying) && (
+      {(sentence.length > 0 || buying) && (
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">
-          {sentence}
+          {sentence.map((line, i) => (
+            <Fragment key={i}>
+              {i > 0 && " "}
+              <span>{line}</span>
+            </Fragment>
+          ))}
           {buying && <> <CostSheet buying={buying} /></>}
         </p>
       )}

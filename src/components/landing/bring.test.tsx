@@ -4,6 +4,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { collectionSources, type GuideText } from "../../lib/copy/collection-sources";
 import { landingCopy } from "../../lib/copy/landing";
+import { indexRows } from "../../lib/copy-editor/match";
+import type { EditorRow } from "../../lib/copy-editor/rows";
+import { scanPage } from "../copy-editor/scan";
 import { Bring } from "./bring";
 
 const section = () => screen.getByTestId("landing-bring");
@@ -12,6 +15,28 @@ const openCount = () => screen.getAllByRole("button").filter((b) => b.getAttribu
 const text = (parts: readonly GuideText[]) => parts.map((p) => (typeof p === "string" ? p : p.b)).join("");
 
 describe("Bring", () => {
+  it("draws the requirement and the both-columns line of a guide as their own text nodes, so the copy editor finds each row", () => {
+    render(<Bring />);
+    const moxfield = collectionSources.apps.find((a) => a.id === "moxfield")!;
+    press(moxfield.name);
+    const panel = document.getElementById(screen.getByRole("button", { name: new RegExp(`^${moxfield.name}`) }).getAttribute("aria-controls") ?? "") as HTMLElement;
+    const row = (key: string, text: string): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "" });
+    const index = indexRows([row("cs#requirement", collectionSources.requirement), row("cs#bothColumns", moxfield.bothColumns!)]);
+    expect(scanPage(index, panel).map((e) => e.matches[0].row.key)).toEqual(["cs#requirement", "cs#bothColumns"]);
+    expect(panel.textContent).toContain(`${collectionSources.requirement} ${moxfield.bothColumns}`);
+  });
+
+  it("draws a guide's own foot line as its own text node after the requirement", () => {
+    render(<Bring />);
+    const manabox = collectionSources.apps.find((a) => a.id === "manabox")!;
+    press(manabox.name);
+    const panel = document.getElementById(screen.getByRole("button", { name: new RegExp(`^${manabox.name}`) }).getAttribute("aria-controls") ?? "") as HTMLElement;
+    const row = (key: string, text: string): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "" });
+    const index = indexRows([row("cs#requirement", collectionSources.requirement), row("cs#foot", manabox.foot!)]);
+    expect(scanPage(index, panel).map((e) => e.matches[0].row.key)).toEqual(["cs#requirement", "cs#foot"]);
+    expect(panel.textContent).toContain(`${collectionSources.requirement} ${manabox.foot}`);
+  });
+
   it("leads with the first-timer path, then a row per source", () => {
     render(<Bring />);
     const html = section().textContent ?? "";

@@ -2,12 +2,26 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { landingCopy } from "../../lib/copy/landing";
 import type { LandingClaims } from "../../lib/public/landing-claims";
+import { indexRows } from "../../lib/copy-editor/match";
+import type { EditorRow } from "../../lib/copy-editor/rows";
+import { scanPage } from "../copy-editor/scan";
 import { Credits, coversEveryToolThreeTimes, coversEveryToolTwice, listedTools } from "./credits";
 
 const ON: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, upgrade: null, publicPages: true };
 const c = landingCopy.credits;
 
+const textRow = (key: string, text: string): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "" });
+
 describe("Credits", () => {
+  it("draws each line of the value sentence as its own text node, so the copy editor finds both rows", () => {
+    render(<Credits claims={ON} />);
+    const index = indexRows([textRow("landing#enoughV2", c.enoughV2), textRow("landing#keepGoing", c.keepGoing)]);
+    const found = scanPage(index, screen.getByTestId("landing-value")).map((e) => e.matches[0].row.key);
+    expect(found).toEqual(["landing#enoughV2", "landing#keepGoing"]);
+    const p = screen.getByText(c.keepGoing).parentElement;
+    expect(p).toHaveTextContent(`${c.enoughV2} ${c.keepGoing}`);
+  });
+
   it("leads with the welcome credits, then the daily credit, then the columns", () => {
     render(<Credits claims={ON} />);
     const value = screen.getByTestId("landing-value");
