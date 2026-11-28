@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop W2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width:1300px;height:900px;position:relative;overflow:hidden;box-sizing:border-box;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8">
+<img src="art/ce-d-off.webp" alt="Help me choose on desktop, copy editor off" style="position:absolute;left:0;top:0;width:1300px;height:900px;display:block"><div style="position:absolute;left:1146px;top:828px;width:138px;height:54px;background:#120E0B"></div><button type="button" aria-label="Edit copy, 3 edits waiting" style="all:unset;box-sizing:border-box;position:absolute;right:24px;bottom:24px;height:40px;display:flex;align-items:center;gap:8px;padding:0 8px 0 16px;border:1px solid #3A3229;border-radius:999px;background:#211D18;box-shadow:0 18px 50px rgba(0,0,0,.6);font-size:13px;color:#EDE6D8;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20z"/><path d="M13.5 7.5l3 3"/></svg><span>Edit copy</span><span aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:999px;background:#DEAA29;flex:none"></span><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(207,135,69,.16);color:#CF8745;font-size:12px;font-weight:500;white-space:nowrap">3 edits waiting</span></button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

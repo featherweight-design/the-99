@@ -1,6 +1,15 @@
 // On-page copy editor R1: the UI's own strings, verbatim from the boards. For src/lib/copy/.
 export const copyEditorCopy = {
   door: "Edit copy",
+  // ADDENDUM-done-unsent.md (D2): the door's count while unsent edits wait in this browser, and its accessible name.
+  doorWaiting: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} waiting`,
+  doorLabel: (n: number) => (n === 0 ? "Edit copy" : `Edit copy, ${n} ${n === 1 ? "edit" : "edits"} waiting`),
+  // ADDENDUM-done-unsent.md (D1, D3): the notice after Done with unsent edits.
+  waiting: {
+    title: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} waiting, not sent`,
+    body: (n: number) => (n === 1 ? "It stays in this browser until you open a pull request or clear it." : "They stay in this browser until you open a pull request or clear them."),
+    review: "Review", send: "Open pull request", close: "Close",
+  },
   bar: { title: "Editing copy", env: "staging", hintDesktop: "Click any text", hintPhone: "Tap any text", done: "Done",
     edits: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} ›`, prOpen: (n: number) => `PR #${n} open` },
   tag: { desktop: "Click to edit", phone: "Tap again to edit" },
