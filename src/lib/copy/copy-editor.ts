@@ -3,6 +3,9 @@
 
 export const copyEditorCopy = {
   door: "Edit copy",
+  /** The door's count while unsent edits wait in this browser, and its accessible name. */
+  doorWaiting: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} waiting`,
+  doorLabel: (n: number) => (n === 0 ? "Edit copy" : `Edit copy, ${n} ${n === 1 ? "edit" : "edits"} waiting`),
   bar: {
     title: "Editing copy",
     env: "staging",
