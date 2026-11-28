@@ -44,6 +44,9 @@ async function loadIndex(base: string): Promise<ScanIndex> {
 const clock = () => performance.now();
 
 /** A spike row to the lab's own route; a row that does not save is dropped, never retried. */
+// Closing the holder mid-read throws this on purpose: leaving the page is not a failure to report.
+const leftThePage = (e: unknown) => e instanceof Error && e.message === "left the page";
+
 function postSpike(row: SpikeRow): Promise<boolean> {
   return fetch("/api/scan-lab/spike", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(row), keepalive: true,
@@ -484,7 +487,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
         if (sm && raw && running.current) {
           const crop = read.kind === "card" ? read.crop : null;
           const f = await sessions.current.use(() => compareFrame(sm.wasm, sm.gpu, raw, crop)).catch((e) => {
-            captureClientError("scanlab.compare", e);
+            if (!leftThePage(e)) captureClientError("scanlab.compare", e);
             return null;
           });
           if (f) {
@@ -496,10 +499,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
       };
       // Every iteration's rejection lands here, the timer's included: a frame that fails stops the
       // scan and the camera, and leaves no reading a tap could save.
-      const tick = () => { loop().catch((e) => { captureClientError("scanlab.loop", e); fail(e); }); };
+      const tick = () => { loop().catch((e) => { if (!leftThePage(e)) captureClientError("scanlab.loop", e); fail(e); }); };
       tick();
     } catch (e) {
-      if (!(e instanceof Error && e.message === "left the page")) captureClientError("scanlab.start", e);
+      if (!leftThePage(e)) captureClientError("scanlab.start", e);
       fail(e);
     }
   }, [indexBase, serverModel, finishLog, toggleServer, compare, flushSpike, startMode, postStartup, answered]);
