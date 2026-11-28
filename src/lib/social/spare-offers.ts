@@ -289,9 +289,12 @@ type OfferRow = {
   commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null;
 };
 
-/** The offers waiting on the reader, as Waiting on you draws them. One whose card left the reader's wishlist stays out: nothing to want. */
-export async function loadIncomingOffers(wanterId: string, now = new Date()): Promise<IncomingOffer[]> {
-  const rows = (await db.execute<OfferRow>(incomingOffersQuery(wanterId, now))).rows as OfferRow[];
+/**
+ * The offers waiting on the reader, as Waiting on you draws them. One whose card left the reader's wishlist stays out: nothing to want.
+ * `q` is the caller's executor, as `loadIncomingAsks` takes it, so Home's lead reads both on the one connection it holds.
+ */
+export async function loadIncomingOffers(wanterId: string, now = new Date(), q: Pick<typeof db, "execute"> = db): Promise<IncomingOffer[]> {
+  const rows = (await q.execute<OfferRow>(incomingOffersQuery(wanterId, now))).rows as OfferRow[];
   return rows.flatMap((r) => {
     if (r.want === null) return [];
     const createdAt = new Date(r.created_at);

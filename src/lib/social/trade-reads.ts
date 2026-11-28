@@ -19,7 +19,7 @@ import { loadPrices, type PriceRead } from "../decks/price-query";
 import { priceOf, priceState, provenanceForm, type ProvenanceForm } from "../cards/price-fact";
 import { named } from "../person-name/mint";
 import type { Store } from "../stores/rows";
-import { resolveFriend } from "./access";
+import { loadFriend, resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import { isUuid } from "./rules";
 import { faceOf, type OtherSide } from "./spare-requests";
@@ -389,4 +389,41 @@ export async function loadOwnSparesFor(viewerId: string, friendPublicId: unknown
   const [own] = (await db.execute<{ public_id: string }>(ownPublicIdQuery(viewerId))).rows;
   if (!own) return [];
   return (await loadFriendSpareList(friendId, own.public_id, true))?.lines ?? [];
+}
+
+/** What the trade sheet needs for one friend away from their Spares tab: the reads that tab makes for it. */
+export type TradeSheetData = {
+  friend: OtherSide;
+  held: boolean;
+  theirSpares: FriendSpareLine[];
+  yours: FriendSpareLine[];
+  offered: Record<string, OfferedTo[]>;
+  prices: TradePrices;
+};
+
+/**
+ * The trade sheet over Friends or Home (Make it a trade A3, a Trades row): the friend, both sides' spares, the cap (Q10),
+ * the reader's spares already offered (Q9) and every spare's price at the reader's store. Null for anyone not a friend.
+ */
+export async function loadTradeSheet(viewerId: string, friendPublicId: unknown, store: Store, now = new Date()): Promise<TradeSheetData | null> {
+  if (!isUuid(friendPublicId)) return null;
+  // Any signed-in caller can name any public id: the friendship is read first, and nothing else is read without it.
+  // Each read below also joins the grant on the viewer itself; this keeps a stranger's id from costing more than one read.
+  const friend = await loadFriend(viewerId, friendPublicId);
+  if (!friend) return null;
+  const [theirs, yours, withThem] = await Promise.all([
+    loadFriendSpareList(viewerId, friendPublicId, true),
+    loadOwnSparesFor(viewerId, friendPublicId),
+    loadTradesWith(viewerId, friendPublicId, now),
+  ]);
+  const theirSpares = theirs?.lines ?? [];
+  const ownIds = yours.map((l) => l.oracleId);
+  const [offered, prices] = await Promise.all([
+    loadOfferedTo(viewerId, ownIds, now),
+    tradePrices([...new Set([...theirSpares.map((l) => l.oracleId), ...ownIds])], store, now),
+  ]);
+  return {
+    friend: { publicId: friend.publicId, displayName: friend.displayName, commander: friend.commander },
+    held: withThem.held, theirSpares, yours, offered, prices,
+  };
 }

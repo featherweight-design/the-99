@@ -37,6 +37,7 @@ import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { LinkOutLabel } from "../ui/link-out-icon";
 import { KICKER_AGE } from "./kicker-age";
 import { DismissButton } from "./dismiss";
+import { FeedAskBack } from "../social/trade-sheet-host";
 import { AnswerPresses, receiptText, useSpareAnswer, type Answer } from "../social/spare-answer";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
 import { useAnswerSheet } from "../home/answer-sheet";
@@ -506,6 +507,12 @@ export function FeedItemRow({ item, now, face, onDismiss, onComboOpen, onComboCl
       {ask && !receipt && (
         <div data-feed-actions data-row-ask className="col-start-2 mt-[7px] flex min-w-0 items-center md:max-[1179px]:col-start-2">
           <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null} onAnswer={(a) => void press(a)} size="row" offer={offer} />
+        </div>
+      )}
+      {/* Make it a trade (A1): a Yes to an ask, not to an offer, on the receipt's action line. */}
+      {ask && answered === "yes" && !offer && (
+        <div data-feed-actions className="col-start-2 mt-[7px] flex min-w-0 items-center md:max-[1179px]:col-start-2">
+          <FeedAskBack item={item} answered={answered} size="row" />
         </div>
       )}
       {ask && dismiss && <span data-row-x className="absolute right-[4px] top-[4px] md:right-[8px] md:top-[8px]"><DismissButton title={text.title} onPress={dismiss} /></span>}

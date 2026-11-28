@@ -32,6 +32,7 @@ import { KICKER_AGE } from "../feed/kicker-age";
 import { BAND, PANEL } from "./section-panel";
 import { BandText } from "../decks/deck-box";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
+import { AskBackPress } from "./trade-sheet-host";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
 const w = socialCopy.waiting;
@@ -310,7 +311,7 @@ function FriendReceiptRow({ row, accepted }: { row: FriendRequestRow; accepted: 
   );
 }
 
-/** The answered ask, for the visit, on the receipt's success wash (`.fi.rc`): "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
+/** The answered ask, for the visit, on the receipt's success wash (`.fi.rc`): "You're giving Lathliss to Peter" or "You're keeping Lathliss". */
 function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answer; index: number } }) {
   const { ask } = receipt.row;
   const yes = receipt.answer === "yes";
@@ -334,6 +335,13 @@ function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answ
         <p className={TITLE}><PersonText text={text.title} /></p>
         <p className={DETAIL}><PersonText text={text.detail} /></p>
       </div>
+      {/* Make it a trade (A1): a Yes to an ask, not to an offer (an offer is already a give), on the row's end. */}
+      {yes && receipt.row.offer === undefined ? (
+        <div className={ACTIONS}>
+          <AskBackPress friendPublicId={ask.asker.publicId} friend={ask.asker.displayName} requestId={ask.id} size="row"
+            card={{ oracleId: ask.oracleId, name: ask.card.name, imageUri: ask.card.imageUri }} />
+        </div>
+      ) : null}
     </li>
   );
 }

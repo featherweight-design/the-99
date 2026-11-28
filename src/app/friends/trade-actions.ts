@@ -18,7 +18,7 @@ import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
 import { enforceHit } from "../../lib/rate/observe";
 import { isUuid } from "../../lib/social/rules";
-import { loadTrade, type TradeView } from "../../lib/social/trade-reads";
+import { loadTrade, loadTradeSheet, type TradeSheetData, type TradeView } from "../../lib/social/trade-reads";
 import { cleanSides, isRound, isSeenAt } from "../../lib/social/trade-rules";
 import {
   answerTrade, clearTrade, counterTrade, markTraded, proposeTrade, rescindTrade, reviseTrade, withdrawTrade,
@@ -102,4 +102,12 @@ export async function openTradeAction(tradeId: unknown): Promise<TradeView | nul
   if (!isUuid(tradeId)) return null;
   const store = await requestFlags(userId).then((env) => readerStoreForPage(userId, env));
   return loadTrade(userId, tradeId, store);
+}
+
+/** The trade sheet away from the friend's Spares tab (Friends, Home): Make it a trade, a Trades row. Null for a non-friend. */
+export async function openTradeSheetAction(friendPublicId: unknown): Promise<TradeSheetData | null> {
+  const userId = await requireUserId();
+  if (!isUuid(friendPublicId)) return null;
+  const store = await requestFlags(userId).then((env) => readerStoreForPage(userId, env));
+  return loadTradeSheet(userId, friendPublicId, store);
 }

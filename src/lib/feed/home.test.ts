@@ -409,6 +409,8 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
     const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask], cards: [{ oracle_id: "c1", name: "Lathliss", image: null, art: null }] }));
     expect(marks.asks).toHaveBeenCalledWith("u1", SPARE, NOW, expect.anything());
     expect(marks.offers).toHaveBeenCalledTimes(1);
+    // On the feed's own executor, as the asks are: the third argument is the `q` the asks were handed.
+    expect(marks.offers.mock.calls[0][2]).toBe(marks.asks.mock.calls[0][3]);
     expect(feed?.chosen && feed.lead?.ask?.id).toBe("req-1");
     marks.asks.mockClear();
     marks.offers.mockClear();

@@ -1,0 +1,140 @@
+{
+  "feature": "Friend trades PR 7: the Trades lists, Make it a trade, the sheet over Friends and Home",
+  "note": "Needs a SCRATCH branch off local-dev seeded by scripts/seed-trade-sheet-fixture.mts for the +clerk_test reader (it seeds six open asks). Each width answers three asks Yes, so reseed before a second run.",
+  "out": "contact-sheets/friend-trades-pr7",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "box-trades",
+      "label": "/friends: the Requests box Trades tab (rows, the more line, Request history)",
+      "view": "src/components/social/requests-box.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=\"requests-box\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"requests-tab-trades\"]"
+        },
+        {
+          "wait": "[data-testid=\"requests-trades\"] [data-testid=\"trade-row\"]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "box-trade-sheet",
+      "label": "/friends: a Trades row opens its sheet in place",
+      "view": "src/components/social/requests-box.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=\"requests-box\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"requests-tab-trades\"]"
+        },
+        {
+          "click": "[data-testid=\"requests-trades\"] [data-testid=\"trade-row-open\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "history-trades",
+      "label": "/friends/requests: Request history's Trades segment",
+      "view": "src/components/social/request-history.tsx",
+      "steps": [
+        {
+          "goto": "/friends/requests",
+          "wait": "[data-testid=\"rh-tab-trades\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"rh-tab-trades\"]"
+        },
+        {
+          "wait": "[data-testid=\"rh-trades\"] [data-testid=\"trade-row\"]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "receipt-ask-back",
+      "label": "/friends: Yes to an ask draws the receipt with Make it a trade (A1). WRITES one Yes",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=\"waiting-row\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"waiting-row\"] [data-testid=\"spare-yes\"]"
+        },
+        {
+          "wait": "[data-testid=\"waiting-receipt\"] [data-testid=\"ask-back\"]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "receipt-sheet",
+      "label": "/friends: Make it a trade opens the sheet with the Yes card on your side (A3). WRITES one Yes",
+      "view": "src/components/social/trade-sheet-host.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=\"waiting-row\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"waiting-row\"] [data-testid=\"spare-yes\"]"
+        },
+        {
+          "click": "[data-testid=\"waiting-receipt\"] [data-testid=\"ask-back\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "home-lead",
+      "label": "Home: Yes on the lead turns its action line into Make it a trade (A2). WRITES one Yes",
+      "view": "src/components/home/lead-story.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-testid=\"spare-yes\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"spare-yes\"]"
+        },
+        {
+          "wait": "[data-testid=\"ask-back\"]",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

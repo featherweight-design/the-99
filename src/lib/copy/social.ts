@@ -511,7 +511,7 @@ export const spareCopy = {
     noAria: (friend: string | ThirdPartyName, card: string) => personText`No, don’t spare ${card} for ${friend}`,
     /** The receipt's kicker, drawn uppercase by CSS. */
     receiptKind: { yes: "Spare request · accepted", no: "Spare request · declined" },
-    sparing: (card: string, friend: string | ThirdPartyName) => personText`You’re sparing ${card} for ${friend}`,
+    sparing: (card: string, friend: string | ThirdPartyName) => personText`You’re giving ${card} to ${friend}`,
     sparingDetail: (friend: string | ThirdPartyName, card: string) =>
       personText`${friend}’s been told. Hand ${card} over when you meet; your collection stays as it is until you change it.`,
     keeping: (card: string) => `You’re keeping ${card}`,
