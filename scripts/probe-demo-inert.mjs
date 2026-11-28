@@ -43,6 +43,8 @@ const ALLOWED_PATH = /^\/(?:commander\/[^/]+$|_next\/|__nextjs_font\/|favicon|ma
 /** Cookies and storage keys that belong to the host app's sign-in provider and the edge, not to the demo: they move on any page load. */
 const HOST_STATE = /^(?:__clerk|__client_uat|__session|__cf_bm|_cfuvid|__refresh|clerk)/i;
 const STEPS = 9;
+/** The card window's dialog. The demo itself is a dialog too (`demo-dialog`), so `getByRole("dialog")` matches two and a press waits on, or counts, the wrong one. */
+const CARD_DIALOG = "[role='dialog']:not([data-testid='demo-dialog'])";
 /** Whether the committed card details chunks hold data (5l-c/d): each `card-details/<chunk>.generated.ts` is `null` until `pnpm demo:export` writes it, and the played chunk's key decides whether the modal phase is owed. The step data file no longer carries them. */
 const CARD_DETAILS_FILE = readFileSync(new URL("../src/lib/demo/card-details/played.generated.ts", import.meta.url), "utf8");
 const HAS_CARD_DETAILS = /^export const cardDetailsJson: unknown = \{/m.test(CARD_DETAILS_FILE) && /^ "cardDetails":\s*\{/m.test(CARD_DETAILS_FILE);
@@ -153,8 +155,8 @@ for (const { label, viewport } of WIDTHS) {
     const foreignBefore = foreignWrites.length;
     const storageStart = await readStorage();
     const cookiesStart = await readCookies();
-    const dialog = page.getByRole("dialog");
-    const backdrop = page.locator("[role='presentation']:has([role='dialog'])");
+    const dialog = page.locator(CARD_DIALOG);
+    const backdrop = page.locator(`[role='presentation']:has(${CARD_DIALOG})`);
     const open = async () => {
       current = `modal ${where}: open`;
       await opener.click({ timeout: 3000 });
@@ -272,7 +274,7 @@ for (const { label, viewport } of WIDTHS) {
     const foreignBefore = foreignWrites.length;
     const storageStart = await readStorage();
     const cookiesStart = await readCookies();
-    const dialog = page.getByRole("dialog");
+    const dialog = page.locator(CARD_DIALOG);
     const mark = () =>
       app.evaluate((root, { selectors, cutNames }) => {
         for (const old of root.querySelectorAll("[data-probe-card-open]")) old.removeAttribute("data-probe-card-open");
