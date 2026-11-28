@@ -98,8 +98,7 @@ export function FriendsList({
           ))}
         </ul>
       )}
-      {/* At phone width the chips draw their figure alone, so the panel names the two once. */}
-      {/* A key names only the chips the list draws. */}
+      {/* At phone width the chips draw their figure alone, so the panel names them once: only the kinds the list draws. */}
       {linkable && (keyWant || keySpare) ? (
         <p data-testid="friends-chip-key" className="m-0 flex flex-wrap items-center gap-x-[14px] gap-y-[4px] px-[14px] py-[10px] font-mono text-[10.5px] text-[color:var(--fg-muted)] [border-top:1px_solid_var(--border)] md:hidden">
           {keyWant ? <span data-key="want" className="inline-flex items-center gap-[6px]"><span aria-hidden><WantChip>{""}</WantChip></span>{f.keyWant}</span> : null}
