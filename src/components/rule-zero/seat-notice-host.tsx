@@ -13,6 +13,7 @@
 // on that table's own page (the page marks the notice seen). `Open` and the table page both end in `markSeatNoticeSeenAction`
 // on the table; ✕ calls it directly.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -152,7 +153,7 @@ export function SeatNoticeHost() {
   const settle = (n: SeatToastNotice) => {
     dismissed.current.set(n.tableId, n.since);
     setNotices((prev) => prev.filter((p) => p.tableId !== n.tableId));
-    markSeatNoticeSeenAction(n.tableId).catch(() => {});
+    markSeatNoticeSeenAction(n.tableId).catch((e) => captureClientError("rule-zero.seat-notice-host-seen", e));
   };
   const shown = notices.filter((n) => !hiddenAt(pathname, n.tableId));
   return (

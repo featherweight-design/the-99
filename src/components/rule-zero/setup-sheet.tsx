@@ -10,6 +10,7 @@
 // shows that deck, and opens the same deck list a new seat does when the viewer may pick for them. Only a re-pick is
 // sent; `reseatTable` keeps every other staying seat as it is.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useMemo, useRef, useState } from "react";
 import { ruleZeroCopy, type Said } from "../../lib/copy/rule-zero";
 import { PersonInitials, PersonName, PersonText, personAttrs } from "../../lib/person-name";
@@ -90,8 +91,9 @@ export function SetupSheet({
       const out = await onSave(ordered.map((p) => ({ member: p, deck: kept.has(p) ? repick[p] ?? null : seatable(byId.get(p)) ? picks[p] ?? null : null })));
       if (out.ok) onDone(out.tableId);
       else setFailed(out.reason === "occupied" ? "occupied" : "failed");
-    } catch {
+    } catch (e) {
       setFailed("failed");
+      captureClientError("rule-zero.setup-save", e);
     } finally {
       busyRef.current = false;
       setBusy(false);

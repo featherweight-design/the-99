@@ -11,6 +11,7 @@
 // sign-in's way back. With it, a sign-up Google verified goes Home when complete and to Q6 (`?google=missing`) with something
 // missing; anything else is G1.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
@@ -82,7 +83,7 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
         },
       });
     }
-    void si.reset().catch(() => {});
+    void si.reset().catch((e) => captureClientError("sign-in.sso-reset", e));
     r.replace(withReturn(GOOGLE_REFUSED, to));
   }, []);
 
@@ -125,8 +126,9 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
       setStep("protect");
       try {
         await resolveProtect.call(clerk, fromInvite ? "signUp" : "signIn");
-      } catch {
+      } catch (e) {
         if (ended.current) return;
+        captureClientError("sign-in.sso-protect", e);
         Sentry.captureException(new Error("sso-callback-protect-failed"), { tags: { site: "sso-callback-protect-failed" } });
         return refuse(null);
       }
@@ -152,7 +154,8 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
         if (error) refuse("finalize-error");
         // Finalized: the landing (or a task's full load) is on its way, so the watchdog stands down.
         else ended.current = true;
-      } catch {
+      } catch (e) {
+        captureClientError("sign-in.sso-finalize", e);
         refuse("finalize-threw");
       }
     })();

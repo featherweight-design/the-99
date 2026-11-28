@@ -7,6 +7,7 @@
 // and seats as not ready. Every row with a chip holds a fixed slot left of it for the `seated` tag, so every chip ends on
 // one edge.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type Ref } from "react";
 import { loadDeckChoicesAction } from "../../app/friends/table/actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -51,8 +52,11 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
       if (mine !== latest.current) return;
       setChoices(got);
       if (got === null) setMode(null);
-    } catch {
-      if (mine === latest.current) setFailed(true);
+    } catch (e) {
+      if (mine === latest.current) {
+        setFailed(true);
+        captureClientError("rule-zero.deck-choices", e);
+      }
     } finally {
       if (mine === latest.current) setBusy(false);
     }

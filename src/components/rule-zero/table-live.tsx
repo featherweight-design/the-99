@@ -23,6 +23,7 @@
 // A closed table's answer swaps the body for the closed page in place (L4). A 404 (the reader left the pod, or
 // their seat went) refreshes the route, whose page then answers not found.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
@@ -53,7 +54,7 @@ function recordSeen(tableId: string, shown: { revision: number; live: boolean },
   if (!shown.live || document.visibilityState !== "visible" || shown.revision <= recorded.current) return;
   recorded.current = shown.revision;
   // Best effort: a lost write costs one visit's dots, never the table.
-  markTableSeen(tableId, new Date(shown.revision).toISOString()).catch(() => {});
+  markTableSeen(tableId, new Date(shown.revision).toISOString()).catch((e) => captureClientError("rule-zero.table-seen", e));
 }
 
 export function TableLive({
@@ -140,8 +141,9 @@ export function TableLive({
       if (undoTo === null && name !== null) {
         setToast({ id: ++toastId.current, text: swapCopy.toast(name), retry: { label: swapCopy.undo, run: () => void seat(before, { deckId: before }) } });
       } else setToast(null);
-    } catch {
+    } catch (e) {
       setToast({ id: ++toastId.current, text: swapCopy.failed });
+      captureClientError("rule-zero.table-swap", e);
     } finally {
       writing.current = false;
       setSwapping(false);
@@ -165,7 +167,9 @@ export function TableLive({
     try {
       const out = await closeTableAction(tableId);
       if (!out.ok) throw new Error("refused");
-    } catch {
+    } catch (e) {
+      // The refusal below is this function's own throw: only a real failure reports.
+      if (!(e instanceof Error && e.message === "refused")) captureClientError("rule-zero.table-close", e);
       setToast({ id: ++toastId.current, text: closeCopy.failed, retry: { label: closeCopy.retry, run: () => void closeNow() } });
       return false;
     }
@@ -177,8 +181,9 @@ export function TableLive({
         adoptClosed(reviveClosedTable(poll.closed));
         return true;
       }
-    } catch {
+    } catch (e) {
       // Falls through to the refresh below.
+      captureClientError("rule-zero.table-closed-poll", e);
     }
     routerRef.current.refresh();
     return true;
@@ -214,8 +219,9 @@ export function TableLive({
         const at = new Date();
         setNow(at);
         setUpdated(clock(at));
-      } catch {
+      } catch (e) {
         // A failed check is the next check's to make; nothing the reader sees changes.
+        captureClientError("rule-zero.table-poll", e);
       } finally {
         inFlight = false;
       }
@@ -247,7 +253,7 @@ export function TableLive({
       if (done || document.visibilityState !== "visible") return;
       done = true;
       document.removeEventListener("visibilitychange", mark);
-      markSeatNoticeSeenAction(tableId).catch(() => {});
+      markSeatNoticeSeenAction(tableId).catch((e) => captureClientError("rule-zero.table-notice-seen", e));
     };
     document.addEventListener("visibilitychange", mark);
     mark();

@@ -6,6 +6,7 @@
 // board draws no busy frame), and the confirm closes when the answer lands, a refusal so the page's toast can be seen, a
 // close that landed because the page may stay mounted (its refresh fallback) rather than swap to the closed table. The pod's name is another reader's, so the question is drawn by `PersonText`, never as a string.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
@@ -34,8 +35,9 @@ export function CloseTable({ podName, run }: { podName: ThirdPartyName; run: () 
     setBusy(true);
     try {
       await run();
-    } catch {
+    } catch (e) {
       // A throw is the page's toast to say; the confirm leaves either way.
+      captureClientError("rule-zero.close-confirm", e);
     } finally {
       running.current = false;
       setBusy(false);

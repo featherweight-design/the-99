@@ -15,6 +15,7 @@
 // cookie can lead Clerk's client by a beat, and an answer that is not there yet is not "no session". It signs the browser out (which drops the stale token's cookie)
 // and goes to the signed-out landing. Once per minute at most, so a cookie that will not go cannot loop the page; that
 // reader waits out the token exactly as before. Renders nothing.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import * as Sentry from "@sentry/nextjs";
@@ -56,6 +57,7 @@ export function GhostSession() {
         if (at && Date.now() - at < ONCE_PER_MS) return;
         window.sessionStorage.setItem(GHOST_KEY, String(Date.now()));
       } catch {
+        // silent-catch: expected: refusal: storage refused (a private window).
         // Storage refused (a private window): the guard cannot be kept, so the page is not reloaded at all.
         return;
       }
@@ -65,7 +67,8 @@ export function GhostSession() {
         await clearSavedFields();
         try {
           await latest.clerk.signOut({ redirectUrl: "/" });
-        } catch {
+        } catch (e) {
+          captureClientError("shell.ghost-sign-out", e);
           // Nothing to end that Clerk still holds; the landing below is the answer either way.
         }
         window.location.replace("/");

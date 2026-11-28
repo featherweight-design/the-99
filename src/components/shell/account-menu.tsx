@@ -9,6 +9,7 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { forgetThisDevice } from "../../lib/push/forget-device";
 import { clearSavedFields } from "../ui/saved-fields";
@@ -487,7 +488,10 @@ export function AccountMenu({
   const [picking, setPicking] = useState(false);
   const faceRef = useRef<HTMLButtonElement>(null);
   async function saveFace(pick: SignaturePick | null): Promise<boolean> {
-    const out = await setCommanderAction(pick?.oracleId ?? null, pick?.printingId ?? null).catch(() => null);
+    const out = await setCommanderAction(pick?.oracleId ?? null, pick?.printingId ?? null).catch((e) => {
+      captureClientError("shell.account-face", e);
+      return null;
+    });
     if (!out?.ok) return false;
     setPicking(false);
     router.refresh();
@@ -549,7 +553,8 @@ export function AccountMenu({
     // Tells the sign-out evidence this one was pressed, not lost.
     noteSignOutPressed();
     // This browser's push subscription goes first (G7): the action needs the session, and it never blocks past its limit.
-    void forgetThisDevice().then(() => clerk.signOut()).catch(() => {
+    void forgetThisDevice().then(() => clerk.signOut()).catch((e) => {
+      captureClientError("shell.sign-out", e);
       // Still signed in: the press no longer explains a sign-out that follows.
       clearSignOutPressed();
       setBusy(false);
