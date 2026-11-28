@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { revokeCode } from "../../app/admin/invites/flyer-actions";
@@ -32,7 +33,8 @@ export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; on
           onClose();
           router.refresh();
         } else setFailed("off");
-      } catch {
+      } catch (e) {
+        captureClientError("admin.flyer-revoke", e);
         setFailed("lost");
         router.refresh();
       }

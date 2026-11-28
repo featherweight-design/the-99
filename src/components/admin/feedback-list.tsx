@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -202,7 +203,8 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
       let res: Awaited<ReturnType<typeof loadMore>>;
       try {
         res = await loadMore(filter, rows.length);
-      } catch {
+      } catch (e) {
+        captureClientError("admin.feedback-more", e);
         res = { ok: false };
       }
       if (!res.ok) return setMoreFailed(true);

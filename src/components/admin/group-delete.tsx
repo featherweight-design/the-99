@@ -8,6 +8,7 @@
 // already deleted elsewhere goes to Groups. A delete that lands never returns here: the action redirects to Groups, which
 // shows the toast (`DeletedGroupToast`), and the dialog holds its pending state until the redirect arrives.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { unstable_rethrow, useRouter } from "next/navigation";
@@ -71,6 +72,7 @@ export function GroupDelete({
       } catch (error) {
         // A landed delete's redirect arrives as a throw: rethrown, so Next navigates and the dialog stays pending.
         unstable_rethrow(error);
+        captureClientError("admin.group-delete", error);
         result = "lost";
       }
       setPending(false);

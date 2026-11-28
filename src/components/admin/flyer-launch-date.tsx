@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useState } from "react";
 import { setLaunchDate } from "../../app/admin/invites/flyer-actions";
 import { adminCopy, flyerAdminCopy } from "../../lib/copy/admin";
@@ -42,7 +43,8 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
         // Only when the field still holds what it held at the press: an edit made while the request was out stays.
         setTyped((now) => (now === held ? (result.value ?? "") : now));
         setDone(result.state);
-      } catch {
+      } catch (e) {
+        captureClientError("admin.flyer-launch-date", e);
         setFailed(true);
       } finally {
         setPending(false);

@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -169,7 +170,8 @@ export function AccountsList({
     let result: LookUpResult;
     try {
       result = await lookUpAccount(q);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.accounts-lookup", e);
       result = { kind: "failed" };
     }
     if (revision.current !== mine) return;

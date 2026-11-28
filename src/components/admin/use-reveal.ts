@@ -5,6 +5,7 @@
 // as the server stamped it), a Hide, or the view unmounting (a navigation, a reload, a closed tab), and re-masks
 // quietly. A Show that answers after the view is gone, or after a Hide, sets nothing.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { revealAccount } from "../../app/admin/accounts/actions";
 import type { RevealResult } from "../../lib/admin/reveal";
@@ -86,7 +87,8 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
       let answer: RevealResult;
       try {
         answer = await reveal(id);
-      } catch {
+      } catch (e) {
+        captureClientError("admin.reveal", e);
         answer = { ok: false, error: "failed" };
       }
       // A retired answer (a Hide, a newer Show, the page left) touches nothing, not even pending: that belongs to

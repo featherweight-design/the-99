@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState } from "react";
 
 import { sendEmailPreviews } from "../../app/admin/invites/email-preview-actions";
@@ -23,7 +24,8 @@ export function EmailPreviewCard() {
     setPending(true);
     try {
       setLine(lineFor(await sendEmailPreviews()));
-    } catch {
+    } catch (e) {
+      captureClientError("admin.email-preview", e);
       setLine({ text: copy.refused.failed, danger: true });
     } finally {
       setPending(false);
