@@ -8,6 +8,7 @@ import { copyEditorCopy } from "../../lib/copy/copy-editor";
 import { keyLabel } from "../../lib/copy-editor/key-label";
 import { indexRows, type RowIndex } from "../../lib/copy-editor/match";
 import type { EditorRow } from "../../lib/copy-editor/rows";
+import { headerBottom } from "./chrome";
 import { Editor } from "./editor";
 import { Tray } from "./tray";
 import type { EditSession } from "./use-edit-session";
@@ -36,12 +37,6 @@ async function loadRows(): Promise<Load> {
 
 const inOverlay = (t: EventTarget | null) => t instanceof Element && t.closest(`[${OVERLAY_ATTR}]`) !== null;
 const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-/** Bottom of the phone header as it is on screen now (it scrolls away and slides back), so the bar pins under it. */
-function headerBottom(): number {
-  const header = document.querySelector("header[data-shell-nav]");
-  return header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
-}
 
 export default function Overlay({ on, stop, session }: { on: boolean; stop: () => void; session: EditSession }) {
   const { edits, replaceEdits, saveEdits: saveToSession, sub, submit, dismiss, trayOpen, setTrayOpen } = session;
@@ -80,14 +75,16 @@ export default function Overlay({ on, stop, session }: { on: boolean; stop: () =
   const index = load.state === "ready" ? load.index : null;
   const rows = load.state === "ready" ? load.rows : null;
 
+  // The tray can be open with the mode off (from the Done notice), and it needs the rows to name each edit's line.
+  const wantRows = on || trayOpen;
   useEffect(() => {
-    if (!on) return;
+    if (!wantRows) return;
     let live = true;
     void loadRows().then((next) => live && setLoad(next));
     return () => {
       live = false;
     };
-  }, [on, attempt]);
+  }, [wantRows, attempt]);
 
   const measure = useCallback(() => {
     frame.current = 0;
@@ -194,13 +191,14 @@ export default function Overlay({ on, stop, session }: { on: boolean; stop: () =
   const opened = editing === null ? null : (placed.find((p) => p.entry.id === editing) ?? null);
   const editedKeys = useMemo(() => new Set(edits.map((e) => e.key)), [edits]);
 
-  if (!on) return null;
   const hint = touch ? copyEditorCopy.bar.hintPhone : copyEditorCopy.bar.hintDesktop;
   const status =
     load.state === "loading" ? copyEditorCopy.bar.loading : load.state === "error" ? (load.notBuilt ? copyEditorCopy.bar.notBuilt : copyEditorCopy.bar.loadFailed) : hint;
 
   return (
     <div {...{ [OVERLAY_ATTR]: "" }}>
+      {on && (
+        <>
       <div aria-hidden className="pointer-events-none fixed inset-0 z-[35]">
         {placed.map((p) => {
           const hit = target?.entry.id === p.entry.id;
@@ -264,6 +262,8 @@ export default function Overlay({ on, stop, session }: { on: boolean; stop: () =
           {copyEditorCopy.bar.done}
         </button>
       </div>
+        </>
+      )}
       {opened && rows && <Editor rows={rows} matches={opened.entry.matches} visible={opened.entry.range.toString()} box={opened.box} edits={edits} onSave={saveEdits} onClose={() => setEditing(null)} />}
       {editRow && rows && (
         <Editor rows={rows} matches={[{ row: editRow, how: "exact" }]} box={{ x: 8, y: window.innerHeight, w: 0, h: 0 }} edits={edits} onSave={saveEdits} onClose={() => setEditRow(null)} />
@@ -273,6 +273,7 @@ export default function Overlay({ on, stop, session }: { on: boolean; stop: () =
           edits={edits}
           rows={rows}
           sub={sub}
+          modeOn={on}
           onEdit={(key) => setEditRow(rows?.find((r) => r.key === key) ?? null)}
           onRemove={(key) => replaceEdits(edits.filter((e) => e.key !== key))}
           onClear={() => {

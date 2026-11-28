@@ -8,6 +8,8 @@ import { keyLabel } from "../../lib/copy-editor/key-label";
 import type { EditorRow } from "../../lib/copy-editor/rows";
 import { REPO } from "../../lib/copy-editor/github";
 import { SteadyLabel } from "../ui/steady-label";
+import { outlineButton, primaryButton } from "./buttons";
+import { focusDoor } from "./chrome";
 import { OVERLAY_ATTR } from "./scan";
 import type { Sub } from "./use-submission";
 
@@ -18,6 +20,8 @@ export type TrayProps = {
   edits: readonly Edit[];
   rows: readonly EditorRow[] | null;
   sub: Sub;
+  /** The mode is on. Off, the desktop page stays usable beside the panel, so its backdrop lets clicks through. */
+  modeOn: boolean;
   onEdit: (key: string) => void;
   onRemove: (key: string) => void;
   onClear: () => void;
@@ -31,17 +35,19 @@ const Spinner = () => (
   </svg>
 );
 
-const linkClass = "rounded-full border border-[color:var(--border-strong)] px-4 py-[6px] text-[13px] text-[color:var(--fg)]";
-const primaryClass = "rounded-full bg-[color:var(--accent)] px-4 py-[6px] text-[13px] font-medium text-[color:var(--bg)] disabled:opacity-40";
+const linkClass = outlineButton;
+const primaryClass = primaryButton;
 
-export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, onClose }: TrayProps) {
+export function Tray({ edits, rows, sub, modeOn, onEdit, onRemove, onClear, onSubmit, onClose }: TrayProps) {
   const panel = useRef<HTMLDivElement>(null);
   // Focus goes in on open and back to what had it on close.
   useEffect(() => {
     const opener = document.activeElement;
     panel.current?.focus();
     return () => {
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+      // The notice's buttons unmount as the tray opens, so with no opener left the door gets the focus.
+      if (opener instanceof HTMLElement && opener.isConnected && opener !== document.body) opener.focus();
+      else focusDoor();
     };
   }, []);
 
@@ -66,7 +72,7 @@ export function Tray({ edits, rows, sub, onEdit, onRemove, onClear, onSubmit, on
 
   return (
     <div {...{ [OVERLAY_ATTR]: "" }}>
-      <div aria-hidden onClick={onClose} className="fixed inset-0 z-[62] bg-[rgba(8,6,4,0.55)] md:bg-transparent" />
+      <div aria-hidden onClick={onClose} className={`fixed inset-0 z-[62] bg-[rgba(8,6,4,0.55)] md:bg-transparent ${modeOn ? "" : "md:pointer-events-none"}`} />
       <div
         ref={panel}
         tabIndex={-1}

@@ -36,14 +36,16 @@ tray with edits; submitting, submitted, failed.
 - Targeted (desktop hover, phone first tap): `2px solid --accent`, offset 3px, 14% wash, and a tag above the
   line: `file · key` in mono plus "Click to edit" (desktop) or "Tap again to edit" (phone). A phone's second
   tap opens the editor, so a scroll never opens one.
-- While the mode is on, a click targets text instead of following links or pressing buttons. Done gives the page back.
+- While the mode is on, a click targets text instead of following links or pressing buttons. Done gives the page back. With edits still unsent, Done leaves a notice and the door keeps the count: see `ADDENDUM-done-unsent.md`.
 
 ### C2. The toggle
 - Desktop: a floating pill, bottom right 24px: `✎ Edit copy` + amber staging dot (`--warning`, the admin
   head's staging chip colour). On, it grows into the bar: dot, `Editing copy`, mono `staging`, then
-  `Click any text` or the `N edits ›` count, and `Done`.
+  `Click any text` or the `N edits ›` count, and `Done`. With unsent edits the pill also carries `N edits waiting`
+  (`ADDENDUM-done-unsent.md`).
 - Phone: a 40px pencil button in the mobile header, left of search, with the staging dot. On, a 46px bar pins
-  under the header (`top` = header bottom), over the page, without reflowing it.
+  under the header (`top` = header bottom), over the page, without reflowing it. With unsent edits the pencil
+  carries a count badge (`ADDENDUM-done-unsent.md`).
 
 ### C3. Editor: popover (desktop), bottom sheet (phone)
 - Desktop popover: 420px, radius 14px, anchored 14px under the line with a caret; flips above when there is

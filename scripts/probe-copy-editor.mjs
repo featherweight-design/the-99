@@ -13,6 +13,9 @@
 // Run (dev server started with ADMIN_USER_IDS=<audit user id> ADMIN_ENV_LABEL=staging
 // VERCEL_PROJECT_PRODUCTION_URL=staging.the-99.dev; the last is the gate's project leg, which Vercel sets on staging):
 //   PROBE_BASE=http://localhost:3107 E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app node scripts/probe-copy-editor.mjs
+//   9 Done with unsent edits (Done-unsent PR 1 and 2): the door carries the count at both widths, Done leaves the
+//     "N edits waiting, not sent" notice (no focus taken, page not blocked), and Open pull request from the notice opens the
+//     tray with the mode off (submit and status mocked: no dispatch ever happens). PROBE_ONLY=done runs just this part.
 //   7+ the editor (PR 4): press a line open, the dialog (popover 420px / bottom sheet), word count, em dash refusal,
 //     chips removed by ✕ (16px, 24/36px hit box, Tab + Enter) and Backspace, announced, offered back under Insert at cursor and put back, an unknown fill-in refused, a dropped one saved, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
 //     wrap, read-only panel, the which-key picker. PROBE_ONLY=editor runs just this part (use it under --webpack).
@@ -75,7 +78,7 @@ async function signIn(page) {
 }
 
 const doorOf = (page, vp) =>
-  vp.touch ? page.locator('button[aria-label="Edit copy"]:visible') : page.locator('button:visible', { hasText: "Edit copy" });
+  vp.touch ? page.locator("button[data-copy-door]:visible") : page.locator('button:visible', { hasText: "Edit copy" });
 
 async function openPage(page, path) {
   await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
@@ -1052,10 +1055,93 @@ async function runTray(browser) {
   }
 }
 
+async function runDone(browser) {
+  for (const vp of VIEWPORTS) {
+    const L = `D ${vp.label}`;
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch });
+    await ctx.addInitScript(() => document.addEventListener("DOMContentLoaded", () => { const st = document.createElement("style"); st.textContent = "nextjs-portal{display:none!important}"; document.head.appendChild(st); }));
+    const page = await ctx.newPage();
+    await signIn(page);
+    await openPage(page, "/commanders/choose");
+    const rows = await page.evaluate(async () => (await (await fetch("/api/copy-edit/rows")).json()).rows);
+    const plain = rows.filter((r) => r.readOnly === "" && r.kind === "text" && r.placeholders.length === 0 && !/[{}]/.test(r.text) && r.text.length > 8).slice(0, 2);
+    const seed = plain.map((r, i) => ({ key: r.key, from: r.text, to: `Probe wording ${i + 1}` }));
+    check(`${L} 9: the seed has two plain rows to edit`, seed.length === 2);
+    const NOTICE = "[data-copy-waiting]";
+    const shot = async (name) => SHOTS && (await page.screenshot({ path: `${SHOTS}/${vp.label}-done-${name}.png` }));
+    const door = doorOf(page, vp).first();
+
+    // 9a no edits: plain door, no notice after Done
+    await page.evaluate(() => { localStorage.removeItem("the99.copySubmitted"); localStorage.removeItem("the99.copyEdits"); });
+    await openPage(page, "/commanders/choose");
+    await door.waitFor({ state: "visible", timeout: 15_000 });
+    check(`${L} 9: no edits, the door says plain "Edit copy"`, vp.touch ? (await door.getAttribute("aria-label")) === "Edit copy" : !/waiting/.test(await door.innerText()));
+    await door.click();
+    await barOf(page).waitFor({ state: "visible", timeout: 5000 });
+    await barOf(page).locator("button", { hasText: /^Done$/ }).click();
+    await page.waitForTimeout(300);
+    check(`${L} 9: Done with no edits leaves no notice`, (await page.locator(NOTICE).count()) === 0);
+
+    // 9b edits stored: the door counts them before the mode is ever on
+    await page.evaluate((e) => localStorage.setItem("the99.copyEdits", JSON.stringify(e)), seed);
+    await openPage(page, "/commanders/choose");
+    await door.waitFor({ state: "visible", timeout: 15_000 });
+    await shot("door");
+    if (vp.touch) {
+      check(`${L} 9: the door's name carries the count`, (await door.getAttribute("aria-label")) === "Edit copy, 2 edits waiting", (await door.getAttribute("aria-label")) ?? "");
+      check(`${L} 9: the badge reads 2`, (await door.innerText()).trim() === "2", (await door.innerText()).trim());
+    } else {
+      check(`${L} 9: the pill carries "2 edits waiting"`, /2 edits waiting/.test(await door.innerText()), await door.innerText());
+    }
+    const scrollW = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    check(`${L} 9: no horizontal scroll with the count`, scrollW <= 0, `${scrollW}`);
+
+    // 9c Done leaves the notice
+    await door.click();
+    await barOf(page).waitFor({ state: "visible", timeout: 5000 });
+    await barOf(page).locator("button", { hasText: /^Done$/ }).click();
+    await page.locator(NOTICE).waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+    const noticeText = await page.locator(NOTICE).innerText().catch(() => "");
+    check(`${L} 9: Done leaves "2 edits waiting, not sent" with Review and Open pull request`, /2 edits waiting, not sent/.test(noticeText) && /Review/.test(noticeText) && /Open pull request/.test(noticeText), noticeText.replace(/\s+/g, " "));
+    check(`${L} 9: the bar is gone and the notice took no focus`, (await barOf(page).count()) === 0 && (await page.evaluate(() => !document.activeElement?.closest("[data-copy-waiting]"))));
+    const box = await page.locator(NOTICE).boundingBox();
+    check(`${L} 9: the notice sits inside the viewport`, !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= vp.width + 1 && box.y + box.height <= vp.height + 1, JSON.stringify(box));
+
+    await shot("notice");
+
+    // 9d Review opens the tray with the mode off, rows loaded
+    await page.locator(NOTICE).getByRole("button", { name: "Review" }).click();
+    await page.locator(TRAY).waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+    check(`${L} 9: Review opens the tray with the mode off`, (await page.locator(TRAY).count()) === 1 && (await barOf(page).count()) === 0 && (await page.locator(NOTICE).count()) === 0);
+    await shot("tray-off");
+    // The row Edit button draws only once the rows have loaded, so this pins "rows load when the tray opens, mode off".
+    await page.locator(TRAY).getByRole("button", { name: "Edit", exact: true }).first().waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+    check(`${L} 9: the tray names both edits and loads their rows`, (await page.locator(`${TRAY} li`).count()) === 2 && (await page.locator(TRAY).getByRole("button", { name: "Edit", exact: true }).count()) === 2);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    check(`${L} 9: Esc closes the tray`, (await page.locator(TRAY).count()) === 0);
+
+    // 9e Open pull request from the notice (submit and status mocked)
+    let submits = 0;
+    await page.route("**/api/copy-edit/submit", async (route) => { submits++; await route.fulfill({ status: 202, contentType: "application/json", body: JSON.stringify({ branch: "copy-edit/probe-done" }) }); });
+    await page.route("**/api/copy-edit/status**", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ state: "running" }) }));
+    await door.click();
+    await barOf(page).waitFor({ state: "visible", timeout: 5000 });
+    await barOf(page).locator("button", { hasText: /^Done$/ }).click();
+    await page.locator(NOTICE).waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+    await page.locator(NOTICE).getByRole("button", { name: "Open pull request" }).click();
+    await page.locator(TRAY).waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(800);
+    check(`${L} 9: Open pull request opens the tray and sends once, mode off`, (await page.locator(TRAY).count()) === 1 && submits === 1 && (await barOf(page).count()) === 0, `submits=${submits}`);
+    await ctx.close();
+  }
+}
+
 const browser = await chromium.launch();
 try {
   await clerkSetup();
   if (CLOSED) await runGateClosed(browser);
+  else if (process.env.PROBE_ONLY === "done") await runDone(browser);
   else {
     if (process.env.PROBE_ONLY === "tray") {
       await runTray(browser);
@@ -1068,6 +1154,7 @@ try {
       await runEditor(browser);
       if (SHOTS) await editorShots(browser);
       await runTray(browser);
+      await runDone(browser);
     }
   }
 } finally {
