@@ -11,6 +11,7 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { loadFriend } from "../../../../lib/social/access";
 import { friendDecks, friendSpareList, friendWishlist } from "../../../../lib/social/friend-page-data";
+import { tradesWaitingWith } from "../../../../lib/social/trade-reads";
 import { FriendHead } from "../../../../components/social/friend-head";
 import { FriendStrip } from "../../../../components/social/friend-strip";
 
@@ -24,11 +25,13 @@ export default async function FriendPageLayout({
   const userId = await requireUserId();
   const { publicId } = await params;
   const now = new Date();
-  const [friend, spares, wishlist, decks] = await Promise.all([
+  const [friend, spares, wishlist, decks, waiting] = await Promise.all([
     loadFriend(userId, publicId),
     friendSpareList(userId, publicId, true),
     friendWishlist(userId, publicId),
     friendDecks(userId, publicId),
+    // The Spares tab's diamond (friend trades): a failed read draws none rather than failing the page.
+    tradesWaitingWith(userId, now).catch(() => new Set<string>()),
   ]);
   if (!friend) notFound();
   return (
@@ -36,6 +39,7 @@ export default async function FriendPageLayout({
       <FriendHead friend={friend} nowMs={now.getTime()} />
       <FriendStrip
         publicId={friend.publicId}
+        tradeWaits={waiting.has(friend.publicId)}
         counts={{
           spares: spares?.lines.length ?? 0,
           ...(wishlist ? { wishlist: wishlist.length } : {}),

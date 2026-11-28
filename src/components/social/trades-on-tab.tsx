@@ -64,17 +64,24 @@ export function TradesOnTab({ friend, theirSpares, trades, children }: {
   );
 }
 
+/** Opens the tab's trade sheet (the Wanted call-out's Trade press); null outside `TradesOnTab`. */
+export function useOpenTrade(): ((open: TradeOpen) => void) | null {
+  return useContext(OpenTrade);
+}
+
 /**
  * The spares sheet's Trade press, inside `FriendSparesProvider` (whose sheet it closes first). Held (Q10), the row says
  * Offer waiting instead.
  */
-export function TradePressBridge({ friend, held, children }: { friend: string; held: boolean; children: ReactNode }) {
+export function TradePressBridge({ friend, held, wants, open, children }: {
+  friend: string; held: boolean; wants: readonly string[]; open: number; children: ReactNode;
+}) {
   const setOpen = useContext(OpenTrade);
   const spares = usePageSpares();
   if (!setOpen) return <>{children}</>;
   return (
     <TradePressContext.Provider value={{
-      friend, held,
+      friend, held, wants, open,
       onTrade: (oracleId) => { spares?.close(); setOpen({ kind: "new", first: oracleId }); },
     }}>
       {children}

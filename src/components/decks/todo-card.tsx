@@ -102,6 +102,8 @@ export interface TodoRowProps {
   /** The press's element, for a caller that moves focus to it or anchors a moment on it. A prop of its
    *  own rather than a field of `press`, so reading `press` during render never reads a ref. */
   pressRef?: Ref<HTMLButtonElement>;
+  /** An action row's mark in fact ink instead of accent (friend trades: a friend wants your spares). Ignored on a warning. */
+  markTone?: "fact";
   /** The title, for a caller that lands focus on the row as a statement (`tabIndex={-1}`). */
   titleRef?: Ref<HTMLParagraphElement>;
 }
@@ -109,7 +111,7 @@ export interface TodoRowProps {
 /** The danger tint a warning's mark sits on. Named, because the spoken-for-twice glyph's seam is drawn in it. */
 export const WARNING_TINT = "color-mix(in srgb, var(--danger) 16%, var(--bg))";
 
-export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleRef }: TodoRowProps) {
+export function TodoRow({ tone, markTone, mark, title, body, next, press, pressRef, titleRef }: TodoRowProps) {
   const pressClass = [
     "flex-none flex items-center justify-center gap-[5px] w-[96px] md:w-[132px] h-[36px] rounded-[8px]",
     "font-sans font-semibold text-[12.5px] whitespace-nowrap no-underline cursor-pointer disabled:cursor-default disabled:opacity-50",
@@ -148,7 +150,9 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleR
           "flex-none flex items-center justify-center w-[30px] h-[30px] rounded-[8px] font-mono font-semibold text-[12px]",
           warning
             ? "bg-[color:color-mix(in_srgb,var(--danger)_16%,var(--bg))] text-[color:var(--danger)]" // WARNING_TINT
-            : "bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))] text-[color:var(--accent-text)]",
+            : markTone === "fact"
+              ? "bg-[color:color-mix(in_srgb,var(--fact)_14%,var(--bg))] text-[color:var(--fact)]"
+              : "bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))] text-[color:var(--accent-text)]",
         ].join(" ")}
       >
         {mark}

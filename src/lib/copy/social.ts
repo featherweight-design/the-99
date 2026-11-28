@@ -117,6 +117,12 @@ export const socialCopy = {
     openAria: (name: ThirdPartyName) => personText`${name}’s page`,
     /** The per-friend chip (You have it): how many of their wanted cards the reader can spare; it opens their wishlist. */
     spareChipAria: (name: ThirdPartyName, copyCount: number) => personText`You can spare ${String(copyCount)} of ${name}’s wanted cards`,
+    // Friend trades: the chips name their direction on desktop; on a phone the list's key line does.
+    spareChipWord: " they want",
+    wantChipWord: " you want",
+    wantChipAria: (name: ThirdPartyName, cardCount: number) => personText`${name} has spares of ${String(cardCount)} ${cardCount === 1 ? "card" : "cards"} you want`,
+    keyWant: "their spares you want",
+    keySpare: "your spares they want",
   },
 
   // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).
@@ -135,8 +141,13 @@ export const socialCopy = {
       line: (pods: readonly ThirdPartyName[]) => personText`Shared with ${joinNames(pods)}.`,
       count: (spareCount: number) => (spareCount === 1 ? "1 spare" : `${spareCount} spares`),
       onWishlist: "on your wishlist",
+      /** Friend trades: the tile's count chip while the reader's ask is open, and after the friend's yes. */
+      chipAsked: "Asked",
+      chipYours: "Agreed",
       /** Appended to the line with spare requests on (signature card call 8): a tile press opens the card's modal, with Ask. */
       pressToAsk: " Press one to ask for it.",
+      /** Friend trades: the tab holds trades too, so its line names both presses. */
+      pressToAskOrTrade: " Press one to ask for it or trade for it.",
       /** A landing on a spare the friend no longer offers (call 9): the shared toast, and no modal. */
       gone: (name: string | ThirdPartyName, card: string) => personText`${name} no longer has a spare ${card}.`,
       emptyTitle: (name: string | ThirdPartyName) => personText`${name} has no spares to show`,

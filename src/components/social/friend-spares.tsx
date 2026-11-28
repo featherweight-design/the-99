@@ -14,7 +14,7 @@ import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import { spareCopy } from "../../lib/copy/social";
-import { tradeCopy } from "../../lib/copy/trades";
+import { cardList, tradeCopy } from "../../lib/copy/trades";
 import { PersonName, PersonText, compareNames, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { printedFaceName } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -22,7 +22,7 @@ import { InfoTip } from "../ui/info-tip";
 import { Face } from "./face";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { useGotIt } from "../decks/got-it";
-import { SpareChip, isOpen } from "./spare-key-item";
+import { SpareChip, SpareGlyph, isOpen } from "./spare-key-item";
 import { useCartGotIt } from "../decks/cart/cart-got-it";
 
 /** One Ask or Ask instead from the modal: the friend, the card and the copies the row is short. */
@@ -50,7 +50,13 @@ export const SpareRequestsContext = createContext<RequestsCtx | null>(null);
  * quiet Trade beside Ask, or `Offer waiting` while an offer of the reader's to them is unanswered (Q10), and the how
  * line sits under the rows. Provided by a friend's Spares tab; null everywhere else, which draws the sheet as shipped.
  */
-export type TradePress = { friend: string; held: boolean; onTrade: (oracleId: string, from: HTMLElement) => void };
+export type TradePress = {
+  friend: string; held: boolean; onTrade: (oracleId: string, from: HTMLElement) => void;
+  /** The reader's spares on this friend's wishlist, by name (S1's `Wants your …` line). */
+  wants: readonly string[];
+  /** Live trades (open or accepted) with this friend (S1's `N trades open`). */
+  open: number;
+};
 export const TradePressContext = createContext<TradePress | null>(null);
 
 // The key's glyphs and marks live in `spare-key-item.tsx` (split 5i); re-exported so existing imports keep working.
@@ -276,6 +282,19 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
                     ? spareCopy.request.noAnswer(SPARE_REQUEST_DAYS)
                     : <PersonText text={spareCopy.request.pods(s.friend.pods)} />}
               </span>
+              {trade && trade.friend === s.friend.publicId && (trade.wants.length > 0 || trade.open > 0) ? (
+                <span data-testid="friend-spare-trade-line" className="flex min-w-0 items-center gap-[6px] font-mono text-[11px] leading-[1.45]">
+                  {trade.wants.length > 0 ? (
+                    <span className="flex min-w-0 items-center gap-[6px] text-[color:var(--fact)]">
+                      <SpareGlyph size={12} />
+                      <span className="truncate">{tradeCopy.wantsShort(cardList(trade.wants))}</span>
+                    </span>
+                  ) : null}
+                  {trade.open > 0 ? (
+                    <span className="flex-none text-[color:var(--fg-faint)]">{trade.wants.length > 0 ? "· " : ""}{tradeCopy.openCount(trade.open)}</span>
+                  ) : null}
+                </span>
+              ) : null}
             </span>
             {trade && trade.friend === s.friend.publicId ? (
               trade.held ? (

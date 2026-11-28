@@ -92,6 +92,7 @@ export function FriendsView({
   waiting,
   friends,
   sparable,
+  wanted,
   links,
   accepted,
   origin,
@@ -111,6 +112,8 @@ export function FriendsView({
   friends: Friend[];
   /** Per friend, how many of their wanted cards the reader can spare (You have it); drawn as the row's chip. */
   sparable?: Readonly<Record<string, number>>;
+  /** Per friend, how many of their spares the reader wants (friend trades); drawn as the row's you want chip. */
+  wanted?: Readonly<Record<string, number>>;
   links: OpenInvite[];
   /** The friend Accept just made (E10), resolved on the server from the URL's `publicId`; null for none. */
   accepted: Friend | null;
@@ -489,6 +492,7 @@ export function FriendsView({
               onRemove={remove}
               linkable
               sparable={sparable}
+              wanted={wanted}
             />
           </div>
           <div data-friends-col="right" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">

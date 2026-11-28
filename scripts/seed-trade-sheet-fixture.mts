@@ -7,7 +7,7 @@
 //   Tam  Tam's offer whose card Tam no longer has spare (look).
 //   Uma  the reader's offer whose own card the reader no longer has (lookYours).
 // SCRATCH BRANCH ONLY: it names its target and refuses anything else. A rerun purges the previous run's friends first.
-// Rin also wants two of the reader's spares (Wants). It prints each friend's public id and each trade's id, for the inventory.
+// Rin also wants two of the reader's spares (Wants), and the reader wants one of Rin's. It prints each friend's public id and each trade's id, for the inventory.
 // The target is named outright: `.env` wins over an inherited DATABASE_URL (scripts/lib/env.mjs), so the scratch
 // branch's URL comes in as SHEET_FIXTURE_DATABASE_URL and replaces it before the database module loads.
 //   SHEET_FIXTURE_DATABASE_URL=postgres://... SHEET_FIXTURE_BRANCH=br-... SHEET_FIXTURE_USER=user_... \
@@ -107,6 +107,8 @@ const pause = () => new Promise((r) => setTimeout(r, 1100));
 
 // Rin wants two of the reader's spares (the picker's Wants chip and its listed-first line); one is also in Sol's offer.
 await db.execute(sql`insert into wishlist_items (user_id, oracle_id) values (${rin.id}, ${Y[6]}), (${rin.id}, ${Y[9]})`);
+// The reader wants one of Rin's spares, in no trade (PR 6: the Wanted call-out's You want row and its switch).
+await db.execute(sql`insert into wishlist_items (user_id, oracle_id) values (${viewer}, ${R[7]}) on conflict do nothing`);
 
 // Rin: five trades the reader offered and Rin answered, then Rin's own open offer.
 const rinPast: [string, "yes" | "no", ("you" | "them")[]][] = [
