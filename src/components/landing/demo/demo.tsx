@@ -21,6 +21,7 @@
 // stays in memory, merged: a step's chunks are never fetched twice. Until a step's are in hand no press opens a card, so no ring
 // and no sentence promises one; the frame draws them when they land.
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { KEEP_ON_BACK, useDialogA11y } from "../../../lib/a11y/dialog";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
@@ -268,7 +269,9 @@ export function Demo({ art, publicPages, upgrade }: { art: readonly DemoArtCard[
         .then((late) => {
           if (late && mounted.current && `${phaseKey(phaseNow.current)}:${closes.current}` === at) show(late);
         })
-        .catch(() => {});
+        .catch((e) => {
+          if (mounted.current) captureClientError("landing.demo-late-steps", e);
+        });
     },
     [fetchSteps, canon],
   );
@@ -329,8 +332,10 @@ export function Demo({ art, publicPages, upgrade }: { art: readonly DemoArtCard[
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
         if (phaseNow.current.kind === "start") openStepAt(at);
       })
-      .catch(() => {
-        if (mounted.current) setLoad("failed");
+      .catch((e) => {
+        if (!mounted.current) return;
+        captureClientError("landing.demo-load", e);
+        setLoad("failed");
       });
   };
 
@@ -395,10 +400,12 @@ export function Demo({ art, publicPages, upgrade }: { art: readonly DemoArtCard[
           // Nothing landed (a file with none): nothing to build on, and the next step would read none too.
           if (!landed || !live || saveData || stepIndex + 1 >= total) return;
           whenIdle(() => {
-            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, canon(stepIndex + 1))).catch(() => {});
+            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, canon(stepIndex + 1))).catch((e) => captureClientError("landing.demo-next-steps", e));
           });
         })
-        .catch(() => {});
+        .catch((e) => {
+          if (live && mounted.current) captureClientError("landing.demo-steps", e);
+        });
     });
     return () => {
       live = false;

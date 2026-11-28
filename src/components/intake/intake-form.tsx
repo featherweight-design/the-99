@@ -9,6 +9,7 @@
 // dock over the tab bar on the phone (create-picker's dock), whose measured height the form
 // reserves under itself. No motion anywhere (STATES invariant).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { CHOOSE_WORDS_ID } from "./choose-intro";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 
@@ -116,7 +117,9 @@ export function IntakeForm({
   const [reachData, setReachData] = useState<FormReachData | null>(null);
   useEffect(() => {
     let live = true;
-    formReachData().then((d) => { if (live) setReachData(d); }).catch(() => {});
+    formReachData()
+      .then((d) => { if (live) setReachData(d); })
+      .catch((e) => { if (live) captureClientError("intake.reach-data", e); });
     return () => { live = false; };
   }, []);
   const reachCaption = useMemo(() => {

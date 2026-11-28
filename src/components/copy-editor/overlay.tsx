@@ -2,6 +2,7 @@
 // The copy editor's overlay: the rows load once, the page is scanned for known text, each hit is outlined, and the
 // mode's bar says what is going on. While the mode is on a click targets text instead of following links or pressing
 // buttons; Done gives the page back. The editor opens from a targeted line; the tray holds the edits and submits them.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { copyEditorCopy } from "../../lib/copy/copy-editor";
 import { keyLabel } from "../../lib/copy-editor/key-label";
@@ -27,7 +28,8 @@ async function loadRows(): Promise<Load> {
     if (!Array.isArray(body.rows)) return { state: "error", notBuilt: false };
     loaded = { index: indexRows(body.rows), rows: body.rows };
     return { state: "ready", ...loaded };
-  } catch {
+  } catch (e) {
+    captureClientError("copy-editor.rows", e);
     return { state: "error", notBuilt: false };
   }
 }

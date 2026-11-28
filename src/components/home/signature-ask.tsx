@@ -13,6 +13,7 @@
 // ask done in the same write; Skip and ✕ go through `skipFacePromptAction`. Both redraw Home in the reply. The picker
 // stays open while a pick saves and closes when it lands (P4, P6), so nothing here is optimistic but the strip's ✕.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState } from "react";
 import { setSignatureCardAction, skipFacePromptAction } from "../../app/friends/actions";
 import { socialCopy } from "../../lib/copy/social";
@@ -37,7 +38,10 @@ function useHomePicker(face: OwnCommander | null, returnFocusRef: React.RefObjec
   async function save(pick: SignaturePick | null): Promise<boolean> {
     // Home offers no "Use initials instead" (the picker draws it only with a face, and clearing is /friends' to do),
     // but a pick that is null is refused as no card by the action all the same.
-    const out = await setSignatureCardAction(pick?.oracleId ?? null, pick?.printingId ?? null).catch(() => null);
+    const out = await setSignatureCardAction(pick?.oracleId ?? null, pick?.printingId ?? null).catch((e) => {
+      captureClientError("home.signature-save", e);
+      return null;
+    });
     if (!out?.ok) {
       setToast({ id: ++seq.current, text: s.failed });
       return false;
@@ -78,7 +82,7 @@ export function SignatureRow({ face, name }: { face: OwnCommander | null; name: 
     setSkipped(true);
     focusHomeHeading();
     // Gone on the press; a write that fails leaves the row for the next load.
-    void skipFacePromptAction().catch(() => undefined);
+    void skipFacePromptAction().catch((e) => captureClientError("home.signature-skip", e));
   };
 
   return (
@@ -140,7 +144,7 @@ export function SignatureStrip({ name }: { name: string | null }) {
     setClosed(true);
     focusHomeHeading();
     // Hidden on the press; a write that fails leaves the strip for the next load.
-    void skipFacePromptAction().catch(() => undefined);
+    void skipFacePromptAction().catch((e) => captureClientError("home.signature-strip-close", e));
   };
 
   return (

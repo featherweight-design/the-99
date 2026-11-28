@@ -6,6 +6,7 @@
 // down) is the shared toast with Try again and leaves the field as typed (R14); a refusal that ends the invite redraws
 // the card face down and names nobody (N12).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -128,7 +129,8 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
     setToast(null);
     try {
       then(await act());
-    } catch {
+    } catch (e) {
+      captureClientError("join.act", e);
       say(retry);
     } finally {
       setBusy(false);

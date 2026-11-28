@@ -8,6 +8,7 @@
 //
 // What's new owns it (`AnswerSheetProvider`): the item key, the dismiss, and the visit's seen set. Off the provider (or
 // when the open is refused) the press goes to /friends, as it shipped.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -66,7 +67,14 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
     // An answer to the reader's OFFER (You have it R2) opens the request-history row; an answer to their ask, their Your
     // requests row. Neither is a sheet the other can open: the server resolves the key to the one kind it names.
     const offered = item.offer === true;
-    const out = offered ? await openOfferAnswerAction(item.key).catch(() => null) : await openAnswerAction(item.key).catch(() => null);
+    const out = offered ? await openOfferAnswerAction(item.key).catch((e) => {
+          captureClientError("home.offer-answer-open", e);
+          return null;
+        })
+      : await openAnswerAction(item.key).catch((e) => {
+          captureClientError("home.answer-open", e);
+          return null;
+        });
     setPending(null);
     // The server marked an ask's answer seen whatever happens next (an offer's answer has no stamp: its diamond goes for
     // the visit), so the diamond, the count and the Friends badge follow it.

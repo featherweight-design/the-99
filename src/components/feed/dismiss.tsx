@@ -5,6 +5,7 @@
 // press: 44px square on a phone, 32px from desktop with a coarse pointer's 44px hit. The press hides the item at once
 // and for good (`dismissFeedItemAction`, `feed_dismissals`); a failed write puts it back with the toast. It answers
 // nothing.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState, type ReactNode } from "react";
 import { dismissFeedItemAction } from "../../app/feed-dismiss-actions";
 import { feedCopy } from "../../lib/copy/feed";
@@ -104,7 +105,8 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
       })
-      .catch(() => {
+      .catch((e) => {
+        captureClientError("feed.dismiss", e);
         put(key, false);
         setToast({ id: ++seq.current, text: d.failed });
       });

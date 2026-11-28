@@ -13,6 +13,7 @@
 //
 // There is no Stop: a read always runs to its end, and leaving the page never cancels it.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
@@ -158,7 +159,10 @@ export function ReadPanel({
     live.current = true;
     let timer: ReturnType<typeof setTimeout>;
     const ask = async () => {
-      const s = await deps.state(readId).catch(() => null);
+      const s = await deps.state(readId).catch((e) => {
+        if (live.current) captureClientError("intake.read-state", e);
+        return null;
+      });
       if (!live.current) return;
       if (s === null || s.kind === "pending") {
         if (s?.phase === "judge") setStep("judge");

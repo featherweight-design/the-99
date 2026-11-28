@@ -4,6 +4,7 @@
 // how the tool works and what costs a credit, above the form. Open until the reader has run the tool
 // or pressed Hide (the account's mark, `user_prefs.choose_intro_seen_at`); folded to one line after.
 // Opening it again is this visit's own state: the mark never clears.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState, useTransition } from "react";
 import { hideChooseIntro } from "../../app/decks/new/choose/actions";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
@@ -65,7 +66,10 @@ export function ChooseIntro({
     setOpen(false);
     // The panel folds on the press; the mark is written behind it. A failed write folds it all the same.
     startHide(async () => {
-      await hideChooseIntro().catch(() => null);
+      await hideChooseIntro().catch((e) => {
+        captureClientError("intake.intro-hide", e);
+        return null;
+      });
     });
   };
 
