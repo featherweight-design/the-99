@@ -4,7 +4,7 @@
 // mailbox), and googlemail.com is gmail.com. A custom domain or a catch-all cannot be folded, so this stops casual
 // aliasing, not a determined person with their own domain. Every comparison of two addresses goes through here: the
 // welcome lot (`payments/canonical-email.ts`), the flyer's one place per inbox, the mail limits and the account mailbox
-// gate (`invites/mailbox.ts`). A second fold would let them disagree about who is who.
+// gate (`account/mailboxes.ts`). A second fold would let them disagree about who is who.
 const GMAIL = "gmail.com";
 
 /** The address folded to the form that names one mailbox, or null when it is not an address. */
