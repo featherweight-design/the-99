@@ -1,4 +1,4 @@
-// A lookup on the page's own chrome that the door and the overlay share.
+// A lookup on the page's own chrome: the copy editor's door.
 
 /** Hand the focus back to the door. The desktop pill is unmounted while the mode is on, so look it up once it is back. */
 export function focusDoor(): void {
