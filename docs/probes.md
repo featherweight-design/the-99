@@ -2637,6 +2637,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (Social R2 G5), and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
+- `pnpm probe:wishlist-long-name` proves a Wishlist deck box keeps its card count and "Open deck" whole beside a
+  deck name too long for the band (#3440), at 390 and 1300: for a 120-character phrase and a 111-character single
+  word, the count ends before the link, the link stays inside the band, the count sits on the link's line, the name is
+  one line ending in an ellipsis, and the heading still carries the whole name. It renames one of the audit account's
+  decks (`PROBE_DECK_ID`, with cards it does not own) and turns its wishlist sync on, then puts back the name, the
+  deck's off-wishlist mark and the sync setting. It WRITES, so it fails closed: `PROBE_BRANCH` must name the branch
+  `DATABASE_URL` reports, and `assertScratchBranch` refuses staging, production and local-dev; the dev server at
+  `PROBE_BASE` runs on the same branch. Seen to fail with the fix reverted (6 checks: the name wraps and the count
+  leaves the link's line).
 - `pnpm probe:feed-store` proves the news feed's store (menu and Home PR 4, `src/lib/feed/`,
   `src/lib/social/feed-items.ts`) against a real schema: `setFeedKinds` stamps a kind's `enabledAt`, keeps it while the
   kind stays on, drops it when off and writes nothing (no stamp move) on an unchanged save; `recordFeedItem` writes only

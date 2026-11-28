@@ -4,7 +4,7 @@
 // inline text, so a long word pushed the count and the link out of the band and words wrapped the count to a line of
 // its own.
 // It renames one of the reader's decks and turns the reader's wishlist sync on, so it runs on a SCRATCH branch only
-// and puts the name back when it ends.
+// and puts back the name, the deck's off-wishlist mark and the reader's sync setting when it ends.
 //
 //   PROBE_BRANCH=br-… PROBE_USER=user_… PROBE_DECK_ID=<uuid> PROBE_BASE=http://localhost:3440 pnpm probe:wishlist-long-name
 // PROBE_USER is the Clerk id of E2E_AUDIT_USER_EMAIL; PROBE_DECK_ID one of its decks with cards it does not own; the
@@ -39,9 +39,13 @@ const NAMES = [
   ["one word", "Probe3440SupercalifragilisticexpialidociousSupercalifragilisticexpialidociousSupercalifragilisticexpialidocious"],
 ] as const;
 
-const { rows: deck } = await db.execute<{ name: string }>(sql`select name from decks where id = ${DECK_ID} and user_id = ${USER}`);
+const { rows: deck } = await db.execute<{ name: string; off: boolean }>(
+  sql`select name, off_wishlist as off from decks where id = ${DECK_ID} and user_id = ${USER}`,
+);
 if (!deck[0]) throw new Error("PROBE_DECK_ID is not one of PROBE_USER's decks");
-const ORIGINAL = deck[0].name;
+const ORIGINAL = deck[0];
+const { rows: prefs } = await db.execute<{ sync: boolean }>(sql`select wishlist_sync as sync from user_prefs where user_id = ${USER}`);
+const SYNC_WAS_ON = prefs[0]?.sync ?? false;
 
 async function setName(name: string) {
   await db.execute(sql`update decks set name = ${name}, off_wishlist = false where id = ${DECK_ID}`);
@@ -92,6 +96,7 @@ async function run(viewport: { width: number; height: number }, label: string) {
   try {
     await signIn(page);
     for (const [kind, name] of NAMES) {
+      const before = failures.length;
       await setName(name);
       await page.goto(`${BASE}/collection/wishlist`, { waitUntil: "domcontentloaded" });
       const box = page.getByTestId("wishlist-box").filter({ has: page.getByRole("link", { name: `Open deck, ${name}` }) });
@@ -124,8 +129,13 @@ async function run(viewport: { width: number; height: number }, label: string) {
       check(m.countTop !== null && m.countBottom! > m.linkTop && m.countTop < m.linkBottom, `${tag}: the count sits on the link's line`, m);
       check(m.lines === 1 && m.clipped, `${tag}: the name is one line, ended in an ellipsis`, { lines: m.lines, clipped: m.clipped });
       check(!!m.name?.includes(name), `${tag}: the heading still carries the whole name`, m.name);
-      if (process.env.PROBE_SHOT) await page.screenshot({ path: `${process.env.PROBE_SHOT}-${label}-${kind.replace(" ", "-")}.png` });
+      const shot = `${process.env.PROBE_SHOT ?? "probe-wishlist-long-name"}-${label}-${kind.replace(" ", "-")}`;
+      if (failures.length > before) await page.screenshot({ path: `${shot}-fail.png` });
+      else if (process.env.PROBE_SHOT) await page.screenshot({ path: `${shot}.png` });
     }
+  } catch (error) {
+    await page.screenshot({ path: `${process.env.PROBE_SHOT ?? "probe-wishlist-long-name"}-${label}-fail.png` }).catch(() => {});
+    throw error;
   } finally {
     await browser.close();
   }
@@ -136,7 +146,9 @@ try {
   await run({ width: 390, height: 844 }, "phone");
   await run({ width: 1300, height: 900 }, "desktop");
 } finally {
-  await db.execute(sql`update decks set name = ${ORIGINAL} where id = ${DECK_ID}`);
+  await db.execute(sql`update decks set name = ${ORIGINAL.name}, off_wishlist = ${ORIGINAL.off} where id = ${DECK_ID}`);
+  await setWishlistSync(USER, SYNC_WAS_ON);
+  if (SYNC_WAS_ON) await syncWishlistNow(USER);
 }
 if (failures.length) {
   console.log(`\n${failures.length} failed`);
