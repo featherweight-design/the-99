@@ -172,7 +172,7 @@ export function WishlistView({
                   className={`flex flex-col gap-[28px] px-[14px] pb-[14px] pt-[24px] transition-opacity md:gap-[50px] md:px-[34px] md:pb-[34px] md:pt-[40px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
                 >
                   {boxes.map((b) => (
-                    <DeckBox key={b.key} aria-labelledby={`wishlist-box-${b.key}`} data-testid="wishlist-box">
+                    <DeckBox key={b.key} aria-labelledby={`wishlist-box-${b.key}`} data-testid="wishlist-box" className="!mt-0">
                       <DeckBoxBand
                         id={`wishlist-box-${b.key}`}
                         title={b.title}
