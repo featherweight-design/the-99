@@ -1,0 +1,20 @@
+{
+  "feature": "Cart on your wishlist PR 6: a friend's day of trade matches is one What's new row (handoff #3399 README Q1, board Notices N1) on Home and in the Show all sheet; the Friends page's Waiting on you stays one per card (orchestrator ruling 2026-11-27)",
+  "note": "Needs a SCRATCH branch seeded with friends who share spares with a pod the reader is in, one friend with four trade matches on one day and five friends with one each, so Show all opens (the PR 6 probe's seed-sheet.mjs). Read-only: only the sheet's Show all is pressed.",
+  "out": "contact-sheets/cart-wishlist-rollup",
+  "shares": { "module": "src/components/feed/feed-item.tsx", "binding": "FeedItemRow" },
+  "rows": [
+    {
+      "id": "home-whats-new",
+      "label": "Home: What's new, Colin's four matches as one rolled row beside single matches",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-feed-rolled-card]", "settle": 2000 }]
+    },
+    {
+      "id": "home-feed-sheet",
+      "label": "Home: Show all, the sheet draws the same rolled row",
+      "view": "src/components/feed/feed-sheet.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-feed-rolled-card]" }, { "clickRole": "button", "name": "Show all" }, { "waitDialog": "What’s new", "settle": 1500 }]
+    }
+  ]
+}

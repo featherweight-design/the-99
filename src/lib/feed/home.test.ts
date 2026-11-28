@@ -5,7 +5,7 @@ import type { SQL } from "drizzle-orm";
 const marks = vi.hoisted(() => ({ seen: vi.fn(), notice: vi.fn(), asks: vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []), offers: vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []) }));
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./prefs", async (importOriginal) => ({ ...(await importOriginal<typeof import("./prefs")>()), markFeedSeen: marks.seen }));
-vi.mock("../social/trade-match", () => ({ noticeTradeMatches: marks.notice }));
+vi.mock("../social/trade-match", async (importOriginal) => ({ ...(await importOriginal<typeof import("../social/trade-match")>()), noticeTradeMatches: marks.notice }));
 vi.mock("../social/spare-requests", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../social/spare-requests")>()),
   loadIncomingAsks: marks.asks,
@@ -125,6 +125,47 @@ describe("loadHomeFeed", () => {
       drop: { fromCents: 640, toCents: 310, printing: null },
     });
     expect(feed.items[1]).toMatchObject({ card: { name: "Mythic", image: "set.jpg" }, setSize: 288, href: "/collection/sets/sos", unseen: false });
+  });
+});
+
+describe("loadHomeFeed rolls a friend's day of trade matches into one row (Cart on your wishlist Q1)", () => {
+  it("folds Colin's three matches that reader-day into the newest, keeps a single match as it was, and counts rows", async () => {
+    const match = (key: string, at: string, oracle: string, friend: string, unseen = true) =>
+      row({ kind: "trade-match", key, created_at: at, oracle_id: oracle, friend_public_id: friend, friend_name: friend === "p1" ? "Colin" : "Max", unseen });
+    const q = fake(
+      { "trade-match": "2026-10-01T00:00:00Z", "new-set": "2026-10-01T00:00:00Z" },
+      {
+        feed: [
+          match("item:3", "2026-10-22T11:00:00Z", "c3", "p1", false),
+          match("item:2", "2026-10-22T10:00:00Z", "c2", "p1"),
+          match("item:z", "2026-10-22T09:30:00Z", "cz", "p2"),
+          match("item:1", "2026-10-22T09:00:00Z", "c1", "p1", false),
+          row({ kind: "new-set", key: "set:sos", created_at: "2026-10-20T10:00:00Z", code: "sos", name: "Secrets" }),
+        ],
+        cards: [
+          { oracle_id: "c1", name: "Sai", image: "sai.jpg", art: null },
+          { oracle_id: "c2", name: "Ghalta", image: "ghalta.jpg", art: null },
+          { oracle_id: "c3", name: "Miku", image: "miku.jpg", art: null },
+          { oracle_id: "cz", name: "Zada", image: "zada.jpg", art: null },
+        ],
+      },
+    );
+    const feed = await loadHomeFeed("u1", ON, NOW, q);
+    if (!feed?.chosen) throw new Error("expected a chosen feed");
+    const all = [...(feed.lead ? [feed.lead] : []), ...feed.items];
+    const rolled = all.find((v) => v.key === "item:3");
+    expect(rolled).toMatchObject({
+      unseen: true,
+      askable: false,
+      href: "/friends/p1/spares",
+      rollup: { keys: ["item:3", "item:2", "item:1"] },
+    });
+    expect(rolled?.rollup?.cards.map((c) => c.name)).toEqual(["Miku", "Ghalta", "Sai"]);
+    expect(all.find((v) => v.key === "item:z")).toMatchObject({ href: "/friends/p2/spares?spare=cz" });
+    expect(all.find((v) => v.key === "item:z")?.rollup).toBeUndefined();
+    expect(all.map((v) => v.key).sort()).toEqual(["item:3", "item:z", "set:sos"].sort());
+    // The head counts rows: the rolled row once, Max's match, the set.
+    expect(feed.unseen).toBe(3);
   });
 });
 

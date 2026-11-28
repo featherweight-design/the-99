@@ -141,6 +141,54 @@ describe("the lead story", () => {
   });
 });
 
+describe("a rolled trade match (Cart on your wishlist Q1)", () => {
+  const colin = { publicId: "p1", displayName: named("Colin") };
+  const rolled = (o: Partial<FeedView> = {}) =>
+    view(5, { key: "item:m3", kind: "trade-match", friend: colin, href: "/friends/p1/spares", name: null, rollup: { keys: ["item:m3", "item:m2", "item:m1"], cards: [] }, ...o });
+  const title = feedCopy.home.title.tradeMatchRolled(colin.displayName, 3);
+
+  it("its ✕ dismisses every match it stands for in one write, and the row and the count go at once", async () => {
+    render(<WhatsNew feed={feed([rolled(), view(1)])} now={NOW} />);
+    expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(title)) })); });
+    expect(m.clear).toHaveBeenCalledWith(["item:m3", "item:m2", "item:m1"]);
+    expect(m.dismiss).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: plain(d.aria(title)) })).toBeNull();
+    expect(screen.getByText(feedCopy.home.newCount(1), { exact: false })).toBeInTheDocument();
+  });
+
+  it("writes a day of more matches than one write takes in slices, all of them", async () => {
+    const keys = Array.from({ length: 250 }, (_, i) => `item:m${i}`);
+    const big = rolled({ key: keys[0], rollup: { keys, cards: [] } });
+    render(<WhatsNew feed={feed([big])} now={NOW} />);
+    const name = plain(d.aria(feedCopy.home.title.tradeMatchRolled(colin.displayName, 250)));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name })); });
+    expect(m.clear.mock.calls.map(([s]) => s.length)).toEqual([200, 50]);
+    expect(m.clear.mock.calls.flatMap(([s]) => s)).toEqual(keys);
+  });
+
+  it("comes back with the toast when that write fails", async () => {
+    m.clear.mockResolvedValue({ ok: false, reason: "off" });
+    render(<WhatsNew feed={feed([rolled()])} now={NOW} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(title)) })); });
+    expect(screen.getByRole("button", { name: plain(d.aria(title)) })).toBeInTheDocument();
+    expect(screen.getByText(d.failed)).toBeInTheDocument();
+  });
+
+  it("as the lead, its ✕ writes every member too", async () => {
+    render(<LeadSlot lead={rolled()} now={NOW} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(title)) })); });
+    expect(m.clear).toHaveBeenCalledWith(["item:m3", "item:m2", "item:m1"]);
+  });
+
+  it("Clear all writes every member of a rolled row and counts rows in its toast", async () => {
+    render(<WhatsNew feed={feed([rolled(), view(1)])} now={NOW} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: feedCopy.home.clearAll.aria })); });
+    expect(m.clear).toHaveBeenCalledWith(["item:m3", "item:m2", "item:m1", "set:s1"]);
+    expect(screen.getByText(feedCopy.home.clearAll.cleared(2))).toBeInTheDocument();
+  });
+});
+
 describe("where focus goes (Copilot round 1, #2285)", () => {
   const scope = (html: string) => {
     document.body.innerHTML = `<section data-dismiss-scope>${html}</section>`;

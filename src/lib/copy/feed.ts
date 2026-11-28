@@ -14,6 +14,10 @@ function tradeMatchTitle(friend: string | ThirdPartyName, card: string): string 
 function tradeMatchTitle(friend: string | ThirdPartyName, card: string): string | PersonParts {
   return typeof friend === "string" ? `${friend} has a spare ${card}` : personText`${friend} has a spare ${card}`;
 }
+/** A friend's trade matches on one day, rolled into one row (Cart on your wishlist Q1). Home only, so always branded. */
+function tradeMatchRolledTitle(friend: ThirdPartyName, cardCount: number): PersonParts {
+  return personText`${friend} has spares of ${cardCount} cards you want`;
+}
 function spareRequestTitle(friend: string, card: string): string;
 function spareRequestTitle(friend: ThirdPartyName, card: string): PersonParts;
 function spareRequestTitle(friend: string | ThirdPartyName, card: string): string | PersonParts;
@@ -213,6 +217,8 @@ export const feedCopy = {
       newPrecon: (precon: string) => `${precon} precon is out`,
       priceDrop: (card: string) => `${card} is cheaper`,
       tradeMatch: tradeMatchTitle,
+      /** Several matches from one friend on one day (Q1): `Colin has spares of 4 cards you want`. */
+      tradeMatchRolled: tradeMatchRolledTitle,
       /** Also the title of the same ask on `/friends`' Waiting on you. */
       spareRequest: spareRequestTitle,
       /** An offer to the reader (You have it): the same row and lead, turned around. */
@@ -228,6 +234,16 @@ export const feedCopy = {
       /** The same line for a wishlist entry that names a printing; `printing` is `SLD 2125` (`wishlistPrintingLabel`). */
       priceDropAt: (printing: string) => `at ${printing}.`,
       tradeMatch: "It’s on your wishlist.",
+      /**
+       * A rolled row's line (Q1): two cards by name, then how many more. `Sai, Ghalta and 2 more. On your wishlist.`;
+       * two in all, `Miku and Captain America. On your wishlist.` `names` is the cards the catalog still holds, newest first.
+       */
+      tradeMatchRolled: (names: readonly string[], cardCount: number) => {
+        const shown = names.slice(0, 2);
+        const more = cardCount - shown.length;
+        const list = shown.length === 0 ? "" : more > 0 ? `${shown.join(", ")} and ${more} more. ` : `${shown.join(" and ")}. `;
+        return `${list}On your wishlist.`;
+      },
       spareRequest: "Answer in Friends.",
       spareOffer: "Answer in Friends.",
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */

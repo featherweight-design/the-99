@@ -38,6 +38,7 @@ import { isTradeEvent, leadStory, TRADE_WAITING_EVENTS, type FeedKind, type Trad
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
 import type { DropSale } from "./drop-lines";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
+import { readerZone, rollTradeMatches, rollZone } from "./rollup";
 import { wizardsOutRoute } from "../push/wizards-out";
 import { parseCatalogKey } from "../push/catalog-rule";
 import { loadPostListTargets } from "../announcements/early-list-read";
@@ -111,6 +112,12 @@ export type FeedView = {
    * sides are gone (the trade or the friendship), which drops from a push and draws no row.
    */
   trade?: { id: string; event: TradeEvent; theirs: FeedCard[]; yours: FeedCard[] };
+  /**
+   * A trade match rolled up with the same friend's other matches that reader-day (`rollTradeMatches`, Cart on your
+   * wishlist Q1): every member's key, the row's own first (its ✕ dismisses them all), and their cards, newest first (the
+   * picture fans them, the line names them). Absent on a single match, which stays the shipped row, and on every other kind.
+   */
+  rollup?: { keys: string[]; cards: FeedCard[] };
   /** Home only (`withAnswerDetails`): what the answer's line says. Absent on a push. */
   answerDetail?: AnswerDetail;
 };
@@ -410,13 +417,16 @@ export async function loadHomeFeed(
   // only when the feed holds a spare-request row that is not an answer. The ask waits on the friend's side whatever the
   // feed shows, so the match is by card and asker: one open ask per asker and card (the index).
   const waiting = items.some((i) => i.kind === "spare-request" && !("answer" in i && i.answer));
-  const [found, targets, asks, offers] = await Promise.all([
+  // The trade-match roll-up's day is the reader's (Q1), judged as the push cap judges it: read only when a match is here.
+  const matches = items.some((i) => i.kind === "trade-match");
+  const [found, targets, asks, offers, zone] = await Promise.all([
     lookups(userId, items, q, env, store),
     loadPostListTargets(posts, now, q),
     waiting ? loadIncomingAsks(userId, env, now, q) : Promise.resolve([] as IncomingAsk[]),
     waiting ? loadIncomingOffers(userId, now) : Promise.resolve([] as IncomingOffer[]),
+    matches ? readerZone(userId, q) : Promise.resolve(null),
   ]);
-  const views = withTradeSides(withListTargets(toViews(items, found, store), targets));
+  const views = rollTradeMatches(withTradeSides(withListTargets(toViews(items, found, store), targets)), rollZone(zone));
   const incoming = [...asks, ...offers.map(offerAsLeadAsk)];
   const open = answerableKeys(views, asks, offers.map(offerAsLeadAsk));
   const feed = offer.length > 0 ? { ...splitLead(views, on, open), offer } : splitLead(views, on, open);

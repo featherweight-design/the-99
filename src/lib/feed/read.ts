@@ -31,6 +31,8 @@ import { answerOf, isOfferItem, type Answer } from "../social/spare-request-rule
 import { availableFeedKinds } from "./flag";
 import type { DropSale } from "./drop-lines";
 import { kindEnabledAt } from "./kind-gate";
+import { rollCountKey, rollZoneSql } from "./rollup";
+import { captureServerError } from "../sentry/capture";
 import { saleJson } from "./sale-json";
 import { CATALOG_KINDS, feedOrder, isAnnouncementKind, isStoredKind, windowFloor, type AnnouncementFeedKind, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
 
@@ -153,11 +155,15 @@ export function feedQuery(
     order by f.created_at desc, f.key`;
 }
 
-/** The unseen count, apart so a test can render it: one statement over the same union. */
-export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor, storeOn = false): SQL | null {
+/**
+ * The unseen count, apart so a test can render it: one statement over the same union. With `rolled` (a zone name or
+ * `rollZoneSql`), it counts What's new's rows rather than items: a friend's trade matches on one reader-day are one
+ * (`rollCountKey`, the twin of `rollTradeMatches`), unseen when any of them is. Without it, every item counts.
+ */
+export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor, storeOn = false, rolled: string | SQL | null = null): SQL | null {
   const union = feedUnion(viewerId, kinds, now, storeOn);
   if (!union) return null;
-  return sql`select count(*)::int as n
+  return sql`select ${rolled === null ? sql`count(*)` : sql`count(distinct ${rollCountKey(rolled)})`}::int as n
     from (${union}) f
     left join ${userPrefs} up on up.user_id = ${viewerId}
     where ${inWindow(now)} and f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz)
@@ -276,10 +282,26 @@ export async function loadFeed(userId: string, env: NodeJS.ProcessEnv, now = new
   return (rows as FeedRow[]).map(toFeedItem).sort(feedOrder);
 }
 
-/** Home's badge: unseen items in the window. One statement; 0 while the feed is off. */
+/**
+ * Home's badge: unseen What's new rows in the window, so a friend's trade matches on one reader-day count once, as the
+ * list draws them (`rollTradeMatches`). One statement, the reader's zone read inside it (`rollZoneSql`); 0 while the
+ * feed is off. A stored zone Postgres refuses is reported and the count runs again in UTC, so the badge still draws.
+ */
 export async function unseenCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  return countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env)), q);
+  const count = (zone: string | SQL) => countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env), zone), q);
+  try {
+    return await count(rollZoneSql(userId));
+  } catch (error) {
+    if (pgCode(error) !== INVALID_PARAMETER_VALUE) throw error;
+    captureServerError("feed.badge-zone", error);
+    return count("UTC");
+  }
 }
+
+/** Postgres's code for a value it refuses, a time zone it does not know among them. */
+const INVALID_PARAMETER_VALUE = "22023";
+const pgCode = (error: unknown): unknown =>
+  (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
 
 /**
  * The Friends badge's SEEN half: unseen trade matches (by `friends_seen_at`, the grant re-joined; 0 while the kind is

@@ -78,6 +78,11 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
         press: item.outbound ? (item.store ? storeCopy.feedBuy(STORE_INFO[item.store]) : c.press.priceDrop) : null,
       };
     case "trade-match":
+      // Rolled up (Cart on your wishlist Q1): the friend's day of matches, and the press to their spares, no card named.
+      if (item.rollup && item.friend) {
+        const n = item.rollup.keys.length;
+        return { title: c.title.tradeMatchRolled(item.friend.displayName, n), line: c.line.tradeMatchRolled(item.rollup.cards.map((x) => x.name), n), press: c.press.tradeMatch(friend) };
+      }
       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
     case "spare-request":
       if (item.offer) {
@@ -330,6 +335,12 @@ function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPu
 export type RowCompact = boolean | "rail";
 const rowMd = (compact: RowCompact, wide: string, rail: string): string => (compact === true ? "" : compact === "rail" ? rail : wide);
 
+/** The rolled row's fan behind the first card, nearest first (board N1): offset left and up, turned, and dimmed. */
+const ROLLED_FAN = [
+  "-left-[6px] top-[0px] -rotate-[6deg] brightness-[.7]",
+  "-left-[11px] -top-[1px] -rotate-[12deg] brightness-[.5]",
+] as const;
+
 /** The 46x64 picture: the card at card shape with the friend's face on its corner, or the combo mark. */
 function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCommander, "artCropUri"> | null | undefined; compact: RowCompact }) {
   // Every card row previews its card on hover (Hugh, 2026-10-12), on the picture, since the row carries prose; from
@@ -361,7 +372,14 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
         // eslint-disable-next-line @next/next/no-img-element
         <img src={item.trade.yours[0].image} alt="" data-feed-trade-yours className="absolute -left-[5px] top-[1px] block h-[60px] w-[43px] -rotate-[9deg] rounded-[3px] object-cover opacity-90 shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
       ) : null}
-      <span className={`block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${item.trade ? "relative rotate-[3deg]" : ""}`}>
+      {/* A rolled trade match (Cart on your wishlist Q1, board N1): up to two more cards fanned behind the first, each
+          further left, higher and darker; a card with no image is passed over, as the trade fan does. */}
+      {(item.rollup?.cards.slice(1).filter((b) => b.image).slice(0, 2) ?? []).map((b, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={b.oracleId} src={b.image!} alt="" data-feed-rolled-card
+          className={`absolute block h-[60px] w-[43px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)] bg-[color:var(--surface-raised)] ${ROLLED_FAN[i]}`} />
+      )).reverse()}
+      <span className={`block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${item.trade ? "relative rotate-[3deg]" : item.rollup ? "relative" : ""}`}>
         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
       </span>
       {item.friend && (
