@@ -197,53 +197,53 @@ describe("pendingSummary", () => {
   it("names a move and what it gains, with no pronoun", () => {
     const p = pendingSummary({ saved, draft, rows, selected: new Set(["u_mara", "u_theo"]) })!;
     expect(p.title).toBe("Theo selected, not saved");
-    expect(p.body).toBe("Theo moves from friends to testers, and gains Overview v2 and Push notifications.");
-    expect(p.body).not.toMatch(/\b(he|she|his|her)\b/i);
+    expect(p.lines.join(" ")).toBe("Theo moves from friends to testers, and gains Overview v2 and Push notifications.");
+    expect(p.lines.join(" ")).not.toMatch(/\b(he|she|his|her)\b/i);
   });
 
   it("names a removal's losses, and an add that changes nothing", () => {
-    expect(pendingSummary({ saved, draft, rows, selected: new Set([]) })!.body).toBe("Saving removes Mara from testers, and Mara loses Overview v2.");
+    expect(pendingSummary({ saved, draft, rows, selected: new Set([]) })!.lines.join(" ")).toBe("Saving removes Mara from testers, and Mara loses Overview v2.");
     const p = pendingSummary({ saved, draft, rows, selected: new Set(["u_mara", "u_jun"]) })!;
-    expect(p.body).toBe("Saving adds Jun to testers. Nothing changes for Jun.");
+    expect(p.lines.join(" ")).toBe("Saving adds Jun to testers. Nothing changes for Jun.");
   });
 
   it("ends a sentence on a masked name with the name's own period, never a second", () => {
     const masked = rows.map((r) => (r.id === "u_jun" ? { ...r, name: "Jun K." } : r));
     const p = pendingSummary({ saved, draft, rows: masked, selected: new Set(["u_mara", "u_jun"]) })!;
-    expect(p.body).toBe("Saving adds Jun K. to testers. Nothing changes for Jun K.");
+    expect(p.lines.join(" ")).toBe("Saving adds Jun K. to testers. Nothing changes for Jun K.");
   });
 
   it("counts field changes and members together", () => {
     const p = pendingSummary({ saved, draft: { name: "beta", description: "x", credits: "8", paidLimit: "" }, rows, selected: new Set(["u_mara", "u_jun"]) })!;
     expect(p.count).toBe(4);
     expect(p.title).toBe("4 changes not saved");
-    expect(p.body).toBe("Saving renames testers to beta. Saving changes the description. Saving sets daily credits to 8. Saving adds Jun to beta. Nothing changes for Jun.");
+    expect(p.lines.join(" ")).toBe("Saving renames testers to beta. Saving changes the description. Saving sets daily credits to 8. Saving adds Jun to beta. Nothing changes for Jun.");
     expect(pendingSummary({ saved: { ...saved, dailyAllowance: 8 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
       title: adminCopy.groups.pending.fields,
-      body: adminCopy.groups.pending.credits(null),
+      lines: [adminCopy.groups.pending.credits(null)],
     });
   });
 
   it("names a paid limit change as a field of its own", () => {
     expect(pendingSummary({ saved, draft: { ...draft, paidLimit: "3" }, rows, selected: new Set(["u_mara"]) })).toEqual({
       title: adminCopy.groups.pending.fields,
-      body: "Saving sets daily paid runs to 3.",
+      lines: ["Saving sets daily paid runs to 3."],
       count: 1,
     });
     expect(pendingSummary({ saved: { ...saved, paidDailyLimit: 3 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
-      body: adminCopy.groups.pending.paidLimit(null),
+      lines: [adminCopy.groups.pending.paidLimit(null)],
     });
   });
 
   it("names a new group by the name typed", () => {
     const p = pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "", paidLimit: "" }, rows, selected: new Set(["u_jun"]) })!;
-    expect(p.body).toBe("Saving creates beta. Saving adds Jun to beta. Nothing changes for Jun.");
+    expect(p.lines.join(" ")).toBe("Saving creates beta. Saving adds Jun to beta. Nothing changes for Jun.");
   });
 
   it("offers Create for a new group with only a name typed, and nothing for an empty one (G3)", () => {
     expect(pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toEqual({
       title: adminCopy.groups.pending.fields,
-      body: "Saving creates beta.",
+      lines: ["Saving creates beta."],
       count: 1,
     });
     expect(pendingSummary({ saved: null, draft: { name: "", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toBeNull();

@@ -14,6 +14,7 @@ import {
 } from "../../lib/admin/flags-rule";
 import { adminCopy, flagCopy } from "../../lib/copy/admin";
 import { KILLED } from "../../lib/flags/resolve";
+import { CopyLines } from "../copy-lines";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { SearchField } from "../ui/text-field";
@@ -70,19 +71,19 @@ export function SwitchTags({ row }: { row: Pick<SwitchRow, "kind" | "parent"> })
 const resolvedSub = (row: SwitchRow) =>
   row.reason?.kind === "kill" ? (row.stopped ? copy.envKilled(row.env ?? "") : copy.killed) : row.reason?.kind === "parent" ? copy.parentOff(flagCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
 
-/** The App-wide cell; a set override under the env stop says it is refused, as the Overrides cell does (L4). */
-const appText = (row: SwitchRow) => {
-  const value = row.app === KILLED ? copy.app.killed : row.app === "on" ? copy.app.on : row.app === "off" ? copy.app.off : copy.app.notSet;
-  return row.appRefused ? `${value}, ${copy.overrides.refused}` : value;
-};
+/** The App-wide cell's value; a set override under the env stop says it is refused, as the Overrides cell does (L4). */
+const appValue = (row: SwitchRow) => (row.app === KILLED ? copy.app.killed : row.app === "on" ? copy.app.on : row.app === "off" ? copy.app.off : copy.app.notSet);
 
-/** The Overrides cell (L4's `1 account, refused`), or null when the switch carries none. */
-function overridesText(row: SwitchRow): string | null {
+/** The App-wide cell (value, then `refused` when it is), one copy line each so the copy editor finds each row. */
+const appText = (row: SwitchRow) => <CopyLines lines={[appValue(row), row.appRefused && copy.overrides.refused]} sep=", " />;
+
+/** The Overrides cell's lines (L4's `1 account, refused`), or null when the switch carries none. */
+function overridesParts(row: SwitchRow): string[] | null {
   const parts = [row.groups ? copy.overrides.groups(row.groups) : "", row.accounts ? copy.overrides.accounts(row.accounts) : ""].filter(Boolean);
   if (parts.length === 0) return null;
   if (row.refused) parts.push(copy.overrides.refused);
   else if (row.ignored) parts.push(copy.overrides.ignored);
-  return parts.join(", ");
+  return parts;
 }
 
 /** The App-wide cell's ink: Killed in the kill ink (mono, `--danger`), a refused value in `--danger`, unset faint. */
@@ -92,7 +93,7 @@ const appClass = (row: SwitchRow) =>
     : `text-[13px] ${row.appRefused ? "text-[color:var(--danger)]" : row.app ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`;
 
 function Row({ row }: { row: SwitchRow }) {
-  const ov = overridesText(row);
+  const ov = overridesParts(row);
   const sub = resolvedSub(row);
   return (
     <li data-switch={row.name} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px]">
@@ -122,7 +123,15 @@ function Row({ row }: { row: SwitchRow }) {
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.name}</span>
         <span className="text-pretty text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{flagCopy[row.name].description}</span>
         <span data-testid="switch-meta" className="mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
-          {[copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides].join(" · ")}
+          <span>{copy.metaApp(appValue(row))}</span>
+          {row.appRefused && (
+            <>
+              {", "}
+              <span>{copy.overrides.refused}</span>
+            </>
+          )}
+          {" · "}
+          {ov ? <CopyLines lines={ov} sep=", " /> : <span>{copy.metaNoOverrides}</span>}
           {" · "}
           {/* One unbreakable piece: `N of T on` never leaves `on` alone on the next line. */}
           <span className="whitespace-nowrap">{sub}</span>
@@ -134,7 +143,7 @@ function Row({ row }: { row: SwitchRow }) {
       </span>
       <span className={`hidden text-[12.5px] md:inline ${ov ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
         <span className="sr-only">{copy.cols.overrides} </span>
-        {ov ?? copy.overrides.none}
+        {ov ? <CopyLines lines={ov} sep=", " /> : copy.overrides.none}
       </span>
       <div className="hidden flex-col gap-[3px] md:flex">
         <Pill row={row} />

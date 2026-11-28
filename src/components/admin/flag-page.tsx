@@ -5,6 +5,7 @@ import { AppWideControl, RowControls } from "./override-controls";
 import { OverridePicker } from "./override-picker";
 import { ROW } from "./override-row";
 import { PendingReporter } from "../shell/pending-reporter";
+import { CopyLines } from "../copy-lines";
 import { CheckAccount } from "./check-account";
 import { SectionHead } from "./costs-detail";
 import { ResolvedDot } from "./flags-list";
@@ -174,7 +175,11 @@ export function SwitchPageView({
       <SectionHead title={copy.appHead} meta={page.app.meta} />
       <div data-testid="switch-app" className="flex flex-col gap-[8px]">
         <AppWideControl name={page.name} label={flagCopy[page.name].label} value={page.app.current} stopped={page.app.stopped} who={page.app.who} />
-        {page.app.note && <span className="text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{page.app.note}</span>}
+        {page.app.note.length > 0 && (
+          <span className="text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+            <CopyLines lines={page.app.note} />
+          </span>
+        )}
       </div>
 
       {sections && (

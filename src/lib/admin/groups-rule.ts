@@ -321,7 +321,7 @@ export function pendingSummary(input: {
   draft: Draft;
   rows: readonly MemberRow[];
   selected: ReadonlySet<string>;
-}): { title: string; body: string; count: number } | null {
+}): { title: string; lines: string[]; count: number } | null {
   const { saved, draft, rows, selected } = input;
   const groupId = saved?.id ?? null;
   const name = draft.name.trim();
@@ -370,7 +370,7 @@ export function pendingSummary(input: {
   if (count === 0) return null;
   const title =
     count === 1 && changed.length === 1 ? copy.pending.one(changed[0].row.name, changed[0].selected) : count === 1 ? copy.pending.fields : copy.pending.many(count);
-  return { title, body: lines.join(" "), count };
+  return { title, lines, count };
 }
 
 // ---------- history ----------

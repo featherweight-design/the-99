@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ConfirmFrame, type ConfirmFact } from "./confirm-frame";
 import { usd } from "../../lib/admin/costs-rule";
 import type { ConfirmPreview } from "../../lib/admin/flag-writes";
 import type { Op, Scope } from "../../lib/admin/flag-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
+import { CopyLines } from "../copy-lines";
 
 // The model confirm (admin STATES F3; design table, Confirm): a write that raises how many accounts
 // can press a model feature, drawn in the shared `ConfirmFrame`. It renders the server's preview and computes no figure of its own; `Turn on for n` sends n
@@ -15,11 +16,11 @@ const copy = adminCopy.confirmModel;
 
 export type ConfirmContext = { switchLabel: string; op: Op; scope: Scope; groupName: string | null };
 
-function lead({ op, scope, groupName }: ConfirmContext, preview: ConfirmPreview, what?: string): string {
+function lead({ op, scope, groupName }: ConfirmContext, preview: ConfirmPreview, what?: string): ReactNode {
   what ??= scope === "group" ? copy.lead.group[op](groupName ?? "") : copy.lead[scope][op];
   const features = preview.costs.map((c) => copy.capability[c.key]);
   const list = features.length < 3 ? features.join(" and ") : `${features.slice(0, -1).join(", ")} and ${features.at(-1)}`;
-  return `${what} ${copy.spends(list)}`;
+  return <CopyLines lines={[what, copy.spends(list)]} />;
 }
 
 export function ModelConfirm({
@@ -47,10 +48,15 @@ export function ModelConfirm({
     [copy.facts.who, preview.names.join(", ")],
     [
       copy.facts.cost,
-      [
-        ...preview.costs.map((c) => `${copy.cost(copy.capability[c.key], usd(c.reserveMicroUsd))} ${c.meanMicroUsd === null ? copy.noMean : copy.mean(usd(c.meanMicroUsd))}`),
-        ...(credits ? [copy.credits(credits)] : []),
-      ].join(" "),
+      <CopyLines key="cost"
+        lines={[
+          ...preview.costs.flatMap((c) => [
+            copy.cost(copy.capability[c.key], usd(c.reserveMicroUsd)),
+            c.meanMicroUsd === null ? copy.noMean : copy.mean(usd(c.meanMicroUsd)),
+          ]),
+          ...(credits ? [copy.credits(credits)] : []),
+        ]}
+      />,
     ],
     [copy.facts.about, preview.about > 0 ? copy.about(preview.about, context.switchLabel) : copy.noAbout],
     [copy.facts.when, copy.when],

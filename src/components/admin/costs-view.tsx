@@ -15,6 +15,7 @@ import {
   type WorkspaceBlock,
 } from "../../lib/admin/costs-rule";
 import { adminCopy } from "../../lib/copy/admin";
+import { CopyLines } from "../copy-lines";
 import { PendingReporter } from "../shell/pending-reporter";
 import { CostsDetail, fill, INK, SectionHead } from "./costs-detail";
 import { SettingAction } from "./setting-dialog";
@@ -256,12 +257,18 @@ export function CostsView({
   const wsRead = ws.read;
   // A label run still collecting, or unpriced, leaves every figure holding system spend partial.
   const sysUsd = (micro: number) => (sys.incomplete ? copy.soFar(usd(micro)) : usd(micro));
-  const note = (text: string | null | undefined) => (text ? ` ${copy.note(text)}` : "");
+  const note = (text: string | null | undefined) =>
+    text ? (
+      <>
+        {" "}
+        <span>{copy.note(text)}</span>
+      </>
+    ) : null;
 
   const tiles = [
-    { label: copy.tiles.calls, fig: usd(s.calls.micro), sub: [copy.tileSub.runs(s.calls.runs), s.callsPaceMicro !== null && s.calls.runs > 0 ? copy.tileSub.pace(usd(s.callsPaceMicro)) : null].filter(Boolean).join(" · ") },
-    { label: copy.tiles.player, fig: usd(s.player.micro), sub: [copy.tileSub.runs(s.player.runs), s.playerPaceMicro !== null && s.player.runs > 0 ? copy.tileSub.pace(usd(s.playerPaceMicro)) : null].filter(Boolean).join(" · ") },
-    { label: copy.tiles.system, fig: sysUsd(sys.total), sub: [ceiling && ceiling.micro > 0 ? (sys.incomplete ? copy.tileSub.ofCeilingAtLeast(pctFloor(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro))) : copy.tileSub.system, sys.incomplete ? copy.systemPartial : null].filter(Boolean).join(" · ") },
+    { label: copy.tiles.calls, fig: usd(s.calls.micro), sub: <CopyLines lines={[copy.tileSub.runs(s.calls.runs), s.callsPaceMicro !== null && s.calls.runs > 0 ? copy.tileSub.pace(usd(s.callsPaceMicro)) : null]} sep=" · " /> },
+    { label: copy.tiles.player, fig: usd(s.player.micro), sub: <CopyLines lines={[copy.tileSub.runs(s.player.runs), s.playerPaceMicro !== null && s.player.runs > 0 ? copy.tileSub.pace(usd(s.playerPaceMicro)) : null]} sep=" · " /> },
+    { label: copy.tiles.system, fig: sysUsd(sys.total), sub: <CopyLines lines={[ceiling && ceiling.micro > 0 ? (sys.incomplete ? copy.tileSub.ofCeilingAtLeast(pctFloor(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro))) : copy.tileSub.system, sys.incomplete ? copy.systemPartial : null]} sep=" · " /> },
     { label: copy.tiles.perAccount, fig: usd(s.perAccountMicro ?? 0), sub: copy.tileSub.accounts(s.accounts) },
   ];
 
@@ -314,7 +321,12 @@ export function CostsView({
             label={copy.capRows.ceiling}
             source="here"
             figure={ceiling ? copy.of(sysUsd(sys.total), capMicro(ceiling.micro)) : copy.notSet(sysUsd(sys.total))}
-            sub={ceilingSub + note(storedCeiling?.note)}
+            sub={
+              <>
+                <span>{ceilingSub}</span>
+                {note(storedCeiling?.note)}
+              </>
+            }
             actions={s.current && <SettingAction kind="ceiling" label={copy.changeCeiling} />}
           >
             <CapBar
@@ -329,9 +341,19 @@ export function CostsView({
             figure={wsRead.ok
               ? cap ? copy.of(usd(wsRead.totalMicro), capMicro(cap.micro)) : copy.notSet(usd(wsRead.totalMicro))
               : copy.workspaceUnread(sysUsd(ws.ledgerMicro))}
-            sub={wsRead.ok
-              ? copy.capSub.workspace + note(cap?.note) + (wsRead.ledgerAhead ? copy.capSub.ledgerAhead : copy.capSub.elsewhere(usd(wsRead.elsewhereMicro))) + copy.asOf(readAt(wsRead.asOf, now))
-              : unreadReason(wsRead) + note(cap?.note)}
+            sub={wsRead.ok ? (
+              <>
+                <span>{copy.capSub.workspace}</span>
+                {note(cap?.note)}
+                <span>{wsRead.ledgerAhead ? copy.capSub.ledgerAhead : copy.capSub.elsewhere(usd(wsRead.elsewhereMicro))}</span>
+                <span>{copy.asOf(readAt(wsRead.asOf, now))}</span>
+              </>
+            ) : (
+              <>
+                <span>{unreadReason(wsRead)}</span>
+                {note(cap?.note)}
+              </>
+            )}
             actions={s.current && <SettingAction kind="cap" label={copy.changeCap} />}
           >
             <CapBar
@@ -348,7 +370,12 @@ export function CostsView({
             label={copy.capRows.org}
             source="anthropic"
             figure={wsRead.ok ? (orgCap ? copy.of(usd(wsRead.orgMicro), capMicro(orgCap.micro)) : copy.notSet(usd(wsRead.orgMicro))) : copy.orgUnread}
-            sub={(wsRead.ok ? copy.capSub.org(usd(wsRead.totalMicro), usd(wsRead.otherMicro)) : copy.capSub.orgUnread) + note(orgCap?.note)}
+            sub={
+              <>
+                <span>{wsRead.ok ? copy.capSub.org(usd(wsRead.totalMicro), usd(wsRead.otherMicro)) : copy.capSub.orgUnread}</span>
+                {note(orgCap?.note)}
+              </>
+            }
             actions={s.current && <SettingAction kind="org" label={copy.changeOrgCap} />}
           >
             <CapBar

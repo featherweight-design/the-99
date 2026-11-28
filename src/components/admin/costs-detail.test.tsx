@@ -70,7 +70,7 @@ describe("CostsDetail, a month with runs", () => {
     const { container } = draw({ calls, labelRuns: [labelRun] });
     expect([...container.querySelectorAll("[data-series]")].map((el) => el.getAttribute("data-series"))).toEqual(["player", "labels", "rewrites"]);
     expect(container.querySelector('[data-series="labels"]')).toHaveTextContent("$59.48");
-    expect(screen.getByText(/^One run was refunded: the player got the credit back, and the cost still counts\. Suggested changes 1 run, \$0\.050\.$/)).toBeInTheDocument();
+    expect(screen.getByText((_c, el) => el?.tagName === "P" && /^One run was refunded: the player got the credit back, and the cost still counts\. Suggested changes 1 run, \$0\.050\.$/.test(el.textContent ?? ""))).toBeInTheDocument();
   });
 
   it("holds each feature's mean against its reservation", () => {

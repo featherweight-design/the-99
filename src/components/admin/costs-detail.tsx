@@ -3,6 +3,7 @@ import { isFreeRewrite, ledgerName, shortModel, type CostDetail } from "../../li
 import { usd, type CostSummary, type MonthKey } from "../../lib/admin/costs-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
 import { adminCopy } from "../../lib/copy/admin";
+import { CopyLines } from "../copy-lines";
 
 // The Costs detail (admin PR 3; design table, Costs `by-model row`, `split`, `tables`, `reserved
 // bar`; the R2 canvas's costsSparse and costsBusy scenes, in their order). Pure render over
@@ -144,7 +145,7 @@ function ByModel({ d }: { d: CostDetail }) {
   // A share of a total that is only a lower bound is not a share: drawn as a dash until it is whole.
   // Evals are not here: they are no environment's spend, and are drawn apart (`EvalsApart`).
   const partial = d.labelsIncomplete;
-  const rows: { key: string; label: string; micro: number; fig: string; sub: string; parts: { micro: number; ink: string }[] }[] = d.models.map((m) => ({
+  const rows: { key: string; label: string; micro: number; fig: string; sub: string[]; parts: { micro: number; ink: string }[] }[] = d.models.map((m) => ({
     key: m.model,
     label: m.model,
     micro: m.micro,
@@ -155,7 +156,7 @@ function ByModel({ d }: { d: CostDetail }) {
       m.batches > 0 ? copy.modelSub.batches(m.batches) : null,
       m.composite ? copy.modelSub.composite : null,
       m.incomplete ? copy.labelsPartial : null,
-    ].filter(Boolean).join("; "),
+    ].filter((x): x is string => Boolean(x)),
     parts: [{ micro: m.segs.player, ink: INK.player }, { micro: m.segs.rewrites, ink: INK.rewrites }, { micro: m.segs.labels, ink: INK.labels }],
   }));
   return (
@@ -170,7 +171,7 @@ function ByModel({ d }: { d: CostDetail }) {
           <div aria-hidden className="mt-[4px] flex h-[10px] gap-[2px] overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]">
             <Segs parts={r.parts} scale={total} min={0.6} />
           </div>
-          <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{r.sub}</span>
+          <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]"><CopyLines lines={r.sub} sep="; " /></span>
         </div>
       ))}
     </div>
@@ -372,9 +373,11 @@ export function CostsDetail({
 
           <SectionHead title={copy.refunds} meta={d.refunds.runs > 0 ? copy.refundsMeta(usd(d.refunds.micro), refundShare) : undefined} />
           <p className={BODY}>
-            {d.refunds.runs > 0
-              ? [copy.refundsBody(d.refunds.runs, copy.refundLine), ...d.refunds.byFeature.map((f) => copy.refundFeature(featureName(f.feature), f.runs, usd(f.micro)))].join(" ")
-              : copy.noRefunds}
+            {d.refunds.runs > 0 ? (
+              <CopyLines lines={[copy.refundsBody(d.refunds.runs, copy.refundLine), ...d.refunds.byFeature.map((f) => copy.refundFeature(featureName(f.feature), f.runs, usd(f.micro)))]} />
+            ) : (
+              copy.noRefunds
+            )}
           </p>
 
           <SectionHead title={copy.reserved} meta={copy.reservedMeta} />

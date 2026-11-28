@@ -16,7 +16,7 @@ describe("ModelConfirm", () => {
       />,
     );
     expect(screen.getByRole("heading").textContent).toBe("Turn Fixture switch on for 2 more accounts?");
-    expect(screen.getByText("Turning friends on reaches its members without an account override. It turns on Overview and Suggested changes, which spends money.")).toBeInTheDocument();
+    expect(screen.getByText((_c, el) => el?.tagName === "P" && el.textContent === "Turning friends on reaches its members without an account override. It turns on Overview and Suggested changes, which spends money.")).toBeInTheDocument();
     const facts = [...document.querySelectorAll("dd")].map((d) => d.textContent);
     expect(facts).toEqual([
       "Mara, Theo",

@@ -27,7 +27,7 @@ export function ConfirmFrame({
   onCancel,
 }: {
   title: string;
-  lead: string;
+  lead: ReactNode;
   facts: readonly ConfirmFact[];
   children?: ReactNode;
   cancelLabel: string;
