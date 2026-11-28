@@ -6,6 +6,7 @@
 // the sheet reloads the trade (`openTradeAction`) and the page refreshes; a refusal draws the shared toast and leaves
 // the sheet as it was, reloading it when the trade moved underneath.
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ModalChrome } from "../decks/receipt-modal";
@@ -404,7 +405,7 @@ function OfferedChip({ offered, open, solo, friend, onToggle, onClose, onOpen }:
               {o.friend.publicId === friend.publicId ? (
                 <button type="button" onClick={() => onOpen(o.tradeId)} className="flex-none cursor-pointer border-0 bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--accent-text)]">{t.offeredPop.open}</button>
               ) : (
-                <Link href={`/friends/${o.friend.publicId}/spares?trade=${o.tradeId}`} className="flex-none text-[12.5px] font-medium text-[color:var(--accent-text)] no-underline">{t.offeredPop.open}</Link>
+                <Link href={`/friends/${o.friend.publicId}/spares?trade=${o.tradeId}`} className="flex-none text-[12.5px] font-medium text-[color:var(--accent-text)] no-underline">{t.offeredPop.open}<PendingReporter href={`/friends/${o.friend.publicId}/spares`} /></Link>
               )}
             </div>
           ))}

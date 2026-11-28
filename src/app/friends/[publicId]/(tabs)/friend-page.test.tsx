@@ -32,6 +32,14 @@ vi.mock("../../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
 vi.mock("../../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
 vi.mock("../../../../lib/social/spare-offers", () => ({ loadHaveIt: m.loadHaveIt }));
 vi.mock("../../../../lib/social/spares", () => ({ loadFriendSpareList: m.loadFriendSpareList }));
+// Friend trades have their own tests (`trade-reads.test.ts`, `trade-tab.test.tsx`): here the tab reads none.
+vi.mock("../../../../lib/social/trade-reads", async (orig) => ({
+  ...(await orig<typeof import("../../../../lib/social/trade-reads")>()),
+  loadTradesWith: async () => ({ rows: [], held: false, waiting: false }),
+  loadOwnSparesFor: async () => [],
+  loadOfferedTo: async () => ({}),
+  loadTrade: async () => null,
+}));
 vi.mock("../../../../lib/social/friend-page-data", async (orig) => ({
   ...(await orig<typeof import("../../../../lib/social/friend-page-data")>()), catalogCardName: m.catalogCardName,
 }));
