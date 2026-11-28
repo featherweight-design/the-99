@@ -39,6 +39,7 @@ export function useCopyText(onDone: (ok: boolean) => void, onReset?: () => void)
       try {
         ok = document.execCommand("copy");
       } catch {
+        // silent-catch: expected: refusal: the browser refused the copy command.
         ok = false;
       }
       ta.remove();

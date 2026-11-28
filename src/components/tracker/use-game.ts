@@ -12,6 +12,7 @@ export const local = (): Storage | null => {
   try {
     return window.localStorage;
   } catch {
+    // silent-catch: expected: refusal: storage access refused.
     return null;
   }
 };

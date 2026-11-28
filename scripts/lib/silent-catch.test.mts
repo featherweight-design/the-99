@@ -56,12 +56,9 @@ describe("scan and ratchet", () => {
     const scan = await scanSilentCatches(root);
     expect(scan.counts).toEqual({ [join(root, "a.tsx")]: 1 });
   });
-  it("fails a new silent site, a grown count and a stale baseline, and passes an exact match", () => {
-    const scan = { counts: { "a.tsx": 2, "n.tsx": 1 }, bad: [] };
-    expect(silentCatchFindings(scan, { "a.tsx": 2, "n.tsx": 1 })).toEqual([]);
-    expect(silentCatchFindings(scan, { "a.tsx": 1, "n.tsx": 1 }).map((f) => f.kind)).toEqual(["grew"]);
-    expect(silentCatchFindings(scan, { "a.tsx": 2 }).map((f) => f.kind)).toEqual(["new"]);
-    expect(silentCatchFindings(scan, { "a.tsx": 3, "n.tsx": 1 }).map((f) => f.kind)).toEqual(["stale"]);
-    expect(silentCatchFindings({ counts: {}, bad: [{ path: "a.tsx", line: 4 }] }, {}).map((f) => f.kind)).toEqual(["marker"]);
+  it("fails any unhandled site and any marker with no reason, and passes a clean scan", () => {
+    expect(silentCatchFindings({ counts: {}, bad: [] })).toEqual([]);
+    expect(silentCatchFindings({ counts: { "a.tsx": 2 }, bad: [] }).map((f) => f.kind)).toEqual(["new"]);
+    expect(silentCatchFindings({ counts: {}, bad: [{ path: "a.tsx", line: 4 }] }).map((f) => f.kind)).toEqual(["marker"]);
   });
 });

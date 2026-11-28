@@ -6,6 +6,7 @@
 // never the live one, so a reseat, a deck change or a close does not touch it (addendum, Snapshot rule). Undo the last
 // change takes a mistaken ending back (Undo addendum): it deletes the saved result, then reopens the game on this device.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { gameLoggedAction, saveTableResultAction, undoTableResultAction } from "../../app/friends/table/result-actions";
@@ -168,6 +169,7 @@ export function PlaySurface({
       try {
         markGuideSeen(window.localStorage);
       } catch {
+        // silent-catch: expected: refusal: storage unavailable.
         /* storage unavailable */
       }
       guideFrom.current = "start";
@@ -240,7 +242,9 @@ export function PlaySurface({
     const sealed = snapshot?.roster ?? roster;
     const rows = placements(state);
     const save = chain.current.then(() => saveTableResultAction(tableId, sealed, rows));
-    chain.current = save.catch(() => undefined);
+    chain.current = save.catch((e) => {
+      captureClientError("tracker.result-save", e);
+    });
     save.then(
       (r) => settle(r.ok ? "saved" : "failed"),
       () => settle("failed"),
@@ -280,7 +284,9 @@ export function PlaySurface({
     // A refusal is the server's decision (the night closed, or the seat changed under the game), so it offers no retry.
     const fail = (retry: boolean) => setToast({ id: Date.now(), text: copy.undo.failed, retry: retry ? { label: copy.undo.retry, run: runUndo } : undefined });
     const call = chain.current.then(() => undoTableResultAction(tableId, sealedRoster));
-    chain.current = call.catch(() => undefined);
+    chain.current = call.catch((e) => {
+      captureClientError("tracker.result-undo", e);
+    });
     call.then(
       ({ result }) => {
         done();
@@ -342,6 +348,7 @@ export function PlaySurface({
           try {
             setGuideDue(!guideSeen(window.localStorage));
           } catch {
+            // silent-catch: expected: refusal: storage unavailable, so the guide is due.
             setGuideDue(true);
           }
           // The seat map's order is the turn order and the cells' order, so the config and the snapshot both follow it.

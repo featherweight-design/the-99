@@ -14,6 +14,7 @@ export function ZoneCookie() {
       const secure = location.protocol === "https:" ? "; Secure" : "";
       document.cookie = `${ZONE_COOKIE}=${encodeURIComponent(zone)}; path=/; max-age=${ZONE_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
     } catch {
+      // silent-catch: expected: refusal: a browser with no zone or no cookie access.
       // A browser with no zone or no cookie access keeps the store-zone words.
     }
   }, []);

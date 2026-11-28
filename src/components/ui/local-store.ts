@@ -73,6 +73,7 @@ export function readRaw(key: string): string | null {
   try {
     return localStorage.getItem(key);
   } catch {
+    // silent-catch: expected: refusal: a store that refuses a read answers as empty.
     return null;
   }
 }
@@ -89,6 +90,7 @@ export function writeRaw(key: string, value: string): void {
     localStorage.setItem(key, value);
     if (localStorage.getItem(key) === value) sessionValues.delete(key);
   } catch {
+    // silent-catch: expected: refusal: storage refused the write.
     // Persistence is best-effort; the session map already settled the value.
   }
   for (const listener of listeners.get(key) ?? []) listener();
@@ -102,6 +104,7 @@ export function removeRaw(key: string): void {
   try {
     localStorage.removeItem(key);
   } catch {
+    // silent-catch: expected: refusal: storage refused the removal.
     // Same trade as the write: the session map is already clear, so the value
     // is gone for this tab whatever storage did.
   }

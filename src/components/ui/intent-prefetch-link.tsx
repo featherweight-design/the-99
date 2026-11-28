@@ -56,6 +56,7 @@ function keyboardFocus(el: Element): boolean {
   try {
     return el.matches(":focus-visible");
   } catch {
+    // silent-catch: expected: refusal: an engine without :focus-visible.
     return false;
   }
 }

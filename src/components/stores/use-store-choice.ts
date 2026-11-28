@@ -4,6 +4,7 @@
 // one write at a time (a press while a write is in flight is refused); a write that fails puts the last saved store
 // back and raises the shared social toast. A fresh server value always wins over what the control holds.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { savePreferredStore } from "../../app/settings/store-actions";
 import { storeCopy } from "../../lib/copy/store";
@@ -40,7 +41,8 @@ export function useStoreChoice(store: Store) {
       const r = await savePreferredStore(next);
       if (r.ok) saved.current = next;
       else fail();
-    } catch {
+    } catch (e) {
+      captureClientError("stores.choice-save", e);
       fail();
     } finally {
       setSaving(false);
