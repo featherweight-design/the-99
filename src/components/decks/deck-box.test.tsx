@@ -17,6 +17,16 @@ describe("DeckBoxBand", () => {
     expect(heading.contains(screen.getByText("Fixture aside"))).toBe(false);
   });
 
+  it("truncates the title alone, so the count never wraps or leaves the band (#3440)", () => {
+    render(<DeckBoxBand title="Fixture title" count={3} aside={<span>Fixture aside</span>} />);
+    const title = screen.getByText("Fixture title");
+    expect(title.className).toContain("truncate");
+    expect(title.className).toContain("min-w-0");
+    const count = screen.getByText("3");
+    expect(title.contains(count)).toBe(false);
+    expect(count.parentElement?.className).toContain("flex-none");
+  });
+
   it("draws the heading at the level it is given, with the id the box is labelled by", () => {
     render(
       <DeckBox aria-labelledby="fixture-head">
