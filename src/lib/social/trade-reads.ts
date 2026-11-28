@@ -15,7 +15,7 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, friendLinks, printings, socialProfiles, tradeCards, tradeRounds, trades } from "../../db/schema";
-import { loadPrices } from "../decks/price-query";
+import { loadPrices, type PriceRead } from "../decks/price-query";
 import { priceOf, priceState, provenanceForm, type ProvenanceForm } from "../cards/price-fact";
 import { named } from "../person-name/mint";
 import type { Store } from "../stores/rows";
@@ -162,17 +162,21 @@ export function tradeViewCardsQuery(viewerId: string, tradeId: string): SQL {
     order by cc.name, ctc.oracle_id`;
 }
 
+/** Trade prices drawn from a price read already made: each id's figure at the reader's store, and the read's date. */
+export function tradePricesOf(read: PriceRead, ids: readonly string[], store: Store, now = new Date()): TradePrices {
+  const cents = Object.fromEntries(ids.map((id) => {
+    const fact = read.prices.get(id);
+    return [id, fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null];
+  }));
+  return { store, cents, dated: read.newestAsOf ? provenanceForm(read.newestAsOf, now) : null };
+}
+
 /** Prices at the reader's store, for the sheet's box or a draft's picker; a failed read draws bare totals, never an error. */
 export async function tradePrices(ids: readonly string[], store: Store, now = new Date()): Promise<TradePrices> {
   const bare: TradePrices = { store, cents: {}, dated: null };
   if (ids.length === 0) return bare;
   try {
-    const read = await loadPrices([...ids], [], [], store);
-    const cents = Object.fromEntries(ids.map((id) => {
-      const fact = read.prices.get(id);
-      return [id, fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null];
-    }));
-    return { store, cents, dated: read.newestAsOf ? provenanceForm(read.newestAsOf, now) : null };
+    return tradePricesOf(await loadPrices([...ids], [], [], store), ids, store, now);
   } catch (error) {
     console.warn("[trade-reads] prices unreadable; the sheet draws bare totals", error instanceof Error ? error.message : "");
     return bare;
@@ -181,13 +185,18 @@ export async function tradePrices(ids: readonly string[], store: Store, now = ne
 
 const ACTIONS: readonly TradeAction[] = ["counter", "revise", "accept", "decline", "withdraw", "rescind", "mark", "clear"];
 
-/** The trade sheet's whole view, or null when the viewer is not a party or the other party is no longer a friend. */
-export async function loadTrade(viewerId: string, tradeId: unknown, store: Store, now = new Date()): Promise<TradeView | null> {
+/**
+ * The trade sheet's whole view, or null when the viewer is not a party or the other party is no longer a friend.
+ * `withFriend` (a public id) also makes it null for a trade with anyone else, before the cards and prices are read.
+ */
+export async function loadTrade(
+  viewerId: string, tradeId: unknown, store: Store, now = new Date(), withFriend?: string,
+): Promise<TradeView | null> {
   if (!isUuid(tradeId)) return null;
   const [head] = (await db.execute<TradeRowCols & FriendCols & { offered_at: string; own_public_id: string; from_request_id: string | null; previous_at: string | Date | null }>(
     tradeViewQuery(viewerId, tradeId),
   )).rows;
-  if (!head) return null;
+  if (!head || (withFriend !== undefined && head.public_id !== withFriend)) return null;
   const facts = factsOf(head);
   const role = sideOf(head, viewerId);
   const rows = (await db.execute<{ round: number; side: TradeRole; oracle_id: string; name: string; image_uri: string | null }>(

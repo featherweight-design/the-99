@@ -57,7 +57,7 @@ export function TradesOnTab({ friend, theirSpares, trades, children }: {
         onOpen={(id) => setOpen({ kind: "trade", id })} onPropose={() => setOpen({ kind: "new" })} />
       {children}
       {open ? (
-        <TradeSheet key={open.kind === "trade" ? open.id : "new"} friend={friend} open={open} theirSpares={theirSpares} yourSpares={trades.yours}
+        <TradeSheet key={open.kind === "trade" ? open.id : "new"} friend={friend} open={open} held={trades.held} theirSpares={theirSpares} yourSpares={trades.yours}
           offered={trades.offered} prices={trades.prices} onClose={() => setOpen(null)} onOpen={setOpen} />
       ) : null}
     </OpenTrade.Provider>

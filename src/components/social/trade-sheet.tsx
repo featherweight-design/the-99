@@ -40,9 +40,11 @@ const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--
 const CHIP = "inline-flex h-[22px] min-w-0 items-center gap-[3px] rounded-[4px] px-[4px] font-sans text-[10.5px] min-[375px]:text-[11px] font-medium";
 const MUTED = "text-[color:var(--fg-muted)] bg-[color-mix(in_oklab,var(--fg-muted)_12%,transparent)]";
 
-export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, prices, onClose, onOpen }: {
+export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offered, prices, onClose, onOpen }: {
   friend: OtherSide;
   open: TradeOpen;
+  /** Q10: an offer of the reader's to this friend is unanswered, so no new trade may start from this sheet. */
+  held: boolean;
   theirSpares: readonly FriendSpareLine[];
   /** The reader's own spares as this friend sees them; `onWishlist` is the FRIEND's wishlist (`loadOwnSparesFor`). */
   yourSpares: readonly FriendSpareLine[];
@@ -69,16 +71,18 @@ export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, pri
   const [sent, setSent] = useState<{ id: string; theirs: string | null; yours: string | null } | null>(null);
   const [busy, setBusy] = useState<BoxBusy>(null);
 
+  // `useSpareToast` hands a fresh object each render; read through an effect event so a re-render never re-runs the read.
+  const failed = useEffectEvent(() => toast.fail());
   // A trade opened without its view (a row press) reads it once; the sheet draws its pending state meanwhile.
   useEffect(() => {
     if (tradeId === null || loaded) return;
     let live = true;
     openTradeAction(tradeId).then((v) => { if (live) { setView(v); setLoaded(true); } }, (e) => {
       captureClientError("trades.open", e);
-      if (live) { setLoaded(true); toast.fail(); }
+      if (live) { setLoaded(true); failed(); }
     });
     return () => { live = false; };
-  }, [tradeId, loaded, toast]);
+  }, [tradeId, loaded]);
 
   const cardsById = useMemo(() => {
     const m = new Map<string, TradeCard>();
@@ -96,7 +100,8 @@ export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, pri
       captureClientError("trades.open", e);
     }
   }
-  /** One press at a time: run it, and on ok reload the trade and refresh the page; a refusal toasts and reloads on `gone`. */
+  /** One press at a time: run it, and on ok reload the trade and refresh the page; a refusal toasts and reloads, since a
+   *  refusal means the trade moved under the reader (answered, withdrawn, a card gone). */
   async function press(which: Exclude<BoxBusy, null>, act: () => Promise<{ ok: boolean; reason?: string }>, done?: (out: { ok: true } & Record<string, unknown>) => void) {
     if (busy) return;
     setBusy(which);
@@ -108,7 +113,7 @@ export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, pri
         router.refresh();
       } else {
         toast.fail();
-        if (tradeId && (out.reason === "gone" || out.reason === "not-spare")) await reload(tradeId);
+        if (tradeId) await reload(tradeId);
       }
     } catch (e) {
       captureClientError(`trades.${which}`, e);
@@ -138,6 +143,8 @@ export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, pri
 
   // The box's state and cards.
   const state: BoxState | null = compose ? compose.mode : view?.state ?? null;
+  /** A new trade drafted over an ended one draws nothing of the old one: its status, clock, traded day or offers. */
+  const draft = compose?.mode === "draft";
   let fromThem: BoxCard[] = [];
   let fromYou: BoxCard[] = [];
   let was: { them: number | null; you: number | null; day: string } | null = null;
@@ -179,8 +186,9 @@ export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, pri
           loaded ? <p className="m-0 py-[18px] text-[13px] text-[color:var(--fg-muted)]">{t.row.nothingElse}</p> : <div aria-busy className="h-[220px]" />
         ) : (
           <>
-            <TradeBox friend={name} state={state} status={view?.status} fromThem={fromThem} fromYou={fromYou} prices={boxPrices}
-              daysLeft={view?.daysLeft ?? TRADE_DAYS} was={was} tradedDay={view?.tradedAt ? tradeDay(view.tradedAt, timeZone) : undefined} busy={busy}
+            <TradeBox friend={name} state={state} status={draft ? undefined : view?.status} fromThem={fromThem} fromYou={fromYou} prices={boxPrices}
+              daysLeft={draft ? TRADE_DAYS : view?.daysLeft ?? TRADE_DAYS} was={was} busy={busy}
+              tradedDay={!draft && view?.tradedAt ? tradeDay(view.tradedAt, timeZone) : undefined}
               onSend={send}
               onKeepTheirs={() => setCompose(null)}
               onAnswer={(a: Answer) => view && void press(a, () => answerTradeAction(view.id, view.round, view.offeredAt, a))}
@@ -188,10 +196,10 @@ export function TradeSheet({ friend, open, theirSpares, yourSpares, offered, pri
               onWithdraw={() => view && void press("withdraw", () => withdrawTradeAction(view.id, view.round))}
               onRescind={() => view && void press("rescind", () => rescindTradeAction(view.id))}
               onMark={() => view && void press("mark", () => markTradedAction(view.id))}
-              onNewTrade={() => setCompose({ mode: "draft", theirs: [], yours: [], side: "them" })} />
+              onNewTrade={held ? undefined : () => setCompose({ mode: "draft", theirs: [], yours: [], side: "them" })} />
             {compose ? (
               <Picker friend={friend} compose={compose} setCompose={setCompose} theirSpares={theirSpares} yourSpares={yourSpares}
-                offered={offered} exclude={view?.id ?? null} onOpen={onOpen} />
+                offered={offered} exclude={draft ? null : view?.id ?? null} onOpen={onOpen} />
             ) : null}
           </>
         )}

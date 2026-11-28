@@ -17,6 +17,7 @@ import { FadingImg } from "../ui/hydrated-art";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { KICKER_AGE } from "../feed/kicker-age";
 import { DismissButton } from "../feed/dismiss";
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useSpareToast } from "./spare-answer";
 
 type Ink = "accent" | "success" | "faint" | "warning";
@@ -108,7 +109,8 @@ export function TradeRows({ rows, now, timeZone, onOpen }: {
     try {
       if ((await act(id)).ok) router.refresh();
       else toast.fail();
-    } catch {
+    } catch (e) {
+      captureClientError("trades.row", e);
       toast.fail();
     } finally {
       setBusy(null);

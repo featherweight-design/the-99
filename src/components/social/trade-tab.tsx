@@ -10,7 +10,7 @@ import { DeckBox, DeckBoxBand, DeckBoxFoot } from "../decks/deck-box";
 import { GhostButton, PrimaryButton, ACTION_SIZE } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
 import { CopyLines } from "../copy-lines";
-import { PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { formatCents } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { storeCopy } from "../../lib/copy/store";
@@ -176,8 +176,8 @@ export function TradeBox(props: TradeBoxProps) {
   const goneCard = [...fromThem, ...fromYou].find((c) => c.gone);
   const agreed = fromYou.find((c) => c.agreed);
   const counterPress = (
-    <button type="button" data-testid="trade-counter" disabled={held} onClick={props.onCounter} {...{ "aria-label": undefined }}
-      className="inline-flex h-[36px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] bg-transparent px-[16px] font-sans text-[13px] font-medium text-[color:var(--accent-text)] [border:1px_solid_color-mix(in_oklab,var(--accent)_55%,transparent)] disabled:cursor-default">
+    <button type="button" data-testid="trade-counter" disabled={held} onClick={props.onCounter}
+      {...personAttrs({ "aria-label": t.counterAria(friend) }, "inline-flex h-[36px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] bg-transparent px-[16px] font-sans text-[13px] font-medium text-[color:var(--accent-text)] [border:1px_solid_color-mix(in_oklab,var(--accent)_55%,transparent)] disabled:cursor-default")}>
       {t.counter}
     </button>
   );

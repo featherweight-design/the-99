@@ -6,16 +6,18 @@ import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: { execute: vi.fn() } }));
-vi.mock("./spares", () => ({ loadFriendSpares: vi.fn(async () => []) }));
+vi.mock("./spares", () => ({ loadFriendSpares: vi.fn(async () => []), loadFriendSpareList: vi.fn() }));
+vi.mock("./access", () => ({ resolveFriend: vi.fn() }));
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn() }));
 
 import { db } from "../../db";
 import { loadPrices } from "../decks/price-query";
 import { isThirdPartyName } from "../person-name/brand";
-import { loadFriendSpares } from "./spares";
+import { resolveFriend } from "./access";
+import { loadFriendSpareList, loadFriendSpares } from "./spares";
 import {
-  loadOfferedTo, loadTrade, loadTradeRows, loadTradesWith, offeredToQuery, tradeRowsQuery, tradesWaitingQuery, tradesWaitingWith,
-  tradeViewCardsQuery, tradeViewQuery,
+  loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradeRows, loadTradesWith, offeredToQuery, tradeRowsQuery, tradesWaitingQuery, tradesWaitingWith,
+  tradePrices, tradePricesOf, tradeViewCardsQuery, tradeViewQuery,
 } from "./trade-reads";
 import { tradeOpenFloor } from "./trade-rules";
 
@@ -112,6 +114,12 @@ describe("loadTrade", () => {
   it("refuses a malformed id before any read", async () => {
     expect(await loadTrade("v", "nope", "manapool", NOW)).toBeNull();
     expect(exec).not.toHaveBeenCalled();
+  });
+
+  it("is null for a trade with another friend than the page's, before the cards are read", async () => {
+    exec.mockResolvedValueOnce(rows([head()]));
+    expect(await loadTrade("v", T, "manapool", NOW, PV)).toBeNull();
+    expect(exec).toHaveBeenCalledTimes(1);
   });
 
   it("is null for a trade the viewer cannot reach", async () => {
@@ -233,5 +241,43 @@ describe("tradesWaitingWith", () => {
       { ...listRow({ proposer_user_id: "v", recipient_user_id: "f" }), public_id: PV },
     ]));
     expect(await tradesWaitingWith("v", NOW)).toEqual(new Set([PF]));
+  });
+});
+
+describe("loadOwnSparesFor", () => {
+  it("reads nothing for someone who is not a friend", async () => {
+    vi.mocked(resolveFriend).mockResolvedValue(null);
+    expect(await loadOwnSparesFor("v", PF)).toEqual([]);
+    expect(exec).not.toHaveBeenCalled();
+    expect(loadFriendSpareList).not.toHaveBeenCalled();
+  });
+
+  it("reads the reader's spares as the friend sees them, with the friend's wishlist", async () => {
+    vi.mocked(resolveFriend).mockResolvedValue("f");
+    exec.mockResolvedValueOnce(rows([{ public_id: PV }]));
+    vi.mocked(loadFriendSpareList).mockResolvedValue({ lines: [{ oracleId: A }] } as never);
+    expect(await loadOwnSparesFor("v", PF)).toEqual([{ oracleId: A }]);
+    expect(loadFriendSpareList).toHaveBeenCalledWith("f", PV, true);
+  });
+});
+
+describe("trade prices", () => {
+  const asOf = new Date("2026-11-27T06:00:00Z");
+  const read = {
+    prices: new Map([[A, { cents: 150, foilCents: null, etchedCents: null, asOf }]]),
+    newestAsOf: asOf,
+  } as never;
+
+  it("draws each id's figure from one read, null where the read has none, and the read's date", () => {
+    const out = tradePricesOf(read, [A, B], "manapool", NOW);
+    expect(out.store).toBe("manapool");
+    expect(out.cents).toEqual({ [A]: 150, [B]: null });
+    expect(out.dated).toEqual(expect.objectContaining({ behind: false }));
+  });
+
+  it("reads prices once for the ids and maps them the same way", async () => {
+    vi.mocked(loadPrices).mockResolvedValue(read);
+    expect(await tradePrices([A], "manapool", NOW)).toEqual(tradePricesOf(read, [A], "manapool", NOW));
+    expect(loadPrices).toHaveBeenCalledTimes(1);
   });
 });

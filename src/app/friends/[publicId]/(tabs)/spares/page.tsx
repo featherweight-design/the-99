@@ -12,7 +12,7 @@ import { requestFlags } from "../../../../../lib/flags/request";
 import { readerStoreForPage } from "../../../../../lib/stores/preference";
 import { loadDeckNeed } from "../../../../../lib/decks/deck-need";
 import { parseSpareParams } from "../../../../../lib/social/spare-browse";
-import { loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradesWith, tradePrices } from "../../../../../lib/social/trade-reads";
+import { loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradesWith, tradePricesOf } from "../../../../../lib/social/trade-reads";
 import { FriendSparesTab } from "../../../../../components/social/friend-spares-tab";
 
 // Spare requests (signature card calls 8 and 9): a tile opens the card's modal with Ask, and `?spare={oracleId}` opens it
@@ -51,16 +51,23 @@ export default async function FriendSparesPage({
   // `deckNeed` (the decks of the reader's that still need each card) is one more read beside them; it fails soft to {}.
   // The trade sheet: `?trade=<id>` opens a trade with THIS friend on landing; the picker prices both sides and marks the
   // reader's spares already in another offer (Q9).
+  // One price read serves both: the modal's tags (the friend's spares) and the trade sheet's (both sides' spares).
+  const theirIds = spares?.lines.map((l) => l.oracleId) ?? [];
   const ownIds = yours.map((l) => l.oracleId);
+  const tradeIds = [...new Set([...theirIds, ...ownIds])];
   const tradeId = isUuid(query.trade) ? query.trade.toLowerCase() : null;
-  const [goneName, priced, deckNeed, offeredTo, tradeCents, landing] = await Promise.all([
+  const [goneName, read, deckNeed, offeredTo, landing] = await Promise.all([
     spare !== null && !offered ? catalogCardName(spare) : null,
-    loadPrices(spares?.lines.map((l) => l.oracleId) ?? [], [], [], store).catch(() => ({ prices: new Map(), newestAsOf: null })),
+    loadPrices(tradeIds, [], [], store).catch(() => null),
     spares && spares.lines.length > 0 ? loadDeckNeed(userId) : {},
     loadOfferedTo(userId, ownIds, now),
-    tradePrices([...(spares?.lines.map((l) => l.oracleId) ?? []), ...ownIds], store, now),
-    tradeId ? loadTrade(userId, tradeId, store, now) : null,
+    tradeId ? loadTrade(userId, tradeId, store, now, friend.publicId) : null,
   ]);
+  const theirSet = new Set(theirIds);
+  const priced = read
+    ? { prices: new Map([...read.prices].filter(([id]) => theirSet.has(id))), newestAsOf: read.newestAsOf }
+    : { prices: new Map(), newestAsOf: null };
+  const tradeCents = read ? tradePricesOf(read, tradeIds, store, now) : { store, cents: {}, dated: null };
   return (
     <FriendSparesTab
       deckNeed={deckNeed}
@@ -80,7 +87,7 @@ export default async function FriendSparesPage({
           yours,
           offered: offeredTo,
           prices: tradeCents,
-          landing: landing && landing.friend.publicId === friend.publicId ? landing : null,
+          landing,
           now,
         },
       }}
