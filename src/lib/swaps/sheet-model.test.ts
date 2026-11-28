@@ -272,7 +272,7 @@ describe("the stand-ins sheet's model", () => {
     // The front face decides: a spell whose back face is a land is a spell.
     const mdfc = sheetModel(read({ job: { kind: "none" }, original: card("Some Spell // Some Land", "Sorcery // Land") }));
     expect(mdfc.sentence).toBe(copy.noRole("Some Spell // Some Land"));
-    expect(land).toMatchObject({ lead: null, groups: [], foot: false, job: copy.jobNoRole });
+    expect(land).toMatchObject({ lead: null, groups: [], foot: false, job: [copy.jobNoRole] });
   });
 
   it("says nothing cheaper, citing the original's price, when every group is empty", () => {
@@ -284,7 +284,7 @@ describe("the stand-ins sheet's model", () => {
 
   it("says a card whose every job is limited to cards the deck doesn't play has no job here (E1)", () => {
     const lord = sheetModel(read({ jobRoles: [], original: card("Wolf Lord", "Creature — Wolf") }));
-    expect(lord).toMatchObject({ job: copy.jobNotHere, lead: null, groups: [], foot: false, sentence: copy.noJobHere("Wolf Lord") });
+    expect(lord).toMatchObject({ job: [copy.jobNotHere], lead: null, groups: [], foot: false, sentence: copy.noJobHere("Wolf Lord") });
     const land = sheetModel(read({ job: { kind: "land", colors: ["G"] }, original: card("Gaea's Cradle", "Legendary Land") }));
     expect(land.sentence).toBe(copy.nothingCheaperLand("green", "$15.00"));
   });

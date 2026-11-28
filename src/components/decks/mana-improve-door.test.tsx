@@ -120,7 +120,7 @@ describe("ImproveDoor: the result", () => {
     const head = await screen.findByRole("heading", { name: copy.help.head("red") });
     await waitFor(() => expect(document.activeElement).toBe(head));
     expect(screen.getByText(copy.help.swap(3, "Forest", "Mountain"))).toBeTruthy();
-    expect(screen.getByText("red 6 → 9 · green 20 → 17")).toBeTruthy();
+    expect(screen.getByText((_c, el) => el?.tagName === "SPAN" && el.textContent === "red 6 → 9 · green 20 → 17")).toBeTruthy();
     const toBuy = document.querySelector("[data-mana-staple='s1']") as HTMLElement;
     expect(toBuy.textContent).toContain(copy.help.toBuy);
     expect(toBuy.textContent).toContain(copy.help.rate.commander(42, "Gishath"));
