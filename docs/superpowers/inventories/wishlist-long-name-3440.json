@@ -1,0 +1,25 @@
+{
+  "feature": "Wishlist long deck names (#3440): a deck box band whose name is too long ends it in an ellipsis on one line, with the card count and Open deck whole beside it",
+  "note": "Needs a SCRATCH branch: the audit account with its decks synced onto the Wishlist, one synced deck renamed to a long phrase starting \"Sheet 3440 \" and another to one long word starting \"Sheet3440\" (the scroll steps find them by those prefixes; the deck-name ceiling is 120). Not the probe's names: the probe puts its names back when it ends. Read-only: nothing is pressed.",
+  "out": "contact-sheets/wishlist-long-name-3440",
+  "rows": [
+    {
+      "id": "wishlist-long-words",
+      "label": "Wishlist: a deck box whose name is a long phrase",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [
+        { "goto": "/collection/wishlist", "wait": "[data-testid=\"wishlist-box\"]", "settle": 1500 },
+        { "scrollTo": "a[aria-label^=\"Open deck, Sheet 3440\"]" }
+      ]
+    },
+    {
+      "id": "wishlist-long-word",
+      "label": "Wishlist: a deck box whose name is one long word",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [
+        { "goto": "/collection/wishlist", "wait": "[data-testid=\"wishlist-box\"]", "settle": 1500 },
+        { "scrollTo": "a[aria-label^=\"Open deck, Sheet3440\"]" }
+      ]
+    }
+  ]
+}
