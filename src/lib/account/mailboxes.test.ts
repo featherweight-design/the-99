@@ -1,9 +1,8 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const limit = vi.fn();
+const { limit, captureServerError } = vi.hoisted(() => ({ limit: vi.fn(), captureServerError: vi.fn() }));
 vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit }) }) }) } }));
-const captureServerError = vi.fn();
 vi.mock("../sentry/capture", () => ({ captureServerError }));
 
 import { mailboxTaken } from "./mailboxes";
