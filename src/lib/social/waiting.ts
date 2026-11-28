@@ -19,7 +19,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { availableFeedKinds } from "../feed/flag";
 import { feedQuery, toFeedItem } from "../feed/read";
-import { readerZone, rollGroup, rollZone } from "../feed/rollup";
+import { foldGroups, readerZone, rollGroup, rollZone } from "../feed/rollup";
 import { feedOrder, type FeedKind } from "../feed/kinds";
 import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
@@ -108,7 +108,6 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
       .where(inArray(cards.oracleId, [...new Set(matches.map((m) => m.oracleId))])),
     readerZone(viewerId),
   ]);
-  const askable = true;
   const grantOf = new Map(grants.map((g) => [g.publicId, g]));
   const cardOf = new Map(info.map((c) => [c.oracleId, c]));
   return foldTradeMatchRows(matches.flatMap((m) => {
@@ -123,7 +122,7 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
       card,
       friend: { publicId: grant.publicId, displayName: named(grant.displayName), commander: toCommander(grant) },
       pods: grant.pods.map((pod) => named(pod)),
-      askable,
+      askable: true,
     }];
   }), rollZone(zone));
 }
@@ -131,21 +130,13 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
 /**
  * Each friend's matches on one reader-day folded into the first of them in the rows' order (the newest): unseen when
  * any member is, not askable, `rollup` carrying every member's key and card. A group of one is left as it was. The
- * twin of `rollTradeMatches`, on the same group (`rollGroup`), so this list, Home and both badges fold alike. Pure.
+ * twin of `rollTradeMatches`, on the same group (`rollGroup`) and fold (`foldGroups`), so this list, Home and both badges fold alike. Pure.
  */
 export function foldTradeMatchRows(rows: readonly TradeMatchRow[], zone: string): TradeMatchRow[] {
-  const groups = new Map<string, TradeMatchRow[]>();
-  const groupOf = (r: TradeMatchRow) => rollGroup(r.friend.publicId, r.createdAt, zone);
-  for (const r of rows) groups.set(groupOf(r), [...(groups.get(groupOf(r)) ?? []), r]);
-  return rows.flatMap((r) => {
-    const members = groups.get(groupOf(r))!;
-    if (members.length < 2) return [r];
-    if (members[0] !== r) return [];
-    return [{
-      ...r,
-      unseen: members.some((m) => m.unseen),
-      askable: false,
-      rollup: { keys: members.map((m) => m.key), cards: members.map((m) => m.card) },
-    }];
-  });
+  return foldGroups(rows, (r) => rollGroup(r.friend.publicId, r.createdAt, zone), (members) => ({
+    ...members[0],
+    unseen: members.some((m) => m.unseen),
+    askable: false,
+    rollup: { keys: members.map((m) => m.key), cards: members.map((m) => m.card) },
+  }));
 }

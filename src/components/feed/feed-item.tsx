@@ -36,6 +36,7 @@ import { CommanderThumb } from "../ui/commander-thumb";
 import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { LinkOutLabel } from "../ui/link-out-icon";
 import { KICKER_AGE } from "./kicker-age";
+import { ROLLED_FAN } from "./rolled-fan";
 import { DismissButton } from "./dismiss";
 import { FeedAskBack } from "../social/trade-sheet-host";
 import { AnswerPresses, receiptText, useSpareAnswer, type Answer } from "../social/spare-answer";
@@ -336,11 +337,6 @@ function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPu
 export type RowCompact = boolean | "rail";
 const rowMd = (compact: RowCompact, wide: string, rail: string): string => (compact === true ? "" : compact === "rail" ? rail : wide);
 
-/** The rolled row's fan behind the first card, nearest first (board N1): offset left and up, turned, and dimmed. Waiting on you's rolled row draws it too. */
-export const ROLLED_FAN = [
-  "-left-[6px] top-[0px] -rotate-[6deg] brightness-[.7]",
-  "-left-[11px] -top-[1px] -rotate-[12deg] brightness-[.5]",
-] as const;
 
 /** The 46x64 picture: the card at card shape with the friend's face on its corner, or the combo mark. */
 function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCommander, "artCropUri"> | null | undefined; compact: RowCompact }) {

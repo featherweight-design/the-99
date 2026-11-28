@@ -302,7 +302,9 @@ export function syncWishlistLater(userId: string): Promise<void> {
  */
 export async function syncWishlistNow(userId: string): Promise<void> {
   try {
-    await syncWishlistIfDue(userId);
+    // A write that landed while the pass computed leaves it "raced" with nothing written: one more pass picks it up,
+    // so the refresh still reads the lines. A second race is left to that write's own pass and the hourly reconcile.
+    if ((await syncWishlistIfDue(userId)) === "raced") await syncWishlistIfDue(userId);
   } catch (error) {
     // not a fallback: nothing is drawn from this. The write the player asked for is committed; only its lines lag.
     captureServerError(SYNC_FAILED_TAG, error);

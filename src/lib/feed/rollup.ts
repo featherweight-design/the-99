@@ -25,6 +25,29 @@ export async function readerZone(userId: string, q: Pick<typeof db, "execute"> =
 export const rollGroup = (friendPublicId: string, at: Date, zone: string): string =>
   `${friendPublicId} ${readerDayStart(at, zone).toISOString()}`;
 
+/**
+ * The fold itself, shared by What's new (`rollTradeMatches`) and Waiting on you (`foldTradeMatchRows`) so the two lists
+ * cannot drift: items whose group has two or more members are folded into the first of them (`roll`), the rest are
+ * left exactly as they were. Order is kept. Pure.
+ */
+export function foldGroups<T>(items: readonly T[], groupKey: (item: T) => string | null, roll: (members: T[]) => T): T[] {
+  const keys = items.map(groupKey);
+  const groups = new Map<string, T[]>();
+  items.forEach((item, i) => {
+    const g = keys[i];
+    if (g === null) return;
+    const members = groups.get(g);
+    if (members) members.push(item);
+    else groups.set(g, [item]);
+  });
+  return items.flatMap((item, i) => {
+    const g = keys[i];
+    const members = g === null ? undefined : groups.get(g);
+    if (!members || members.length < 2) return [item];
+    return members[0] === item ? [roll(members)] : [];
+  });
+}
+
 /** The fold's group for one row (`rollGroup`). Null for a row that never folds. */
 function groupOf(v: FeedView, zone: string): string | null {
   if (v.kind !== "trade-match" || !v.friend) return null;
@@ -38,32 +61,18 @@ function groupOf(v: FeedView, zone: string): string | null {
  * (the shipped row). The press goes to the friend's spares, with no card named. Pure.
  */
 export function rollTradeMatches(views: readonly FeedView[], zone: string): FeedView[] {
-  const groups = new Map<string, FeedView[]>();
-  for (const v of views) {
-    const g = groupOf(v, zone);
-    if (g !== null) groups.set(g, [...(groups.get(g) ?? []), v]);
-  }
-  const out: FeedView[] = [];
-  for (const v of views) {
-    const g = groupOf(v, zone);
-    const members = g === null ? undefined : groups.get(g);
-    if (!members || members.length < 2) {
-      out.push(v);
-      continue;
-    }
-    if (members[0] !== v) continue;
-    const friend = v.friend!;
+  return foldGroups(views, (v) => groupOf(v, zone), (members) => {
+    const v = members[0];
     const cards = members.flatMap((m): FeedCard[] => (m.card ? [m.card] : []));
-    out.push({
+    return {
       ...v,
       unseen: members.some((m) => m.unseen),
       card: cards[0] ?? null,
       askable: false,
-      href: `/friends/${encodeURIComponent(friend.publicId)}/spares`,
+      href: `/friends/${encodeURIComponent(v.friend!.publicId)}/spares`,
       rollup: { keys: members.map((m) => m.key), cards },
-    });
-  }
-  return out;
+    };
+  });
 }
 
 /**

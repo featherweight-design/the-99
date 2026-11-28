@@ -29,7 +29,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { KICKER_AGE } from "../feed/kicker-age";
-import { ROLLED_FAN } from "../feed/feed-item";
+import { ROLLED_FAN } from "../feed/rolled-fan";
 import { BAND, PANEL } from "./section-panel";
 import { BandText } from "../decks/deck-box";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
