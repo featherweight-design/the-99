@@ -4755,6 +4755,22 @@ export const welcomeEmailClaims = pgTable("welcome_email_claims", {
   claimedAt: timestamp("claimed_at").notNull().defaultNow(),
 });
 
+/**
+ * The mailboxes an account answers to, by keyed hash of the FOLDED address (`email/fold.ts`, `payments/canonical-email.ts`
+ * `mailboxHash`): one row per verified Clerk address, written on `user.created` and `user.updated`, removed for an address
+ * the user drops. The invite and flyer hand-overs refuse a new account whose address folds to a row here, so an alias
+ * (`a+x@gmail.com`, `a.b@gmail.com`) of a person who already has an account cannot redeem as a second person. A hash, never
+ * the address; the unique mailbox is the guard, the pair key lets one account hold several. Purged with the account.
+ */
+export const accountMailboxes = pgTable("account_mailboxes", {
+  userId: text("user_id").notNull(),
+  mailboxHash: text("mailbox_hash").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.mailboxHash] }),
+  unique("account_mailboxes_mailbox_hash_unique").on(t.mailboxHash),
+]);
+
 /** Raw bytes. Only the card-scan lab's kept frames use it. */
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 

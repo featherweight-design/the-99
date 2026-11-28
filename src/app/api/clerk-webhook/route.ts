@@ -3,6 +3,7 @@ import { after, type NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 import { spendFlyerOnSignUp } from "../../../lib/flyer/spend";
+import { mailboxEnv, mailboxPlan, syncAccountMailboxes } from "../../../lib/account/mailboxes";
 import { primaryVerifiedEmail, welcomeEmailHash } from "../../../lib/payments/canonical-email";
 import { grantWelcome } from "../../../lib/payments/welcome";
 import { resolveFlagsStrict } from "../../../lib/flags/snapshot";
@@ -20,8 +21,8 @@ export const dynamic = "force-dynamic";
  * `CLERK_WEBHOOK_SIGNING_SECRET`, on every call. Until that secret is set the route answers 503 and does nothing;
  * an unsigned or forged request is refused with 400 before anything runs.
  *
- * Two events do something. `user.deleted` purges every row the app holds for that account (`purgeAccount`).
- * `user.created` does two things, in this order: it spends the invite reservation (or flyer claim) the account's
+ * Three events do something. `user.updated` keeps the account's mailboxes true (`syncMailboxes`). `user.deleted` purges every row the app holds for that account (`purgeAccount`).
+ * `user.created` does three things, in this order: it records the account's mailboxes, then it spends the invite reservation (or flyer claim) the account's
  * invitation named, when it names one (`spendInviteOnSignUp`, invites plan R8), which reads no feature switch, since
  * an invitation already accepted is honored whatever the switches say, as a taken payment is; then it gives the
  * account its one welcome lot (`grantWelcome`, launch epic D1; gated by `WELCOME_CREDITS_ENABLED`, which only decides
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     return new Response("Webhook verification failed", { status: 400 });
   }
   if (evt.type === "user.created") return handleCreated(evt.data, new URL(req.url).hostname);
+  if (evt.type === "user.updated") return handleUpdated(evt.data);
   if (isSessionEvent(evt.type)) {
     // Sign-out evidence only (docs/agents/ops.md): answered 200 at once and captured after the response, so a slow
     // PostHog never holds the webhook and a capture that fails is never retried by Clerk.
@@ -88,6 +90,8 @@ export async function POST(req: NextRequest) {
  */
 async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown; email_addresses?: unknown; primary_email_address_id?: unknown }, hostname: string): Promise<Response> {
   if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
+  const mailboxes = await syncMailboxes(data);
+  if (mailboxes !== null) return mailboxes;
   const invite = await spendOnCreated(data);
   if (invite.status >= 500) return invite;
   try {
@@ -135,5 +139,30 @@ async function spendOnCreated(data: { id?: unknown; first_name?: unknown; public
     console.error("[clerk-webhook] user.created: invite spend failed");
     captureServerError("clerk-webhook:invite", error);
     return new Response("Spend failed", { status: 500 });
+  }
+}
+
+/**
+ * An account's addresses changed: its mailbox rows follow (`account_mailboxes`, the gate against an alias redeeming as a second
+ * person). Needs the `user.updated` event subscribed in the Clerk dashboard (docs/agents/ops.md); until it is, the rows hold what
+ * `user.created` and the backfill wrote. Idempotent, so a retry is harmless.
+ */
+async function handleUpdated(data: { id?: unknown; email_addresses?: unknown }): Promise<Response> {
+  if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
+  return (await syncMailboxes(data)) ?? new Response("Synced", { status: 200 });
+}
+
+/** Write the account's mailbox rows from its payload; null when done (or nothing to do), a 500 for a retry when the write fails. */
+async function syncMailboxes(data: { id?: unknown; email_addresses?: unknown }): Promise<Response | null> {
+  if (typeof data.id !== "string" || data.id.length === 0 || !Array.isArray(data.email_addresses)) return null;
+  try {
+    const plan = mailboxPlan(data, mailboxEnv());
+    if (plan.unhashed > 0) captureServerWarning("clerk-webhook:mailbox-key", "mailbox key missing or too short: an address went unrecorded");
+    await syncAccountMailboxes(data.id, plan);
+    return null;
+  } catch (error) {
+    console.error("[clerk-webhook] mailbox sync failed");
+    captureServerError("clerk-webhook:mailbox", error);
+    return new Response("Mailbox sync failed", { status: 500 });
   }
 }

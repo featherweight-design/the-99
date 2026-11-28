@@ -8,6 +8,8 @@
  * is derived from time here, so a count is right whether or not the sweep has written it down yet.
  */
 
+import { foldMailbox } from "../email/fold";
+
 /** An invite QR works once, for 15 minutes (brief lock 4). */
 export const QR_TTL_MS = 15 * 60 * 1000;
 /** A reservation holds its invite for 7 days on its own clock, never Clerk's (brief, The invite's life). */
@@ -132,16 +134,7 @@ export function normalizeEmail(raw: string): string {
  * significant there), and an address with nothing before its tag or no `@` is left as it is.
  */
 export function foldEmail(raw: string): string {
-  const email = normalizeEmail(raw);
-  const at = email.lastIndexOf("@");
-  if (at < 1) return email;
-  let local = email.slice(0, at);
-  let domain = email.slice(at + 1);
-  const plus = local.indexOf("+");
-  if (plus > 0) local = local.slice(0, plus);
-  if (domain === "googlemail.com") domain = "gmail.com";
-  if (domain === "gmail.com") local = local.replaceAll(".", "");
-  return local === "" ? email : `${local}@${domain}`;
+  return foldMailbox(raw) ?? normalizeEmail(raw);
 }
 
 /** An email send's request id (`sendEmailInvite`'s repeat rule): a UUID in its canonical shape, any version. */

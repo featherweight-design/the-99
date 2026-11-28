@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalEmail, primaryVerifiedEmail, welcomeEmailHash } from "./canonical-email";
+import { canonicalEmail, mailboxHash, primaryVerifiedEmail, verifiedEmails, welcomeEmailHash } from "./canonical-email";
 
 const KEY = "k".repeat(40);
 
@@ -50,5 +50,38 @@ describe("welcomeEmailHash", () => {
   it("falls back to the anonymous-read salt, and is null for a non-address", () => {
     expect(welcomeEmailHash("a@x.com", { ANON_KEY_SALT: KEY })).toMatch(/^[0-9a-f]{64}$/);
     expect(welcomeEmailHash("nope", { SENTRY_USER_HASH_KEY: KEY })).toBeNull();
+  });
+});
+
+describe("mailboxHash", () => {
+  const env = { SENTRY_USER_HASH_KEY: KEY };
+  it("is one keyed hash for every spelling of a mailbox, and differs for another", () => {
+    expect(mailboxHash("Ab@gmail.com", env)).toBe(mailboxHash("a.b+promo@googlemail.com", env));
+    expect(mailboxHash("ab@gmail.com", env)).not.toBe(mailboxHash("abc@gmail.com", env));
+    expect(mailboxHash("ab@gmail.com", env)).toMatch(/^[0-9a-f]{64}$/);
+  });
+  it("is domain-separated from the welcome claim's hash, so one cannot stand in for the other", () => {
+    expect(mailboxHash("ab@gmail.com", env)).not.toBe(welcomeEmailHash("ab@gmail.com", env));
+  });
+  it("is null with no usable key or no address, never an unkeyed hash", () => {
+    expect(mailboxHash("ab@gmail.com", {})).toBeNull();
+    expect(mailboxHash("ab@gmail.com", { SENTRY_USER_HASH_KEY: "short" })).toBeNull();
+    expect(mailboxHash("nope", env)).toBeNull();
+  });
+});
+
+describe("verifiedEmails", () => {
+  it("returns every verified address, primary or not, and no other", () => {
+    const rows = [
+      { id: "i1", email_address: "one@x.com", verification: { status: "verified" } },
+      { id: "i2", email_address: "two@x.com", verification: { status: "unverified" } },
+      { id: "i3", email_address: "three@x.com", verification: { status: "verified" } },
+      { id: "i4", email_address: 7, verification: { status: "verified" } },
+    ];
+    expect(verifiedEmails({ email_addresses: rows })).toEqual(["one@x.com", "three@x.com"]);
+  });
+  it("is empty for a payload with no list", () => {
+    expect(verifiedEmails({})).toEqual([]);
+    expect(verifiedEmails({ email_addresses: "x" })).toEqual([]);
   });
 });

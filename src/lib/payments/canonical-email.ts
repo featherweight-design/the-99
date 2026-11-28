@@ -1,28 +1,13 @@
 // One mailbox, one welcome lot. The welcome grant (welcome.ts) is claimed once per CANONICAL address, so a person cannot
 // collect it again by signing up as `a.b+x@gmail.com` after `ab@gmail.com`. SERVER-ONLY: the hash reads a secret.
 //
-// The fold is the provider's own rule and no more: `+tag` is dropped everywhere, dots only on Gmail (elsewhere a dot
-// is a different mailbox), and googlemail.com is gmail.com. A custom domain or a catch-all cannot be folded, so this stops
-// casual aliasing, not a determined person with their own domain.
+// The fold itself lives in `src/lib/email/fold.ts`, shared with every other comparison of two addresses.
 import { createHmac } from "node:crypto";
 import { hashKey } from "../analytics/funnel-events";
-
-const GMAIL = "gmail.com";
+import { foldMailbox } from "../email/fold";
 
 /** The address folded to the form that names one mailbox, or null when it is not an address. Pure. */
-export function canonicalEmail(raw: string): string | null {
-  const s = raw.normalize("NFKC").trim().toLowerCase();
-  const at = s.lastIndexOf("@");
-  if (at < 1 || /\s/.test(s)) return null;
-  let local = s.slice(0, at);
-  let domain = s.slice(at + 1).replace(/\.$/, "");
-  if (!domain.includes(".")) return null;
-  if (domain === "googlemail.com") domain = GMAIL;
-  const plus = local.indexOf("+");
-  if (plus >= 0) local = local.slice(0, plus);
-  if (domain === GMAIL) local = local.replaceAll(".", "");
-  return local ? `${local}@${domain}` : null;
-}
+export const canonicalEmail = foldMailbox;
 
 type EmailRow = { id?: unknown; email_address?: unknown; verification?: { status?: unknown } | null };
 
@@ -32,6 +17,16 @@ export function primaryVerifiedEmail(data: { email_addresses?: unknown; primary_
   const row = (data.email_addresses as EmailRow[]).find((e) => e?.id === data.primary_email_address_id);
   if (!row || typeof row.email_address !== "string" || row.verification?.status !== "verified") return null;
   return row.email_address;
+}
+
+/** Every address of a Clerk user payload that Clerk verified, as typed. A user can hold several; the mailbox gate keeps them all. */
+export function verifiedEmails(data: { email_addresses?: unknown }): string[] {
+  if (!Array.isArray(data.email_addresses)) return [];
+  const out: string[] = [];
+  for (const row of data.email_addresses as EmailRow[]) {
+    if (typeof row?.email_address === "string" && row.verification?.status === "verified") out.push(row.email_address);
+  }
+  return out;
 }
 
 /**
@@ -44,4 +39,16 @@ export function welcomeEmailHash(email: string, env: Parameters<typeof hashKey>[
   const key = hashKey(env);
   if (!canonical || !key) return null;
   return createHmac("sha256", key).update(`welcome-email:${canonical}`).digest("hex");
+}
+
+/**
+ * The account mailbox key: a keyed HMAC of the folded address, domain-separated from the welcome claim's and from the
+ * other uses of the key (same key, so no new secret). Null with no usable key or no address, and the caller then skips the
+ * mailbox check: the literal Clerk check still runs. Never an unkeyed hash.
+ */
+export function mailboxHash(email: string, env: Parameters<typeof hashKey>[0]): string | null {
+  const folded = foldMailbox(email);
+  const key = hashKey(env);
+  if (!folded || !key) return null;
+  return createHmac("sha256", key).update(`mailbox:${folded}`).digest("hex");
 }

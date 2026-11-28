@@ -58,6 +58,7 @@ export const PURGE_ORDER = [
   "wishlist_items", "wishlist_collected", "wishlist_synced_decks", "wishlist_synced", "wishlist_sync_skips", "wishlist_sync_state",
   "spare_keep", "rate_hits",
   "push_subscriptions", "push_outbox", "feed_dismissals",
+  "account_mailboxes",
   "invite_reservations", "invite_balances",
   "flyer_claims", "feedback", "check_in_state",
   // The Stripe customer mapping before the paid lots: the webhook holds that row while it grants, so a
