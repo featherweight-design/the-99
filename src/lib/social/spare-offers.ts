@@ -246,9 +246,11 @@ export async function loadWantedCounts(viewerId: string): Promise<Map<string, nu
   if (wanted.length === 0) return out;
   const batches: string[][] = [];
   for (let i = 0; i < wanted.length; i += MAX_SPARES_BATCH) batches.push(wanted.slice(i, i + MAX_SPARES_BATCH));
-  // Each card is one line per friend in a batch, and the batches never share a card, so a plain count is distinct cards.
-  for (const got of await Promise.all(batches.map((b) => loadFriendSpares(viewerId, b)))) {
-    for (const s of got) out.set(s.friend.publicId, (out.get(s.friend.publicId) ?? 0) + 1);
+  // One batch at a time: each one already runs CLAIM_MODELS_AT_ONCE claim models side by side, so batches in parallel
+  // would multiply that bound by the reader's wanted-card count. Each card is one line per friend in a batch, and the
+  // batches never share a card, so a plain count is distinct cards.
+  for (const b of batches) {
+    for (const s of await loadFriendSpares(viewerId, b)) out.set(s.friend.publicId, (out.get(s.friend.publicId) ?? 0) + 1);
   }
   return out;
 }

@@ -68,10 +68,17 @@ describe("FriendsList rows", () => {
     expect(document.querySelector("[data-want-chip]")).toBeNull();
   });
 
-  it("names both chips once in a phone-only key, drawn only while a row has a chip", () => {
+  it("names the drawn chips once in a phone-only key, only the kinds a row has", () => {
     draw(true, { [COLIN.publicId]: 1 });
-    const key = screen.getByTestId("friends-chip-key");
+    let key = screen.getByTestId("friends-chip-key");
     expect(key.className).toContain("md:hidden");
+    expect(key.textContent).toBe(f.keySpare);
+    cleanup();
+    draw(true, undefined, { [COLIN.publicId]: 1 });
+    expect(screen.getByTestId("friends-chip-key").textContent).toBe(f.keyWant);
+    cleanup();
+    draw(true, { [COLIN.publicId]: 1 }, { [COLIN.publicId]: 1 });
+    key = screen.getByTestId("friends-chip-key");
     expect(key.textContent).toContain(f.keyWant);
     expect(key.textContent).toContain(f.keySpare);
     cleanup();

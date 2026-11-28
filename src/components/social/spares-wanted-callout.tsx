@@ -6,7 +6,7 @@
 // not drawn while a trade with this friend is live (S4) or the reader's offer waits unanswered (Q10, S9).
 //
 // The switch IS the address's `?wanted=wishlist,deck`: You want is both wanted values on, and any other Wanted choice
-// (the Filters panel's) reads as All. Pressing it writes the address through the tab's own `update`.
+// (the Filters panel's: one reason alone) chooses neither segment. Pressing it writes the address through the tab's own `update`.
 
 import { haveItCopy } from "../../lib/copy/social";
 import { tradeCopy } from "../../lib/copy/trades";
@@ -44,7 +44,9 @@ export function SparesWantedCallout({ all, yours, trades, wanted, onWanted }: {
   const press = open && !live && !trades.held
     ? { label: tradeCopy.sheet.press, name: tradeCopy.sheet.press, onPress: () => open({ kind: "new" }) }
     : undefined;
-  const value: Want = isYouWant(wanted) ? "want" : "all";
+  // A Wanted choice from the Filters panel that is neither (one reason alone) chooses no segment, so All never reads
+  // as chosen over a filtered grid.
+  const value: Want | null = isYouWant(wanted) ? "want" : wanted.length === 0 ? "all" : null;
   return (
     <div data-testid="wanted-callout" className="mt-[14px] flex flex-col gap-[10px]">
       <div className="overflow-hidden rounded-[10px] bg-[color:var(--surface-rail)] [border:1px_solid_var(--border)]">

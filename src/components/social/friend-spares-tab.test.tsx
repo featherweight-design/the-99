@@ -10,6 +10,7 @@ import type { FriendSpareList } from "../../lib/social/spares";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { FriendSparesTab, type FriendSparesAsks } from "./friend-spares-tab";
+import { parseSpareParams } from "../../lib/social/spare-browse";
 import { SparesSheet } from "./spare-markers";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
@@ -82,9 +83,9 @@ const PRICES = { [GHALTA]: { cents: 210, foilCents: null, etchedCents: null, asO
 const ON = (extra: Partial<FriendSparesAsks> = {}): FriendSparesAsks => ({
   friend: COLIN, spare: null, goneName: null, prices: PRICES, newestAsOf: AS_OF, ...extra,
 });
-async function mount(a: FriendSparesAsks | undefined) {
+async function mount(a: FriendSparesAsks | undefined, query = "") {
   await act(async () => {
-    render(<FriendSparesTab name="Colin" spares={SPARES} asks={a} />);
+    render(<FriendSparesTab name="Colin" spares={SPARES} asks={a} {...(query ? { initial: parseSpareParams(new URLSearchParams(query)) } : {})} />);
   });
 }
 
@@ -282,6 +283,12 @@ describe("the Wanted call-out", () => {
     await act(async () => { fireEvent.click(screen.getByRole("radio", { name: new RegExp(`^${tradeCopy.callout.filterWant}`) })); });
     const url = new URL(String(m.mirrorUrl.mock.calls.at(-1)?.[0]));
     expect(url.searchParams.get("wanted")).toBe("wishlist,deck");
+  });
+
+  it("chooses neither segment while the Filters panel's Wanted holds one reason alone", async () => {
+    await mount(ON({ trades: TRADES() }), "wanted=wishlist");
+    const radios = within(screen.getByTestId("wanted-callout")).getAllByRole("radio");
+    expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "false"]);
   });
 
   it("drops the Trade press while a trade is live or an offer is held", async () => {

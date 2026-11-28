@@ -71,6 +71,8 @@ export function FriendsList({
     count.current = friends.length;
     if (shrank && (document.activeElement === null || document.activeElement === document.body)) head.current?.focus();
   }, [friends.length]);
+  const keyWant = friends.some((x) => (wanted?.[x.publicId] ?? 0) > 0);
+  const keySpare = friends.some((x) => (sparable?.[x.publicId] ?? 0) > 0);
   return (
     <section aria-labelledby="friends-head" className={PANEL}>
       <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}><BandText text={f.head(friends.length)} /></h2>
@@ -97,10 +99,11 @@ export function FriendsList({
         </ul>
       )}
       {/* At phone width the chips draw their figure alone, so the panel names the two once. */}
-      {linkable && friends.some((x) => (sparable?.[x.publicId] ?? 0) > 0 || (wanted?.[x.publicId] ?? 0) > 0) ? (
+      {/* A key names only the chips the list draws. */}
+      {linkable && (keyWant || keySpare) ? (
         <p data-testid="friends-chip-key" className="m-0 flex flex-wrap items-center gap-x-[14px] gap-y-[4px] px-[14px] py-[10px] font-mono text-[10.5px] text-[color:var(--fg-muted)] [border-top:1px_solid_var(--border)] md:hidden">
-          <span className="inline-flex items-center gap-[6px]"><WantChip>{""}</WantChip>{f.keyWant}</span>
-          <span className="inline-flex items-center gap-[6px]"><SpareChip gap={4}>{""}</SpareChip>{f.keySpare}</span>
+          {keyWant ? <span data-key="want" className="inline-flex items-center gap-[6px]"><span aria-hidden><WantChip>{""}</WantChip></span>{f.keyWant}</span> : null}
+          {keySpare ? <span data-key="spare" className="inline-flex items-center gap-[6px]"><span aria-hidden><SpareChip gap={4}>{""}</SpareChip></span>{f.keySpare}</span> : null}
         </p>
       ) : null}
     </section>

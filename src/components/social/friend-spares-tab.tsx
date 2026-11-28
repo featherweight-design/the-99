@@ -246,7 +246,7 @@ function AskTile({ line, price, eager, friend, tileRef }: {
   const count = p.spares.count(line.spare);
   // THIS friend's ask for the card, in the modal's words: Requested while open, Accepted after a yes, else nothing.
   const ask = ctx?.requests ? rowAsk(ctx.requests.asksFor(line.oracleId), friend).kind : null;
-  const state = ask === "requested" ? spareCopy.request.requested : ask === "accepted" ? spareCopy.request.accepted : null;
+  const state = ask === "requested" ? p.spares.chipAsked : ask === "accepted" ? p.spares.chipYours : null;
   const aria = [spareCopy.markerAria(line.name), count, line.onWishlist ? p.spares.onWishlist : null, line.deckNeed > 0 ? sparesSearchCopy.tile.deck(line.deckNeed) : null, state].filter(Boolean).join(", ");
   return (
     <li data-testid="spare-tile" className="flex min-w-0 flex-col gap-[6px]">
