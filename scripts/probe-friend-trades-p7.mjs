@@ -15,8 +15,8 @@
 //  you receipt (Tam's ask, the newest) and sees Sent; desktop does not send, since that offer holds Tam's cap.
 // On main none of this exists (no Trades tab, no Make it a trade, no sheet off the Spares tab), so every leg fails there.
 //
-// FIXTURE: a SCRATCH branch seeded by scripts/seed-trade-sheet-fixture.mts (it seeds the six open asks this probe
-// answers), and a dev server on that branch. It writes, so reseed before each run. It refuses any branch but the one
+// FIXTURE: a SCRATCH branch seeded by scripts/seed-trade-sheet-fixture.mts (it seeds eight open asks; this probe
+// answers six of them, three a width), and a dev server on that branch. It writes, so reseed before each run. It refuses any branch but the one
 // named, reading the worktree's DATABASE_URL unless TRADES_PROBE_DATABASE_URL names one:
 //   TRADES_PROBE_BRANCH=br-... PROBE_BASE=http://localhost:3527 E2E_AUDIT_USER_EMAIL=...+clerk_test@... \
 //     node scripts/probe-friend-trades-p7.mjs

@@ -11,7 +11,11 @@ import { FeedAskBack, TradeSheetHost } from "./trade-sheet-host";
 const actions = vi.hoisted(() => ({ openTradeSheetAction: vi.fn() }));
 vi.mock("../../app/friends/trade-actions", () => actions);
 vi.mock("../../app/friends/spare-actions", () => ({}));
-vi.mock("./trade-sheet", () => ({ TradeSheet: () => <div data-testid="sheet" /> }));
+vi.mock("./trade-sheet", () => ({
+  TradeSheet: ({ held, onOpen }: { held: boolean; onOpen: (o: unknown) => void }) => (
+    <div data-testid="sheet" data-held={String(held)}><button type="button" onClick={() => onOpen({ kind: "trade", id: "t-1" })}>sent</button></div>
+  ),
+}));
 
 const ITEM: FeedView = {
   key: "item:1", kind: "spare-request", at: "2026-10-22T10:00:00.000Z", unseen: true,
@@ -52,5 +56,17 @@ describe("FeedAskBack", () => {
     expect(actions.openTradeSheetAction).toHaveBeenCalledWith("pub-peter");
     await act(async () => { land({ friend: {}, held: false, theirSpares: [], yours: [], offered: [], prices: {} }); });
     expect(screen.getByTestId("sheet")).toBeTruthy();
+  });
+
+  it("reads the friend's sheet again when it moves on after a send, so the cap is current", async () => {
+    const data = (held: boolean) => ({ friend: {}, held, theirSpares: [], yours: [], offered: [], prices: {} });
+    actions.openTradeSheetAction.mockResolvedValueOnce(data(false)).mockResolvedValueOnce(data(true));
+    render(<TradeSheetHost><FeedAskBack item={ITEM} answered="yes" size="row" /></TradeSheetHost>);
+    await act(async () => { fireEvent.click(press()!); });
+    expect(screen.getByTestId("sheet").dataset.held).toBe("false");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "sent" })); });
+    expect(actions.openTradeSheetAction).toHaveBeenCalledTimes(2);
+    expect(actions.openTradeSheetAction).toHaveBeenLastCalledWith("pub-peter");
+    expect(screen.getByTestId("sheet").dataset.held).toBe("true");
   });
 });

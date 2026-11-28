@@ -27,7 +27,7 @@ export function useTradeSheet(): Host | null {
 }
 
 export function TradeSheetHost({ children }: { children: ReactNode }) {
-  const [sheet, setSheet] = useState<{ data: TradeSheetData; open: TradeOpen } | null>(null);
+  const [sheet, setSheet] = useState<{ friendPublicId: string; data: TradeSheetData; open: TradeOpen } | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const toast = useSpareToast();
   // The in-flight guard is a ref: two presses before React commits `pending` would both pass a state check.
@@ -38,7 +38,7 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
     setPending(key);
     try {
       const data = await openTradeSheetAction(friendPublicId);
-      if (data) setSheet({ data, open: next });
+      if (data) setSheet({ friendPublicId, data, open: next });
       else toast.fail();
     } catch (e) {
       captureClientError("trades.sheet", e);
@@ -48,6 +48,13 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
       setPending(null);
     }
   }
+  // A send (or a press on an offered card) moves the sheet on with the data read at the press, so the cap and the
+  // offered markers are read again behind it; the sheet stays drawn meanwhile, and a failed re-read keeps what it had.
+  function refresh(friendPublicId: string) {
+    openTradeSheetAction(friendPublicId)
+      .then((data) => { if (data) setSheet((s) => (s && s.friendPublicId === friendPublicId ? { ...s, data } : s)); })
+      .catch((e) => captureClientError("trades.sheet", e));
+  }
   const sheetKey = (o: TradeOpen) => (o.kind === "trade" ? o.id : o.kind === "askBack" ? `ask:${o.fromRequestId}` : "new");
   return (
     <HostContext.Provider value={{ open: (f, o, k) => void open(f, o, k), pending }}>
@@ -55,7 +62,7 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
       {sheet ? (
         <TradeSheet key={sheetKey(sheet.open)} friend={sheet.data.friend} open={sheet.open} held={sheet.data.held}
           theirSpares={sheet.data.theirSpares} yourSpares={sheet.data.yours} offered={sheet.data.offered} prices={sheet.data.prices}
-          onClose={() => setSheet(null)} onOpen={(o) => setSheet({ data: sheet.data, open: o })} />
+          onClose={() => setSheet(null)} onOpen={(o) => { setSheet({ ...sheet, open: o }); refresh(sheet.friendPublicId); }} />
       ) : null}
       {toast.node}
     </HostContext.Provider>
