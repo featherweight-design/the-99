@@ -98,7 +98,7 @@ describe("SwitchesList", () => {
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
     expect(within(r).getByText("env var is off", { selector: "span.font-mono" })).toBeInTheDocument();
     expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide not set · 1 account, refused · env var is off");
-    expect(within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.includes("hidden") && el.textContent === "1 account, refused")).toBeInTheDocument();
+    expect(within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.split(" ").includes("hidden") && !!el.textContent?.endsWith("1 account, refused"))).toBeInTheDocument();
   });
 
   it("prints the env stop's own value, so a variable at false reads false, not off", () => {
@@ -121,13 +121,13 @@ describe("SwitchesList", () => {
     expect(tag.className).toContain("border-[color:var(--danger)]");
     // By the name, in the title group.
     expect(within(r).getByTestId("switch-title").contains(tag)).toBe(true);
-    const app = within(r).getByText("Killed", { selector: "span.hidden" });
+    const app = within(r).getByText("Killed", { selector: "span.hidden > span" }).parentElement!;
     expect(app.className).toContain("font-mono");
     expect(app.className).toContain("var(--danger)");
     const sub = within(r).getAllByText("killed", { selector: "span.font-mono.whitespace-nowrap" }).find((e) => !e.dataset.testid)!;
     expect(sub.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBe(2);
-    expect(within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.includes("hidden") && el.textContent === "1 account, refused")).toBeInTheDocument();
+    expect(within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.split(" ").includes("hidden") && !!el.textContent?.endsWith("1 account, refused"))).toBeInTheDocument();
     expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide killed · 1 account, refused · killed");
     // A switch that is not killed carries no tag.
     expect(within(rowOf("FEEDBACK_ENABLED")).queryByTestId("switch-killed-tag")).toBeNull();
@@ -187,7 +187,7 @@ describe("SwitchesList", () => {
   it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
     const first = draw({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" })]);
     const r = rowOf("MODEL_CALLS_ENABLED");
-    const cell = within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.includes("hidden") && el.textContent === "On, refused");
+    const cell = within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.split(" ").includes("hidden") && !!el.textContent?.endsWith("On, refused"));
     expect(cell.className).toContain("var(--danger)");
     expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide on, refused · no overrides · env var is off");
     // An app-wide override that is not refused reads plainly.
