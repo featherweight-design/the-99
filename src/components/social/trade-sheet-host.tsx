@@ -37,9 +37,10 @@ export function useTradeSheet(): Host | null {
   return useContext(HostContext);
 }
 
+type OpenSheet = { friendPublicId: string; data: TradeSheetData; open: TradeOpen; from?: HostFrom };
+
 export function TradeSheetHost({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const [sheet, setSheet] = useState<{ friendPublicId: string; data: TradeSheetData; open: TradeOpen; from?: HostFrom } | null>(null);
+  const [sheet, setSheet] = useState<OpenSheet | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const toast = useSpareToast();
   // The in-flight guard is a ref: two presses before React commits `pending` would both pass a state check.
@@ -69,32 +70,44 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
       .then((data) => { if (data) setSheet((s) => (s && s.friendPublicId === friendPublicId ? { ...s, data } : s)); })
       .catch((e) => captureClientError("trades.sheet", e));
   }
-  const sheetKey = (o: TradeOpen) => (o.kind === "trade" ? o.id : o.kind === "askBack" ? `ask:${o.fromRequestId}` : "new");
   return (
     <HostContext.Provider value={{ open: (f, o, k, from) => void open(f, o, k, from), pending }}>
       {children}
-      {sheet ? (
-        <TradeSheet key={sheetKey(sheet.open)} friend={sheet.data.friend} open={sheet.open} held={sheet.data.held}
-          theirSpares={sheet.data.theirSpares} yourSpares={sheet.data.yours} offered={sheet.data.offered} prices={sheet.data.prices}
-          back={sheet.from && sheet.open.kind === "new"
-            ? { label: t.sheet.back, aria: t.sheet.backAria, onBack: () => { const from = sheet.from; setSheet(null); from?.back(); } }
-            : undefined}
-          onClose={() => setSheet(null)}
-          onOpen={(o) => {
-            // From a deck or All shopping, a trade opens on the friend's Spares tab (D4), named for where it came from.
-            if (sheet.from && o.kind === "trade") {
-              // The sheet's Back entry stays under the new route: released first, its `history.back()` cancels the push.
-              leaveDialogsForNavigation();
-              setSheet(null);
-              router.push(tradeHref(sheet.friendPublicId, o.id, sheet.from.from));
-              return;
-            }
-            setSheet({ ...sheet, open: o });
-            refresh(sheet.friendPublicId);
-          }} />
-      ) : null}
+      {sheet ? <HostSheet sheet={sheet} onSheet={setSheet} refresh={refresh} /> : null}
       {toast.node}
     </HostContext.Provider>
+  );
+}
+
+const sheetKey = (o: TradeOpen) => (o.kind === "trade" ? o.id : o.kind === "askBack" ? `ask:${o.fromRequestId}` : "new");
+
+/**
+ * The open sheet. It reads the router itself, so a host with no sheet open (every deck page, and the tests that render
+ * one) needs no app router mounted.
+ */
+function HostSheet({ sheet, onSheet, refresh }: {
+  sheet: OpenSheet; onSheet: (s: OpenSheet | null) => void; refresh: (friendPublicId: string) => void;
+}) {
+  const router = useRouter();
+  return (
+    <TradeSheet key={sheetKey(sheet.open)} friend={sheet.data.friend} open={sheet.open} held={sheet.data.held}
+      theirSpares={sheet.data.theirSpares} yourSpares={sheet.data.yours} offered={sheet.data.offered} prices={sheet.data.prices}
+      back={sheet.from && sheet.open.kind === "new"
+        ? { label: t.sheet.back, aria: t.sheet.backAria, onBack: () => { const from = sheet.from; onSheet(null); from?.back(); } }
+        : undefined}
+      onClose={() => onSheet(null)}
+      onOpen={(o) => {
+        // From a deck or All shopping, a trade opens on the friend's Spares tab (D4), named for where it came from.
+        if (sheet.from && o.kind === "trade") {
+          // The sheet's Back entry stays under the new route: released first, its `history.back()` cancels the push.
+          leaveDialogsForNavigation();
+          onSheet(null);
+          router.push(tradeHref(sheet.friendPublicId, o.id, sheet.from.from));
+          return;
+        }
+        onSheet({ ...sheet, open: o });
+        refresh(sheet.friendPublicId);
+      }} />
   );
 }
 
