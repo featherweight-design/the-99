@@ -14,6 +14,8 @@ const m = vi.hoisted(() => ({
   dismissCollected: vi.fn(),
   searchCollectionCatalog: vi.fn(),
   loadWishlist: vi.fn(),
+  acceptWishlistOffer: vi.fn(),
+  dismissWishlistOfferWrite: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
@@ -24,6 +26,7 @@ vi.mock("../../../lib/wishlist/wishlist", () => ({
 }));
 vi.mock("../../../lib/collection/catalog-read", () => ({ searchCollectionCatalog: m.searchCollectionCatalog }));
 vi.mock("../../../lib/wishlist/collected", () => ({ dismissCollected: m.dismissCollected, MAX_COLLECTED_NOTICES: 200 }));
+vi.mock("../../../lib/wishlist/offer", () => ({ acceptWishlistOffer: m.acceptWishlistOffer, dismissWishlistOfferWrite: m.dismissWishlistOfferWrite }));
 
 import * as actions from "./actions";
 
@@ -45,6 +48,8 @@ describe("the reader", () => {
     ["removeFromWishlistAction", () => actions.removeFromWishlistAction(CARD)],
     ["dismissCollectedAction", () => actions.dismissCollectedAction([{ oracleId: CARD, collectedAt: AT }])],
     ["searchWishlistCardsAction", () => actions.searchWishlistCardsAction("sol")],
+    ["acceptWishlistOfferAction", () => actions.acceptWishlistOfferAction()],
+    ["dismissWishlistOfferAction", () => actions.dismissWishlistOfferAction()],
   ];
 
   it("covers every exported action", () => {
@@ -168,5 +173,29 @@ describe("choosing a printing", () => {
     m.setWishlistPrinting.mockResolvedValue(null);
     expect(await actions.setWishlistPrintingAction(CARD, "nope")).toEqual({ ok: false, reason: "invalid" });
     expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("the offer (cart on your wishlist, call 2)", () => {
+  it("Add them turns the sync on for the reader and refreshes the tab, Settings and /decks", async () => {
+    expect(await actions.acceptWishlistOfferAction()).toEqual({ ok: true });
+    expect(m.acceptWishlistOffer).toHaveBeenCalledWith("user_1");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/collection/wishlist");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/settings");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/decks", "layout");
+  });
+
+  it("✕ answers the offer for the reader", async () => {
+    expect(await actions.dismissWishlistOfferAction()).toEqual({ ok: true });
+    expect(m.dismissWishlistOfferWrite).toHaveBeenCalledWith("user_1");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/collection/wishlist");
+  });
+
+  it("refuses a signed-out caller before writing", async () => {
+    m.requireUserId.mockRejectedValue(new Error("unauthenticated"));
+    await expect(actions.acceptWishlistOfferAction()).rejects.toThrow("unauthenticated");
+    await expect(actions.dismissWishlistOfferAction()).rejects.toThrow("unauthenticated");
+    expect(m.acceptWishlistOffer).not.toHaveBeenCalled();
+    expect(m.dismissWishlistOfferWrite).not.toHaveBeenCalled();
   });
 });
