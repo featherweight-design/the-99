@@ -9,7 +9,7 @@
 // that replaced the press (focusable, `tabIndex={-1}`), unless the reader has already moved on.
 
 import { captureClientError } from "../../lib/sentry/capture-client";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { answerOfferAction, answerSpareAction } from "../../app/friends/spare-actions";
 import { spareCopy } from "../../lib/copy/social";
 import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
@@ -91,13 +91,21 @@ export function useSpareAnswer(shared?: SpareToast) {
  * Yes, No and the days left (`.ac` with `.yn`, `.yn.y` and `.ex` on Waiting on you's row; `.la` with `.ba` and `.bg`
  * on the lead story). Yes is the filled press: the answer the ask hopes for. Neither confirms, since neither moves a card.
  */
-export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size, offer = false }: {
+export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size, offer = false, extra, yesWaits = false, roomy = false, labels }: {
   friend: string | ThirdPartyName; card: string; daysLeft: number; busy: Answer | null; locked: boolean;
   /** `from` is the pressed button, for `useLandFocus`. */
   onAnswer: (a: Answer, from: Element) => void;
   size: "row" | "lead";
   /** The request is an OFFER made to the reader: the presses name taking it, not sparing it. */
   offer?: boolean;
+  /** Friend trades: a trade's Counter, in the same row after No (S5, T5, S7). */
+  extra?: ReactNode;
+  /** Friend trades, Needs a look: Yes is drawn but held, since the trade can't be accepted as it is. */
+  yesWaits?: boolean;
+  /** Friend trades: the sheet has room, so the days read at the sheet's 11px. */
+  roomy?: boolean;
+  /** Friend trades: the presses' accessible names, which answer a trade rather than a card. */
+  labels?: { yes: string | PersonParts; no: string | PersonParts };
 }) {
   const press = "inline-flex flex-none cursor-pointer items-center justify-center whitespace-nowrap font-sans disabled:cursor-default";
   const [yes, no] = size === "row"
@@ -111,15 +119,16 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
       ];
   return (
     <span data-testid="spare-answer" className={`flex min-w-0 flex-wrap items-center gap-[8px] ${size === "row" ? "md:justify-end" : ""}`}>
-      <button type="button" data-testid="spare-yes" {...personAttrs({ "aria-label": (offer ? r.offer.yesAria : r.yesAria)(friend, card) }, yes)} aria-busy={busy === "yes" || undefined}
-        disabled={locked} onClick={(e) => onAnswer("yes", e.currentTarget)}>
+      <button type="button" data-testid="spare-yes" {...personAttrs({ "aria-label": labels?.yes ?? (offer ? r.offer.yesAria : r.yesAria)(friend, card) }, `${yes} ${yesWaits ? "opacity-40" : ""}`)} aria-busy={busy === "yes" || undefined}
+        disabled={locked || yesWaits} onClick={(e) => onAnswer("yes", e.currentTarget)}>
         {r.yes}
       </button>
-      <button type="button" data-testid="spare-no" {...personAttrs({ "aria-label": (offer ? r.offer.noAria : r.noAria)(friend, card) }, no)} aria-busy={busy === "no" || undefined}
+      <button type="button" data-testid="spare-no" {...personAttrs({ "aria-label": labels?.no ?? (offer ? r.offer.noAria : r.noAria)(friend, card) }, no)} aria-busy={busy === "no" || undefined}
         disabled={locked} onClick={(e) => onAnswer("no", e.currentTarget)}>
         {r.no}
       </button>
-      <span data-testid="spare-days" className={`whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]`}>
+      {extra}
+      <span data-testid="spare-days" className={`whitespace-nowrap font-mono ${roomy ? "text-[11px]" : "text-[10.5px]"} text-[color:var(--fg-muted)]`}>
         {r.daysLeft(daysLeft)}
       </span>
     </span>

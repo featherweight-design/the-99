@@ -16,12 +16,14 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, friendLinks, printings, socialProfiles, tradeCards, tradeRounds, trades } from "../../db/schema";
 import { loadPrices } from "../decks/price-query";
-import type { PriceFact } from "../decks/price";
+import { priceOf, priceState, provenanceForm, type ProvenanceForm } from "../cards/price-fact";
 import { named } from "../person-name/mint";
 import type { Store } from "../stores/rows";
+import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import { isUuid } from "./rules";
 import { faceOf, type OtherSide } from "./spare-requests";
+import { loadFriendSpareList, type FriendSpareLine } from "./spares";
 import {
   canAct, compareRows, offerHeld, rowState, sheetState, tradeDaysLeft, tradeOpenFloor, tradeStatus,
   type SheetState, type TradeAction, type TradeFacts, type TradeRole, type TradeRow, type TradeStatus,
@@ -47,6 +49,10 @@ export type TradeView = {
   round: number;
   /** The current round's `offered_at`, at millisecond precision: a counter's and an answer's `seenAt`. */
   offeredAt: string;
+  /** The offer the current one replaces, when it was made: a counter's "Replaces your offer of Nov 24". */
+  previousAt: Date | null;
+  /** Both marks are in: the later one, the trade's day. */
+  tradedAt: Date | null;
   /** The first offer, the trade's whole clock (D6). */
   createdAt: Date;
   daysLeft: number;
@@ -57,9 +63,16 @@ export type TradeView = {
   fromRequestId: string | null;
   /** What the viewer may press now (`canAct`). */
   can: Record<TradeAction, boolean>;
-  /** Prices of every card drawn, at the reader's store; empty when the price read failed (bare totals). */
-  prices: Record<string, PriceFact | null>;
+  /** Prices of every card drawn, at the reader's store. */
+  prices: TradePrices;
 };
+
+/**
+ * The figures a trade box sums, at the reader's store: each card's drawn cents (null unpriced, sold out or unread) and
+ * when the store was last read, formed on the server (`provenanceForm`). `dated` is null when the read failed or found
+ * nothing, and the box then draws bare totals.
+ */
+export type TradePrices = { store: Store; cents: Record<string, number | null>; dated: ProvenanceForm | null };
 
 /** One trade as a Trades row: the kicker, title and line's facts. Cards are names, for `cardList`. */
 export type TradeListRow = {
@@ -69,6 +82,9 @@ export type TradeListRow = {
   status: TradeStatus;
   theirs: string[];
   yours: string[];
+  /** Each side's first card's art, for the row's picture (the friend's card in front, the reader's fanned behind). */
+  theirImage: string | null;
+  yourImage: string | null;
   /** The gone card's name, for a Needs a look row. */
   goneName: string | null;
   daysLeft: number;
@@ -105,7 +121,7 @@ type FriendCols = {
   commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null;
 };
 
-const toDate = (v: string | Date | null): Date | null => (v === null ? null : new Date(v));
+const toDate = (v: string | Date | null | undefined): Date | null => (v == null ? null : new Date(v));
 
 function factsOf(r: TradeRowCols): TradeFacts {
   return {
@@ -126,9 +142,10 @@ const otherSideOf = (r: FriendCols): OtherSide => ({ publicId: r.public_id, disp
 export function tradeViewQuery(viewerId: string, tradeId: string): SQL {
   return sql`select ${tradeColumns("vtr")}, vtr.from_request_id,
       to_char(date_trunc('milliseconds', vrd.offered_at) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as offered_at,
-      ${friendColumns("vfp", "vfc", "vfcp")}, vvp.public_id::text as own_public_id
+      ${friendColumns("vfp", "vfc", "vfcp")}, vvp.public_id::text as own_public_id, vpr.offered_at as previous_at
     from ${trades} vtr
     join ${tradeRounds} vrd on vrd.trade_id = vtr.id and vrd.round = vtr.round
+    left join ${tradeRounds} vpr on vpr.trade_id = vtr.id and vpr.round = vtr.round - 1
     ${friendJoin("vtr", "vfl", "vfp", "vfc", "vfcp", viewerId)}
     join ${socialProfiles} vvp on vvp.user_id = ${viewerId}
     where vtr.id = ${tradeId} and ${isParty("vtr", viewerId)}`;
@@ -145,15 +162,20 @@ export function tradeViewCardsQuery(viewerId: string, tradeId: string): SQL {
     order by cc.name, ctc.oracle_id`;
 }
 
-/** Prices at the reader's store; a failed read draws bare totals, never an error. */
-async function pricesOf(ids: readonly string[], store: Store): Promise<Record<string, PriceFact | null>> {
-  if (ids.length === 0) return {};
+/** Prices at the reader's store, for the sheet's box or a draft's picker; a failed read draws bare totals, never an error. */
+export async function tradePrices(ids: readonly string[], store: Store, now = new Date()): Promise<TradePrices> {
+  const bare: TradePrices = { store, cents: {}, dated: null };
+  if (ids.length === 0) return bare;
   try {
     const read = await loadPrices([...ids], [], [], store);
-    return Object.fromEntries(ids.map((id) => [id, read.prices.get(id) ?? null]));
+    const cents = Object.fromEntries(ids.map((id) => {
+      const fact = read.prices.get(id);
+      return [id, fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null];
+    }));
+    return { store, cents, dated: read.newestAsOf ? provenanceForm(read.newestAsOf, now) : null };
   } catch (error) {
     console.warn("[trade-reads] prices unreadable; the sheet draws bare totals", error instanceof Error ? error.message : "");
-    return {};
+    return bare;
   }
 }
 
@@ -162,7 +184,7 @@ const ACTIONS: readonly TradeAction[] = ["counter", "revise", "accept", "decline
 /** The trade sheet's whole view, or null when the viewer is not a party or the other party is no longer a friend. */
 export async function loadTrade(viewerId: string, tradeId: unknown, store: Store, now = new Date()): Promise<TradeView | null> {
   if (!isUuid(tradeId)) return null;
-  const [head] = (await db.execute<TradeRowCols & FriendCols & { offered_at: string; own_public_id: string; from_request_id: string | null }>(
+  const [head] = (await db.execute<TradeRowCols & FriendCols & { offered_at: string; own_public_id: string; from_request_id: string | null; previous_at: string | Date | null }>(
     tradeViewQuery(viewerId, tradeId),
   )).rows;
   if (!head) return null;
@@ -187,7 +209,7 @@ export async function loadTrade(viewerId: string, tradeId: unknown, store: Store
     status === "open"
       ? goneCards(viewer, friend, sidesOf(role, inRound(facts.round).map((r): StoredCard => ({ side: r.side, oracleId: r.oracle_id }))))
       : Promise.resolve(new Set<string>()),
-    pricesOf(ids, store),
+    tradePrices(ids, store, now),
   ]);
   const gone = goneSet.size > 0;
   return {
@@ -197,6 +219,10 @@ export async function loadTrade(viewerId: string, tradeId: unknown, store: Store
     status,
     round: facts.round,
     offeredAt: head.offered_at,
+    previousAt: toDate(head.previous_at),
+    tradedAt: status === "traded" && facts.proposerMarkedAt && facts.recipientMarkedAt
+      ? new Date(Math.max(facts.proposerMarkedAt.getTime(), facts.recipientMarkedAt.getTime()))
+      : null,
     createdAt: facts.createdAt,
     daysLeft: tradeDaysLeft(facts.createdAt, now),
     cards: { theirs: current.theirs, yours: current.yours, previous },
@@ -218,7 +244,7 @@ export const TRADE_ROWS_READ = 200;
 export function tradeRowsQuery(viewerId: string, friendPublicId: string | null, now: Date): SQL {
   return sql`select ${tradeColumns("ltr")},
       greatest(ltr.created_at, lrd.offered_at, ltr.answered_at, ltr.ended_at, ltr.proposer_marked_at, ltr.recipient_marked_at) as at,
-      coalesce((select json_agg(json_build_object('side', ltc.side, 'oracle_id', ltc.oracle_id, 'name', lc.name) order by lc.name, ltc.oracle_id)
+      coalesce((select json_agg(json_build_object('side', ltc.side, 'oracle_id', ltc.oracle_id, 'name', lc.name, 'image_uri', lc.image_uri) order by lc.name, ltc.oracle_id)
         from ${tradeCards} ltc join ${cards} lc on lc.oracle_id = ltc.oracle_id
         where ltc.trade_id = ltr.id and ltc.round = ltr.round), '[]'::json) as cards,
       ${friendColumns("lfp", "lfc", "lfcp")}
@@ -232,13 +258,14 @@ export function tradeRowsQuery(viewerId: string, friendPublicId: string | null, 
     limit ${TRADE_ROWS_READ}`;
 }
 
-type ListCols = TradeRowCols & FriendCols & { at: string | Date; cards: { side: TradeRole; oracle_id: string; name: string }[] | string };
+type ListCols = TradeRowCols & FriendCols & { at: string | Date; cards: ListCard[] | string };
+type ListCard = { side: TradeRole; oracle_id: string; name: string; image_uri: string | null };
 
 /** The rows, sorted (`compareRows`), with Needs a look read for every open trade. */
 async function listRows(viewerId: string, friendPublicId: string | null, now: Date): Promise<{ row: TradeListRow; facts: TradeFacts }[]> {
   const rows = (await db.execute<ListCols>(tradeRowsQuery(viewerId, friendPublicId, now))).rows;
   if (rows.length === 0) return [];
-  const parsed = rows.map((r) => ({ r, facts: factsOf(r), cards: (typeof r.cards === "string" ? JSON.parse(r.cards) : r.cards) as { side: TradeRole; oracle_id: string; name: string }[] }));
+  const parsed = rows.map((r) => ({ r, facts: factsOf(r), cards: (typeof r.cards === "string" ? JSON.parse(r.cards) : r.cards) as ListCard[] }));
   const open = parsed.filter((p) => tradeStatus(p.facts, now) === "open");
   const goneByTrade = new Map<string, Set<string>>();
   if (open.length > 0) {
@@ -263,6 +290,8 @@ async function listRows(viewerId: string, friendPublicId: string | null, now: Da
       status: tradeStatus(facts, now),
       theirs: cs.filter((c) => c.side !== role).map((c) => c.name),
       yours: cs.filter((c) => c.side === role).map((c) => c.name),
+      theirImage: cs.find((c) => c.side !== role)?.image_uri ?? null,
+      yourImage: cs.find((c) => c.side === role)?.image_uri ?? null,
       goneName: goneCard?.name ?? null,
       daysLeft: tradeDaysLeft(facts.createdAt, now),
       createdAt: facts.createdAt,
@@ -338,4 +367,17 @@ export function tradesWaitingQuery(viewerId: string): SQL {
 export async function tradesWaitingWith(viewerId: string, now = new Date()): Promise<Set<string>> {
   const rows = (await db.execute<TradeRowCols & { public_id: string }>(tradesWaitingQuery(viewerId))).rows;
   return new Set(rows.filter((r) => rowState(factsOf(r), viewerId, now, false).waitsOnYou).map((r) => r.public_id));
+}
+
+/**
+ * The picker's Your spares: the reader's own spares as this friend sees them, the list `goneCards` checks an offer's
+ * cards against, so a card the picker draws is one the offer can carry. `onWishlist` is the FRIEND's wishlist here (the
+ * Wants chip), listed first. Empty when the friend is not a friend, or the reader shares no spares with them.
+ */
+export async function loadOwnSparesFor(viewerId: string, friendPublicId: unknown): Promise<FriendSpareLine[]> {
+  const friendId = await resolveFriend(viewerId, friendPublicId);
+  if (friendId === null) return [];
+  const [own] = (await db.execute<{ public_id: string }>(ownPublicIdQuery(viewerId))).rows;
+  if (!own) return [];
+  return (await loadFriendSpareList(friendId, own.public_id, true))?.lines ?? [];
 }

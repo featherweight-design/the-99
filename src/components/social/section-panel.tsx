@@ -40,7 +40,7 @@ export function HandoverMark({ size = "sm" }: { size?: "sm" | "lg" }) {
 }
 
 /** An empty panel body: the mark, a title, one line, at most one press. */
-export function PanelEmpty({ title, body, action, size = "sm" }: { title: string; body: string; action?: ReactNode; size?: "sm" | "lg" }) {
+export function PanelEmpty({ title, body, action, size = "sm" }: { title: ReactNode; body: ReactNode; action?: ReactNode; size?: "sm" | "lg" }) {
   const lg = size === "lg";
   return (
     <div className={`flex flex-col items-center text-center ${lg ? "gap-[8px] px-[22px] pb-[30px] pt-[28px] md:pb-[38px] md:pt-[36px]" : "gap-[6px] px-[18px] pb-[22px] pt-[20px]"}`}>

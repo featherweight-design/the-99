@@ -54,7 +54,7 @@ beforeEach(() => {
   // Every card still spare by default: the viewer ("v") sees the friend's, the friend ("f") sees the viewer's.
   vi.mocked(loadFriendSpares).mockImplementation(async (receiver, ids) =>
     ids.map((id) => ({ oracleId: id, spare: 1, friend: { publicId: receiver === "v" ? PF : PV } })) as never);
-  vi.mocked(loadPrices).mockResolvedValue({ prices: new Map() } as never);
+  vi.mocked(loadPrices).mockResolvedValue({ prices: new Map(), newestAsOf: null } as never);
 });
 
 describe("the statements", () => {
@@ -63,6 +63,8 @@ describe("the statements", () => {
     expectScoped(q, "vtr", "vfl");
     expect(q).toContain(`to_char(date_trunc('milliseconds', vrd.offered_at) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as offered_at`);
     expect(q).toContain("join \"trade_rounds\" vrd on vrd.trade_id = vtr.id and vrd.round = vtr.round");
+    expect(q).toContain("left join \"trade_rounds\" vpr on vpr.trade_id = vtr.id and vpr.round = vtr.round - 1");
+    expect(q).toContain("vpr.offered_at as previous_at");
     expect(q).toContain("join \"social_profiles\" vfp on vfp.user_id = vfl.friend_user_id");
     expect(q).toContain("vfp.public_id::text as public_id");
     expect(q).toContain("where vtr.id = $");
@@ -119,7 +121,7 @@ describe("loadTrade", () => {
   });
 
   it("hands back the round's offered_at as seenAt, the sides from the viewer's seat, and what they may press", async () => {
-    exec.mockResolvedValueOnce(rows([head({ round: 2, recipient_user_id: "v", proposer_user_id: "f" })]));
+    exec.mockResolvedValueOnce(rows([head({ round: 2, recipient_user_id: "v", proposer_user_id: "f", previous_at: "2026-11-24T10:00:00Z" })]));
     exec.mockResolvedValueOnce(rows([
       { round: 1, side: "proposer", oracle_id: A, name: "Arcane Signet", image_uri: null },
       { round: 1, side: "recipient", oracle_id: C, name: "Cultivate", image_uri: null },
@@ -128,6 +130,8 @@ describe("loadTrade", () => {
     ]));
     const view = await loadTrade("v", T, "manapool", NOW);
     expect(view?.offeredAt).toBe(SEEN);
+    expect(view?.previousAt?.toISOString()).toBe("2026-11-24T10:00:00.000Z");
+    expect(view?.tradedAt).toBeNull();
     // Round 2 is the recipient's (the viewer's) own counter.
     expect(view?.state).toBe("yours");
     expect(view?.cards.yours).toEqual([{ oracleId: B, name: "Brainstorm", imageUri: "b.jpg" }]);
@@ -163,7 +167,7 @@ describe("loadTrade", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const view = await loadTrade("v", T, "manapool", NOW);
     expect(view?.state).toBe("ended");
-    expect(view?.prices).toEqual({});
+    expect(view?.prices).toEqual({ store: "manapool", cents: {}, dated: null });
     expect(loadFriendSpares).not.toHaveBeenCalled();
     warn.mockRestore();
   });

@@ -28,6 +28,7 @@ import { FriendSparesProvider, SparesSheetHost, usePageSpares, type SpareCard } 
 import { rowAsk } from "./friend-spares";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { SparesChassis } from "./spares-chassis";
+import { TradePressBridge, TradesOnTab, type TabTrades } from "./trades-on-tab";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 
@@ -41,6 +42,8 @@ export type FriendSparesAsks = {
   /** Each spare's price as Shopping reads it (`loadPrices`), for the modal's buy tag; a card absent draws the bare tag. */
   prices: Record<string, PriceFact>;
   newestAsOf: Date | null;
+  /** Friend trades with this friend (the Trades box, the trade sheet, the spares sheet's Trade press). */
+  trades?: TabTrades;
 };
 
 const p = socialCopy.friendPage;
@@ -51,7 +54,19 @@ export type SparesView = { filters: SpareFilters; sort: SpareSort };
 const NO_NEED: Record<string, number> = {};
 const REST_VIEW: SparesView = { filters: NO_SPARE_FILTERS, sort: "wanted" };
 
-export function FriendSparesTab({ name, spares, asks, deckNeed = NO_NEED, initial = REST_VIEW }: {
+export function FriendSparesTab(props: Parameters<typeof SparesTabBody>[0]) {
+  const { asks, spares } = props;
+  if (!asks?.trades) return <SparesTabBody {...props} />;
+  return (
+    <TradesOnTab friend={asks.trades.friend} theirSpares={spares?.lines ?? NO_LINES} trades={asks.trades}>
+      <SparesTabBody {...props} />
+    </TradesOnTab>
+  );
+}
+
+const NO_LINES: FriendSpareLine[] = [];
+
+function SparesTabBody({ name, spares, asks, deckNeed = NO_NEED, initial = REST_VIEW }: {
   name: string | ThirdPartyName;
   spares: FriendSpareList | null;
   asks?: FriendSparesAsks;
@@ -187,7 +202,9 @@ function AskTab({ spares, all, lines, frame, none, asks, onWishlistWrite }: {
       {none}
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
-          <SparesSheetHost first={friend.publicId} kickerFor={kickerFor} fallback={fallback} />
+          <TradePressBridge friend={friend.publicId} held={asks.trades?.held ?? false}>
+            <SparesSheetHost first={friend.publicId} kickerFor={kickerFor} fallback={fallback} />
+          </TradePressBridge>
           {/* Four columns until xl: at md's narrow end six leave a tile too narrow for its one-line Requested caption. */}
           <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-4 md:gap-[20px] xl:grid-cols-6">
             {lines.map((line, i) => (
