@@ -2,7 +2,7 @@
 // The tray's submit flow: Open pull request posts the edits, then the status route is polled until the pull request
 // appears (or the run fails, which gives the edits back). The edits belong to the overlay; this hook asks it to change them.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Edit } from "../../lib/copy-editor/edits";
+import type { Edit } from "../../lib/copy-editor/edits-store";
 import { readSent, readStatus, restoreEdits, submitEdits, writeSent, type Sent } from "../../lib/copy-editor/submit";
 
 export type Pr = { number: number; url: string };

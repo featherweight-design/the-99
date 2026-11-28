@@ -10,8 +10,8 @@ import { indexRows, type RowIndex } from "../../lib/copy-editor/match";
 import type { EditorRow } from "../../lib/copy-editor/rows";
 import { Editor } from "./editor";
 import { Tray } from "./tray";
-import { useSubmission } from "./use-submission";
-import { readEdits, writeEdits, type Edit } from "../../lib/copy-editor/edits";
+import type { EditSession } from "./use-edit-session";
+import type { Edit } from "../../lib/copy-editor/edits";
 import { entryAt, OVERLAY_ATTR, place, scanPage, type Entry, type Placed } from "./scan";
 
 type Load = { state: "loading" } | { state: "ready"; index: RowIndex; rows: EditorRow[] } | { state: "error"; notBuilt: boolean };
@@ -43,7 +43,8 @@ function headerBottom(): number {
   return header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
 }
 
-export default function Overlay({ on, stop }: { on: boolean; stop: () => void }) {
+export default function Overlay({ on, stop, session }: { on: boolean; stop: () => void; session: EditSession }) {
+  const { edits, replaceEdits, saveEdits: saveToSession, sub, submit, dismiss, trayOpen, setTrayOpen } = session;
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [placed, setPlaced] = useState<Placed[]>([]);
@@ -51,33 +52,24 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
   const [touch, setTouch] = useState(false);
   const [barTop, setBarTop] = useState(0);
   const [editing, setEditing] = useState<number | null>(null);
-  const [edits, setEdits] = useState<Edit[]>(readEdits);
-  const [trayOpen, setTrayOpen] = useState(false);
   // An edit reopened from the tray: its line may be on another page, so the editor opens without a target box.
   const [editRow, setEditRow] = useState<EditorRow | null>(null);
   const trayRef = useRef(false);
   useEffect(() => {
     trayRef.current = trayOpen;
   }, [trayOpen]);
-  const replaceEdits = useCallback((next: Edit[]) => {
-    writeEdits(next);
-    setEdits(next);
-  }, []);
-  const { sub, submit, dismiss } = useSubmission(edits, replaceEdits);
   const editingRef = useRef<number | null>(null);
   useEffect(() => {
     editingRef.current = editing;
   }, [editing]);
-  const saveEdits = useCallback((upsert: Edit[], drop: string[]) => {
-    setEdits((cur) => {
-      const gone = new Set([...drop, ...upsert.map((e) => e.key)]);
-      const next = [...cur.filter((e) => !gone.has(e.key)), ...upsert];
-      writeEdits(next);
-      return next;
-    });
-    setEditing(null);
-    setEditRow(null);
-  }, []);
+  const saveEdits = useCallback(
+    (upsert: Edit[], drop: string[]) => {
+      saveToSession(upsert, drop);
+      setEditing(null);
+      setEditRow(null);
+    },
+    [saveToSession],
+  );
   const entries = useRef<Entry[]>([]);
   const placedRef = useRef<Placed[]>([]);
   const frame = useRef(0);

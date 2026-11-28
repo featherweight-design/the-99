@@ -5,11 +5,13 @@
 import dynamic from "next/dynamic";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { copyEditorCopy } from "../../lib/copy/copy-editor";
+import { focusDoor } from "./chrome";
 import { OVERLAY_ATTR } from "./scan";
+import { useEditSession } from "./use-edit-session";
 
 const Overlay = dynamic(() => import("./overlay"), { ssr: false });
 
-type Mode = { on: boolean; start: () => void; stop: () => void };
+type Mode = { on: boolean; start: () => void; stop: () => void; waiting: number };
 const ModeContext = createContext<Mode | null>(null);
 
 /** The mode, or null where the shell did not mount the editor (a player, production). */
@@ -33,13 +35,12 @@ export function CopyEditorProvider({ children }: { children: ReactNode }) {
   }, []);
   const stop = useCallback(() => {
     setOn(false);
-    // Done gives the focus back to the door. The desktop pill is unmounted while the mode is on, so look it up once it is back.
-    requestAnimationFrame(() => {
-      const doors = [...document.querySelectorAll<HTMLElement>("[data-copy-door]")];
-      doors.find((d) => d.getClientRects().length > 0)?.focus();
-    });
+    // Done gives the focus back to the door.
+    focusDoor();
   }, []);
-  const mode = useMemo(() => ({ on, start, stop }), [on, start, stop]);
+  const session = useEditSession();
+  const waiting = session.edits.length;
+  const mode = useMemo(() => ({ on, start, stop, waiting }), [on, start, stop, waiting]);
   return (
     <ModeContext.Provider value={mode}>
       {children}
@@ -54,9 +55,14 @@ export function CopyEditorProvider({ children }: { children: ReactNode }) {
           <Pencil size={16} />
           {copyEditorCopy.door}
           <StagingDot />
+          {waiting > 0 && (
+            <span className="flex h-6 items-center rounded-full bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] px-[10px] text-[12px] font-medium text-[color:var(--accent-text)]">
+              {copyEditorCopy.doorWaiting(waiting)}
+            </span>
+          )}
         </button>
       )}
-      {loaded && <Overlay on={on} stop={stop} />}
+      {loaded && <Overlay on={on} stop={stop} session={session} />}
     </ModeContext.Provider>
   );
 }
@@ -68,7 +74,7 @@ export function CopyEditorDoor() {
   return (
     <button
       type="button"
-      aria-label={copyEditorCopy.door}
+      aria-label={copyEditorCopy.doorLabel(mode.waiting)}
       aria-pressed={mode.on}
       data-copy-door=""
       onClick={() => (mode.on ? mode.stop() : mode.start())}
@@ -77,7 +83,12 @@ export function CopyEditorDoor() {
       }`}
     >
       <Pencil size={20} />
-      <span className="absolute right-[7px] top-[7px]">
+      {mode.waiting > 0 && (
+        <span aria-hidden className="absolute -right-[4px] -top-[4px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--accent)] px-1 text-[11px] font-semibold text-[color:var(--bg)] ring-2 ring-[color:var(--bg)]">
+          {mode.waiting}
+        </span>
+      )}
+      <span className={`absolute right-[7px] ${mode.waiting > 0 ? "bottom-[7px] rounded-full ring-2 ring-[color:var(--bg)]" : "top-[7px]"}`}>
         <StagingDot />
       </span>
     </button>
