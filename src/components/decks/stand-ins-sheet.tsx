@@ -238,8 +238,8 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
           // (2026-09-26): the drawback starts its own line at every width, so the boundary between the mana
           // line and its cost is clear, as a spell row's LOSES starts its own group.
           <p className="col-span-full m-0 mt-[3px] pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
-            {row.body.length ? <span className="text-[color:var(--fg-body)]">{row.body.join(" · ")}</span> : null}
-            {row.muted.length ? <span data-drawback className="block">{row.muted.join(" · ")}</span> : null}
+            {row.body.length ? <span className="text-[color:var(--fg-body)]"><CopyLines lines={row.body} sep=" · " /></span> : null}
+            {row.muted.length ? <span data-drawback className="block"><CopyLines lines={row.muted} sep=" · " /></span> : null}
           </p>
         ) : null}
         {row.compare ? <Comparison compare={row.compare} /> : null}
