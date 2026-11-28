@@ -62,10 +62,18 @@ export function rollTradeMatches(views: readonly FeedView[], zone: string): Feed
 }
 
 /**
- * The badge's count key for one row of the feed's union (alias `f`), the SQL twin of `groupOf`: a trade match with a
- * friend counts once per friend and reader-day, every other row by its own key. `zone` is `rollZone`'s, sent bound.
+ * The reader's zone as the badge's statement reads it, in the same statement (no round trip of its own): the push
+ * cap's (`readerZoneQuery`), UTC with no device. Postgres judges it, not `judgedZone`; a zone it refuses fails the
+ * statement, and `unseenCount` counts again in UTC.
  */
-export function rollCountKey(zone: string): SQL {
+export const rollZoneSql = (viewerId: string): SQL => sql`coalesce((${readerZoneQuery(viewerId)}), 'UTC')`;
+
+/**
+ * The badge's count key for one row of the feed's union (alias `f`), the SQL twin of `groupOf`: a trade match with a
+ * friend counts once per friend and reader-day, every other row by its own key. `zone` is a zone name, sent bound, or
+ * `rollZoneSql`.
+ */
+export function rollCountKey(zone: string | SQL): SQL {
   return sql`case when f.kind = 'trade-match' and f.friend_public_id is not null
     then 'roll:' || f.friend_public_id || ':' || ((f.created_at at time zone ${zone})::date)::text
     else f.key end`;

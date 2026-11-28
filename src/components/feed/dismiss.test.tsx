@@ -157,6 +157,16 @@ describe("a rolled trade match (Cart on your wishlist Q1)", () => {
     expect(screen.getByText(feedCopy.home.newCount(1), { exact: false })).toBeInTheDocument();
   });
 
+  it("writes a day of more matches than one write takes in slices, all of them", async () => {
+    const keys = Array.from({ length: 250 }, (_, i) => `item:m${i}`);
+    const big = rolled({ key: keys[0], rollup: { keys, cards: [] } });
+    render(<WhatsNew feed={feed([big])} now={NOW} />);
+    const name = plain(d.aria(feedCopy.home.title.tradeMatchRolled(colin.displayName, 250)));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name })); });
+    expect(m.clear.mock.calls.map(([s]) => s.length)).toEqual([200, 50]);
+    expect(m.clear.mock.calls.flatMap(([s]) => s)).toEqual(keys);
+  });
+
   it("comes back with the toast when that write fails", async () => {
     m.clear.mockResolvedValue({ ok: false, reason: "off" });
     render(<WhatsNew feed={feed([rolled()])} now={NOW} />);

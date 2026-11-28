@@ -142,6 +142,15 @@ describe("FeedItemRow", () => {
     expect(container.querySelectorAll("[data-feed-rolled-card]")).toHaveLength(1);
   });
 
+  it("passes over a fanned card with no image, drawing the next one that has one", () => {
+    const card = (oracleId: string, name: string, image: string | null) => ({ oracleId, name, image, art: null, colorIdentity: null });
+    const cards = [card("c1", "Sai", "c1.jpg"), card("c2", "Ghalta", null), card("c3", "Miku", "c3.jpg")];
+    const { container } = list(
+      <FeedItemRow item={view({ kind: "trade-match", card: cards[0], friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1/spares", rollup: { keys: ["a", "b", "c"], cards } })} now={NOW} />,
+    );
+    expect([...container.querySelectorAll("[data-feed-rolled-card]")].map((i) => i.getAttribute("src"))).toEqual(["c3.jpg"]);
+  });
+
   it("names a trade match's press Ask {friend} when it opens the card's sheet with Ask", () => {
     list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1/spares?spare=g", askable: true })} now={NOW} />);
     const ask = screen.getByRole("link", { name: "Ask Colin ›" });

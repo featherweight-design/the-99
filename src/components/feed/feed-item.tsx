@@ -373,10 +373,10 @@ function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCo
         <img src={item.trade.yours[0].image} alt="" data-feed-trade-yours className="absolute -left-[5px] top-[1px] block h-[60px] w-[43px] -rotate-[9deg] rounded-[3px] object-cover opacity-90 shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
       ) : null}
       {/* A rolled trade match (Cart on your wishlist Q1, board N1): up to two more cards fanned behind the first, each
-          further left, higher and darker. */}
-      {(item.rollup?.cards.slice(1, 3) ?? []).map((b, i) => (
+          further left, higher and darker; a card with no image is passed over, as the trade fan does. */}
+      {(item.rollup?.cards.slice(1).filter((b) => b.image).slice(0, 2) ?? []).map((b, i) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={b.oracleId} src={b.image ?? undefined} alt="" data-feed-rolled-card
+        <img key={b.oracleId} src={b.image!} alt="" data-feed-rolled-card
           className={`absolute block h-[60px] w-[43px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)] bg-[color:var(--surface-raised)] ${ROLLED_FAN[i]}`} />
       )).reverse()}
       <span className={`block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)] ${item.trade ? "relative rotate-[3deg]" : item.rollup ? "relative" : ""}`}>

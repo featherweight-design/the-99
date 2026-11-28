@@ -6,7 +6,8 @@
 // and for good (`dismissFeedItemAction`, `feed_dismissals`); a failed write puts it back with the toast. It answers
 // nothing.
 import { useRef, useState, type ReactNode } from "react";
-import { clearFeedItemsAction, dismissFeedItemAction } from "../../app/feed-dismiss-actions";
+import { dismissFeedItemAction } from "../../app/feed-dismiss-actions";
+import { clearInSlices } from "./clear-slices";
 import { feedCopy } from "../../lib/copy/feed";
 import { personAttrs, type PersonParts } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -98,13 +99,13 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
   };
   /**
    * `keys`: every stored item the row stands for, when it stands for more than its own (a rolled trade match, Cart on
-   * your wishlist Q1); they go for good in one write, and the row (`key`) comes back if it fails.
+   * your wishlist Q1); they go for good (in slices one write takes), and the row (`key`) comes back if it fails.
    */
   function dismiss(key: string, from: HTMLElement, move = true, keys: readonly string[] = [key]) {
     const next = nextDismiss(from);
     put(key, true);
     if (move) requestAnimationFrame(() => (next ? ringFocus(next) : fallback?.()?.focus()));
-    void (keys.length > 1 ? clearFeedItemsAction(keys) : dismissFeedItemAction(key))
+    void (keys.length > 1 ? clearInSlices(keys) : dismissFeedItemAction(key))
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
       })

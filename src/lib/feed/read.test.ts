@@ -12,8 +12,6 @@ const env = (e: Record<string, string> = {}): NodeJS.ProcessEnv => e as unknown 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const render = (q: SQL | null) => new PgDialect().sqlToQuery(q!);
 const flat = (s: string) => s.replace(/\s+/g, " ");
-/** Home's badge reads the reader's zone first (the trade-match roll-up); a test of the count itself sets it aside. */
-const isZoneRead = (s: SQL) => render(s).sql.includes(`from "push_subscriptions"`);
 
 describe("feedUnion", () => {
   const { sql, params } = render(feedUnion("user_1", FEED_KINDS, NOW));
@@ -239,7 +237,7 @@ describe("the reads", () => {
 
   it("reads New precon (feed and badge), and never writes its stored choice", async () => {
     const ran: SQL[] = [];
-    const q = { execute: async (s: SQL) => { if (!isZoneRead(s)) ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
     const e = env();
     await loadFeed("u", e, NOW, q);
     await unseenCount("u", e, NOW, q);
@@ -253,7 +251,7 @@ describe("the reads", () => {
 
   it("reads price drops in the reader's store only while their store switch is on (store preference)", async () => {
     const ran: SQL[] = [];
-    const q = { execute: async (s: SQL) => { if (!isZoneRead(s)) ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
     await loadFeed("u", env(), NOW, q);
     await unseenCount("u", env(), NOW, q);
     await loadFeed("u", { ...env(), STORE_PREFERENCE_ENABLED: "true" }, NOW, q);

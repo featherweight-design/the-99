@@ -17,7 +17,7 @@ import { displaceLead, useHeldLead } from "./held-lead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { clearFeedItemsAction, restoreFeedItemsAction } from "../../app/feed-dismiss-actions";
+import { clearInSlices, restoreInSlices } from "../feed/clear-slices";
 import { closeFeedOfferAction, saveFeedKinds } from "../../app/settings/feed-actions";
 import { feedCopy } from "../../lib/copy/feed";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
@@ -150,15 +150,10 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
   };
   // `only` is the Show all sheet's clear (the keys its chip shows): the page behind the sheet keeps focus where it is.
   const clearAll = (pending: string | null, only?: readonly string[]) => {
-    // Rows while their stored items fit one write: a rolled row counts every member it stands for.
-    const keys: string[] = [];
-    const write: string[] = [];
-    for (const k of new Set((only ?? clearable).filter((k) => k !== pending))) {
-      const its = members.get(k) ?? [k];
-      if (write.length + its.length > CLEAR_ALL_MAX) break;
-      keys.push(k);
-      write.push(...its);
-    }
+    // Up to CLEAR_ALL_MAX rows, as before the roll-up; a rolled row writes every member it stands for, in slices one
+    // write takes (`clearInSlices`), so a large day of matches never stops the rows after it.
+    const keys = [...new Set((only ?? clearable).filter((k) => k !== pending))].slice(0, CLEAR_ALL_MAX);
+    const write = keys.flatMap((k) => members.get(k) ?? [k]);
     if (keys.length === 0) return;
     const lead = leadKey && keys.includes(leadKey) ? leadKey : null;
     setClearToast(null);
@@ -170,7 +165,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
       bring(keys, false, lead);
       // The press is not on the page until the rows are back: the effect below focuses it once it is.
       refocusClear.current = !only;
-      void (wrote.length > 0 ? restoreFeedItemsAction(wrote) : Promise.resolve({ ok: true as const }))
+      void (wrote.length > 0 ? restoreInSlices(wrote) : Promise.resolve({ ok: true as const }))
         .then((r) => {
           if (!r.ok) throw new Error(r.reason);
         })
@@ -180,7 +175,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
           fail(c.clearAll.undoFailed);
         });
     };
-    void clearFeedItemsAction(write)
+    void clearInSlices(write)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
         setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo(r.cleared) } });

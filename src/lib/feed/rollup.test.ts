@@ -3,12 +3,14 @@ import type { SQL } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
+const captured = vi.hoisted(() => vi.fn());
+vi.mock("../sentry/capture", () => ({ captureServerError: captured }));
 
 import { named } from "../person-name/mint";
 import type { FeedCard, FeedView } from "./home";
 import { FEED_KINDS } from "./kinds";
-import { unseenCountQuery } from "./read";
-import { rollCountKey, rollTradeMatches, rollZone } from "./rollup";
+import { unseenCount, unseenCountQuery } from "./read";
+import { rollCountKey, rollTradeMatches, rollZone, rollZoneSql } from "./rollup";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const flat = (s: string) => s.replace(/\s+/g, " ");
@@ -144,5 +146,36 @@ describe("the badges (orchestrator ruling: fold What's new and Home's badge, nev
     expect(params).toEqual([zone]);
     // The Friends badge counts each of the four, as Waiting on you draws them.
     expect(views.filter((v) => v.kind === "trade-match" && v.friend?.publicId === "p1" && v.unseen)).toHaveLength(4);
+  });
+
+  it("Home's badge is one statement: the reader's zone is read inside it, aliased and qualified, UTC with no device", async () => {
+    const ran: SQL[] = [];
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 3 }] }; } } as never;
+    expect(await unseenCount("u_1", {} as NodeJS.ProcessEnv, NOW, q)).toBe(3);
+    expect(ran).toHaveLength(1);
+    const { sql: text, params } = render(ran[0]);
+    expect(flat(text)).toMatch(
+      /count\(distinct case when .* \(\(f\.created_at at time zone coalesce\(\(select tps\.time_zone from "push_subscriptions" tps where tps\.user_id = \$\d+ order by tps\.refreshed_at desc, tps\.id limit 1\), 'UTC'\)\)::date\)::text/,
+    );
+    expect(params).toContain("u_1");
+    expect(flat(render(rollZoneSql("u_1")).sql)).toBe(`coalesce((select tps.time_zone from "push_subscriptions" tps where tps.user_id = $1 order by tps.refreshed_at desc, tps.id limit 1), 'UTC')`);
+  });
+
+  it("counts again in UTC, and reports, when Postgres refuses the stored zone; any other failure is thrown", async () => {
+    const refused = Object.assign(new Error("Failed query"), { cause: { code: "22023" } });
+    const ran: SQL[] = [];
+    const q = {
+      execute: async (s: SQL) => {
+        ran.push(s);
+        if (ran.length === 1) throw refused;
+        return { rows: [{ n: 2 }] };
+      },
+    } as never;
+    expect(await unseenCount("u_1", {} as NodeJS.ProcessEnv, NOW, q)).toBe(2);
+    expect(captured).toHaveBeenCalledWith("feed.badge-zone", refused);
+    expect(render(ran[1]).params).toContain("UTC");
+    expect(render(ran[1]).sql).not.toContain("push_subscriptions");
+    const down = { execute: async () => { throw Object.assign(new Error("down"), { code: "57P01" }); } } as never;
+    await expect(unseenCount("u_1", {} as NodeJS.ProcessEnv, NOW, down)).rejects.toThrow("down");
   });
 });
