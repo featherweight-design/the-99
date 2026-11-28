@@ -3,6 +3,8 @@
 // every one made or offered to them (To you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
 // (card at card shape, the friend's face in the corner, kicker, title, line) with no ✕ and no Ask again: the live list keeps
 // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
+// Friend trades (handoff `design_handoff_the99_friend_trades`, Lists RH) add a third tab, Trades: every trade, waiting on you
+// first, each row opening the trade sheet over this page (`TradeSheetHost`), where its presses live.
 import { captureClientError } from "../../lib/sentry/capture-client";
 import { BandTitle } from "../decks/deck-box";
 import Link from "next/link";
@@ -21,6 +23,10 @@ import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { FadingImg } from "../ui/hydrated-art";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { BAND, PANEL, PanelEmpty } from "./section-panel";
+import { tradeCopy } from "../../lib/copy/trades";
+import type { TradeListRow } from "../../lib/social/trade-reads";
+import { TradeRows } from "./trade-rows";
+import { useTradeSheet } from "./trade-sheet-host";
 
 export type HistoryTab = "asked" | "ofYou";
 const DIRECTION: Record<HistoryTab, HistoryDirection> = { asked: "asked", ofYou: "received" };
@@ -125,8 +131,12 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
 
 type Side = { entries: HistoryEntry[]; next: HistoryCursor | null };
 
-export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Side; ofYou: Side; hiddenCount: number; nowMs: number }) {
-  const [tab, setTab] = useState<HistoryTab>("asked");
+export function RequestHistory({ asked, ofYou, trades, hiddenCount, nowMs }: {
+  asked: Side; ofYou: Side; trades: TradeListRow[]; hiddenCount: number; nowMs: number;
+}) {
+  const [view, setView] = useState<HistoryTab | "trades">("asked");
+  // The request tabs' state is keyed on the last request tab, so Trades leaves their paging as it was.
+  const tab: HistoryTab = view === "trades" ? "asked" : view;
   const [sides, setSides] = useState<Record<HistoryTab, Side>>({ asked, ofYou });
   const [failed, setFailed] = useState<Record<HistoryTab, boolean>>({ asked: false, ofYou: false });
   const [loading, setLoading] = useState<Record<HistoryTab, boolean>>({ asked: false, ofYou: false });
@@ -169,14 +179,26 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
           ariaLabel={h.title}
           size="compact"
           fill
-          value={tab}
-          onChange={setTab}
-          segments={[{ value: "asked", label: h.tabs.asked }, { value: "ofYou", label: h.tabs.ofYou }]}
+          value={view}
+          onChange={setView}
+          segments={[
+            { value: "asked", label: h.tabs.asked },
+            { value: "ofYou", label: h.tabs.ofYou },
+            { value: "trades", label: tradeCopy.listTab, data: { "data-testid": "rh-tab-trades" } },
+          ]}
           ids={{ tab: (v) => `rh-tab-${v}`, panel: (v) => `rh-panel-${v}` }}
         />
       </div>
-      <div role="tabpanel" id={`rh-panel-${tab}`} aria-labelledby={`rh-tab-${tab}`}>
-      {side.entries.length === 0 ? (
+      <div role="tabpanel" id={`rh-panel-${view}`} aria-labelledby={`rh-tab-${view}`}>
+      {view === "trades" ? (
+        trades.length === 0 ? (
+          <div className={`${PANEL} mt-[18px]!`}>
+            <PanelEmpty size="lg" title={tradeCopy.empty.listTitle} body={tradeCopy.empty.listBody} />
+          </div>
+        ) : (
+          <div className={`${PANEL} mt-[18px]!`} data-testid="rh-trades"><HistoryTradeRows rows={trades} nowMs={nowMs} /></div>
+        )
+      ) : side.entries.length === 0 ? (
         <div className={`${PANEL} mt-[18px]!`}>
           <PanelEmpty size="lg" title={empty.title} body={empty.body} />
         </div>
@@ -201,5 +223,18 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
       </div>
       {hiddenCount > 0 && <p className="m-0 mt-[18px] text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{h.exFriends}</p>}
     </div>
+  );
+}
+
+/** Request history › Trades: a press opens the trade sheet over this page, through the page's `TradeSheetHost`. */
+function HistoryTradeRows({ rows, nowMs }: { rows: TradeListRow[]; nowMs: number }) {
+  const host = useTradeSheet();
+  const zone = useZone();
+  return (
+    <TradeRows rows={rows} now={new Date(nowMs)} timeZone={zone ?? "UTC"}
+      onOpen={(id) => {
+        const row = rows.find((r) => r.id === id);
+        if (row) host?.open(row.friend.publicId, { kind: "trade", id }, `trade:${id}`);
+      }} />
   );
 }

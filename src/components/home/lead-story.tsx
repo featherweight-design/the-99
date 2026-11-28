@@ -35,6 +35,7 @@ import { PersonText } from "../../lib/person-name";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
+import { AskBackPress, TradeSheetHost } from "../social/trade-sheet-host";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, useSpareToast, type Answer, type SpareToast } from "../social/spare-answer";
 import { useHeldLead } from "./held-lead";
 import { HOME_HEADING_ID } from "./home-heading";
@@ -60,12 +61,12 @@ export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: stri
     publish?.setKey(on ? shown.item.key : null);
   };
   return (
-    <>
+    <TradeSheetHost>
       <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} toast={toast}
         onDismiss={held ? undefined : (from) => dismissed.dismiss(shown.item.key, from, true, shown.item.rollup?.keys)} />
       {toast.node}
       {dismissed.toast}
-    </>
+    </TradeSheetHost>
   );
 }
 
@@ -170,6 +171,13 @@ export function LeadStory({
         {lists && <p data-lead-lists className="m-0 font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
         {/* The action line (board `Dismiss-X`, `.d4n .ld .la`): the press, or Yes, No and the days left, then the ✕ at
             its end. The ✕ is not in this line: it holds the card's top right corner. */}
+        {/* Make it a trade (A2): a Yes to an ask, not to an offer, turns the receipt's action line into the filled press. */}
+        {ask && answered === "yes" && !offer && item.friend && item.card && (
+          <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-center gap-[8px]">
+            <AskBackPress friendPublicId={item.friend.publicId} friend={item.friend.displayName} requestId={ask.id} size="lead"
+              card={{ oracleId: item.card.oracleId, name: item.card.name, imageUri: item.card.image }} />
+          </div>
+        )}
         {(text.press || (ask && !receipt)) && (
           <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-start gap-[8px] md:items-center">
             {two && text.press ? (

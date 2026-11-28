@@ -35,6 +35,8 @@ import { loadWaitingOnYou } from "../../lib/social/waiting";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { markFriendsSeen } from "../../lib/feed/prefs";
 import { WaitingOnYou } from "../../components/social/waiting-on-you";
+import { TradeSheetHost } from "../../components/social/trade-sheet-host";
+import { loadTradeRows } from "../../lib/social/trade-reads";
 import { TradeAskFrame } from "../../components/social/trade-ask";
 import { CardDetailProvider } from "../../components/cards/card-detail-provider";
 import { loadTradeAsk } from "../../lib/social/trade-ask";
@@ -96,7 +98,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const storeRead = readerStoreForPage(userId, env);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
-  const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine, hasHistory, sparable, wantedCounts] = await Promise.all([
+  const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine, hasHistory, sparable, wantedCounts, trades] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
     perf.timed("pods", () => listPods(userId)),
@@ -114,6 +116,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     perf.timed("sparableCounts", () => loadSparableCounts(userId).catch(() => new Map<string, number>())),
     // The other direction (friend trades): how many of each friend's spares the reader wants. Unreadable draws no chip.
     perf.timed("wantedCounts", () => loadWantedCounts(userId).catch(() => new Map<string, number>())),
+    // The Requests box's Trades tab (friend trades L1): five rows, waiting on you first, and the rest's count.
+    perf.timed("tradeRows", () => loadTradeRows(userId, { limit: 5 }, now)),
   ]);
   // After the response, never during the render: record any trade match this reader has not been told about (the next
   // render draws it), then clear the Friends badge up to the instant this page drew. Each writes only when it has
@@ -141,6 +145,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   return (
     <>
     <ToolLandingMount landing={landing} request={request} />
+    <TradeSheetHost>
     <FriendsView
       profile={profile}
       waiting={
@@ -149,6 +154,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           mineCount={mine.length}
           unseenAnswer={mine.some((r) => r.unseen)}
           history={hasHistory}
+          trades={{ ...trades, now }}
           // The sheet's name opens card details, so its provider sits around it here, as on a friend's Spares tab. Both
           // stay mounted with no trade match, so a redraw that drops the last one keeps Waiting on you's visit state. A
           // Your requests ✕ moves `asksVersion`, so a trade match's press stops saying Requested for a withdrawn ask.
@@ -181,6 +187,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       friendLinks={friendLinksEnabled(env)}
       requestSent={requestSent}
     />
+    </TradeSheetHost>
     </>
   );
 }

@@ -423,7 +423,7 @@ export async function loadHomeFeed(
     lookups(userId, items, q, env, store),
     loadPostListTargets(posts, now, q),
     waiting ? loadIncomingAsks(userId, env, now, q) : Promise.resolve([] as IncomingAsk[]),
-    waiting ? loadIncomingOffers(userId, now) : Promise.resolve([] as IncomingOffer[]),
+    waiting ? loadIncomingOffers(userId, now, q) : Promise.resolve([] as IncomingOffer[]),
     matches ? readerZone(userId, q) : Promise.resolve(null),
   ]);
   const views = rollTradeMatches(withTradeSides(withListTargets(toViews(items, found, store), targets)), rollZone(zone));

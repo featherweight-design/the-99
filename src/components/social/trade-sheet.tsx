@@ -31,10 +31,21 @@ import {
 } from "../../app/friends/trade-actions";
 import { COMPOSING, TradeBox, sideSum, type BoxBusy, type BoxCard, type BoxState } from "./trade-tab";
 
-/** What the sheet opens on: a new trade (its first card from the friend, when a tile's Trade opened it), or a trade. */
-export type TradeOpen = { kind: "new"; first?: string } | { kind: "trade"; id: string; view?: TradeView | null };
+/**
+ * What the sheet opens on: a new trade (its first card from the friend, when a tile's Trade opened it), a trade, or
+ * Make it a trade (A3): a new trade from the reader's Yes to the friend's ask `fromRequestId`, its card (`yes`) on the
+ * reader's side as `YOUR YES`. The server puts that card on the offer whatever the sheet sends (`proposeTrade`).
+ */
+export type TradeOpen =
+  | { kind: "new"; first?: string }
+  | { kind: "askBack"; fromRequestId: string; yes: TradeCard }
+  | { kind: "trade"; id: string; view?: TradeView | null };
 
-type Compose = { mode: "draft" | "counterDraft" | "revise"; theirs: string[]; yours: string[]; side: "them" | "you" };
+type Compose = {
+  mode: "draft" | "askBack" | "counterDraft" | "revise"; theirs: string[]; yours: string[]; side: "them" | "you";
+  /** Make it a trade: the Yes card, which stays on the reader's side (the picker cannot take it out). */
+  agreed?: string;
+};
 
 const TILE_BOX = "relative block w-full overflow-hidden p-0 [aspect-ratio:63/88] [border-radius:4.5%/3.2%] [border:1px_solid_var(--border)] bg-[color:var(--surface-sunken)]";
 const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--accent)]";
@@ -64,10 +75,14 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
   const name = friend.displayName;
   const tradeId = open.kind === "trade" ? open.id : null;
   const [view, setView] = useState<TradeView | null>(open.kind === "trade" ? open.view ?? null : null);
-  const [loaded, setLoaded] = useState(open.kind === "new" || open.view != null);
+  const [loaded, setLoaded] = useState(open.kind !== "trade" || open.view != null);
   const [compose, setCompose] = useState<Compose | null>(
-    open.kind === "new" ? { mode: "draft", theirs: open.first ? [open.first] : [], yours: [], side: open.first ? "you" : "them" } : null,
+    open.kind === "new" ? { mode: "draft", theirs: open.first ? [open.first] : [], yours: [], side: open.first ? "you" : "them" }
+      : open.kind === "askBack" ? { mode: "askBack", theirs: [], yours: [open.yes.oracleId], side: "them", agreed: open.yes.oracleId }
+      : null,
   );
+  const fromRequestId = open.kind === "askBack" ? open.fromRequestId : null;
+  const yesCard = open.kind === "askBack" ? open.yes : null;
   /** The receipt (D4): the new trade's id and both sides' first cards, kept from the press since the compose is gone. */
   const [sent, setSent] = useState<{ id: string; theirs: string | null; yours: string | null } | null>(null);
   const [busy, setBusy] = useState<BoxBusy>(null);
@@ -87,10 +102,11 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
 
   const cardsById = useMemo(() => {
     const m = new Map<string, TradeCard>();
+    if (yesCard) m.set(yesCard.oracleId, yesCard);
     for (const l of [...theirSpares, ...yourSpares]) m.set(l.oracleId, { oracleId: l.oracleId, name: l.name, imageUri: l.imageUri });
     if (view) for (const c of [...view.cards.theirs, ...view.cards.yours, ...(view.cards.previous?.theirs ?? []), ...(view.cards.previous?.yours ?? [])]) m.set(c.oracleId, c);
     return m;
-  }, [theirSpares, yourSpares, view]);
+  }, [theirSpares, yourSpares, view, yesCard]);
   const cents = useMemo(() => ({ ...prices.cents, ...(view?.prices.cents ?? {}) }), [prices, view]);
   const boxPrices: TradePrices = { store: view?.prices.store ?? prices.store, cents, dated: view?.prices.dated ?? prices.dated };
 
@@ -127,10 +143,11 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
   const send = () => {
     if (!compose) return;
     const sides = { theirs: compose.theirs, yours: compose.yours };
-    if (compose.mode === "draft") {
+    if (compose.mode === "draft" || compose.mode === "askBack") {
       const art = (id: string | undefined) => (id ? cardsById.get(id)?.imageUri ?? null : null);
       const pictures = { theirs: art(sides.theirs[0]), yours: art(sides.yours[0]) };
-      void press("send", () => proposeTradeAction(friend.publicId, sides), (out) => { setSent({ id: String(out.id), ...pictures }); setCompose(null); });
+      const from = compose.mode === "askBack" ? fromRequestId : null;
+      void press("send", () => proposeTradeAction(friend.publicId, sides, from), (out) => { setSent({ id: String(out.id), ...pictures }); setCompose(null); });
     } else if (view) {
       const act = compose.mode === "revise" ? reviseTradeAction : counterTradeAction;
       void press("send", () => act(view.id, view.round, view.offeredAt, sides), () => setCompose(null));
@@ -145,13 +162,13 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
   // The box's state and cards.
   const state: BoxState | null = compose ? compose.mode : view?.state ?? null;
   /** A new trade drafted over an ended one draws nothing of the old one: its status, clock, traded day or offers. */
-  const draft = compose?.mode === "draft";
+  const draft = compose?.mode === "draft" || compose?.mode === "askBack";
   let fromThem: BoxCard[] = [];
   let fromYou: BoxCard[] = [];
   let was: { them: number | null; you: number | null; day: string } | null = null;
   const marks = (current: readonly string[], previous: readonly string[] | null, gone: readonly string[]): BoxCard[] => {
     const card = (id: string): TradeCard => cardsById.get(id) ?? { oracleId: id, name: "", imageUri: null };
-    if (!previous) return current.map((id) => ({ ...card(id), gone: gone.includes(id) || undefined }));
+    if (!previous) return current.map((id) => ({ ...card(id), gone: gone.includes(id) || undefined, agreed: id === compose?.agreed || undefined }));
     const { added, removed } = roundDiff(current, previous);
     return [
       ...current.map((id) => ({ ...card(id), change: added.includes(id) ? "added" as const : undefined, gone: gone.includes(id) || undefined })),
@@ -164,7 +181,7 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
   };
   if (compose) {
     // A counter or a revision marks its changes against the offer it replaces; a draft has none.
-    const base = compose.mode === "draft" || !view ? null : view.cards;
+    const base = draft || !view ? null : view.cards;
     fromThem = marks(compose.theirs, base ? base.theirs.map((c) => c.oracleId) : null, []);
     fromYou = marks(compose.yours, base ? base.yours.map((c) => c.oracleId) : null, []);
     if (base && view) was = { them: priced(base.theirs.map((c) => c.oracleId)), you: priced(base.yours.map((c) => c.oracleId)), day: tradeDay(new Date(view.offeredAt), timeZone) };
@@ -227,6 +244,7 @@ function Picker({ friend, compose, setCompose, theirSpares, yourSpares, offered,
   const lines = side === "them" ? theirSpares : mine;
   const picked = new Set(side === "them" ? compose.theirs : compose.yours);
   const toggle = (id: string) => {
+    if (id === compose.agreed) return;
     const key = side === "them" ? "theirs" : "yours";
     const now = compose[key];
     const next = now.includes(id) ? now.filter((x) => x !== id) : now.length >= TRADE_SIDE_MAX ? now : [...now, id];
@@ -279,6 +297,7 @@ function Picker({ friend, compose, setCompose, theirSpares, yourSpares, offered,
                     )}
                   </span>
                   <button type="button" data-testid="trade-pick-press" aria-pressed={inTrade} aria-label={inTrade ? t.inAria(line.name) : t.addAria(line.name)}
+                    disabled={line.oracleId === compose.agreed}
                     onClick={() => toggle(line.oracleId)}
                     className={`mt-[10px] inline-flex h-[32px] w-full cursor-pointer items-center justify-center gap-[5px] rounded-[7px] px-[6px] font-sans text-[12.5px] font-medium md:h-[28px] ${inTrade ? "bg-[color:color-mix(in_oklab,var(--success)_14%,transparent)] text-[color:var(--success)] [border:1px_solid_color-mix(in_oklab,var(--success)_40%,transparent)]" : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"}`}>
                     {inTrade ? <>✓ {t.inPress}</> : <>+ {t.addPress}</>}

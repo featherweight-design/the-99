@@ -15,7 +15,18 @@ vi.mock("../cards/card-detail-context", () => ({
   ),
 }));
 
+// The trade rows and the sheet host are their own suites; here a row is its id, and a press records what it opened.
+const opened = vi.hoisted(() => vi.fn());
+vi.mock("./trade-rows", () => ({
+  TradeRows: ({ rows, onOpen }: { rows: { id: string }[]; onOpen: (id: string) => void }) => (
+    <ul>{rows.map((r) => <li key={r.id}><button type="button" onClick={() => onOpen(r.id)}>{`trade ${r.id}`}</button></li>)}</ul>
+  ),
+}));
+vi.mock("./trade-sheet-host", () => ({ useTradeSheet: () => ({ open: opened, pending: null }) }));
+
 import { RequestHistory } from "./request-history";
+import { tradeCopy } from "../../lib/copy/trades";
+import type { TradeListRow } from "../../lib/social/trade-reads";
 
 const NOW = Date.parse("2026-11-20T12:00:00Z");
 const entry = (n: number, over: Partial<HistoryEntry> = {}): HistoryEntry => ({
@@ -24,7 +35,9 @@ const entry = (n: number, over: Partial<HistoryEntry> = {}): HistoryEntry => ({
   createdAt: new Date("2026-11-10T00:00:00Z"), endedAt: new Date("2026-11-12T00:00:00Z"), offer: false, ...over,
 });
 const side = (entries: HistoryEntry[], next: { createdAt: string; id: string } | null = null) => ({ entries, next });
-const view = (asked = side([]), ofYou = side([]), hidden = 0) => render(<RequestHistory asked={asked} ofYou={ofYou} hiddenCount={hidden} nowMs={NOW} />);
+const view = (asked = side([]), ofYou = side([]), hidden = 0, trades: TradeListRow[] = []) =>
+  render(<RequestHistory asked={asked} ofYou={ofYou} trades={trades} hiddenCount={hidden} nowMs={NOW} />);
+const tradeRow = (id: string) => ({ id, friend: { publicId: `f-${id}` }, row: { waitsOnYou: false } }) as unknown as TradeListRow;
 
 beforeEach(() => more.mockReset());
 afterEach(cleanup);
@@ -131,5 +144,17 @@ describe("RequestHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: h.older }));
     await waitFor(() => expect(screen.getByText(h.olderFailed)).toBeTruthy());
     expect(screen.getByRole("button", { name: h.older })).toBeTruthy();
+  });
+
+  it("draws every trade on the Trades tab, opening a pressed one over the page, and No trades yet with none", () => {
+    opened.mockClear();
+    const a = view(side([]), side([]), 0, [tradeRow("a"), tradeRow("b")]);
+    fireEvent.click(screen.getByRole("tab", { name: tradeCopy.listTab }));
+    fireEvent.click(screen.getByRole("button", { name: "trade b" }));
+    expect(opened).toHaveBeenCalledWith("f-b", { kind: "trade", id: "b" }, "trade:b");
+    a.unmount();
+    view();
+    fireEvent.click(screen.getByRole("tab", { name: tradeCopy.listTab }));
+    expect(screen.getByText(tradeCopy.empty.listTitle)).toBeTruthy();
   });
 });
