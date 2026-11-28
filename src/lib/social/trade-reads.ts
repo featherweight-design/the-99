@@ -211,10 +211,11 @@ export async function loadTrade(viewerId: string, tradeId: unknown, store: Store
 export const TRADE_ROWS_READ = 200;
 
 /**
- * The viewer's trades not yet cleared, newest move first, each with the current round's cards by name and the
- * friend's face; with a friend's public id, only the trades with that friend.
+ * The viewer's trades not yet cleared, each with the current round's cards by name and the friend's face; with a
+ * friend's public id, only the trades with that friend. Live trades (open and unexpired, or accepted) come first, then
+ * newest move first, so the cap only ever drops ended rows ahead of a trade still waiting on someone.
  */
-export function tradeRowsQuery(viewerId: string, friendPublicId: string | null): SQL {
+export function tradeRowsQuery(viewerId: string, friendPublicId: string | null, now: Date): SQL {
   return sql`select ${tradeColumns("ltr")},
       greatest(ltr.created_at, lrd.offered_at, ltr.answered_at, ltr.ended_at, ltr.proposer_marked_at, ltr.recipient_marked_at) as at,
       coalesce((select json_agg(json_build_object('side', ltc.side, 'oracle_id', ltc.oracle_id, 'name', lc.name) order by lc.name, ltc.oracle_id)
@@ -226,15 +227,16 @@ export function tradeRowsQuery(viewerId: string, friendPublicId: string | null):
     ${friendJoin("ltr", "lfl", "lfp", "lfc", "lfcp", viewerId)}
     where ${isParty("ltr", viewerId)} and ${notCleared("ltr", viewerId)}
       ${friendPublicId === null ? sql`` : sql`and lfp.public_id = ${friendPublicId}::uuid`}
-    order by at desc, ltr.id
+    order by (ltr.status = 'accepted' or (ltr.status = 'open' and ltr.created_at > ${tradeOpenFloor(now).toISOString()}::timestamptz)) desc,
+      at desc, ltr.id
     limit ${TRADE_ROWS_READ}`;
 }
 
 type ListCols = TradeRowCols & FriendCols & { at: string | Date; cards: { side: TradeRole; oracle_id: string; name: string }[] | string };
 
-/** The rows, sorted (`compareRows`), with Needs a look read for every open trade, a friend's spares read once each. */
+/** The rows, sorted (`compareRows`), with Needs a look read for every open trade. */
 async function listRows(viewerId: string, friendPublicId: string | null, now: Date): Promise<{ row: TradeListRow; facts: TradeFacts }[]> {
-  const rows = (await db.execute<ListCols>(tradeRowsQuery(viewerId, friendPublicId))).rows;
+  const rows = (await db.execute<ListCols>(tradeRowsQuery(viewerId, friendPublicId, now))).rows;
   if (rows.length === 0) return [];
   const parsed = rows.map((r) => ({ r, facts: factsOf(r), cards: (typeof r.cards === "string" ? JSON.parse(r.cards) : r.cards) as { side: TradeRole; oracle_id: string; name: string }[] }));
   const open = parsed.filter((p) => tradeStatus(p.facts, now) === "open");
@@ -242,8 +244,8 @@ async function listRows(viewerId: string, friendPublicId: string | null, now: Da
   if (open.length > 0) {
     const [own] = (await db.execute<{ public_id: string }>(ownPublicIdQuery(viewerId))).rows;
     const viewer: Party = { userId: viewerId, publicId: own?.public_id ?? "" };
-    // `goneCards` per trade reads both sides; the reads it makes are a spares read per receiver, so the trades with one
-    // friend share theirs. Few open trades at once (the cap holds one unanswered offer per friend), so per trade is fine.
+    // `goneCards` per trade reads both receivers' spares, so N open trades cost 2N spares reads, nothing shared. Few
+    // trades are open at once (the cap holds one unanswered offer per friend), so per trade is fine.
     await Promise.all(open.map(async (p) => {
       const stored = p.cards.map((c): StoredCard => ({ side: c.side, oracleId: c.oracle_id }));
       const friend: Party = { userId: p.r.friend_user_id, publicId: p.r.public_id };
@@ -309,7 +311,8 @@ export function offeredToQuery(viewerId: string, oracleIds: readonly string[], n
 
 /**
  * Q9 (READINESS 🟡): a spare may sit in two live offers, and the picker says so. Per card of `oracleIds`, the open
- * trades it is already on the reader's side of. The picker leaves out the trade it is drawing.
+ * trades it is already on the reader's side of. The read leaves none out: each entry carries its `tradeId`, and the
+ * picker drops the trade it is drawing.
  */
 export async function loadOfferedTo(viewerId: string, oracleIds: readonly unknown[], now = new Date()): Promise<Record<string, OfferedTo[]>> {
   const ids = [...new Set(oracleIds.filter(isUuid))].slice(0, MAX_SPARES_BATCH);

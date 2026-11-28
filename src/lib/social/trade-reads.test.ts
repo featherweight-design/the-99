@@ -77,14 +77,17 @@ describe("the statements", () => {
   });
 
   it("lists only the viewer's uncleared trades, the current round's cards aliased in the subquery", () => {
-    const { q, params } = render(tradeRowsQuery("v", null));
+    const { q, params } = render(tradeRowsQuery("v", null, NOW));
     expectScoped(q, "ltr", "lfl");
     expect(q).toContain("(case when ltr.proposer_user_id = $");
     expect(q).toContain("then ltr.proposer_cleared_at else ltr.recipient_cleared_at end) is null");
     expect(q).toContain("where ltc.trade_id = ltr.id and ltc.round = ltr.round");
     expect(q).not.toContain("lfp.public_id = $");
     expect(params.at(-1)).toBe(200);
-    expect(render(tradeRowsQuery("v", PF)).q).toContain("and lfp.public_id = $");
+    // Live trades sort ahead of ended ones, so the 200 cap never drops a trade still waiting on someone.
+    expect(q).toContain("order by (ltr.status = 'accepted' or (ltr.status = 'open' and ltr.created_at > $");
+    expect(params).toContain(tradeOpenFloor(NOW).toISOString());
+    expect(render(tradeRowsQuery("v", PF, NOW)).q).toContain("and lfp.public_id = $");
   });
 
   it("finds the viewer's own side of open, unexpired trades for the picker's already-offered mark", () => {
