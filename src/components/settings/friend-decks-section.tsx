@@ -5,6 +5,7 @@
 // it dims, reads unticked and cannot be pressed: there is nothing for it to include. A write that fails puts both back
 // to what was last saved and says so in the shared social toast, as the news and Spares sections do.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { setFriendDeckPrefsAction } from "../../app/settings/actions";
@@ -54,7 +55,8 @@ export function FriendDecksSection({ prefs }: { prefs: FriendDeckPrefs }) {
         saved.current = next;
         setOn(next);
       } else fail();
-    } catch {
+    } catch (e) {
+      captureClientError("settings.friend-decks", e);
       fail();
     } finally {
       setSaving(false);

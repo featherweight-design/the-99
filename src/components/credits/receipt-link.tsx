@@ -3,6 +3,7 @@
 // and never stored (plan E8). The window is opened inside the press, before the await, so a popup blocker sees a
 // user gesture; the URL is put into it once known, or it is closed again and the failure is said.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState, type ReactNode } from "react";
 import { receiptAction } from "../../app/credits/actions";
 
@@ -34,7 +35,8 @@ export function ReceiptLink({ reference, onFailed, className, children }: {
         win?.close();
         onFailed();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("credits.receipt", e);
       win?.close();
       onFailed();
     } finally {

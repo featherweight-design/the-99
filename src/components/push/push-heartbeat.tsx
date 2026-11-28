@@ -4,6 +4,7 @@
 // travels), its last seen, and restoring a row the sender deleted on a 404 or 410. Never a prompt, once per page load
 // (the shell stays mounted across in-app navigation). Mounted by the shell only while the reader's push switch is on.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect } from "react";
 import { subscribeDevice } from "../../app/settings/push-actions";
 import { devicePayload, deviceTimeZone } from "../../lib/push/device";
@@ -18,7 +19,7 @@ export function PushHeartbeat() {
       const subscription = await registration?.pushManager?.getSubscription();
       if (!live || !subscription) return;
       await subscribeDevice(devicePayload(subscription.toJSON(), navigator.userAgent, deviceTimeZone()));
-    })().catch(() => undefined);
+    })().catch((e) => captureClientError("push.heartbeat", e));
     return () => {
       live = false;
     };

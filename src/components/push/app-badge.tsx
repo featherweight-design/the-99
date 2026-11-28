@@ -24,10 +24,10 @@ export function AppBadge({ badges }: { badges: NavBadges | undefined }) {
     const nav = navigator as BadgingNavigator;
     try {
       const done = key > 0 ? nav.setAppBadge?.(key) : nav.clearAppBadge?.();
-      // A page that is not an installed app may refuse; the badge is an extra.
+      // silent-catch: expected: refusal, a page that is not an installed app may refuse; the badge is an extra.
       void done?.catch?.(() => {});
     } catch {
-      // not a fallback: the icon keeps its last figure, and the next render of the bar sets it again.
+      // silent-catch: expected: refusal, not a fallback: the icon keeps its last figure, and the next render of the bar sets it again.
     }
   }, [key]);
   return null;

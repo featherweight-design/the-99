@@ -3,6 +3,7 @@
  * The browser's half of the device row: the facts `deviceState` (`./device.ts`) decides over, with the registration and
  * the subscription the press handlers act on. The one module of the push column that touches `window`.
  */
+import { captureClientError } from "../sentry/capture-client";
 import { iosVersion, type DeviceFacts, type Permission } from "./device";
 
 /** How long to wait for a worker the shell registers after `load` (production only) before calling this device Can't. */
@@ -27,7 +28,8 @@ export async function readDeviceFacts(): Promise<{ facts: DeviceFacts; registrat
         ]);
       }
       subscription = (await registration?.pushManager.getSubscription()) ?? null;
-    } catch {
+    } catch (e) {
+      captureClientError("push.device-read", e);
       registration = null;
     }
   }

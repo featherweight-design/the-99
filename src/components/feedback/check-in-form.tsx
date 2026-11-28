@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { dismissCheckIn, sendCheckIn } from "../../app/check-in-actions";
 import { checkInCopy as copy, reportCopy } from "../../lib/copy/report";
@@ -86,7 +87,8 @@ export function CheckInForm({ onClose, preview = false }: { onClose: () => void;
         ok = result.ok;
         limited = !result.ok && result.reason === "limited";
       }
-    } catch {
+    } catch (e) {
+      captureClientError("feedback.check-in", e);
       ok = false;
     }
     busy.current = false;
@@ -105,7 +107,7 @@ export function CheckInForm({ onClose, preview = false }: { onClose: () => void;
   // Not now and the ✕ close at once; the write follows and a failure of it changes nothing the reader sees.
   function leave(how: "snooze" | "end") {
     if (phase === "sending") return;
-    if (phase !== "sent" && !preview) void dismissCheckIn(how).catch(() => {});
+    if (phase !== "sent" && !preview) void dismissCheckIn(how).catch((e) => captureClientError("feedback.check-in-dismiss", e));
     onClose();
   }
 

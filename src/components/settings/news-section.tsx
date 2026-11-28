@@ -17,6 +17,7 @@
 // and the column, its head and the foot's push clause leave; In app keeps its head. The band's right padding is 0 at
 // every state, as the board's `.dv` draws it (its can't line included). Without `push` there is no band.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -130,8 +131,10 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
           installedIphone: facts.ios !== null && facts.standalone,
           oldIos: iosTooOld(facts),
         });
-      }).catch(() => {
-        if (live && ops.current === started) setDevice({ state: "cant", word: "browser", installedIphone: false, oldIos: false });
+      }).catch((e) => {
+        if (!(live && ops.current === started)) return;
+        captureClientError("settings.device-read", e);
+        setDevice({ state: "cant", word: "browser", installedIphone: false, oldIos: false });
       });
     };
     read();
@@ -145,7 +148,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
     window.addEventListener("focus", read);
     void navigator.serviceWorker?.ready.then(() => {
       if (live) read();
-    }).catch(() => undefined);
+    }).catch((e) => captureClientError("settings.sw-ready", e));
     return () => {
       live = false;
       document.removeEventListener("visibilitychange", onVisible);
@@ -182,7 +185,8 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
         fail();
         router.refresh();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("settings.feed-kinds", e);
       fail();
     } finally {
       setSaving(false);
@@ -213,18 +217,19 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
       try {
         r = await subscribeDevice(devicePayload(sub.toJSON(), navigator.userAgent, deviceTimeZone()));
       } catch (e) {
-        await sub.unsubscribe().catch(() => false);
+        await sub.unsubscribe().catch((u) => { captureClientError("settings.device-rollback", u); return false; });
         throw e;
       }
       if (!r.ok) {
         // The server did not keep it, so neither does the browser: the row stays what it said.
-        await sub.unsubscribe().catch(() => false);
+        await sub.unsubscribe().catch((u) => { captureClientError("settings.device-rollback-refused", u); return false; });
         if (r.reason === "off") return router.refresh();
         throw new Error(r.reason);
       }
       subscription.current = sub;
       setDevice((d) => d && { ...d, state: "on" });
-    } catch {
+    } catch (e) {
+      captureClientError("settings.device-on", e);
       setDevice((d) => d && { ...d, state: was });
       sayFailed();
     } finally {
@@ -243,11 +248,12 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
         // The BROWSER's unsubscribe decides the row: once it has left, this device gets nothing whatever the server holds.
         // A server row left behind (its delete failed) answers the next send 410 and the flush deletes it.
         if (!(await sub.unsubscribe())) throw new Error("unsubscribe");
-        await unsubscribeDevice(sub.endpoint).catch(() => undefined);
+        await unsubscribeDevice(sub.endpoint).catch((e) => captureClientError("settings.device-row-delete", e));
       }
       subscription.current = null;
       setDevice((d) => d && { ...d, state: "off-here" });
-    } catch {
+    } catch (e) {
+      captureClientError("settings.device-off", e);
       sayFailed();
     } finally {
       ops.current++;
@@ -291,7 +297,8 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
         fail();
         router.refresh();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("settings.push-kinds", e);
       fail();
     } finally {
       setSaving(false);

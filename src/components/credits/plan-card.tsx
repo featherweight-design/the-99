@@ -15,6 +15,7 @@
 // `reduced` (payments off for the reader) takes away the two purchases, Subscribe and Keep my plan, and keeps
 // Cancel plan and Update card.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { buyPlanAction, cancelPlanAction, keepPlanAction, manageCardAction } from "../../app/credits/actions";
@@ -106,7 +107,8 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
       } else {
         onToast(p.outcome[out.reason]);
       }
-    } catch {
+    } catch (e) {
+      captureClientError("credits.plan-keep", e);
       onToast(p.outcome.failed);
     } finally {
       setBusy(null);
@@ -128,7 +130,8 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
       } else {
         onToast(c.buy[out.reason]);
       }
-    } catch {
+    } catch (e) {
+      captureClientError("credits.plan-buy", e);
       onToast(c.buy.failed);
     } finally {
       if (!sent) setBusy(null);
@@ -151,7 +154,8 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
       } else {
         onToast(out.reason === "failed" ? p.outcome.cardFailed : p.outcome[out.reason]);
       }
-    } catch {
+    } catch (e) {
+      captureClientError("credits.plan-card", e);
       onToast(p.outcome.cardFailed);
     } finally {
       if (!sent) setBusy(null);

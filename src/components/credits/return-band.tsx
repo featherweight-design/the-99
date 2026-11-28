@@ -12,6 +12,7 @@
 // The re-read stops on unmount, once added, and once the Session reads as none (not the reader's, or not ours). The
 // timing and the read are props so a test drives the cadence without a clock or a server.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { readReturnAction, type ReturnOutcome } from "../../app/credits/actions";
 import { captureEngagement } from "../../lib/analytics/posthog";
@@ -57,7 +58,7 @@ export function ReturnBand({ sessionId, planRenews = null, initial, timing = BAN
       if (window.localStorage.getItem(key)) return;
       window.localStorage.setItem(key, "1");
     } catch {
-      // Storage is blocked: the per-session send ceiling still bounds it to one.
+      // silent-catch: expected: refusal, storage is blocked: the per-session send ceiling still bounds it to one.
     }
     captureEngagement("credits_bought", { kind: paidKind });
   }, [paidKind, sessionId]);
@@ -73,7 +74,8 @@ export function ReturnBand({ sessionId, planRenews = null, initial, timing = BAN
       let out: ReturnOutcome;
       try {
         out = await live.current.read(sessionId);
-      } catch {
+      } catch (e) {
+        captureClientError("credits.return-read", e);
         out = { ok: false, reason: "failed" };
       }
       if (stopped) return;

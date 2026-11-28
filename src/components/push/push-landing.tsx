@@ -9,6 +9,7 @@
 // (`lib/push/landing.ts`); every browser call is guarded, so a browser without a service worker or `getNotifications`
 // does nothing and throws nothing. Apart from `app-badge.tsx` so the shell never loads the card-detail provider.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect } from "react";
 import { readPushLanding, strippedLanding } from "../../lib/push/landing";
 import { mirrorUrl } from "../../lib/url/mirror";
@@ -22,7 +23,8 @@ export async function closeDeliveredNotifications(): Promise<void> {
     if (!registration || typeof registration.getNotifications !== "function") return;
     const shown = await registration.getNotifications();
     for (const notification of shown) notification.close();
-  } catch {
+  } catch (e) {
+    captureClientError("push.landing-close", e);
     // not a fallback: a notification left on the device is stale, never wrong, and the next Home visit tries again.
   }
 }
