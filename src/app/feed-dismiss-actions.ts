@@ -25,7 +25,8 @@ export async function dismissFeedItemAction(key: unknown): Promise<DismissResult
 
 /**
  * Clear all of What's new: the ✕'s dismissal for every key Home counts, in one statement (all or nothing, matching the
- * restore-everything failure). Keys come from the client, so each is checked and the count capped; a stored item is
+ * restore-everything failure). A press over `CLEAR_ALL_MAX` keys (rolled trade matches) calls it once per slice
+ * (`clearInSlices`), which takes back the slices written when a later one fails. Keys come from the client, so each is checked and the count capped; a stored item is
  * written only from the reader's own row. Revalidates what the ✕ does.
  */
 export async function clearFeedItemsAction(keys: unknown): Promise<ClearResult> {
