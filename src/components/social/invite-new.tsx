@@ -16,6 +16,7 @@
 // With none, the QR press is held too. A disabled field a phone cannot type into, drawn as if live, is what a
 // home-screen iPhone met before this.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
 import { isEmailShape, normalizeEmail } from "../../lib/invites/rules";
@@ -115,7 +116,10 @@ export function InviteNew({
     const address = normalizeEmail(email);
     if (request.current?.email !== address) request.current = { email: address, id: crypto.randomUUID() };
     const asked = request.current;
-    const call = sendEmailInviteAction(email, asked.id).catch(() => null);
+    const call = sendEmailInviteAction(email, asked.id).catch((e) => {
+      captureClientError("invite.email", e);
+      return null;
+    });
     const out = await wait(call);
     inFlight.current = false;
     if (out === "late") {

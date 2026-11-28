@@ -3,6 +3,7 @@
 // every one made or offered to them (To you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
 // (card at card shape, the friend's face in the corner, kicker, title, line) with no ✕ and no Ask again: the live list keeps
 // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { BandTitle } from "../decks/deck-box";
 import Link from "next/link";
 import { useState, useTransition } from "react";
@@ -140,7 +141,10 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
     setFailed((f) => ({ ...f, [at]: false }));
     setLoading((l) => ({ ...l, [at]: true }));
     startLoading(async () => {
-      const page = await loadMoreHistoryAction(DIRECTION[at], cursor).catch(() => null);
+      const page = await loadMoreHistoryAction(DIRECTION[at], cursor).catch((e) => {
+        captureClientError("requests.history-more", e);
+        return null;
+      });
       setLoading((l) => ({ ...l, [at]: false }));
       if (page === null) {
         setFailed((f) => ({ ...f, [at]: true }));

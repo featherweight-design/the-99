@@ -8,6 +8,7 @@
 // (Ask, Ask instead, Ask again, or Requested, Accepted, Declined), the foot line moves behind an ⓘ on the head, and one
 // state sentence sits under the rows. Off, the section is as shipped.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
@@ -93,7 +94,8 @@ export async function fetchCardSpares(oracleId: string): Promise<FriendSpare[] |
     if (!res.ok) return null;
     const body = (await res.json()) as { spares?: FriendSpare[] } | null;
     return Array.isArray(body?.spares) ? body.spares.filter((s) => s.oracleId === oracleId) : null;
-  } catch {
+  } catch (e) {
+    captureClientError("friend.spares-read", e);
     return null;
   }
 }

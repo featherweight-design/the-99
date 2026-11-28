@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef } from "react";
 import { spendFriendLinkAction } from "../../app/friends/actions";
 
@@ -15,7 +16,9 @@ export function SpendFriendLink({ token }: { token: string }) {
     sent.current = true;
     // Fire and forget: a failure leaves the link open, for its inviter to revoke. What the card says about it
     // is PR D's (the request card); this only spends it.
-    void spendFriendLinkAction(token).catch(() => {});
+    void spendFriendLinkAction(token).catch((e) => {
+      captureClientError("link.spend", e);
+    });
   }, [token]);
   return null;
 }

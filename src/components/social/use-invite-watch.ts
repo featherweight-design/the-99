@@ -4,6 +4,7 @@
 // visible: a hidden tab polls nothing, and coming back polls at once. It stops when no link is watched. A link it
 // has already reported is never reported again, so the page's redraw (which drops it) is not raced by a repeat.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef } from "react";
 import type { InviteOutcome } from "../../lib/social/friends";
 import { MAX_OPEN_INVITES } from "../../lib/social/client-rules";
@@ -52,8 +53,10 @@ export function useInviteWatch(tokens: readonly string[], onEnded: (ended: Invit
             const l = answered.get(t) ?? { token: t, open: false, friend: null };
             if (!l.open) ended.push(l);
           }
-        } catch {
-          // A failed batch (offline, aborted) changes nothing; the next poll asks again.
+        } catch (e) {
+          // A dropped connection (fetch rejects with a TypeError) is routine on a phone and the next poll asks again, so
+          // it must not spend the tag; anything else (a body that is not JSON, say) is a defect and reports.
+          if (!(e instanceof TypeError)) captureClientError("invite.watch", e);
         }
       }
       inFlight = null;

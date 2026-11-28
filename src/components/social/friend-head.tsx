@@ -4,6 +4,7 @@
 // the page group's layout, so this head stays put across a tab press.
 // Removing the friend from here leaves for `/friends`, where the list is the receipt.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -31,7 +32,10 @@ export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number })
 
   async function remove() {
     setRemoving(true);
-    const out = await unfriendAction(friend.publicId).catch(() => null);
+    const out = await unfriendAction(friend.publicId).catch((e) => {
+      captureClientError("friend.unfriend", e);
+      return null;
+    });
     // `notFriend`: already gone, which is done (E12). Either way this page no longer exists for the reader.
     if (out?.ok || (out && !out.ok && out.reason === "notFriend")) {
       router.replace("/friends");

@@ -6,6 +6,7 @@
 // stops when no token is given (the screen is not showing a live QR) and once it has reported an end, claimed or
 // expired, for that token: the end is final.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef } from "react";
 import { WATCH_MS } from "./use-invite-watch";
 
@@ -22,8 +23,10 @@ export async function readQrState(token: string, signal?: AbortSignal): Promise<
       return { state: "live", secondsLeft: Math.max(0, answer.secondsLeft) };
     }
     return null;
-  } catch {
-    // A failed poll (offline, aborted) changes nothing; the next one asks again.
+  } catch (e) {
+    // A dropped connection (fetch rejects with a TypeError) is routine on a phone and the next poll asks again, so it
+    // must not spend the tag; anything else (a body that is not JSON, say) is a defect and reports.
+    if (!(e instanceof TypeError)) captureClientError("invite.qr-watch", e);
     return null;
   }
 }

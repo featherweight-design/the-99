@@ -6,6 +6,7 @@
 // Spares land after the page, so a row draws the glyph only once the read arrives; the press keeps no slot (#1875: neither
 // is no press). Off, the provider is not mounted and every piece here draws nothing.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { momentsCopy } from "../../lib/copy/moments";
@@ -57,7 +58,8 @@ export async function fetchSpares(oracleIds: readonly string[]): Promise<{ spare
       const body = res.ok ? ((await res.json()) as { spares?: FriendSpare[] } | null) : null;
       if (Array.isArray(body?.spares)) out.push(...body.spares);
       else failed.push(...ids);
-    } catch {
+    } catch (e) {
+      captureClientError("spares.markers-read", e);
       // Absent on failure: the next batch still reads.
       failed.push(...ids);
     }
@@ -78,7 +80,8 @@ export async function fetchAsks(oracleIds: readonly string[]): Promise<AskStateL
       if (!res.ok) continue;
       const body = (await res.json()) as { asks?: AskStateLine[] } | null;
       if (Array.isArray(body?.asks)) out.push(...body.asks);
-    } catch {
+    } catch (e) {
+      captureClientError("spares.asks-read", e);
       // Absent on failure: the next batch still reads.
     }
   }
@@ -239,7 +242,8 @@ export function FriendSparesProvider({
       let out: Awaited<ReturnType<typeof askSpareAction>>;
       try {
         out = press.fromRequestId ? await askInsteadAction({ ...input, fromRequestId: press.fromRequestId }) : await askSpareAction(input);
-      } catch {
+      } catch (e) {
+        captureClientError("spares.ask", e);
         return false;
       }
       if (!out.ok) return false;

@@ -8,6 +8,7 @@
 // so in the shared toast (E15). A write that answers "already done" is done (E12). Every redraw from the server
 // retires what was held, since it carries the truth.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { PodRuleZeroRow } from "../rule-zero/pod-row";
 import { useRef, useState } from "react";
@@ -111,7 +112,8 @@ export function PodsPane({
           setName("");
         }
       } else fail();
-    } catch {
+    } catch (e) {
+      captureClientError("pods.create", e);
       fail();
     } finally {
       setBusy(false);
@@ -129,7 +131,8 @@ export function PodsPane({
     try {
       // Any answer is done: `changed: false` is a member already out (E12).
       await removeMemberAction(pod.id, member.publicId);
-    } catch {
+    } catch (e) {
+      captureClientError("pods.remove-member", e);
       back();
       fail();
     }
@@ -154,7 +157,8 @@ export function PodsPane({
         drop(podId);
         fail();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("pods.share-spares", e);
       drop(podId);
       fail();
     } finally {
@@ -183,7 +187,8 @@ export function PodsPane({
       // Not the owner any more, or the pod is gone: the page is stale, and its redraw says so.
       if (r.reason === "notOwner") router.refresh();
       else fail();
-    } catch {
+    } catch (e) {
+      captureClientError("pods.rename", e);
       back();
       fail();
     }
@@ -204,7 +209,8 @@ export function PodsPane({
       setGone((prev) => new Set(prev).add(podId));
       (lastOut ? document.getElementById("friends-title") : newPodRef.current)?.focus();
       return true;
-    } catch {
+    } catch (e) {
+      captureClientError("pods.leave-card", e);
       fail();
       return false;
     }
@@ -216,7 +222,8 @@ export function PodsPane({
       const r = await addMembersAction(podId, ids);
       if (r.ok) setAdding((now) => (now?.seq === seq ? null : now));
       else fail();
-    } catch {
+    } catch (e) {
+      captureClientError("pods.add", e);
       fail();
     } finally {
       setBusy(false);

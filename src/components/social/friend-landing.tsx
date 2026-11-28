@@ -8,6 +8,7 @@
 // redrawn as what the link now is (ended, or your own), never as done (E12); one that throws is the shared toast with
 // Try again (E15), and the card stays up.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePendingPush } from "../shell/pending-push";
@@ -164,7 +165,8 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
       setBusy(false);
       if (r.reason === "self") becomeSelf({ name, commander });
       else becomeEnded();
-    } catch {
+    } catch (e) {
+      captureClientError("friend.accept", e);
       setBusy(false);
       say(copy.acceptFailed, () => void accept());
     }
@@ -193,7 +195,8 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
       if (r.reason === "self") becomeSelf({ name, commander });
       else if (r.reason === "ended") becomeEnded();
       else say(copy.declineFailed, () => void decline());
-    } catch {
+    } catch (e) {
+      captureClientError("friend.decline", e);
       setBusy(false);
       say(copy.declineFailed, () => void decline());
     }
@@ -206,6 +209,7 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
       setCopied(true);
       later(1500, () => setCopied(false));
     } catch {
+      // silent-catch: expected: refusal
       say(copy.copyFailed);
     }
   }
