@@ -20,13 +20,18 @@ import { WishlistSearch } from "./wishlist-search";
 import { WishlistSparePress } from "./wishlist-spare-press";
 import type { WishlistTileLine } from "../../lib/wishlist/tile-line";
 import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText } from "./wishlist-tile";
+import { CartOffer, groupTiles } from "./wishlist-groups";
+import { DeckBox, DeckBoxBand } from "../decks/deck-box";
+import Link from "next/link";
 
 const copy = wishlistCopy;
 
 /** A tile as the page hands it over: plain and serializable, `addedAt` an ISO string. */
 export type WishlistViewTile = { oracleId: string; name: string; imageUri: string | null; want: number; have: number; addedAt: string; line?: WishlistTileLine | null;
   /** The card's price fact for the spares modal's buy tag, `asOf` an ISO string (the tile's own line is already drawn). */
-  price?: { cents: number | null; foilCents: number | null; etchedCents: number | null; asOf: string; soldOut?: true } | null };
+  price?: { cents: number | null; foilCents: number | null; etchedCents: number | null; asOf: string; soldOut?: true } | null;
+  /** Cart on your wishlist: `hand` while the hand side wants the card, else `deck`; and the decks a synced line serves. */
+  source?: "hand" | "deck"; deckIds?: string[] };
 /** A collected notice as the strip draws it and sends it back: `collectedAt` exactly as it was read, an ISO string. */
 export type WishlistViewNotice = { oracleId: string; name: string; collectedAt: string };
 
@@ -37,12 +42,18 @@ export function WishlistView({
   notices,
   hasFriend,
   newestAsOf = null,
+  decks = null,
+  offer = 0,
 }: {
   tiles: WishlistViewTile[];
   notices: WishlistViewNotice[];
   hasFriend: boolean;
   /** The newest price read behind the tiles, for the spares modal's buy tag; null when none. */
   newestAsOf?: string | null;
+  /** The reader's decks by name while the wishlist sync is on: the tab splits into boxes (call 3). Null draws one grid. */
+  decks?: { id: string; name: string }[] | null;
+  /** The offer's count (call 2); 0 draws no offer. */
+  offer?: number;
 }) {
   const router = useRouter();
   const [sort, setSort] = useState<Sort>("newest");
@@ -51,7 +62,7 @@ export function WishlistView({
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const noticeKey = (n: WishlistViewNotice) => `${n.oracleId}|${n.collectedAt}`;
   const shownNotices = notices.filter((n) => !dismissed.has(noticeKey(n)));
-  const [toast, setToast] = useState<"add" | "set" | null>(null);
+  const [toast, setToast] = useState<"add" | "set" | "offer" | null>(null);
   const toastRef = useRef<HTMLDivElement>(null);
   // Hover and focus hold the toast's window separately, as the other alert toasts do. The frame stays mounted while a
   // second failure replaces the first, so its holds stay true, and it only leaves once neither holds it.
@@ -67,11 +78,17 @@ export function WishlistView({
   }, [served, sort]);
   const sparesAsOf = useMemo(() => (newestAsOf ? new Date(newestAsOf) : null), [newestAsOf]);
   const sparesIds = useMemo(() => served.map((t) => t.oracleId), [served]);
+  // Within a box the sort still holds: each box keeps the sorted list's order.
+  const boxes = useMemo(() => {
+    if (!decks) return null;
+    const byId = new Map(tiles.map((t) => [t.oracleId, t]));
+    return groupTiles(tiles, decks).map((g) => ({ ...g, tiles: g.oracleIds.map((id) => byId.get(id)!) }));
+  }, [tiles, decks]);
 
   const onWant = useCallback(() => router.refresh(), [router]);
 
   const onFailure = useCallback(
-    (kind: "add" | "set") => {
+    (kind: "add" | "set" | "offer") => {
       // A new failure gets the whole window, whatever the last one spent.
       restart();
       setToast(kind);
@@ -135,6 +152,8 @@ export function WishlistView({
             </div>
           )}
 
+          {offer > 0 && <CartOffer cards={offer} onAdded={onWant} onFailure={() => onFailure("offer")} />}
+
           {tiles.length > 0 ? (
             <>
               {/* On a phone the open panel covers this row, so it is not drawn then (WP2). */}
@@ -147,7 +166,36 @@ export function WishlistView({
                 </span>
                 {hasFriend && <span className="pt-[6px] text-[color:var(--fg-faint)] md:pt-0">{copy.page.friendsLine}</span>}
               </div>
-              <WishlistGrid tiles={tiles} sort={sort} searching={searching} />
+              {boxes ? (
+                <div
+                  data-testid="wishlist-behind"
+                  className={`flex flex-col gap-[28px] px-[14px] pb-[14px] pt-[24px] transition-opacity md:gap-[50px] md:px-[34px] md:pb-[34px] md:pt-[40px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
+                >
+                  {boxes.map((b) => (
+                    <DeckBox key={b.key} aria-labelledby={`wishlist-box-${b.key}`} data-testid="wishlist-box">
+                      <DeckBoxBand
+                        id={`wishlist-box-${b.key}`}
+                        title={b.title}
+                        count={b.tiles.length}
+                        aside={
+                          b.deck ? (
+                            <Link
+                              href={`/decks/${b.deck.id}`}
+                              aria-label={copy.page.groups.openDeckAria(b.deck.name)}
+                              className="flex min-h-[44px] flex-none items-center whitespace-nowrap font-sans text-[13px] font-medium text-[color:var(--fg-muted)] md:min-h-0 md:hover:text-[color:var(--accent-text)]"
+                            >
+                              {copy.page.groups.openDeck}
+                            </Link>
+                          ) : null
+                        }
+                      />
+                      <WishlistGrid tiles={b.tiles} sort={sort} boxed />
+                    </DeckBox>
+                  ))}
+                </div>
+              ) : (
+                <WishlistGrid tiles={tiles} sort={sort} searching={searching} />
+              )}
             </>
           ) : (
             !searching && <EmptyState />
@@ -159,7 +207,7 @@ export function WishlistView({
             frameRef={toastRef}
             role="alert"
             onHold={(kind, on) => (kind === "hover" ? setToastHover : setToastFocus)(on)}
-            title={toast === "add" ? copy.details.failedAdd : copy.details.failedSet}
+            title={toast === "add" ? copy.details.failedAdd : toast === "offer" ? copy.page.offer.failed : copy.details.failedSet}
           />
         )}
       </div>
@@ -173,7 +221,7 @@ export function WishlistView({
  * first, most friends first, then the newest order the list already holds. Until the read lands every tile has none, so
  * the order is Newest, and it moves once, when the read lands.
  */
-function WishlistGrid({ tiles, sort, searching }: { tiles: WishlistViewTile[]; sort: Sort; searching: boolean }) {
+function WishlistGrid({ tiles, sort, searching = false, boxed = false }: { tiles: WishlistViewTile[]; sort: Sort; searching?: boolean; boxed?: boolean }) {
   const ctx = usePageSpares();
   const ordered = useMemo(() => {
     if (sort !== "friends" || !ctx) return tiles;
@@ -183,8 +231,12 @@ function WishlistGrid({ tiles, sort, searching }: { tiles: WishlistViewTile[]; s
   const siblings: SiblingCard[] = ordered.map((t) => ({ oracleId: t.oracleId, name: t.name, imageUri: t.imageUri }));
   return (
     <ul
-      data-testid="wishlist-behind"
-      className={`m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] px-[14px] pb-[14px] pt-[12px] transition-opacity md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
+      data-testid={boxed ? "wishlist-box-grid" : "wishlist-behind"}
+      className={
+        boxed
+          ? `m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] p-[12px] md:gap-[20px] md:p-[16px]`
+          : `m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] px-[14px] pb-[14px] pt-[12px] transition-opacity md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`
+      }
     >
       {ordered.map((t, i) => (
         <WishlistTile key={t.oracleId} tile={t} eager={i < GRID_EAGER_TILES} siblings={siblings} />

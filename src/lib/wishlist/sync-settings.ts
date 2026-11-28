@@ -79,3 +79,8 @@ export function offWishlistUpdate(userId: string, deckIds: string[], off: boolea
   return db.update(decks).set({ offWishlist: off })
     .where(and(eq(decks.userId, userId), inArray(decks.id, deckIds), ne(decks.offWishlist, off)));
 }
+
+/** The reader's deck names by id, ordered by name: the Wishlist tab's per-deck boxes (call 3) title themselves here. */
+export async function loadWishlistDeckNames(userId: string): Promise<{ id: string; name: string }[]> {
+  return db.select({ id: decks.id, name: decks.name }).from(decks).where(eq(decks.userId, userId)).orderBy(asc(decks.name));
+}

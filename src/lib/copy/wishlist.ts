@@ -59,6 +59,23 @@ export const wishlistCopy = {
       { text: `. ${left(names.length)}` },
     ], // phone
     dismiss: "Dismiss", // the strip's ✕, aria-label
+    // Cart on your wishlist, call 2: offered once while the Settings switch is off and the decks need a card. The board's
+    // `cards you don’t own` is cut: the count is the sync set (plan F7), which includes a card owned but held by a
+    // senior deck, so the clause would be false for it.
+    offer: {
+      lead: (cards: number) => `Your decks need ${cards === 1 ? "1 card" : `${cards} cards`}.`,
+      body: "Put them here so friends can see them. They follow your decks, and leave once you have them.",
+      add: "Add them",
+      dismiss: "Not now", // the ✕, aria-label
+      failed: "Couldn’t add them. Try again.",
+    },
+    // Call 3: the tab split by source while the switch is on. The band draws its count beside the title.
+    groups: {
+      you: "Added by you",
+      deck: (deck: string) => `For ${deck}`,
+      openDeck: "Open deck ›",
+      openDeckAria: (deck: string) => `Open deck, ${deck}`,
+    },
   },
 
   tile: {

@@ -1,7 +1,7 @@
 /**
- * The Wishlist tab's one-time offer (cart on your wishlist, call 2): `Your decks need N cards you don’t own.` with Add
- * them and ✕. Shown while the switch is off and the reader's decks need a card, until it is answered: Add them (the
- * switch on, every deck ticked) or ✕ both stamp `user_prefs.wishlist_offer_dismissed_at`, so it is offered once.
+ * The Wishlist tab's one-time offer (cart on your wishlist, call 2): `Your decks need N cards.` with Add them and ✕.
+ * Shown while the switch is off and the reader's decks need a card, until it is answered: Add them (the switch on,
+ * every deck ticked) or ✕ both stamp `user_prefs.wishlist_offer_dismissed_at`, so it is offered once.
  *
  * N is the sync set Add them would write (plan F7): distinct cards Shopping lists for any of the reader's decks, less
  * the cards they took off the synced set. Every deck counts, because Add them ticks every deck.

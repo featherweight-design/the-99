@@ -11,6 +11,8 @@ const m = vi.hoisted(() => ({
   setWant: vi.fn(),
   dismiss: vi.fn(),
   refresh: vi.fn(),
+  accept: vi.fn(),
+  dismissOffer: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) }));
 vi.mock("../../app/collection/wishlist/actions", () => ({
@@ -18,7 +20,10 @@ vi.mock("../../app/collection/wishlist/actions", () => ({
   addToWishlistAction: m.add,
   setWishlistWantAction: m.setWant,
   dismissCollectedAction: m.dismiss,
+  acceptWishlistOfferAction: m.accept,
+  dismissWishlistOfferAction: m.dismissOffer,
 }));
+vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 // Card details is its own surface, tested on its own: here a tile only has to be a press that names its card.
 vi.mock("../cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -41,6 +46,8 @@ const tile = (over: Partial<WishlistViewTile> = {}): WishlistViewTile => ({
 beforeEach(() => {
   vi.resetAllMocks();
   m.dismiss.mockResolvedValue({ ok: true, dismissed: 1 });
+  m.accept.mockResolvedValue({ ok: true });
+  m.dismissOffer.mockResolvedValue({ ok: true });
 });
 afterEach(() => vi.useRealTimers());
 
@@ -352,5 +359,74 @@ describe("friends' spares", () => {
     fireEvent.change(screen.getByRole("combobox", { name: wishlistCopy.page.sort.label }), { target: { value: "friends" } });
     const names = screen.getAllByTestId("wishlist-tile").map((li) => li.textContent);
     expect(names[0]).toContain("Arcane Signet");
+  });
+});
+
+describe("cart on your wishlist", () => {
+  const offer = () => screen.queryByTestId("wishlist-offer");
+
+  it("draws the offer with its count, and none at 0", () => {
+    const { unmount } = view({ offer: 12 });
+    expect(within(offer()!).getByText(wishlistCopy.page.offer.lead(12))).toBeInTheDocument();
+    expect(wishlistCopy.page.offer.lead(1)).toBe("Your decks need 1 card.");
+    unmount();
+    view({ offer: 0 });
+    expect(offer()).toBeNull();
+  });
+
+  it("Add them writes, leaves and refreshes the page", async () => {
+    view({ offer: 3 });
+    fireEvent.click(screen.getByRole("button", { name: wishlistCopy.page.offer.add }));
+    await waitFor(() => expect(offer()).toBeNull());
+    expect(m.accept).toHaveBeenCalledTimes(1);
+    expect(m.refresh).toHaveBeenCalled();
+  });
+
+  it("a failed Add them keeps the offer and says so", async () => {
+    m.accept.mockRejectedValue(new Error("down"));
+    view({ offer: 3 });
+    fireEvent.click(screen.getByRole("button", { name: wishlistCopy.page.offer.add }));
+    expect(await screen.findByText(wishlistCopy.page.offer.failed)).toBeInTheDocument();
+    expect(offer()).not.toBeNull();
+  });
+
+  it("Not now answers it for good and leaves at once", () => {
+    view({ offer: 3 });
+    fireEvent.click(screen.getByRole("button", { name: wishlistCopy.page.offer.dismiss }));
+    expect(offer()).toBeNull();
+    expect(m.dismissOffer).toHaveBeenCalledTimes(1);
+    expect(m.accept).not.toHaveBeenCalled();
+  });
+
+  it("with the sync on, splits by source: Added by you first, then each deck by the order given, empty boxes left out", () => {
+    const decks = [{ id: "d-a", name: "Atraxa" }, { id: "d-b", name: "Breya" }, { id: "d-c", name: "Chulane" }];
+    view({
+      decks,
+      tiles: [
+        tile({ oracleId: SOL, name: "Sol Ring", source: "hand", deckIds: ["d-a"] }),
+        tile({ oracleId: ARCANE, name: "Arcane Signet", source: "deck", deckIds: ["d-c", "d-a"] }),
+      ],
+    });
+    const boxes = screen.getAllByTestId("wishlist-box");
+    expect(boxes.map((b) => within(b).getByRole("heading").textContent)).toEqual([
+      expect.stringContaining(wishlistCopy.page.groups.you),
+      expect.stringContaining(wishlistCopy.page.groups.deck("Atraxa")),
+      expect.stringContaining(wishlistCopy.page.groups.deck("Chulane")),
+    ]);
+    // A hand line sits in Added by you only; a synced line in every deck it serves.
+    expect(within(boxes[0]).queryByText("Arcane Signet")).toBeNull();
+    expect(within(boxes[1]).queryByText("Sol Ring")).toBeNull();
+    expect(within(boxes[1]).getByText("Arcane Signet")).toBeInTheDocument();
+    expect(within(boxes[2]).getByText("Arcane Signet")).toBeInTheDocument();
+    expect(within(boxes[0]).queryByRole("link")).toBeNull();
+    expect(within(boxes[2]).getByRole("link", { name: wishlistCopy.page.groups.openDeckAria("Chulane") })).toHaveAttribute("href", "/decks/d-c");
+    // The meta line counts each card once.
+    expect(screen.getByText(wishlistCopy.page.meta(2))).toBeInTheDocument();
+  });
+
+  it("with the sync off, draws the one grid", () => {
+    view({ tiles: [tile({ source: "deck", deckIds: ["d-a"] })] });
+    expect(screen.queryAllByTestId("wishlist-box")).toHaveLength(0);
+    expect(screen.getByTestId("wishlist-behind").tagName).toBe("UL");
   });
 });
