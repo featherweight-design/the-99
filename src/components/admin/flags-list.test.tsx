@@ -193,7 +193,7 @@ describe("SwitchesList", () => {
     // An app-wide override that is not refused reads plainly.
     first.unmount();
     draw({}, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);
-    expect(within(rowOf("FLYER_TRIAL_ENABLED")).getByText("On", { selector: "span.hidden" }).className).not.toContain("var(--danger)");
+    expect(within(rowOf("FLYER_TRIAL_ENABLED")).getByText("On", { selector: "span.hidden > span" }).parentElement!.className).not.toContain("var(--danger)");
   });
 
   it("keeps the resolved count in one unbreakable piece, on the phone and on desktop", () => {
