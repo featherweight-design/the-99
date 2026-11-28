@@ -52,19 +52,19 @@ export type FingerprintInput = {
    */
   focus?: string | null;
   /**
-   * "Kept for this deck" (H35, PR 2): a limit change must reopen the gate, same as an edit to the
-   * list does — a run against the old cap/sets/owned-only answers a question the player no
-   * longer asked. Unconditional, like `intent` and `collection`: every deck gets this field the
-   * day it ships, so every gate reopens once on deploy — the same one-time "changed" a
-   * `PROMPT_VERSION` bump already causes deliberately, not a bug to guard against.
-   */
-  /**
    * The reader's store (store preference): a card's price under the cap is read there, so a capped deck's answer
    * depends on it and switching store must reopen the gate. Joins the hash ONLY for a capped deck on a store other than
    * Mana Pool, the default, so every deck that is uncapped or on Mana Pool hashes exactly as before and no stored run
    * reads as changed on deploy.
    */
   store?: Store;
+  /**
+   * "Kept for this deck" (H35, PR 2): a limit change must reopen the gate, same as an edit to the
+   * list does — a run against the old cap/sets/owned-only answers a question the player no
+   * longer asked. Unconditional, like `intent` and `collection`: every deck gets this field the
+   * day it ships, so every gate reopens once on deploy — the same one-time "changed" a
+   * `PROMPT_VERSION` bump already causes deliberately, not a bug to guard against.
+   */
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
 };
 
