@@ -24,6 +24,7 @@ vi.mock("../../app/collection/wishlist/actions", () => ({
   dismissWishlistOfferAction: m.dismissOffer,
 }));
 vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => <a href={href} {...rest}>{children}</a> }));
+vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 // Card details is its own surface, tested on its own: here a tile only has to be a press that names its card.
 vi.mock("../cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: ReactNode }) => <>{children}</>,

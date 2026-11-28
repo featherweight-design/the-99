@@ -23,6 +23,7 @@ import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText } fro
 import { CartOffer, groupTiles } from "./wishlist-groups";
 import { DeckBox, DeckBoxBand } from "../decks/deck-box";
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const copy = wishlistCopy;
 
@@ -185,6 +186,7 @@ export function WishlistView({
                               className="flex min-h-[44px] flex-none items-center whitespace-nowrap font-sans text-[13px] font-medium text-[color:var(--fg-muted)] md:min-h-0 md:hover:text-[color:var(--accent-text)]"
                             >
                               {copy.page.groups.openDeck}
+                              <PendingReporter href={`/decks/${b.deck.id}`} />
                             </Link>
                           ) : null
                         }

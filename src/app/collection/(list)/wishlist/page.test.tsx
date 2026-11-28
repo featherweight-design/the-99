@@ -64,6 +64,8 @@ describe("/collection/wishlist", () => {
       notices: [{ oracleId: CARD, name: "Sol Ring", collectedAt: AT }],
       hasFriend: true,
       newestAsOf: null,
+      decks: null,
+      offer: 0,
     });
   });
 

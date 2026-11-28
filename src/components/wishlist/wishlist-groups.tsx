@@ -7,6 +7,7 @@ import { wishlistCopy } from "../../lib/copy/wishlist";
 import { Bookmark } from "../card-search/search-row";
 import { ArrivalDismiss } from "../decks/arrival-strip";
 import { GhostButton } from "../ui/button";
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { acceptWishlistOfferAction, dismissWishlistOfferAction } from "../../app/collection/wishlist/actions";
 
 const copy = wishlistCopy.page;
@@ -63,7 +64,8 @@ export function CartOffer({ cards, onAdded, onFailure }: { cards: number; onAdde
         await acceptWishlistOfferAction();
         setGone(true);
         onAdded();
-      } catch {
+      } catch (error) {
+        captureClientError("wishlist.offer-accept", error);
         onFailure("add");
       }
     });
@@ -72,7 +74,8 @@ export function CartOffer({ cards, onAdded, onFailure }: { cards: number; onAdde
   // The strip leaves at the press; a refused write brings it back under the failure toast, never silently.
   function dismiss() {
     setGone(true);
-    dismissWishlistOfferAction().catch(() => {
+    dismissWishlistOfferAction().catch((error) => {
+      captureClientError("wishlist.offer-dismiss", error);
       setGone(false);
       onFailure("dismiss");
     });

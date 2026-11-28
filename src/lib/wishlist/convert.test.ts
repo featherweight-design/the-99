@@ -116,7 +116,7 @@ describe("Remove", () => {
 
 describe("the sync never converts", () => {
   it("sync.ts writes the synced tables itself and never calls the player's writers", () => {
-    const src = readFileSync(new URL("./sync.ts", import.meta.url), "utf8");
+    const src = readFileSync("src/lib/wishlist/sync.ts", "utf8");
     expect(src).not.toMatch(/from "\.\/wishlist"/);
     expect(src).not.toMatch(/\b(writeWant|setWishlistQuantity|wantOneMore|setWishlistPrinting|clearWishlistLine)\b/);
   });
