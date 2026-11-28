@@ -75,7 +75,7 @@ export function ReturnBand({ sessionId, planRenews = null, initial, timing = BAN
       try {
         out = await live.current.read(sessionId);
       } catch (e) {
-        captureClientError("credits.return-read", e);
+        if (!stopped) captureClientError("credits.return-read", e);
         out = { ok: false, reason: "failed" };
       }
       if (stopped) return;
