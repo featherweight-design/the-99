@@ -90,6 +90,8 @@ export function SkewGuard({ deploymentId }: { deploymentId: string | null }) {
       if (now - lastCheck.current < SKEW_CHECK_GAP_MS) return;
       try {
         const res = await fetch("/api/live", { cache: "no-store" });
+        // A gateway page mid-rollover is not JSON and not a failure to report: no verdict, the next visible tab asks again.
+        if (!res.ok) return;
         const body = (await res.json()) as { deploymentId?: string | null };
         lastCheck.current = now;
         if (deploymentsDiffer(deploymentId, body.deploymentId)) {
