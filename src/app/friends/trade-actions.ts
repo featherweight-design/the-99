@@ -111,6 +111,7 @@ export async function openTradeAction(tradeId: unknown): Promise<TradeView | nul
 export async function tradePressesAction(friendPublicIds: unknown): Promise<Record<string, TradePressFacts>> {
   const userId = await requireUserId();
   if (!Array.isArray(friendPublicIds)) return {};
+  if ((await enforceHit(userId, "trade-presses")) !== null) return {};
   return loadTradePresses(userId, friendPublicIds);
 }
 

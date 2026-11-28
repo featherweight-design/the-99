@@ -30,6 +30,11 @@ describe("resolveTradeBack", () => {
     expect(await resolveTradeBack("v", `deck/${DECK}`)).toBeNull();
   });
 
+  it("passes on a failed read, for the page to report", async () => {
+    vi.mocked(requireDeck).mockRejectedValue(new Error("connection reset"));
+    await expect(resolveTradeBack("v", `deck/${DECK}`)).rejects.toThrow("connection reset");
+  });
+
   it("reads nothing for an origin outside the closed set", async () => {
     expect(await resolveTradeBack("v", "https://evil.example")).toBeNull();
     expect(await resolveTradeBack("v", `deck/nope`)).toBeNull();

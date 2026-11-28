@@ -14,6 +14,7 @@ import { loadDeckNeed } from "../../../../../lib/decks/deck-need";
 import { parseSpareParams } from "../../../../../lib/social/spare-browse";
 import { loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradesWith, tradePricesOf } from "../../../../../lib/social/trade-reads";
 import { resolveTradeBack } from "../../../../../lib/social/trade-back";
+import { captureServerError } from "../../../../../lib/sentry/capture";
 import { FriendSparesTab } from "../../../../../components/social/friend-spares-tab";
 
 // Spare requests (signature card calls 8 and 9): a tile opens the card's modal with Ask, and `?spare={oracleId}` opens it
@@ -65,7 +66,8 @@ export default async function FriendSparesPage({
     spares && spares.lines.length > 0 ? loadDeckNeed(userId) : {},
     loadOfferedTo(userId, ownIds, now),
     tradeId ? loadTrade(userId, tradeId, store, now, friend.publicId) : null,
-    resolveTradeBack(userId, query.from).catch(() => null),
+    // A failed read draws the plain Friends link rather than failing the page, and is reported.
+    resolveTradeBack(userId, query.from).catch((e: unknown) => { captureServerError("trades.back", e); return null; }),
   ]);
   const theirSet = new Set(theirIds);
   const priced = read

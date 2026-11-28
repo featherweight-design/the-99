@@ -38,17 +38,17 @@ export default async function FriendPageLayout({
   return (
     <div className="w-full px-[14px] pt-[18px] pb-[30px] md:px-[34px] md:pt-[28px] md:pb-[34px]">
       <FriendBackProvider>
-      <FriendHead friend={friend} nowMs={now.getTime()} />
-      <FriendStrip
-        publicId={friend.publicId}
-        tradeWaits={waiting.has(friend.publicId)}
-        counts={{
-          spares: spares?.lines.length ?? 0,
-          ...(wishlist ? { wishlist: wishlist.length } : {}),
-          decks: decks?.length ?? 0,
-        }}
-      />
-      {children}
+        <FriendHead friend={friend} nowMs={now.getTime()} />
+        <FriendStrip
+          publicId={friend.publicId}
+          tradeWaits={waiting.has(friend.publicId)}
+          counts={{
+            spares: spares?.lines.length ?? 0,
+            ...(wishlist ? { wishlist: wishlist.length } : {}),
+            decks: decks?.length ?? 0,
+          }}
+        />
+        {children}
       </FriendBackProvider>
     </div>
   );

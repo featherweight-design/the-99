@@ -53,6 +53,8 @@ export function TradeFromList({ from, sheet, children }: { from: TradeFrom; shee
     <TradePressContext.Provider value={{
       of: (id) => facts[id] ?? null,
       onTrade: (friend, oracleId) => {
+        // A sheet already being read would ignore this open, so the spares sheet stays rather than closing on nothing.
+        if (host.pending !== null) return;
         const reopen = on.reopen;
         // A trade started here may take the cap (Q10), so this friend is read again at the next open.
         asked.current.delete(friend);

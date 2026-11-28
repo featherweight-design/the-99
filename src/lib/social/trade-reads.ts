@@ -401,7 +401,7 @@ export function tradePressQuery(viewerId: string, friendPublicIds: readonly stri
  * and the row draws no Trade.
  */
 export async function loadTradePresses(viewerId: string, friendPublicIds: readonly unknown[], now = new Date()): Promise<Record<string, TradePressFacts>> {
-  const ids = [...new Set(friendPublicIds.filter(isUuid))].slice(0, TRADE_PRESS_FRIENDS);
+  const ids = [...new Set(friendPublicIds.filter(isUuid).map((id) => id.toLowerCase()))].slice(0, TRADE_PRESS_FRIENDS);
   if (ids.length === 0) return {};
   const [rows, own, friendIds] = await Promise.all([
     db.execute<TradeRowCols & { public_id: string }>(tradePressQuery(viewerId, ids)).then((r) => r.rows),
