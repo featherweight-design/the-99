@@ -21,6 +21,18 @@ describe("tuningFingerprint", () => {
     expect(tuningFingerprint({ ...base, locks: [] })).toBe(before);
   });
 
+  // The reader's store: a capped deck's answer reads prices there, so a store switch must reopen the gate. Anything
+  // else hashes exactly as before: no stored run reads as changed on deploy.
+  it("moves with the store for a capped deck on another store, and for no other", () => {
+    const capped = { ...base, limits: { ...base.limits, capCents: 500 } };
+    const at = tuningFingerprint({ ...capped, store: "manapool" });
+    expect(tuningFingerprint(capped)).toBe(at);
+    expect(tuningFingerprint({ ...capped, store: "tcgplayer" })).not.toBe(at);
+    expect(tuningFingerprint({ ...capped, store: "cardkingdom" })).not.toBe(tuningFingerprint({ ...capped, store: "tcgplayer" }));
+    // No cap: the answer reads no price, so the store is not in the hash.
+    expect(tuningFingerprint({ ...base, store: "tcgplayer" })).toBe(tuningFingerprint(base));
+  });
+
   it("changes when a card is locked, whatever order the locks arrive in", () => {
     const one = tuningFingerprint({ ...base, locks: ["a", "b"] });
     expect(one).not.toBe(tuningFingerprint(base));

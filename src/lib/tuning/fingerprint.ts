@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import type { Store } from "../stores/rows";
+
 /**
  * Whether anything THE PLAYER did has changed since the last successful run. SERVER-ONLY:
  * `node:crypto`, as `src/lib/profile/fingerprint.ts`.
@@ -50,6 +52,13 @@ export type FingerprintInput = {
    */
   focus?: string | null;
   /**
+   * The reader's store (store preference): a card's price under the cap is read there, so a capped deck's answer
+   * depends on it and switching store must reopen the gate. Joins the hash ONLY for a capped deck on a store other than
+   * Mana Pool, the default, so every deck that is uncapped or on Mana Pool hashes exactly as before and no stored run
+   * reads as changed on deploy.
+   */
+  store?: Store;
+  /**
    * "Kept for this deck" (H35, PR 2): a limit change must reopen the gate, same as an edit to the
    * list does — a run against the old cap/sets/owned-only answers a question the player no
    * longer asked. Unconditional, like `intent` and `collection`: every deck gets this field the
@@ -85,6 +94,8 @@ export function tuningFingerprint(input: FingerprintInput): string {
         sets: [...input.limits.sets].sort(byteOrder),
         ownedOnly: input.limits.ownedOnly,
       },
+      // The reader's store, only where it can change the answer (see `store` above).
+      ...(input.limits.capCents !== null && input.store && input.store !== "manapool" ? { store: input.store } : {}),
       // The owned shortlist (a run's prompt shows an owned-only run the cards it owns, 2026-10-11)
       // changes what an owned-only deck's answer is, and `PROMPT_VERSION` would reopen EVERY deck's
       // gate for a prompt only these send. So it joins the hash for them alone: an owned-only deck
