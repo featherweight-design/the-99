@@ -148,6 +148,12 @@ export const RATE_RULES = {
   /** Reset link and code, per player, ENFORCED: 5 a day, so rotation cannot churn tokens or codes. */
   "friend-reset-day": { limit: 5, windowMs: 86_400_000 },
   /**
+   * The spares sheet's press facts over a deck or All shopping (friend trades FromDeck D2), per player, ENFORCED: 600 an
+   * hour. One call reads up to eight friends' spare lists, so a script calling it in a loop is a database burn; a reader
+   * opening sheets by hand stays far under it. Over it, the rows draw Ask only.
+   */
+  "trade-presses": { limit: 600, windowMs: 3_600_000 },
+  /**
    * A friend link opened SIGNED OUT, per VISITOR across every link (`anon.ts`, no scope), ENFORCED: the page names its owner
    * (Q2), so past the cap it draws the ended card, naming nobody. An honest visitor opens a link or two a few times; a walker
    * of tokens opens thousands.

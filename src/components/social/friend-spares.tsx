@@ -12,6 +12,7 @@ import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
+import type { TradePressFacts } from "../../lib/social/trade-reads";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import { spareCopy } from "../../lib/copy/social";
 import { cardList, tradeCopy } from "../../lib/copy/trades";
@@ -46,16 +47,15 @@ export type RequestsCtx = {
 export const SpareRequestsContext = createContext<RequestsCtx | null>(null);
 
 /**
- * Friend trades on the spares sheet (handoff `design_handoff_the99_friend_trades`, Ask S1): the page friend's row gains a
- * quiet Trade beside Ask, or `Offer waiting` while an offer of the reader's to them is unanswered (Q10), and the how
- * line sits under the rows. Provided by a friend's Spares tab; null everywhere else, which draws the sheet as shipped.
+ * Friend trades on the spares sheet (handoff `design_handoff_the99_friend_trades`, Ask S1 and D1): a friend's row gains
+ * a quiet Trade beside Ask, or `Offer waiting` while an offer of the reader's to them is unanswered (Q10), and the how
+ * line sits under the rows. A friend's Spares tab provides it for its one friend; the deck page and All shopping for
+ * every friend on the opened card. Null everywhere else, which draws the sheet as shipped.
  */
 export type TradePress = {
-  friend: string; held: boolean; onTrade: (oracleId: string, from: HTMLElement) => void;
-  /** The reader's spares on this friend's wishlist, by name (S1's `Wants your …` line). */
-  wants: readonly string[];
-  /** Live trades (open or accepted) with this friend (S1's `N trades open`). */
-  open: number;
+  /** What the row draws for this friend, or null for a row with no Trade (not read yet, or not a friend). */
+  of: (friendPublicId: string) => TradePressFacts | null;
+  onTrade: (friendPublicId: string, oracleId: string, from: HTMLElement) => void;
 };
 export const TradePressContext = createContext<TradePress | null>(null);
 
@@ -268,49 +268,52 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
         </span>
       </div>
       <ul ref={listRef} role="list" className="m-0 list-none p-0">
-        {rows.map(({ s, ask }) => (
-          <li key={s.friend.publicId} data-testid="friend-spare" data-friend={s.friend.publicId} data-ask={ask.kind} className="flex min-h-[52px] items-center gap-[12px] py-[9px]">
-            <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
-            <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-              <b className="truncate text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]"><PersonName n={s.friend.displayName} /></b>
-              <span data-testid="friend-spare-sub" className="truncate font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
-                <em className="not-italic text-[color:var(--fact)]">{spareCopy.request.count(s.spare)}</em>
-                {" · "}
-                {ask.kind === "requested"
-                  ? spareCopy.request.daysLeft(ask.daysLeft)
-                  : ask.kind === "askAgain"
-                    ? spareCopy.request.noAnswer(SPARE_REQUEST_DAYS)
-                    : <PersonText text={spareCopy.request.pods(s.friend.pods)} />}
-              </span>
-              {trade && trade.friend === s.friend.publicId && (trade.wants.length > 0 || trade.open > 0) ? (
-                <span data-testid="friend-spare-trade-line" className="flex min-w-0 items-center gap-[6px] font-mono text-[11px] leading-[1.45]">
-                  {trade.wants.length > 0 ? (
-                    <span className="flex min-w-0 items-center gap-[6px] text-[color:var(--fact)]">
-                      <SpareGlyph size={12} />
-                      <span className="truncate">{tradeCopy.wantsShort(cardList(trade.wants))}</span>
-                    </span>
-                  ) : null}
-                  {trade.open > 0 ? (
-                    <span className="flex-none text-[color:var(--fg-faint)]">{trade.wants.length > 0 ? "· " : ""}{tradeCopy.openCount(trade.open)}</span>
-                  ) : null}
+        {rows.map(({ s, ask }) => {
+          const facts = trade?.of(s.friend.publicId) ?? null;
+          return (
+            <li key={s.friend.publicId} data-testid="friend-spare" data-friend={s.friend.publicId} data-ask={ask.kind} className="flex min-h-[52px] items-center gap-[12px] py-[9px]">
+              <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
+              <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+                <b className="truncate text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]"><PersonName n={s.friend.displayName} /></b>
+                <span data-testid="friend-spare-sub" className="truncate font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
+                  <em className="not-italic text-[color:var(--fact)]">{spareCopy.request.count(s.spare)}</em>
+                  {" · "}
+                  {ask.kind === "requested"
+                    ? spareCopy.request.daysLeft(ask.daysLeft)
+                    : ask.kind === "askAgain"
+                      ? spareCopy.request.noAnswer(SPARE_REQUEST_DAYS)
+                      : <PersonText text={spareCopy.request.pods(s.friend.pods)} />}
                 </span>
+                {facts && (facts.wants.length > 0 || facts.open > 0) ? (
+                  <span data-testid="friend-spare-trade-line" className="flex min-w-0 items-center gap-[6px] font-mono text-[11px] leading-[1.45]">
+                    {facts.wants.length > 0 ? (
+                      <span className="flex min-w-0 items-center gap-[6px] text-[color:var(--fact)]">
+                        <SpareGlyph size={12} />
+                        <span className="truncate">{tradeCopy.wantsShort(cardList(facts.wants))}</span>
+                      </span>
+                    ) : null}
+                    {facts.open > 0 ? (
+                      <span className="flex-none text-[color:var(--fg-faint)]">{facts.wants.length > 0 ? "· " : ""}{tradeCopy.openCount(facts.open)}</span>
+                    ) : null}
+                  </span>
+                ) : null}
+              </span>
+              {trade && facts ? (
+                facts.held ? (
+                  <span data-testid="friend-spare-trade-held" className={`${STATUS} text-[color:var(--fg-body)]`}>{tradeCopy.capShort}</span>
+                ) : (
+                  <button type="button" data-testid="friend-spare-trade" aria-haspopup="dialog"
+                    {...personAttrs({ "aria-label": tradeCopy.sheet.pressAria(s.friend.displayName, cardName) }, `${ASK_PRESS} ${ASK_SIZE.sheet} ${ASK_ALT_INK}`)}
+                    disabled={busy !== null} onClick={(e) => trade.onTrade(s.friend.publicId, card.oracleId, e.currentTarget)}>
+                    {tradeCopy.sheet.press}
+                  </button>
+                )
               ) : null}
-            </span>
-            {trade && trade.friend === s.friend.publicId ? (
-              trade.held ? (
-                <span data-testid="friend-spare-trade-held" className={`${STATUS} text-[color:var(--fg-body)]`}>{tradeCopy.capShort}</span>
-              ) : (
-                <button type="button" data-testid="friend-spare-trade" aria-haspopup="dialog"
-                  {...personAttrs({ "aria-label": tradeCopy.sheet.pressAria(s.friend.displayName, cardName) }, `${ASK_PRESS} ${ASK_SIZE.sheet} ${ASK_ALT_INK}`)}
-                  disabled={busy !== null} onClick={(e) => trade.onTrade(card.oracleId, e.currentTarget)}>
-                  {tradeCopy.sheet.press}
-                </button>
-              )
-            ) : null}
-            <RowEnd ask={ask} friend={s.friend.displayName} card={cardName} busy={busy === s.friend.publicId} locked={busy !== null}
-              onAsk={() => void press(s, ask.kind === "askInstead" ? ask.fromRequestId : undefined)} />
-          </li>
-        ))}
+              <RowEnd ask={ask} friend={s.friend.displayName} card={cardName} busy={busy === s.friend.publicId} locked={busy !== null}
+                onAsk={() => void press(s, ask.kind === "askInstead" ? ask.fromRequestId : undefined)} />
+            </li>
+          );
+        })}
       </ul>
       {line ? <p data-testid="friend-spares-line" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]"><PersonText text={line} /></p> : null}
       {trade ? <p data-testid="friend-spares-how" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{tradeCopy.sheet.how}</p> : null}

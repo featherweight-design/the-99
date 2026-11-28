@@ -26,6 +26,8 @@ import { CartGotItProvider, useCartGotIt } from "./cart-got-it";
 import { BackBand } from "./back-band";
 import { ShoppingKeyBuy, ShoppingKeySpare } from "../shopping-key";
 import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "../../social/spare-markers";
+import { TradeSheetHost } from "../../social/trade-sheet-host";
+import { TradeFromList } from "../../social/trade-from-list";
 import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
@@ -130,11 +132,16 @@ export function CartView(props: CartViewProps) {
   // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest. A reader
   // with no friend has no spare to read (addendum R3 §4): no read is made, and every card reads as landed with none.
   const withSpares = (
-    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests deckId={null} noFriends={!hasFriends}>{page}</FriendSparesProvider>
+    <TradeSheetHost>
+      <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests deckId={null} noFriends={!hasFriends}>{page}</FriendSparesProvider>
+    </TradeSheetHost>
   );
   return <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>;
 }
 
+
+/** Where a trade from this page's spares sheet came from (FromDeck D4: `‹ All shopping`). */
+const SHOPPING = { kind: "shopping" } as const;
 type CartViewProps = {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
@@ -561,7 +568,7 @@ function CartBody({
               {byDeck ? null : <ByCardColumns view={view} lines={lines} read={readIds} selected={selected} query={query} hasFriends={hasFriends} />}
               <CardDetailProvider>
               {/* The spares-only modal a line's spare press opens (S5): inside this provider, since it opens card details. */}
-              <SparesSheetHost />
+              <TradeFromList from={SHOPPING}><SparesSheetHost /></TradeFromList>
               <div
                 ref={listRef}
                 onScroll={measureMore}

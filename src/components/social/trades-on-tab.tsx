@@ -81,8 +81,8 @@ export function TradePressBridge({ friend, held, wants, open, children }: {
   if (!setOpen) return <>{children}</>;
   return (
     <TradePressContext.Provider value={{
-      friend, held, wants, open,
-      onTrade: (oracleId) => { spares?.close(); setOpen({ kind: "new", first: oracleId }); },
+      of: (id) => (id === friend ? { held, wants, open } : null),
+      onTrade: (_friend, oracleId) => { spares?.close(); setOpen({ kind: "new", first: oracleId }); },
     }}>
       {children}
     </TradePressContext.Provider>

@@ -20,6 +20,7 @@ const m = vi.hoisted(() => ({
   clearTrade: vi.fn(),
   loadTrade: vi.fn(),
   loadTradeSheet: vi.fn(),
+  loadTradePresses: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
@@ -32,11 +33,11 @@ vi.mock("../../lib/social/trades", () => ({
   proposeTrade: m.proposeTrade, counterTrade: m.counterTrade, reviseTrade: m.reviseTrade, answerTrade: m.answerTrade,
   withdrawTrade: m.withdrawTrade, rescindTrade: m.rescindTrade, markTraded: m.markTraded, clearTrade: m.clearTrade,
 }));
-vi.mock("../../lib/social/trade-reads", () => ({ loadTrade: m.loadTrade, loadTradeSheet: m.loadTradeSheet }));
+vi.mock("../../lib/social/trade-reads", () => ({ loadTrade: m.loadTrade, loadTradeSheet: m.loadTradeSheet, loadTradePresses: m.loadTradePresses }));
 
 import {
   answerTradeAction, clearTradeAction, counterTradeAction, markTradedAction, openTradeAction, openTradeSheetAction, proposeTradeAction,
-  rescindTradeAction, reviseTradeAction, withdrawTradeAction,
+  rescindTradeAction, reviseTradeAction, tradePressesAction, withdrawTradeAction,
 } from "./trade-actions";
 
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -172,5 +173,29 @@ describe("openTradeSheetAction", () => {
     expect(await openTradeSheetAction(FRIEND)).toBeNull();
     expect(m.loadTradeSheet).toHaveBeenCalledWith("viewer", FRIEND, "manapool");
     expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("tradePressesAction", () => {
+  beforeEach(() => {
+    m.requireUserId.mockReset().mockResolvedValue("viewer");
+    m.enforceHit.mockReset().mockResolvedValue(null);
+    m.loadTradePresses.mockReset().mockResolvedValue({});
+  });
+
+  it("counts every read against the reader's bucket, and reads nothing over it", async () => {
+    await tradePressesAction([FRIEND]);
+    expect(m.enforceHit).toHaveBeenCalledWith("viewer", "trade-presses");
+    expect(m.loadTradePresses).toHaveBeenCalledWith("viewer", [FRIEND]);
+    m.loadTradePresses.mockClear();
+    m.enforceHit.mockResolvedValue(600);
+    expect(await tradePressesAction([FRIEND])).toEqual({});
+    expect(m.loadTradePresses).not.toHaveBeenCalled();
+  });
+
+  it("refuses a list longer than one batch before it counts or reads", async () => {
+    expect(await tradePressesAction(Array.from({ length: 9 }, () => FRIEND))).toEqual({});
+    expect(m.enforceHit).not.toHaveBeenCalled();
+    expect(m.loadTradePresses).not.toHaveBeenCalled();
   });
 });

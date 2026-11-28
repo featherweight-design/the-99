@@ -18,7 +18,8 @@ import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
 import { enforceHit } from "../../lib/rate/observe";
 import { isUuid } from "../../lib/social/rules";
-import { loadTrade, loadTradeSheet, type TradeSheetData, type TradeView } from "../../lib/social/trade-reads";
+import { TRADE_PRESS_FRIENDS } from "../../lib/social/trade-from";
+import { loadTrade, loadTradePresses, loadTradeSheet, type TradePressFacts, type TradeSheetData, type TradeView } from "../../lib/social/trade-reads";
 import { cleanSides, isRound, isSeenAt } from "../../lib/social/trade-rules";
 import {
   answerTrade, clearTrade, counterTrade, markTraded, proposeTrade, rescindTrade, reviseTrade, withdrawTrade,
@@ -102,6 +103,18 @@ export async function openTradeAction(tradeId: unknown): Promise<TradeView | nul
   if (!isUuid(tradeId)) return null;
   const store = await requestFlags(userId).then((env) => readerStoreForPage(userId, env));
   return loadTrade(userId, tradeId, store);
+}
+
+/**
+ * The spares sheet's Trade presses over a deck or All shopping (Ask D1): one entry per current friend among
+ * `friendPublicIds` (an array of public ids, capped in the read); anything else is ignored.
+ */
+export async function tradePressesAction(friendPublicIds: unknown): Promise<Record<string, TradePressFacts>> {
+  const userId = await requireUserId();
+  // The sheet asks in batches of TRADE_PRESS_FRIENDS, so a longer list is not the app's and reads nothing.
+  if (!Array.isArray(friendPublicIds) || friendPublicIds.length > TRADE_PRESS_FRIENDS) return {};
+  if ((await enforceHit(userId, "trade-presses")) !== null) return {};
+  return loadTradePresses(userId, friendPublicIds);
 }
 
 /** The trade sheet away from the friend's Spares tab (Friends, Home): Make it a trade, a Trades row. Null for a non-friend. */
