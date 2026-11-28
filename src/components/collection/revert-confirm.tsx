@@ -6,6 +6,7 @@
 // second dialog. Nothing is written until the one press that says Revert, and a refusal writes
 // nothing and says so.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -125,7 +126,11 @@ export function RevertConfirm({
         else if ("missingCard" in r) setView({ k: "refused", title: c.catalogTitle, text: c.catalogBody(r.missingCard) });
         else setView({ k: "refused", title: c.catalogTitle, text: c.gone });
       })
-      .catch(() => live && setView({ k: "refused", title: c.catalogTitle, text: collectionEditCopy.history.loadFailed }));
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("revert.preview", e);
+        setView({ k: "refused", title: c.catalogTitle, text: collectionEditCopy.history.loadFailed });
+      });
     return () => {
       live = false;
     };
@@ -163,7 +168,8 @@ export function RevertConfirm({
         setAttempt((a) => a + 1);
       } else if ("missingCard" in out) setView({ k: "refused", title: c.catalogTitle, text: c.catalogBody(out.missingCard) });
       else setView({ k: "refused", title: c.catalogTitle, text: c.gone });
-    } catch {
+    } catch (e) {
+      captureClientError("revert.confirm", e);
       setError(collectionEditCopy.history.loadFailed);
     } finally {
       setPending(false);

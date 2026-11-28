@@ -5,6 +5,7 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   confirmUpload,
@@ -222,7 +223,10 @@ export function ReplaceFlow({
       // The plain Sync's dry run. A failure here leaves Replace and Add standing: the Sync card is just not drawn.
       sync
         ? (plainPick === "everything" ? previewUploadChange(previewedId, "sync") : previewUploadChange(previewedId, "sync", { pick: plainPick }))
-            .catch(() => undefined)
+            .catch((e) => {
+              captureClientError("replace.sync-preview", e);
+              return undefined;
+            })
         : Promise.resolve(undefined),
     ])
       .then(([replace, add, syncRead]) => {
@@ -243,7 +247,10 @@ export function ReplaceFlow({
           return settle({ datas: { replace, add, sync: syncData }, error: null, noRead: false });
         return settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false });
       })
-      .catch(() => settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false }));
+      .catch((e) => {
+        if (live) captureClientError("replace.prepare", e);
+        settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false });
+      });
     return () => {
       live = false;
     };
@@ -272,7 +279,10 @@ export function ReplaceFlow({
       };
       previewUploadChange(previewedId, "sync", { pick })
         .then((r) => file(isSyncRead(r) ? r : "failed"))
-        .catch(() => file("failed"));
+        .catch((e) => {
+          captureClientError("replace.pick-read", e);
+          file("failed");
+        });
     }
   }, [toRead, previewedId, readKey]);
   // Retry clears only the failed pick's entry; the effect then reads it again. The selection is untouched.
@@ -476,6 +486,7 @@ export function ReplaceFlow({
       captureEngagement("collection_imported", { via: choosing && picked === "sync" ? "sync" : "csv", size: importSizeBucket(preview.rowCount) });
       nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
+      captureClientError("replace.confirm", e);
       // A throw is not proof that nothing was written: the write commits before its cache
       // invalidation and its receipt, and either can fail after it. The preview of an upload that
       // is already confirmed answers null, so ask it before claiming the collection is unchanged.

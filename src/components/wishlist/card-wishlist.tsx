@@ -14,6 +14,7 @@
 // a ticket and a rollback; three review rounds went to the ways two overlapping writes can answer, so there is only ever
 // one.)
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { storeCopy } from "../../lib/copy/store";
 import { STORE_INFO, type StoreInfo } from "../../lib/stores/info";
@@ -123,7 +124,8 @@ export function CardWishlist({
       if (out.status !== "wanted") onWantedChange?.(null);
       else after?.();
       onWrite();
-    } catch {
+    } catch (e) {
+      captureClientError("wishlist.card-write", e);
       fail(failure);
     } finally {
       writing.current = false;

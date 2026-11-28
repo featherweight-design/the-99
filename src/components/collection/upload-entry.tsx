@@ -3,6 +3,7 @@
 // The interim inline preview UI from earlier is gone; the parent ReplaceFlow
 // component now owns steps 2 (review) and 3 (the replace confirm).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
@@ -105,6 +106,7 @@ export function UploadEntry({
         const p = await previewUpload(fd);
         onPreview(p);
       } catch (e) {
+        captureClientError("import.upload-preview", e);
         setSource(named);
         setError(e instanceof Error ? e.message : importReviewCopy.errors.uploadFailed);
       }
@@ -121,6 +123,7 @@ export function UploadEntry({
         const p = await previewPaste(pasteText);
         onPreview(p);
       } catch (e) {
+        captureClientError("import.paste-preview", e);
         setError(e instanceof Error ? e.message : importReviewCopy.errors.pasteUnreadable);
       }
     });

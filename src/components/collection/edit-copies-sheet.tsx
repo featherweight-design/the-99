@@ -12,6 +12,7 @@
 // Removal is every holding at zero: `Remove from collection` stages it, and Save reads
 // `Remove N copies` (an elevated secondary, never the accent).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 import { SteadyLabel } from "../ui/steady-label";
 import { createPortal } from "react-dom";
@@ -130,7 +131,11 @@ export function EditCopiesSheet({
         setWarning(null);
         attempt.current = null;
       })
-      .catch(() => live && setRead({ k: "failed" }));
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("collection.edit-read", e);
+        setRead({ k: "failed" });
+      });
     return () => {
       live = false;
     };
@@ -259,7 +264,8 @@ export function EditCopiesSheet({
         setReload((n) => n + 1);
         return;
       }
-    } catch {
+    } catch (e) {
+      captureClientError("collection.edit-save", e);
       // Falls through to the failed state: the staged lines stay, and the same id is retried.
     }
     setPhase("failed");

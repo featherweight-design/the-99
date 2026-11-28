@@ -6,6 +6,7 @@
 // frame ticked (the default). After a ✗ tap, an optional "What card was it?" step under the controls
 // names the card it really was. Unstyled beyond the tokens: it is a measuring page with no design handoff.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import { EMBED_H, EMBED_W } from "../../lib/scan/geometry";
@@ -171,7 +172,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
       headers: { "content-type": "application/json" },
       // the index that served the run's readings (the server's, while matching there), else the page's own
       body: JSON.stringify({ indexVersion: run.index ?? indexVersion.current, frames: run.frames }),
-    }).catch(() => null);
+    }).catch((e) => {
+      captureClientError("scanlab.log", e);
+      return null;
+    });
     setNote(res?.ok ? copy.logged(run.frames.length) : copy.logFailed);
   }, []);
   const toggleServer = useCallback((on: boolean) => {
@@ -343,7 +347,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
             gpuPair = await loadTimedModels(gpuOrt, "webgpu", bytes, hold);
           } catch (e) {
             // A WASM pair with no WebGPU pair to compare against is let go at once.
-            if (wasmPair) for (const s of [wasmPair.detector, wasmPair.embedder]) void s.release().catch(() => {});
+            if (wasmPair) for (const s of [wasmPair.detector, wasmPair.embedder]) void s.release().catch(() => {}); // silent-catch: expected: abort, a best-effort release on teardown
             // Leaving the page mid-load is not a WebGPU failure: nothing is recorded.
             if (e instanceof Error && e.message === "left the page") throw e;
             error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
@@ -479,7 +483,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
         const raw = read?.raw;
         if (sm && raw && running.current) {
           const crop = read.kind === "card" ? read.crop : null;
-          const f = await sessions.current.use(() => compareFrame(sm.wasm, sm.gpu, raw, crop)).catch(() => null);
+          const f = await sessions.current.use(() => compareFrame(sm.wasm, sm.gpu, raw, crop)).catch((e) => {
+            captureClientError("scanlab.compare", e);
+            return null;
+          });
           if (f) {
             spikeFrames.current.push(f);
             if (spikeFrames.current.length >= MAX_SPIKE_FRAMES) flushSpike();
@@ -489,9 +496,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
       };
       // Every iteration's rejection lands here, the timer's included: a frame that fails stops the
       // scan and the camera, and leaves no reading a tap could save.
-      const tick = () => { loop().catch(fail); };
+      const tick = () => { loop().catch((e) => { captureClientError("scanlab.loop", e); fail(e); }); };
       tick();
     } catch (e) {
+      if (!(e instanceof Error && e.message === "left the page")) captureClientError("scanlab.start", e);
       fail(e);
     }
   }, [indexBase, serverModel, finishLog, toggleServer, compare, flushSpike, startMode, postStartup, answered]);
@@ -519,11 +527,17 @@ export function ScanLab({ indexBase, serverModel = null }: {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(tapBody(r, correct, indexVersion.current, frame, tap)),
-    }).catch(() => null);
+    }).catch((e) => {
+      captureClientError("scanlab.result", e);
+      return null;
+    });
     if (res?.ok) {
       setTaps((t) => ({ n: t.n + 1, right: t.right + (correct ? 1 : 0) }));
       setNote(copy.saved);
-      const body = (await res.json().catch(() => null)) as { id?: unknown } | null;
+      const body = (await res.json().catch((e) => {
+        captureClientError("scanlab.result-body", e);
+        return null;
+      })) as { id?: unknown } | null;
       if (run?.first && typeof body?.id === "string") {
         const resultId = body.id;
         void run.first.then((first) => postSpike({ kind: "run", resultId, first, frames: run.frames }));

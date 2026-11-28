@@ -4,6 +4,7 @@
 // keeps running underneath, so a miss never holds up the next shot. One pick saves the card's
 // oracle id onto that tap's row (`labelScanLabResult`).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { labelScanLabResult, searchScanLabCards } from "../../app/lab/scan/actions";
 import type { ScanLabCardHit } from "../../lib/scan-lab/search";
@@ -43,8 +44,9 @@ export function TrueCardStep({ resultId, onDone }: { resultId: string; onDone: (
           setSearched(trimmed);
           setFailed(false);
         })
-        .catch(() => {
+        .catch((e) => {
           if (mine !== ticket.current) return;
+          captureClientError("scanlab.search", e);
           setResults([]);
           setSearched(trimmed);
           setFailed(true);
@@ -56,7 +58,10 @@ export function TrueCardStep({ resultId, onDone }: { resultId: string; onDone: (
   const pick = async (hit: ScanLabCardHit) => {
     setSaving(true);
     setSaveFailed(false);
-    const ok = await labelScanLabResult(resultId, hit.oracleId).catch(() => false);
+    const ok = await labelScanLabResult(resultId, hit.oracleId).catch((e) => {
+      captureClientError("scanlab.label", e);
+      return false;
+    });
     if (!alive.current) return;
     setSaving(false);
     if (ok) onDone(copy.labelled(hit.name));

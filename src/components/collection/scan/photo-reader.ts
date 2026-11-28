@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { lookupCard } from "../../../lib/scan/lookup";
@@ -95,7 +96,8 @@ export function usePhotoReader(
     let bitmap: ImageBitmap;
     try {
       bitmap = await (d.decode ?? decodeFile)(file);
-    } catch {
+    } catch (e) {
+      captureClientError("scan.photo-decode", e);
       return { kind: "failed" };
     }
     let read: FrameRead;
@@ -103,7 +105,8 @@ export function usePhotoReader(
       // Closed while the photo decoded: the models are already released, and a read now would load them again.
       if (signal.aborted) return { kind: "failed" };
       read = await d.readFrame(bitmap);
-    } catch {
+    } catch (e) {
+      captureClientError("scan.photo-read", e);
       // The models would not load: no photo can be read, and the player is told why.
       onProblemRef.current("noStart");
       return { kind: "failed" };

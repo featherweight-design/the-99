@@ -6,6 +6,7 @@
 // The search is debounced and ticketed as the Add cards sheet's is. The results are a plain list, not a listbox: each
 // row holds its own press. The caller owns the tiles: every settled write is reported up through `onWant`.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useRef, useState } from "react";
 import { addToWishlistAction, searchWishlistCardsAction, setWishlistWantAction, type WishlistSearchResult } from "../../app/collection/wishlist/actions";
 import { wishlistCopy } from "../../lib/copy/wishlist";
@@ -81,8 +82,9 @@ export function WishlistSearch({
           setFailed(!r.ok);
           setSearched(trimmed);
         })
-        .catch(() => {
+        .catch((e) => {
           if (mine !== ticket.current) return;
+          captureClientError("wishlist.search", e);
           setResults([]);
           setFailed(true);
           setSearched(trimmed);
@@ -136,7 +138,8 @@ export function WishlistSearch({
         confirm(r.oracleId, out.want);
         onWant({ card: r, want: out.want, have: out.have });
       }
-    } catch {
+    } catch (e) {
+      captureClientError("wishlist.add", e);
       onFailure("add");
     } finally {
       setAdding(null);
@@ -156,7 +159,8 @@ export function WishlistSearch({
       confirm(id, want);
       if (want === null) setRefocus((n) => n + 1);
       onWant({ card: r, want, have: out.have });
-    } catch {
+    } catch (e) {
+      captureClientError("wishlist.set", e);
       onFailure("set");
     } finally {
       // Only the newest write for the card stops drawing its count: an older one settling leaves the newer in view.
