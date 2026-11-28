@@ -104,8 +104,10 @@ const PLURAL: Record<MainType, string> = {
 
 export type SheetModel = {
   /** The job line under the original's name. */
-  job: string;
-  lead: string | null;
+  /** The job line's copy rows, drawn joined by ` · `. */
+  job: readonly string[];
+  /** The lead's copy rows, drawn joined by a space; null when there is no lead. */
+  lead: readonly string[] | null;
   groups: SheetGroup[];
   /** The one sentence drawn in place of a list: no role, nothing cheaper, sold out with nothing free. */
   sentence: string | null;
@@ -157,13 +159,13 @@ export function sheetModel(read: StandInsRead): SheetModel {
   // E1: a spell whose every job is limited to cards this deck doesn't play has no job here. Its coarse
   // roles would make the "nothing cheaper" sentence claim a job the deck was ruled unable to use.
   if (job.kind === "spell" && read.jobRoles.length === 0) {
-    return { job: copy.jobNotHere, lead: null, groups: [], foot: false, sentence: copy.noJobHere(original.name) };
+    return { job: [copy.jobNotHere], lead: null, groups: [], foot: false, sentence: copy.noJobHere(original.name) };
   }
   if (job.kind === "none") {
     // The front face decides, as `jobOf` does: a spell with a land back face is a spell here.
     const land = isLandFace(original.typeLine);
     return {
-      job: copy.jobNoRole, lead: null, groups: [], foot: false,
+      job: [copy.jobNoRole], lead: null, groups: [], foot: false,
       sentence: land ? copy.noRoleLand(original.name) : copy.noRole(original.name),
     };
   }
@@ -184,9 +186,9 @@ export function sheetModel(read: StandInsRead): SheetModel {
           ...(own.length
             ? own.map((d) => drawbackText(d, job.colors))
             : nonManaAbilities(original).length === 0 ? [copy.givesUpNothing] : []),
-        ].join(" · ")
-    : job.kind === "fetch" ? [copy.jobFinds(typesText(job.types)), ...own.map((d) => drawbackText(d, landColors))].join(" · ")
-    : copy.jobSpell(mainType(original.typeLine), job.mv, listWords(jobWords(read.jobRoles), "and"));
+        ]
+    : job.kind === "fetch" ? [copy.jobFinds(typesText(job.types)), ...own.map((d) => drawbackText(d, landColors))]
+    : [copy.jobSpell(mainType(original.typeLine), job.mv, listWords(jobWords(read.jobRoles), "and"))];
 
   // Hugh, 2026-09-24: when every stand-in gives up the SAME thing, the lead says it once and the rows
   // show only what differs. Mixed, each row keeps its own clause.
@@ -278,18 +280,18 @@ export function sheetModel(read: StandInsRead): SheetModel {
 
   const sameGroup = read.groups.find((g) => g.same);
   const lead =
-    soldOut ? copy.leadSoldOut
+    soldOut ? [copy.leadSoldOut]
     : job.kind === "land"
-      ? shared !== null ? copy.leadLandsGivesUp(colorsText(job.colors), shared) : copy.leadLands(colorsText(job.colors))
+      ? [shared !== null ? copy.leadLandsGivesUp(colorsText(job.colors), shared) : copy.leadLands(colorsText(job.colors))]
     : job.kind === "fetch"
-      ? shared !== null ? copy.leadFetchGivesUp(typesText(job.types, true), shared) : copy.leadFetch(typesText(job.types, true))
+      ? [shared !== null ? copy.leadFetchGivesUp(typesText(job.types, true), shared) : copy.leadFetch(typesText(job.types, true))]
     : [
         copy.leadSpellsJob(original.name, listWords(jobWords(read.jobRoles), "or")),
         ...(sameGroup && read.groups.length > 1 ? [copy.leadSpellsTypes(PLURAL[sameGroup.type])] : []),
         // F14: nothing listed for this commander or pair, so the order clause names no commander.
         everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(original.name, commander) : copy.leadSpellsOrderUnlisted(original.name),
         ...(everyRow.some((s) => s.isUniversal) ? [copy.leadSpellsStaples] : []),
-      ].join(" ");
+      ];
 
   return { job: jobLine, lead, groups, sentence: null, foot: true };
 }

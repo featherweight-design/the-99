@@ -17,6 +17,7 @@ import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
 import { applyManaTrade, readManaHelpFor, readManaHelpReview, undoManaTrade, type ManaTradeResult } from "../../app/decks/mana-actions";
+import { CopyLines } from "../copy-lines";
 import { useReviewRun } from "./review-run";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -388,11 +389,15 @@ function ColorStep({ order, evidence, firstRowRef, onPick, onClose }: {
 }
 
 /** `green 28 → 29 · blue 1 → 2`: the picked color first, then every other color that moves. */
-function changesText(changes: readonly SourceChange[], picked: BalanceColor) {
+function changesLines(changes: readonly SourceChange[], picked: BalanceColor): string[] {
   const moved = changes.filter((c) => c.before !== c.after);
   return [...moved.filter((c) => c.color === picked), ...moved.filter((c) => c.color !== picked)]
-    .map((c) => copy.help.change_(colorWord(c.color), c.before, c.after))
-    .join(" · ");
+    .map((c) => copy.help.change_(colorWord(c.color), c.before, c.after));
+}
+
+/** The same line as one string, for the `trade` sentence that takes it as a fill-in. */
+function changesText(changes: readonly SourceChange[], picked: BalanceColor) {
+  return changesLines(changes, picked).join(" · ");
 }
 
 function bucketLabel(condition: string): string {
@@ -478,7 +483,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
                 {state.help.rebalance.map((m) => (
                   <li key={`${m.basicOut}-${m.basicIn}`} data-mana-swap className="flex flex-wrap items-baseline gap-x-[14px] gap-y-[4px] rounded-[9px] border border-[color:var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[10px]">
                     <span className="text-[13px] text-[color:var(--fg)]">{copy.help.swap(m.maxCopies, m.basicOut, m.basicIn)}</span>
-                    <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{changesText(m.changes, color)}</span>
+                    <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]"><CopyLines lines={changesLines(m.changes, color)} sep=" · " /></span>
                   </li>
                 ))}
               </ul>

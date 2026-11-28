@@ -3,7 +3,7 @@
 // art, a printing chip that reopens the picker, a Foil chip, a stepper and the holdings note. A line
 // whose printing is not chosen yet draws the required step in its place (B4a/B4m).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { identityGradient } from "../../lib/cards/gradients";
 import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
 import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit-lines";
@@ -49,7 +49,7 @@ export type AddLineProps = {
    * Edit mode: the note at the right edge, in place of the add mode's holdings note. `tone` inks
    * a change (`up` is --success, `down` stays body ink) and a note is plain text otherwise.
    */
-  note?: { text: string; tone: "up" | "down" | "plain" } | null;
+  note?: { text: ReactNode; tone: "up" | "down" | "plain" } | null;
   /** Edit mode's line for a printing still to choose: `New printing`, in place of the card's name. */
   title?: string;
   /** The printing region's question, when it is not the add mode's (a fixed printing asks which copy). */

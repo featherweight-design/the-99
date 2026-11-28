@@ -46,13 +46,13 @@ describe("the stand-ins sheet's model", () => {
     expect(m.groups[0].rows[1]).toMatchObject({ body: [], muted: [], compare: { type: null, keeps: [copy.job.removal], gains: [], loses: [] } });
     // An other-types row names its type first: its heading cannot.
     expect(m.groups[1].rows[0].compare).toMatchObject({ type: "sorcery", keeps: [copy.job.removal] });
-    expect(m.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
+    expect(m.lead).toEqual([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")]);
     expect(m.foot).toBe(true);
   });
 
   it("drops the types sentence when only one group is drawn", () => {
     const m = sheetModel(read({ groups: [other([standIn("Chaos Warp", { synergy: 0.3 })])] }));
-    expect(m.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
+    expect(m.lead).toEqual([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")]);
   });
 
   it("says staples come last when one is listed, and keeps a staple's clause on its row", () => {
@@ -60,14 +60,14 @@ describe("the stand-ins sheet's model", () => {
       groups: [same([standIn("Path", { synergy: 0.1 }), standIn("Sol Ring", { isUniversal: true, free: true })])],
     }));
     expect(m.groups[0].rows[1].compare).toMatchObject({ type: copy.compare.staple, keeps: [copy.job.removal] });
-    expect(m.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath"), copy.leadSpellsStaples].join(" "));
+    expect(m.lead).toEqual([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath"), copy.leadSpellsStaples]);
   });
 
   it("names a pair as A + B by short name, and drops the commander from the order when nothing is listed (F14)", () => {
     const m = sheetModel(read({ commanders: ["Tymna the Weaver", "Thrasios, Triton Hero"], groups: [same([standIn("Chaos Warp", { synergy: 0.2 })])] }));
     expect(m.lead).toContain(copy.leadSpellsOrder("Anguished Unmaking", "Tymna the Weaver + Thrasios"));
     const unlisted = sheetModel(read({ groups: [same([standIn("Chaos Warp")])] }));
-    expect(unlisted.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "));
+    expect(unlisted.lead).toEqual([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrderUnlisted("Anguished Unmaking")]);
   });
 
   it("gives a land its colors, drawbacks and what each stand-in gives up (H3)", () => {
@@ -81,15 +81,15 @@ describe("the stand-ins sheet's model", () => {
         standIn("Clifftop Retreat"),
       ]),
     }));
-    expect(m.job).toBe(`${copy.jobColors("white and red")} · ${copy.givesUpNothing}`);
+    expect(m.job).toEqual([copy.jobColors("white and red"), copy.givesUpNothing]);
     // A utility land does something of its own, so its line never says it gives up nothing (H3).
     const cavern = sheetModel(read({
       job: { kind: "land", colors: ["W"] },
       original: card("Cavern of Souls", "Land", "As Cavern of Souls enters, choose a creature type.\n{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a creature spell of the chosen type, and that spell can't be countered."),
       groups: lands([standIn("Plains")]),
     }));
-    expect(cavern.job).toBe(copy.jobColors("white"));
-    expect(m.lead).toBe(copy.leadLands("white and red"));
+    expect(cavern.job).toEqual([copy.jobColors("white")]);
+    expect(m.lead).toEqual([copy.leadLands("white and red")]);
     expect(m.groups.map((g) => [g.heading, g.order, g.noun])).toEqual([[copy.groupSameType("lands"), copy.orderBestMana, "lands"]]);
     const lines = m.groups[0].rows.map((r) => [r.body, r.muted]);
     const WR = (state: string) => [copy.mana.line("white and red", state)];
@@ -135,7 +135,7 @@ describe("the stand-ins sheet's model", () => {
     const m = sheetModel(read({
       groups: [same([standIn("A", { synergy: 0.2, missing: ["castFree", "counters", "haste"] }), standIn("B", { missing: ["castFree", "counters", "haste"] })])],
     }));
-    expect(m.lead).not.toContain("None of them");
+    expect((m.lead ?? []).join(" ")).not.toContain("None of them");
     expect(m.groups[0].rows.map((r) => r.compare?.loses)).toEqual([
       [copy.job.castFree, copy.job.counters, copy.job.haste], [copy.job.castFree, copy.job.counters, copy.job.haste],
     ]);
@@ -199,7 +199,7 @@ describe("the stand-ins sheet's model", () => {
       })]),
     }));
     expect(m.groups[0].rows[0].body).toEqual([copy.mana.line(copy.everyColor, copy.mana.untappedEarly)]);
-    expect(m.lead).toBe(copy.leadLands(copy.everyColor));
+    expect(m.lead).toEqual([copy.leadLands(copy.everyColor)]);
   });
 
   it("names what a land makes again and again when every job color is made only once", () => {
@@ -253,8 +253,8 @@ describe("the stand-ins sheet's model", () => {
       // In the engine's own order, costs first: the model puts `finds only a basic` ahead of them.
       groups: lands([standIn("Evolving Wilds", { drawbacks: [{ kind: "entersTapped" }, { kind: "basicOnly" }] })]),
     }));
-    expect(m.job.startsWith(copy.jobFinds("a Mountain or Forest"))).toBe(true);
-    expect(m.lead).toBe(copy.leadFetch("a Mountain or a Forest"));
+    expect(m.job[0]).toBe(copy.jobFinds("a Mountain or Forest"));
+    expect(m.lead).toEqual([copy.leadFetch("a Mountain or a Forest")]);
     // A fetch keeps its `finds …` reading: no mana line (addendum §1a).
     expect(m.groups[0].rows[0]).toMatchObject({ body: [], muted: [copy.drawback.basicOnly, copy.drawback.entersTapped] });
   });
@@ -272,7 +272,7 @@ describe("the stand-ins sheet's model", () => {
     // The front face decides: a spell whose back face is a land is a spell.
     const mdfc = sheetModel(read({ job: { kind: "none" }, original: card("Some Spell // Some Land", "Sorcery // Land") }));
     expect(mdfc.sentence).toBe(copy.noRole("Some Spell // Some Land"));
-    expect(land).toMatchObject({ lead: null, groups: [], foot: false, job: copy.jobNoRole });
+    expect(land).toMatchObject({ lead: null, groups: [], foot: false, job: [copy.jobNoRole] });
   });
 
   it("says nothing cheaper, citing the original's price, when every group is empty", () => {
@@ -284,14 +284,14 @@ describe("the stand-ins sheet's model", () => {
 
   it("says a card whose every job is limited to cards the deck doesn't play has no job here (E1)", () => {
     const lord = sheetModel(read({ jobRoles: [], original: card("Wolf Lord", "Creature — Wolf") }));
-    expect(lord).toMatchObject({ job: copy.jobNotHere, lead: null, groups: [], foot: false, sentence: copy.noJobHere("Wolf Lord") });
+    expect(lord).toMatchObject({ job: [copy.jobNotHere], lead: null, groups: [], foot: false, sentence: copy.noJobHere("Wolf Lord") });
     const land = sheetModel(read({ job: { kind: "land", colors: ["G"] }, original: card("Gaea's Cradle", "Legendary Land") }));
     expect(land.sentence).toBe(copy.nothingCheaperLand("green", "$15.00"));
   });
 
   it("lists free copies only for a sold-out original, and cites no price when there are none (F5)", () => {
     const some = sheetModel(read({ originalCents: null, groups: [same([standIn("Swords", { free: true })])] }));
-    expect(some.lead).toBe(copy.leadSoldOut);
+    expect(some.lead).toEqual([copy.leadSoldOut]);
     expect(some.groups.map((g) => g.heading)).toEqual([copy.groupSameType("instants")]);
     expect(sheetModel(read({ originalCents: null })).sentence).toBe(copy.soldOutNone("Anguished Unmaking"));
   });
@@ -303,14 +303,14 @@ describe("the stand-ins sheet's model", () => {
         groups: lands([standIn("A", { givesUp: [] })]),
       }));
       expect(m.job).toContain(copy.jobFinds("a Plains or Island"));
-      expect(m.lead).toBe(copy.leadFetch("a Plains or an Island"));
+      expect(m.lead).toEqual([copy.leadFetch("a Plains or an Island")]);
       const island = sheetModel(read({
         job: { kind: "fetch", types: ["island", "forest"], basicOnly: false },
         original: card("Misty Rainforest", "Land"),
         groups: lands([standIn("A", { givesUp: [] })]),
       }));
       expect(island.job).toContain(copy.jobFinds("an Island or Forest"));
-      expect(island.lead).toBe(copy.leadFetch("an Island or a Forest"));
+      expect(island.lead).toEqual([copy.leadFetch("an Island or a Forest")]);
   });
 
   it("names a spell's job while loading, and waits for the read on a land", () => {
@@ -332,7 +332,7 @@ describe("the stand-ins sheet's model", () => {
           standIn("Azorius Chancery", { givesUp: [uncounterable], drawbacks: [{ kind: "entersTapped" }] }),
         ]),
       }));
-      expect(m.lead).toBe(copy.leadLandsGivesUp("white and blue", "uncounterable spells"));
+      expect(m.lead).toEqual([copy.leadLandsGivesUp("white and blue", "uncounterable spells")]);
       expect(m.groups[0].rows.map((r) => [r.body, r.muted])).toEqual([
         [[copy.mana.line("white and blue", copy.mana.untapped)], []],
         [[copy.mana.line("white and blue", copy.mana.tapped)], []],
@@ -346,7 +346,7 @@ describe("the stand-ins sheet's model", () => {
         original: card("Some Fetch", "Land"),
         groups: lands([standIn("A", { givesUp: [quoted] }), standIn("B", { givesUp: [quoted] })]),
       }));
-      expect(m.lead).toBe(copy.leadFetchGivesUp("an Island", "“Threshold — {U}, {T}…”"));
+      expect(m.lead).toEqual([copy.leadFetchGivesUp("an Island", "“Threshold — {U}, {T}…”")]);
       expect(m.groups[0].rows.every((r) => r.body.length === 0 && r.muted.length === 0)).toBe(true);
     });
 
@@ -357,7 +357,7 @@ describe("the stand-ins sheet's model", () => {
         originalCents: null,
         groups: lands([standIn("Command Tower", { free: true, givesUp: [uncounterable] })]),
       }));
-      expect(m.lead).toBe(copy.leadSoldOut);
+      expect(m.lead).toEqual([copy.leadSoldOut]);
       expect(m.groups[0].rows[0].muted).toEqual([copy.givesUp("uncounterable spells")]);
     });
 
@@ -370,7 +370,7 @@ describe("the stand-ins sheet's model", () => {
           standIn("B", { givesUp: [{ kind: "named", label: "card draw" }] }),
         ]),
       }));
-      expect(m.lead).toBe(copy.leadLands("white"));
+      expect(m.lead).toEqual([copy.leadLands("white")]);
       expect(m.groups[0].rows.map((r) => r.muted)).toEqual([[copy.givesUp("uncounterable spells")], [copy.givesUp("card draw")]]);
     });
   });

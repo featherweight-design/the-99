@@ -392,7 +392,7 @@ describe("ArrivalsSummary — where an added copy goes", () => {
     expect(screen.getByText(copy.summary.sectionCleared(2))).toBeTruthy();
     expect(screen.getByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeTruthy();
     expect(screen.getByText(addedCopyCopy.row.goesToEarlier("HD Avatar Aang"))).toBeTruthy();
-    expect(screen.getByText(copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail)).toBeTruthy();
+    expect(screen.getByText((_c, el) => el?.tagName === "P" && el.textContent === copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail)).toBeTruthy();
     // Change only where there is a chooser to open.
     expect(screen.getByRole("button", { name: addedCopyCopy.changeAria("Sol Ring") })).toBeTruthy();
     expect(screen.queryByRole("button", { name: addedCopyCopy.changeAria("Brushland") })).toBeNull();
@@ -426,7 +426,7 @@ describe("ArrivalsSummary — where an added copy goes", () => {
     );
     expect(screen.getByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeTruthy();
     expect(screen.getByText(copy.summary.sectionClearedNote)).toBeTruthy();
-    expect(screen.queryByText(copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail)).toBeNull();
+    expect(screen.queryByText(addedCopyCopy.summaryNoteTail.trim())).toBeNull();
   });
 
   it("draws a version-3 receipt per deck and card, with no line and no Change", () => {

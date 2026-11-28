@@ -30,6 +30,7 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { CopyLines } from "../copy-lines";
 import { AddLine } from "./add-line";
 import { useVisualViewportFrame } from "../ui/visual-viewport";
 import { SHEET_FOOT_CLASS, SHEET_PANEL_CLASS } from "./sheet-frame";
@@ -362,7 +363,7 @@ export function EditCopiesSheet({
                 const label = h.setCode === "" && h.collectorNumber === "" ? c.noPrinting : printingLabel(h);
                 return (
                   <li key={key} className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px] text-[13px]">
-                    <span className="min-w-0 flex-1 truncate">{[set, label, h.finish === "nonfoil" ? null : collectionEditCopy.add[h.finish]].filter(Boolean).join(" · ")}</span>
+                    <span className="min-w-0 flex-1 truncate"><CopyLines lines={[set, label, h.finish === "nonfoil" ? null : collectionEditCopy.add[h.finish]]} sep=" · " /></span>
                     <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{`×${h.quantity} → 0`}</span>
                   </li>
                 );
@@ -389,7 +390,7 @@ export function EditCopiesSheet({
                       note={
                         note === null ? null
                         : note.kind === "delta" ? { text: signed(note.delta), tone: note.delta > 0 ? "up" : "down" }
-                        : { text: `${c.was(note.from === "" ? c.noPrinting : note.from)} · ${c.goesWith(note.copies)}`, tone: "plain" }
+                        : { text: <CopyLines lines={[c.was(note.from === "" ? c.noPrinting : note.from), c.goesWith(note.copies)]} sep=" · " />, tone: "plain" }
                       }
                       onOpenPicker={() => setPickerFor(pickerFor === l.id ? null : l.id)}
                       onChoose={(p) => afterChoose(editChoosePrinting(lines, l.id, p))}

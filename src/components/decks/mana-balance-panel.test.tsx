@@ -293,8 +293,8 @@ describe("ManaBalancePanel: thin decks", () => {
     const data = panelData([commander("{5}{R}{G}{W}"), spell("Archdruid", "{1}{G}{G}", 3)], ["R", "G", "W"], NO_TAPPED_LANDS);
     render(<ManaBalancePanel deckId="d" read={async () => data} />);
     await waitFor(() => expect(heading()).not.toBeNull());
-    expect(screen.getByText(deckStatsCopy.colors.noLands)).toBeTruthy();
-    expect(screen.getByText(copy.thin.noSources)).toBeTruthy();
+    // One span per copy row, a space between: assert the paragraph's text so a lost space fails.
+    expect(screen.getByText((_c, el) => el?.tagName === "P" && el.textContent === `${deckStatsCopy.colors.noLands} ${copy.thin.noSources}`)).toBeTruthy();
     expect(screen.queryByText(copy.lead)).toBeNull();
     expect((document.querySelector("[data-mana-row='G']") as HTMLElement).textContent).toContain(copy.table.neededFor("Archdruid", 0, "1CC"));
     fireEvent.click(screen.getByRole("button", { name: /Lands/ }));

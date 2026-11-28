@@ -20,6 +20,7 @@ import { ChangeDeck } from "./change-deck";
 import { SeatOffer } from "./swap";
 import type { Drivers } from "../../lib/rule-zero/rules";
 import type { RangeLine, SeatDraw } from "../../lib/rule-zero/table-view";
+import { CopyLines } from "../copy-lines";
 import { PersonInitials, PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { BracketChip } from "../decks/bracket-chip";
 import { FindingMark } from "../decks/finding-mark";
@@ -206,7 +207,7 @@ const MORE = "relative mx-[12px] mb-[12px] xl:mb-[14px] xl:ml-[162px] xl:mr-[16p
 const WAIT = `${MORE} rounded-[9px] border-[1.5px] border-dashed border-[color:var(--border-dashed)] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]`;
 
 /** What opens under the seat: the reason it is flagged, or why it is not in the read. */
-function SeatMore({ draw, why }: { draw: SeatDraw; why: string | PersonParts | null }) {
+function SeatMore({ draw, why }: { draw: SeatDraw; why: Why | null }) {
   const { state, seat } = draw;
   if (state.kind === "illegal") {
     const short = state.cards < 100;
@@ -257,7 +258,7 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | PersonParts | n
         data-testid="seat-why"
         className={`${MORE} rounded-[9px] border border-[color:color-mix(in_oklab,var(--flag)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--flag)_9%,var(--surface-sunken))] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-body)] xl:bg-[color:color-mix(in_srgb,var(--flag)_10%,var(--surface-sunken))]`}
       >
-        <b className="font-semibold text-[color:var(--fg)]">{copy.whyLead}</b> <PersonText text={why} />
+        <b className="font-semibold text-[color:var(--fg)]">{copy.whyLead}</b> {typeof why === "object" && "lines" in why ? <CopyLines lines={why.lines} /> : <PersonText text={why as string | PersonParts} />}
       </div>
     );
   }
@@ -311,7 +312,7 @@ function rangeLineText(line: RangeLine): string {
  * names its two cards and the tutors that reach it; a low seat says nothing counted passes its bracket, and that
  * counts can miss cards.
  */
-export function driversSentence(draw: SeatDraw): string | PersonParts | null {
+export function driversSentence(draw: SeatDraw): Why | null {
   const d: Drivers = draw.drivers;
   if (d.kind === "low") {
     // T6: a low range nobody answered says the rules leave its two ends to the player.
@@ -324,13 +325,13 @@ export function driversSentence(draw: SeatDraw): string | PersonParts | null {
     return copy.whyLow(BRACKET_NAMES[d.bracket]);
   }
   if (d.kind === "ruledOut") {
-    return d.reasons
+    // One copy row per reason, each drawn in its own span (the copy editor finds one row per text node).
+    return { lines: d.reasons
       .map((r) => {
         // Core and Upgraded count combos that loop turns, Exhibition the cards: `ruleNounFor` decides.
         const noun = ruleNounFor(r.rule, d.below);
         return copy.whyLimit(r.have, noun[r.have === 1 ? 0 : 1], BRACKET_NAMES[d.below], r.limit);
-      })
-      .join(" ");
+      }) };
   }
   if (d.kind === "assembled") {
     const [a, b] = d.combo?.cards ?? [];
@@ -340,6 +341,9 @@ export function driversSentence(draw: SeatDraw): string | PersonParts | null {
   }
   return null;
 }
+
+/** The drivers sentence: one string or name-carrying parts, or the ruled-out reasons as `lines`, one copy row each. */
+type Why = string | PersonParts | { lines: readonly string[] };
 
 /** The changed dot and its words (S5), in the accent: a 7px dot, then the line. Shared with the read's `Since you looked`. */
 export function Changed({ text, className = "text-[10.5px]" }: { text: string; className?: string }) {

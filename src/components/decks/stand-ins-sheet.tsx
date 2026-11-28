@@ -16,6 +16,7 @@ import { Fragment, useCallback, useEffect, useRef, useState, type Ref } from "re
 
 import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { CopyLines } from "../copy-lines";
 import { useStoreInfo } from "../stores/store-provider";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { provenanceForm, type PriceFact } from "../../lib/decks/price";
@@ -237,8 +238,8 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
           // (2026-09-26): the drawback starts its own line at every width, so the boundary between the mana
           // line and its cost is clear, as a spell row's LOSES starts its own group.
           <p className="col-span-full m-0 mt-[3px] pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
-            {row.body.length ? <span className="text-[color:var(--fg-body)]">{row.body.join(" · ")}</span> : null}
-            {row.muted.length ? <span data-drawback className="block">{row.muted.join(" · ")}</span> : null}
+            {row.body.length ? <span className="text-[color:var(--fg-body)]"><CopyLines lines={row.body} sep=" · " /></span> : null}
+            {row.muted.length ? <span data-drawback className="block"><CopyLines lines={row.muted} sep=" · " /></span> : null}
           </p>
         ) : null}
         {row.compare ? <Comparison compare={row.compare} /> : null}
@@ -701,7 +702,7 @@ export function StandInsSheet({
             ) : null}
           </ReplacingLine>
           {model ? (
-            <p className="m-0 font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{model.job}</p>
+            <p className="m-0 font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}><CopyLines lines={model.job} sep=" · " /></p>
           ) : null}
         </section>
 
@@ -744,7 +745,7 @@ export function StandInsSheet({
           <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>{copy.takenNote(name)}</p>
         ) : null}
         {shown?.lead && !taken ? (
-          <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>{shown.lead}</p>
+          <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}><CopyLines lines={shown.lead} /></p>
         ) : null}
 
         {/* O2: with a friend's spare in hand, the sentence saying nothing cheaper exists is not drawn. */}

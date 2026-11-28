@@ -249,9 +249,9 @@ describe("TableClosed", () => {
   it("words an extra-turn reason at Core or Upgraded as combos that loop turns, and at Exhibition as cards", () => {
     const seat = (below: 1 | 2 | 3, have: number) =>
       ({ drivers: { kind: "ruledOut", below, reasons: [{ rule: "extraTurns", have, limit: 0 }] }, chip: null, rangeLine: null, seat: { you: false, displayName: named("Colin") } }) as never;
-    expect(driversSentence(seat(3, 1))).toBe("1 combo that loops turns, where Upgraded allows 0.");
-    expect(driversSentence(seat(2, 2))).toBe("2 combos that loop turns, where Core allows 0.");
-    expect(driversSentence(seat(1, 1))).toBe("1 extra-turn card, where Exhibition allows 0.");
+    expect(driversSentence(seat(3, 1))).toEqual({ lines: ["1 combo that loops turns, where Upgraded allows 0."] });
+    expect(driversSentence(seat(2, 2))).toEqual({ lines: ["2 combos that loop turns, where Core allows 0."] });
+    expect(driversSentence(seat(1, 1))).toEqual({ lines: ["1 extra-turn card, where Exhibition allows 0."] });
   });
 
   it("truncates a long unbroken display name and keeps its tag whole beside it", () => {

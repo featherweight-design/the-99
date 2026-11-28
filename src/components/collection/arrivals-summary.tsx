@@ -12,7 +12,8 @@
 // The money sections are the frozen payload; the contested section is live. `Done` is a ROUTE
 // and says so: a page of consequences must not look like a form.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { CopyLines } from "../copy-lines";
 import type { UploadPreview } from "../../app/collection/actions";
 import type { ArrivalsSummary, ClearedRow, StillRow } from "../../lib/collection/arrivals";
 import type { ContestedCard } from "../../lib/collection/summary-read";
@@ -27,7 +28,7 @@ import { PrimaryButton } from "../ui/button";
 /** Money sections truncate at four; the contested section never does. */
 const MONEY_LIMIT = 4;
 
-function SectionHead({ label, note }: { label: string; note: string }) {
+function SectionHead({ label, note }: { label: string; note: ReactNode }) {
   return (
     <div className="mb-[10px]">
       <h2
@@ -312,7 +313,7 @@ export function ArrivalsSummary({
         <section className="mt-[26px]">
           <SectionHead
             label={copy.summary.sectionCleared(clearedRows.length)}
-            note={hasChange ? copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail : copy.summary.sectionClearedNote}
+            note={hasChange ? <CopyLines lines={[copy.summary.sectionClearedNote, addedCopyCopy.summaryNoteTail]} sep="" /> : copy.summary.sectionClearedNote}
           />
           <ul className="list-none p-0 m-0">
             {clearedShown.map((item) => (
