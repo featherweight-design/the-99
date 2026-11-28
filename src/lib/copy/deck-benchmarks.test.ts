@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ACTIVATED_HATE_EXAMPLE } from "../synopsis/prompt";
 import { deckBenchmarksCopy as copy } from "./deck-benchmarks";
 
 // A row can stand on one card (the commander alone makes the graveyard row Heavy and the activated
@@ -8,6 +9,11 @@ const ONE_PLURAL = /\b1 (?:cards|creatures|answers|artifacts|enchantments|one-ti
 const text = (parts: string | readonly string[]) => (typeof parts === "string" ? parts : parts.join(""));
 
 describe("deck benchmarks copy", () => {
+  it("names the activated-abilities hate card from the one constant the Overview prompt uses", () => {
+    expect(copy.deps.hate.activated).toBe(ACTIVATED_HATE_EXAMPLE);
+    expect(text(copy.ledger.readings.activated(2))).toContain(ACTIVATED_HATE_EXAMPLE);
+  });
+
   it("never puts a plural noun after a count of 1", () => {
     const f = copy.figure;
     const d = copy.deps.figure;

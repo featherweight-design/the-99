@@ -253,6 +253,7 @@ export const PURE_MODULES = new Map([
   ["src/lib/synopsis/based-on.ts", "the Overview's based-on line from a snapshot it is handed; pure"],
   ["src/lib/synopsis/facts-extra.ts", "the Overview's extra deck facts from a deck it is handed; pure"],
   ["src/lib/synopsis/facts.ts", "the Overview's deck facts from a deck it is handed; pure"],
+  ["src/lib/synopsis/hate-example.ts", "the one card name the Overview prompt and the benchmark copy both cite; a constant"],
   ["src/lib/synopsis/land-count.ts", "the land-count rule over a deck it is handed; pure"],
   ["src/lib/synopsis/limits.ts", "the Overview's fixed numbers; pure"],
   ["src/lib/synopsis/stages-view.ts", "the Overview's stage view from the run's stages; pure"],

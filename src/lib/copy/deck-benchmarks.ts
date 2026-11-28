@@ -10,6 +10,8 @@
  * No string mentions labels; a counterspell is interaction; Dependencies is a risk, never a score.
  */
 
+import { ACTIVATED_HATE_EXAMPLE } from "../synopsis/hate-example";
+
 /** A count's noun, singular at 1. */
 const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
@@ -66,7 +68,7 @@ export const deckBenchmarksCopy = {
       artifacts: 'Artifact wipes such as Vandalblast. Null Rod and Collector Ouphe stop the abilities.',
       enchantments: 'Enchantment wipes such as Back to Nature and Farewell',
       creatures: 'Creature board wipes',
-      activated: 'Cursed Totem',
+      activated: ACTIVATED_HATE_EXAMPLE,
       combat: 'Fogs, Propaganda, Ghostly Prison',
     },
     figure: {
@@ -130,7 +132,7 @@ export const deckBenchmarksCopy = {
       creatures: (payoffCount: number) =>
         `${n(payoffCount, 'card pays', 'cards pay')} off on your creatures: lords, anthems, and token makers that work again and again. A creature board wipe takes the bodies and the payoffs together.`,
       activated: (count: number) =>
-        `${count === 1 ? '1 creature does' : `${count} creatures do`} their work through an activated ability, such as mana creatures. Cursed Totem turns all of them off at once.`,
+        `${count === 1 ? '1 creature does' : `${count} creatures do`} their work through an activated ability, such as mana creatures. ${ACTIVATED_HATE_EXAMPLE} turns all of them off at once.`,
       combat: (routes: number) =>
         `${routes === 1 ? 'One card wins' : `${routes} cards win`} without attacking. Every other route runs through combat. A card counts when it drains, poisons or mills opponents again and again, wins or makes an opponent lose outright, or completes a combo.`,
     },
