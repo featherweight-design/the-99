@@ -220,18 +220,18 @@ describe("pendingSummary", () => {
     expect(p.lines.join(" ")).toBe("Saving renames testers to beta. Saving changes the description. Saving sets daily credits to 8. Saving adds Jun to beta. Nothing changes for Jun.");
     expect(pendingSummary({ saved: { ...saved, dailyAllowance: 8 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
       title: adminCopy.groups.pending.fields,
-      body: adminCopy.groups.pending.credits(null),
+      lines: [adminCopy.groups.pending.credits(null)],
     });
   });
 
   it("names a paid limit change as a field of its own", () => {
     expect(pendingSummary({ saved, draft: { ...draft, paidLimit: "3" }, rows, selected: new Set(["u_mara"]) })).toEqual({
       title: adminCopy.groups.pending.fields,
-      body: "Saving sets daily paid runs to 3.",
+      lines: ["Saving sets daily paid runs to 3."],
       count: 1,
     });
     expect(pendingSummary({ saved: { ...saved, paidDailyLimit: 3 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
-      body: adminCopy.groups.pending.paidLimit(null),
+      lines: [adminCopy.groups.pending.paidLimit(null)],
     });
   });
 
@@ -243,7 +243,7 @@ describe("pendingSummary", () => {
   it("offers Create for a new group with only a name typed, and nothing for an empty one (G3)", () => {
     expect(pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toEqual({
       title: adminCopy.groups.pending.fields,
-      body: "Saving creates beta.",
+      lines: ["Saving creates beta."],
       count: 1,
     });
     expect(pendingSummary({ saved: null, draft: { name: "", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toBeNull();

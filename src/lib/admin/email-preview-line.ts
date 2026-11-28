@@ -1,7 +1,7 @@
 import type { EmailPreviewResult } from "../../app/admin/invites/email-preview-actions";
 import { emailPreviewAdminCopy as copy } from "../copy/admin";
 
-/** The one line the Email previews card draws for an action result, as copy lines (drawn space-separated); `danger` when anything fell short or was refused. */
+/** The lines the Email previews card draws for an action result (drawn space-separated); `danger` when anything fell short or was refused. */
 export function lineFor(r: EmailPreviewResult): { lines: string[]; danger: boolean } {
   if (!r.ok) return { lines: [r.reason === "cooldown" ? copy.cooldown(r.waitSec) : copy.refused[r.reason]], danger: true };
   const tail = r.stoppedBy === "capped" ? copy.capped : r.stoppedBy === "limited" ? copy.limited : r.stoppedBy === "failed" ? copy.failed : "";
