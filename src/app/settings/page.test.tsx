@@ -77,7 +77,7 @@ describe("/settings", () => {
     const el = await SettingsPage();
     expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, WishlistSection, FriendDecksSection, Suspense]);
     // Account streams in behind its own boundary: the page never waits on Clerk's read.
-    expect((sections(el)[3].props.children as El).type).toBe(AccountSlot);
+    expect((sections(el)[4].props.children as El).type).toBe(AccountSlot);
     expect(m.currentUser).not.toHaveBeenCalled();
     expect(news(el)!.props.kinds).toEqual([{ kind: "new-set", on: true }]);
   });
