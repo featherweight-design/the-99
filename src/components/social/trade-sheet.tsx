@@ -6,7 +6,7 @@
 // the sheet reloads the trade (`openTradeAction`) and the page refreshes; a refusal draws the shared toast and leaves
 // the sheet as it was, reloading it when the trade moved underneath.
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ModalChrome } from "../decks/receipt-modal";
 import { SegmentedSwitch } from "../ui/segmented-switch";
@@ -351,6 +351,9 @@ function OfferedChip({ offered, open, solo, friend, onToggle, onClose, onOpen }:
     if (box.left < sheet.left) setSide("left");
     else if (box.right > sheet.right) setSide("right");
   }, [open]);
+  // The parent hands a fresh onClose each render; read through an effect event so a re-render with the popover open
+  // neither re-runs this effect nor pulls focus back to its first control.
+  const close = useEffectEvent(() => onClose());
   useEffect(() => {
     if (!open) return;
     pop.current?.querySelector<HTMLElement>("a,button")?.focus();
@@ -358,11 +361,11 @@ function OfferedChip({ offered, open, solo, friend, onToggle, onClose, onOpen }:
       if (e.key !== "Escape") return;
       // The popover closes first; the sheet stays.
       e.stopPropagation();
-      onClose();
+      close();
       chip.current?.focus();
     };
     const onDown = (e: PointerEvent) => {
-      if (!pop.current?.contains(e.target as Node) && !chip.current?.contains(e.target as Node)) onClose();
+      if (!pop.current?.contains(e.target as Node) && !chip.current?.contains(e.target as Node)) close();
     };
     document.addEventListener("keydown", onKey, true);
     document.addEventListener("pointerdown", onDown);
@@ -370,7 +373,7 @@ function OfferedChip({ offered, open, solo, friend, onToggle, onClose, onOpen }:
       document.removeEventListener("keydown", onKey, true);
       document.removeEventListener("pointerdown", onDown);
     };
-  }, [open, onClose]);
+  }, [open]);
   return (
     <>
       <button ref={chip} type="button" data-testid="trade-chip-offered" aria-expanded={open} aria-haspopup="dialog" onClick={onToggle}
