@@ -16,3 +16,15 @@ describe("the offer line's kinds (announcements call 3)", () => {
     );
   });
 });
+
+describe("a rolled trade match's line (Cart on your wishlist Q1, board N1)", () => {
+  const line = feedCopy.home.line.tradeMatchRolled;
+  it("names two cards then how many more, or both of a pair", () => {
+    expect(line(["Sai", "Ghalta", "Miku", "Zada"], 4)).toBe("Sai, Ghalta and 2 more. On your wishlist.");
+    expect(line(["Miku", "Captain America"], 2)).toBe("Miku and Captain America. On your wishlist.");
+  });
+  it("counts a card the catalog lost in the more, and says only the wishlist with no name left", () => {
+    expect(line(["Sai"], 3)).toBe("Sai and 2 more. On your wishlist.");
+    expect(line([], 2)).toBe("On your wishlist.");
+  });
+});

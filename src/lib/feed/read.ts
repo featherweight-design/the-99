@@ -31,6 +31,7 @@ import { answerOf, isOfferItem, type Answer } from "../social/spare-request-rule
 import { availableFeedKinds } from "./flag";
 import type { DropSale } from "./drop-lines";
 import { kindEnabledAt } from "./kind-gate";
+import { readerZone, rollCountKey, rollZone } from "./rollup";
 import { saleJson } from "./sale-json";
 import { CATALOG_KINDS, feedOrder, isAnnouncementKind, isStoredKind, windowFloor, type AnnouncementFeedKind, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
 
@@ -153,11 +154,15 @@ export function feedQuery(
     order by f.created_at desc, f.key`;
 }
 
-/** The unseen count, apart so a test can render it: one statement over the same union. */
-export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor, storeOn = false): SQL | null {
+/**
+ * The unseen count, apart so a test can render it: one statement over the same union. With `rolled` (a zone from
+ * `rollZone`), it counts What's new's rows rather than items: a friend's trade matches on one reader-day are one
+ * (`rollCountKey`, the twin of `rollTradeMatches`), unseen when any of them is. Without it, every item counts.
+ */
+export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor, storeOn = false, rolled: string | null = null): SQL | null {
   const union = feedUnion(viewerId, kinds, now, storeOn);
   if (!union) return null;
-  return sql`select count(*)::int as n
+  return sql`select ${rolled === null ? sql`count(*)` : sql`count(distinct ${rollCountKey(rolled)})`}::int as n
     from (${union}) f
     left join ${userPrefs} up on up.user_id = ${viewerId}
     where ${inWindow(now)} and f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz)
@@ -276,9 +281,14 @@ export async function loadFeed(userId: string, env: NodeJS.ProcessEnv, now = new
   return (rows as FeedRow[]).map(toFeedItem).sort(feedOrder);
 }
 
-/** Home's badge: unseen items in the window. One statement; 0 while the feed is off. */
+/**
+ * Home's badge: unseen What's new rows in the window, so a friend's trade matches on one reader-day count once, as the
+ * list draws them (`rollTradeMatches`). The reader's zone first (one indexed read), then one statement; 0 while the
+ * feed is off.
+ */
 export async function unseenCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  return countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env)), q);
+  const zone = rollZone(await readerZone(userId, q));
+  return countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env), zone), q);
 }
 
 /**

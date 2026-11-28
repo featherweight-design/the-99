@@ -62,7 +62,7 @@ export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: stri
   return (
     <>
       <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} toast={toast}
-        onDismiss={held ? undefined : (from) => dismissed.dismiss(shown.item.key, from)} />
+        onDismiss={held ? undefined : (from) => dismissed.dismiss(shown.item.key, from, true, shown.item.rollup?.keys)} />
       {toast.node}
       {dismissed.toast}
     </>

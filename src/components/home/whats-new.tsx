@@ -136,6 +136,12 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
     refocusClear.current = false;
     press.focus();
   });
+  // A rolled trade match (Cart on your wishlist Q1) is one row standing for several stored items: its ✕ and Clear all
+  // write every member, while the row's own key is what hides and comes back.
+  const members = new Map(
+    (displaced.chosen ? [...displaced.items, ...(displaced.lead ? [displaced.lead] : [])] : []).flatMap((i) => (i.rollup ? [[i.key, i.rollup.keys] as const] : [])),
+  );
+  const onDismiss = (key: string, from: HTMLElement) => dismissed.dismiss(key, from, true, members.get(key));
   const leadKey = chosen && feed.lead && heldLead && heldLead.key === null ? feed.lead.key : null;
   const clearable = chosen ? [...(leadKey ? [leadKey] : []), ...feed.items.map((i) => i.key), ...(feed.upcoming ?? []).map((i) => i.key)] : [];
   const bring = (keys: readonly string[], on: boolean, lead: string | null) => {
@@ -144,7 +150,15 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
   };
   // `only` is the Show all sheet's clear (the keys its chip shows): the page behind the sheet keeps focus where it is.
   const clearAll = (pending: string | null, only?: readonly string[]) => {
-    const keys = [...new Set((only ?? clearable).filter((k) => k !== pending))].slice(0, CLEAR_ALL_MAX);
+    // Rows while their stored items fit one write: a rolled row counts every member it stands for.
+    const keys: string[] = [];
+    const write: string[] = [];
+    for (const k of new Set((only ?? clearable).filter((k) => k !== pending))) {
+      const its = members.get(k) ?? [k];
+      if (write.length + its.length > CLEAR_ALL_MAX) break;
+      keys.push(k);
+      write.push(...its);
+    }
     if (keys.length === 0) return;
     const lead = leadKey && keys.includes(leadKey) ? leadKey : null;
     setClearToast(null);
@@ -166,7 +180,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
           fail(c.clearAll.undoFailed);
         });
     };
-    void clearFeedItemsAction(keys)
+    void clearFeedItemsAction(write)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
         setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo(r.cleared) } });
@@ -216,7 +230,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
               <Rows wide={wide} items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
                 sheet.show();
                 captureToolEvent("feed_show_all", { count: feedCountBucket(feed.items.length) });
-              }} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
+              }} onDismiss={onDismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
               {sheet.open && feed.items.length > 0 && (
                 <FeedSheet
                   items={feed.items}
@@ -225,7 +239,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
                   faces={faces}
                   unseen={feed.items.filter((i) => i.unseen).length}
                   aside={archive ? <ArchiveEntry /> : undefined}
-                  onDismiss={dismissed.dismiss}
+                  onDismiss={onDismiss}
                   onClear={(keys) => {
                     clearAll(null, keys);
                     if (keys.length >= feed.items.length) sheet.close();

@@ -111,6 +111,37 @@ describe("FeedItemRow", () => {
     expect(press.querySelector(".ph-no-capture")?.textContent).toBe("See Colin’s spares ›");
   });
 
+  it("draws a friend's rolled day of matches (Cart on your wishlist Q1): the count, two names and more, three cards fanned", () => {
+    const card = (oracleId: string, name: string) => ({ oracleId, name, image: `${oracleId}.jpg`, art: null, colorIdentity: null });
+    const cards = [card("c1", "Sai"), card("c2", "Ghalta"), card("c3", "Miku"), card("c4", "Zada")];
+    const { container } = list(
+      <FeedItemRow
+        item={view({ kind: "trade-match", key: "m1", card: cards[0], friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1/spares", rollup: { keys: ["m1", "m2", "m3", "m4"], cards } })}
+        now={NOW}
+        face={{ artCropUri: "colin.jpg" }}
+      />,
+    );
+    expect(screen.getByText("Colin has spares of 4 cards you want")).toHaveClass("ph-no-capture");
+    expect(screen.getByText("Sai, Ghalta and 2 more. On your wishlist.")).toBeInTheDocument();
+    // Two behind the first, the nearer drawn last (on top); the fourth is in the count, not the picture.
+    expect([...container.querySelectorAll("[data-feed-rolled-card]")].map((i) => i.getAttribute("src"))).toEqual(["c3.jpg", "c2.jpg"]);
+    expect(container.querySelector("[data-feed-face] [data-face=art]")).not.toBeNull();
+    const press = screen.getByRole("link", { name: "See Colin’s spares ›" });
+    expect(press).toHaveAttribute("href", "/friends/p1/spares");
+    expect(screen.queryByRole("link", { name: "Ask Colin ›" })).toBeNull();
+  });
+
+  it("names both cards of a rolled pair, and fans the one behind", () => {
+    const card = (oracleId: string, name: string) => ({ oracleId, name, image: `${oracleId}.jpg`, art: null, colorIdentity: null });
+    const cards = [card("c1", "Miku"), card("c2", "Captain America")];
+    const { container } = list(
+      <FeedItemRow item={view({ kind: "trade-match", card: cards[0], friend: { publicId: "p2", displayName: named("Peter") }, href: "/friends/p2/spares", rollup: { keys: ["a", "b"], cards } })} now={NOW} />,
+    );
+    expect(screen.getByText("Peter has spares of 2 cards you want")).toBeInTheDocument();
+    expect(screen.getByText("Miku and Captain America. On your wishlist.")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-feed-rolled-card]")).toHaveLength(1);
+  });
+
   it("names a trade match's press Ask {friend} when it opens the card's sheet with Ask", () => {
     list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1/spares?spare=g", askable: true })} now={NOW} />);
     const ask = screen.getByRole("link", { name: "Ask Colin ›" });

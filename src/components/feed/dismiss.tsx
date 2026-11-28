@@ -6,7 +6,7 @@
 // and for good (`dismissFeedItemAction`, `feed_dismissals`); a failed write puts it back with the toast. It answers
 // nothing.
 import { useRef, useState, type ReactNode } from "react";
-import { dismissFeedItemAction } from "../../app/feed-dismiss-actions";
+import { clearFeedItemsAction, dismissFeedItemAction } from "../../app/feed-dismiss-actions";
 import { feedCopy } from "../../lib/copy/feed";
 import { personAttrs, type PersonParts } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -79,7 +79,7 @@ export function nextDismiss(from: HTMLElement): HTMLElement | null {
 export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (key: string, on: boolean) => void): {
   hidden: ReadonlySet<string>;
   /** `move: false` hides the row without moving focus: a press made elsewhere, after the reader moved on (the answer sheet's late Clear). */
-  dismiss: (key: string, from: HTMLElement, move?: boolean) => void;
+  dismiss: (key: string, from: HTMLElement, move?: boolean, keys?: readonly string[]) => void;
   /** Hides (or brings back) many rows at once, writing nothing: Clear all owns its write, its Undo and its focus. */
   hideMany: (keys: readonly string[], on: boolean) => void;
   toast: ReactNode;
@@ -96,11 +96,15 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
     });
     onChange?.(key, on);
   };
-  function dismiss(key: string, from: HTMLElement, move = true) {
+  /**
+   * `keys`: every stored item the row stands for, when it stands for more than its own (a rolled trade match, Cart on
+   * your wishlist Q1); they go for good in one write, and the row (`key`) comes back if it fails.
+   */
+  function dismiss(key: string, from: HTMLElement, move = true, keys: readonly string[] = [key]) {
     const next = nextDismiss(from);
     put(key, true);
     if (move) requestAnimationFrame(() => (next ? ringFocus(next) : fallback?.()?.focus()));
-    void dismissFeedItemAction(key)
+    void (keys.length > 1 ? clearFeedItemsAction(keys) : dismissFeedItemAction(key))
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
       })
