@@ -106,7 +106,8 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
         if (!r.ok) throw new Error(r.reason);
       })
       .catch((e) => {
-        captureClientError("feed.dismiss", e);
+        // The feed going off for this reader meanwhile is a refusal, not a fault; an invalid key is a bug worth seeing.
+        if (!(e instanceof Error && e.message === "off")) captureClientError("feed.dismiss", e);
         put(key, false);
         setToast({ id: ++seq.current, text: d.failed });
       });

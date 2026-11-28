@@ -162,7 +162,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
           if (!r.ok) throw new Error(r.reason);
         })
         .catch((e) => {
-          captureClientError("home.clear-undo", e);
+          if (!(e instanceof Error && e.message === "off")) captureClientError("home.clear-undo", e);
           refocusClear.current = false;
           bring(keys, true, lead);
           fail(c.clearAll.undoFailed);
@@ -174,7 +174,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo(r.cleared) } });
       })
       .catch((e) => {
-        captureClientError("home.clear-all", e);
+        if (!(e instanceof Error && e.message === "off")) captureClientError("home.clear-all", e);
         bring(keys, false, lead);
         fail(c.clearAll.failed);
       });
