@@ -3,11 +3,12 @@
 // Lists L1/RH): Friends and Home mount one host, and a press anywhere under it opens the sheet over the page it is on.
 // The friend's spares, prices and cap are read at the press (`openTradeSheetAction`), since neither page reads them for
 // every friend. One sheet at a time; a press while one is being read is ignored, and a failed read draws the toast.
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { openTradeSheetAction } from "../../app/friends/trade-actions";
 import { tradeCopy as t } from "../../lib/copy/trades";
 import { personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { captureClientError } from "../../lib/sentry/capture-client";
+import type { FeedView } from "../../lib/feed/home";
 import type { TradeCard, TradeSheetData } from "../../lib/social/trade-reads";
 import { useSpareToast } from "./spare-answer";
 import { TradeSheet, type TradeOpen } from "./trade-sheet";
@@ -29,8 +30,11 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
   const [sheet, setSheet] = useState<{ data: TradeSheetData; open: TradeOpen } | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const toast = useSpareToast();
+  // The in-flight guard is a ref: two presses before React commits `pending` would both pass a state check.
+  const reading = useRef(false);
   async function open(friendPublicId: string, next: TradeOpen, key: string) {
-    if (pending) return;
+    if (reading.current) return;
+    reading.current = true;
     setPending(key);
     try {
       const data = await openTradeSheetAction(friendPublicId);
@@ -40,6 +44,7 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
       captureClientError("trades.sheet", e);
       toast.fail();
     } finally {
+      reading.current = false;
       setPending(null);
     }
   }
@@ -54,6 +59,19 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
       ) : null}
       {toast.node}
     </HostContext.Provider>
+  );
+}
+
+/**
+ * Make it a trade on a feed row's Yes receipt (What's new A1, Home's lead A2): one rule for both, a Yes to an ask, never
+ * to an offer (an offer is already a give). Draws nothing otherwise, so the caller wraps it in its own action line.
+ */
+export function FeedAskBack({ item, answered, size }: { item: FeedView; answered: string | null; size: "row" | "lead" }) {
+  const ask = item.ask;
+  if (!ask || ask.offer !== undefined || answered !== "yes" || !item.friend || !item.card) return null;
+  return (
+    <AskBackPress friendPublicId={item.friend.publicId} friend={item.friend.displayName} requestId={ask.id} size={size}
+      card={{ oracleId: item.card.oracleId, name: item.card.name, imageUri: item.card.image }} />
   );
 }
 

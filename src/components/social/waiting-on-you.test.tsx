@@ -172,7 +172,7 @@ describe("WaitingOnYou, spare requests", () => {
     const receipt = screen.getByTestId("waiting-receipt");
     expect(receipt.dataset.answer).toBe("yes");
     expect(within(receipt).getByText(r.receiptKind.yes)).toBeTruthy();
-    expect(within(receipt).getByText("You’re sparing Lathliss for Peter")).toBeTruthy();
+    expect(within(receipt).getByText("You’re giving Lathliss to Peter")).toBeTruthy();
     expect(within(receipt).getByText(plain(r.sparingDetail("Peter", "Lathliss")))).toBeTruthy();
     expect(within(receipt).queryByRole("button")).toBeNull();
     expect(document.activeElement).toBe(within(receipt).getByTestId("spare-receipt-status"));

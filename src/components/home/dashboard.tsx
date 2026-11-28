@@ -36,6 +36,7 @@ import { lockPageLine } from "../../lib/copy/refresh";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { LeadSlot } from "./lead-story";
 import { HeldLeadProvider } from "./held-lead";
+import { TradeSheetHost } from "../social/trade-sheet-host";
 import { WhatsNew } from "./whats-new";
 import { PushLanding } from "../push/push-landing";
 import { TradeAskFrame } from "../social/trade-ask";
@@ -268,6 +269,8 @@ export function Dashboard(props: DashboardProps) {
       {feed && props.pushVisit && <PushLanding visit={props.pushVisit} />}
       <TradeAskFrame payload={props.tradeAsk ?? null}>
       <HeldLeadProvider>
+      {/* One trade sheet for Home: Make it a trade on the lead (A2) and What's new (A1) open it over the page. */}
+      <TradeSheetHost>
       <div data-dismiss-scope className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
             build, What's new, the resume block, Friends, Commitments (G16; Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
@@ -347,6 +350,7 @@ export function Dashboard(props: DashboardProps) {
           </div>
         )}
       </div>
+            </TradeSheetHost>
             </HeldLeadProvider>
       </TradeAskFrame>
       </Frame>

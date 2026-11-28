@@ -33,7 +33,6 @@ import { captureToolEvent } from "../../lib/analytics/posthog";
 import { feedCountBucket } from "../../lib/analytics/tool-events";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { AnswerSheetProvider, useAnswerSheet } from "./answer-sheet";
-import { TradeSheetHost } from "../social/trade-sheet-host";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { CLEAR_ALL_MAX } from "../../lib/social/feed-dismiss-limits";
 import { HOME_HEADING_ID } from "./home-heading";
@@ -225,7 +224,6 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
           <Quiet on={feed.on} />
         ) : (
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
-            <TradeSheetHost>
             <HoverPreviewProvider className="flex flex-col">
               <Rows wide={wide} items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
                 sheet.show();
@@ -251,7 +249,6 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
                 />
               )}
             </HoverPreviewProvider>
-            </TradeSheetHost>
           </AnswerSheetProvider>
         )}
         {/* The entry stands alone in the foot where no rows draw one (the quiet line, the offer alone). */}

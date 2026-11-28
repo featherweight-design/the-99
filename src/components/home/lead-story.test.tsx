@@ -43,7 +43,7 @@ describe("LeadStory, a spare request", () => {
   });
 
   it.each([
-    ["yes", /^Yes,/, "You’re sparing Lathliss for Peter", plain(r.sparingDetail("Peter", "Lathliss")), r.receiptKind.yes],
+    ["yes", /^Yes,/, "You’re giving Lathliss to Peter", plain(r.sparingDetail("Peter", "Lathliss")), r.receiptKind.yes],
     ["no", /^No,/, "You’re keeping Lathliss", plain(r.keepingDetail("Peter")), r.receiptKind.no],
   ] as const)("%s answers through the action and turns the story into its receipt, focused", async (answer, name, title, detail, kind) => {
     actions.answerSpareAction.mockResolvedValue({ ok: true });
@@ -107,9 +107,9 @@ describe("LeadSlot", () => {
     const { rerender } = render(<LeadSlot lead={LEAD} now={NOW} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Yes,/ })));
     rerender(<LeadSlot lead={NEXT} now={NOW} />);
-    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Peter");
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re giving Lathliss to Peter");
     rerender(<LeadSlot lead={null} now={NOW} />);
-    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Peter");
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re giving Lathliss to Peter");
   });
 
   it("holds the story while the answer is in flight, so a redraw landing first cannot take it", async () => {

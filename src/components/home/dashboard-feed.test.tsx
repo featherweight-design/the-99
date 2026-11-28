@@ -228,7 +228,7 @@ describe("Home holding an answered spare request", () => {
     rerender(<Dashboard {...BASE} feed={chosen([OTHER], { lead: LEAD, unseen: 1 })} />);
     const lead = container.querySelector<HTMLElement>("[data-lead-story]")!;
     expect(lead.dataset.leadStory).toBe("spare-request");
-    expect(within(lead).getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Colin");
+    expect(within(lead).getByRole("heading", { level: 3 }).textContent).toBe("You’re giving Lathliss to Colin");
     const list = container.querySelector<HTMLElement>("[data-whats-new]")!;
     expect(list.querySelector('[data-feed-item="trade-match"]')).not.toBeNull();
     expect(within(list).getByText("Colin has a spare Fixture card")).toBeTruthy();

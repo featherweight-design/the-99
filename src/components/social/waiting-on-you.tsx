@@ -311,7 +311,7 @@ function FriendReceiptRow({ row, accepted }: { row: FriendRequestRow; accepted: 
   );
 }
 
-/** The answered ask, for the visit, on the receipt's success wash (`.fi.rc`): "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
+/** The answered ask, for the visit, on the receipt's success wash (`.fi.rc`): "You're giving Lathliss to Peter" or "You're keeping Lathliss". */
 function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answer; index: number } }) {
   const { ask } = receipt.row;
   const yes = receipt.answer === "yes";

@@ -126,7 +126,9 @@ export function TradeRows({ rows, now, timeZone, onOpen }: {
               <TradePicture theirs={r.theirImage} yours={r.yourImage} friend={r.friend} className="row-span-2 self-start md:row-span-1 md:self-center" />
               <div className={`flex min-w-0 flex-col gap-[3px] ${x.clear ? "pr-[30px] md:pr-[34px]" : ""}`}>
                 <p className="m-0 flex min-w-0 items-center gap-[7px]">
-                  {r.row.waitsOnYou ? <span aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" /> : null}
+                  {/* Boards L1 and RH: the diamond marks an offer to answer (Trade offer, Countered) alone; the other rows that wait
+                      on the reader sort first and carry their own kicker ink. */}
+                  {r.row.state === "offer" || r.row.state === "countered" ? <span aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" /> : null}
                   <span className={`${KIND} ${INK[x.ink]}`}><PersonText text={x.kind} /></span>
                   <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{feedAge(r.at.toISOString(), now.toISOString())}</small>
                 </p>

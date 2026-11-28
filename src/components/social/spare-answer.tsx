@@ -135,7 +135,7 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
   );
 }
 
-/** The receipt's two lines, for the answer given: "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
+/** The receipt's two lines, for the answer given: "You're giving Lathliss to Peter" or "You're keeping Lathliss". */
 export function receiptText(answer: Answer, card: string, friend: string | ThirdPartyName, offer = false): { kind: string; title: string | PersonParts; detail: string | PersonParts } {
   if (offer) {
     const o = r.offer;
