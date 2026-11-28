@@ -80,7 +80,10 @@ async function pickDecks() {
   const { a, shared } = rows[0];
   const more = await sql`select dc.oracle_id from deck_cards dc where dc.deck_id = ${a} and dc.oracle_id <> ${shared} order by dc.oracle_id limit 2`;
   if (more.length < 2) throw new Error("the first deck needs two more cards");
-  const [art] = await sql`select image_uri from cards where image_uri is not null limit 1`;
+  // The art is a real token's image (never a card's), picked in a fixed order so every run draws the same one; the
+  // probe's own printings (set `tprb`) are left out so a leftover from a failed run cannot be picked.
+  const [art] = await sql`select image_uri from token_printings where image_uri is not null and set_code <> ${"tprb"} order by scryfall_id limit 1`;
+  if (!art) throw new Error("the catalog holds no token printing to borrow art from");
   return { a, makers: [shared, ...more.map((r) => r.oracle_id)], art: art.image_uri };
 }
 
