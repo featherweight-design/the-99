@@ -1,0 +1,19 @@
+{
+  "feature": "Wishlist call-out (#3441): the deck boxes draw after Add them with no reload, a deck kept off is gone on Back, and a friend's day of trade matches is one Waiting on you row",
+  "note": "Needs a SCRATCH branch: the audit account with its decks synced onto the Wishlist (accept the offer once), and a rolled Waiting row seeded by `ROLLUP_VIEWER=<audit user> pnpm probe:waiting-rollup`. Read-only: nothing is pressed.",
+  "out": "contact-sheets/wishlist-callout-3441",
+  "rows": [
+    {
+      "id": "wishlist-boxes",
+      "label": "Wishlist: the deck boxes the call-out added",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [{ "goto": "/collection/wishlist", "wait": "[data-testid=\"wishlist-box\"]", "settle": 1500 }]
+    },
+    {
+      "id": "friends-waiting-rolled",
+      "label": "Friends: Waiting on you, a friend's three matches as one rolled row",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [{ "goto": "/friends", "wait": "[data-waiting-rolled-card]", "settle": 1500 }]
+    }
+  ]
+}
