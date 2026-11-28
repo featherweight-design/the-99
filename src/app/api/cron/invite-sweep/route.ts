@@ -14,6 +14,9 @@ import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pau
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** The wishlist reconcile spends up to a minute after the sweeps (`RECONCILE_BUDGET_MS`); this leaves ample room. */
+export const maxDuration = 300;
+
 /**
  * The invite sweep's trigger (`src/lib/invites/sweep.ts`), called by the Vercel cron in `vercel.json` every hour.
  * Public in `src/proxy.ts` (`/api/cron(.*)`); what authorizes it is `CRON_SECRET`, which Vercel sends as a bearer
@@ -25,9 +28,6 @@ export const dynamic = "force-dynamic";
  * and reconciles the wishlist sync (`wishlist/sync.ts`): every player with it on who is due or not synced for a day, the
  * backstop for a write that reached their data without a Server Action.
  */
-/** The wishlist reconcile spends up to a minute after the sweeps (`RECONCILE_BUDGET_MS`); this leaves ample room. */
-export const maxDuration = 300;
-
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return new Response("Cron not configured", { status: 503 });

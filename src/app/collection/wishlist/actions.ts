@@ -13,6 +13,7 @@ import { requireUserId } from "../../../lib/auth";
 import { clearWishlistLine, loadWishlist, setWishlistPrinting, setWishlistQuantity, wantOneMore } from "../../../lib/wishlist/wishlist";
 import { searchCollectionCatalog } from "../../../lib/collection/catalog-read";
 import { MAX_COLLECTED_NOTICES, dismissCollected } from "../../../lib/wishlist/collected";
+import { acceptWishlistOffer, dismissWishlistOfferWrite } from "../../../lib/wishlist/offer";
 import { isUuid } from "../../../lib/uuid";
 
 /** The route the tab will live at (PR 4): revalidated after a write, so a later visit reads fresh. */
@@ -92,6 +93,29 @@ export async function dismissCollectedAction(shown: unknown): Promise<DismissOut
   const dismissed = await dismissCollected(userId, notices);
   if (dismissed > 0) refreshLater();
   return { ok: true, dismissed };
+}
+
+/**
+ * The offer's Add them (cart on your wishlist, call 2): the sync on with every deck ticked, and the offer answered.
+ * Settings and `/decks` draw the switch and each deck's choice, so they are revalidated too.
+ */
+export async function acceptWishlistOfferAction(): Promise<{ ok: true }> {
+  const userId = await requireUserId();
+  await acceptWishlistOffer(userId);
+  after(() => {
+    revalidatePath(WISHLIST);
+    revalidatePath("/settings");
+    revalidatePath("/decks", "layout");
+  });
+  return { ok: true };
+}
+
+/** The offer's ✕ (Not now): hides it for good. The switch stays in Settings. */
+export async function dismissWishlistOfferAction(): Promise<{ ok: true }> {
+  const userId = await requireUserId();
+  await dismissWishlistOfferWrite(userId);
+  refreshLater();
+  return { ok: true };
 }
 
 /** The longest query the tab's search sends: a card name is never near it, and a longer string is not a search. */

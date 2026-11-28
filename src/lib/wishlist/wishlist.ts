@@ -9,10 +9,11 @@
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, printings, wishlistItems } from "../../db/schema";
+import { cards, printings, wishlistItems, wishlistSynced, wishlistSyncSkips } from "../../db/schema";
 import { cheapestNow, loadPrices } from "../decks/price-query";
 import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { heldCopies } from "./held";
+import { wishlistSyncLock } from "./collected";
 import { ownerLinesQuery, type LineSource, type UnionRow } from "./lines";
 import { requestFlags } from "../flags/request";
 import { readerStore } from "../stores/preference";
@@ -179,7 +180,7 @@ export function wantFloor(requested: number, held: number, current: number | nul
  */
 export async function wantOneMore(viewerId: string, oracleId: unknown): Promise<WantResult | null> {
   if (typeof oracleId !== "string" || !UUID.test(oracleId)) return null;
-  return writeWant(viewerId, oracleId, (held) => Math.min(held + 1, MAX_WISHLIST_QUANTITY));
+  return writeWant(viewerId, oracleId, (held) => Math.min(held + 1, MAX_WISHLIST_QUANTITY), true);
 }
 
 /**
@@ -190,6 +191,8 @@ async function writeWant(
   viewerId: string,
   oracleId: string,
   want: (held: number, current: number | null) => number,
+  /** Add to wishlist's press: the player asked for the card again, so an earlier Remove no longer keeps it off. */
+  clearsSkip = false,
 ): Promise<WantResult | null> {
   // The price-drop baseline (menu and Home G2): today's cheapest, as every buy tag draws it, read before the lock so
   // the collection lock is held no longer than it was. Written only by a NEW line; a quantity change keeps the
@@ -200,15 +203,24 @@ async function writeWant(
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
     // `held` is what the collection holds as THIS line counts it (`held.ts`): a line naming a printing counts that
-    // printing's copies alone, a new line or an "any printing" one counts every copy of the card.
+    // printing's copies alone, a new line or an "any printing" one counts every copy of the card. `current` is the
+    // line as the tab draws it: the larger of the hand and synced sides (`lines.ts`).
     const { rows: [card] } = await tx.execute<{ held: number; current: number | null }>(sql`
-      select ${heldCopies(viewerId, sql`c.oracle_id`, sql`w.scryfall_id`)} as held, w.quantity as current
+      select ${heldCopies(viewerId, sql`c.oracle_id`, sql`w.scryfall_id`)} as held,
+        nullif(greatest(coalesce(w.quantity, 0), coalesce(s.quantity, 0)), 0) as current
       from ${cards} c
       left join ${wishlistItems} w on w.user_id = ${viewerId} and w.oracle_id = c.oracle_id
+      left join ${wishlistSynced} s on s.user_id = ${viewerId} and s.oracle_id = c.oracle_id
       where c.oracle_id = ${oracleId}
     `);
     if (!card) return null;
     const quantity = want(card.held, card.current);
+    // Any change to a deck line makes it the player's (call 5); an explicit add of a card no deck put there clears an
+    // earlier Remove's skip.
+    const converted = await takeSyncedLine(tx, viewerId, oracleId);
+    if (!converted && clearsSkip) {
+      await tx.delete(wishlistSyncSkips).where(and(eq(wishlistSyncSkips.userId, viewerId), eq(wishlistSyncSkips.oracleId, oracleId)));
+    }
     if (quantity <= card.held) {
       await tx.delete(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)));
       return { status: "held", quantity, held: card.held };
@@ -250,9 +262,10 @@ export async function setWishlistPrinting(viewerId: string, oracleId: unknown, r
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
     const { rows: [card] } = await tx.execute<{ held: number; current: number | null; chosen: string | null }>(sql`
       select ${heldCopies(viewerId, sql`c.oracle_id`, sql`${printingId}::uuid`)} as held,
-        w.quantity as current, w.scryfall_id as chosen
+        nullif(greatest(coalesce(w.quantity, 0), coalesce(s.quantity, 0)), 0) as current, w.scryfall_id as chosen
       from ${cards} c
       left join ${wishlistItems} w on w.user_id = ${viewerId} and w.oracle_id = c.oracle_id
+      left join ${wishlistSynced} s on s.user_id = ${viewerId} and s.oracle_id = c.oracle_id
       where c.oracle_id = ${oracleId}
         and (${printingId}::uuid is null
           or exists (select 1 from ${printings} p where p.scryfall_id = ${printingId}::uuid and p.oracle_id = c.oracle_id))
@@ -263,6 +276,8 @@ export async function setWishlistPrinting(viewerId: string, oracleId: unknown, r
     // The same printing again changes nothing, baseline and notice included.
     if (card.current !== null && card.chosen === printingId) return { status: "wanted", quantity: card.current, held: card.held };
     const quantity = card.current ?? Math.min(card.held + 1, MAX_WISHLIST_QUANTITY);
+    // Choosing a printing changes the line, so a deck line becomes the player's (call 5).
+    await takeSyncedLine(tx, viewerId, oracleId);
     if (quantity <= card.held) {
       await tx.delete(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)));
       return { status: "held", quantity, held: card.held };
@@ -278,12 +293,39 @@ export async function setWishlistPrinting(viewerId: string, oracleId: unknown, r
   });
 }
 
-/** Clear a line the player no longer wants. */
+/**
+ * Remove: clear a line the player no longer wants, both sides (`lines.ts`). A line their decks put there is also kept
+ * off the synced set (`wishlist_sync_skips`, call 5) until they add the card again. True when either side was there.
+ */
 export async function clearWishlistLine(viewerId: string, oracleId: unknown): Promise<boolean> {
   if (typeof oracleId !== "string" || !UUID.test(oracleId)) return false;
-  const gone = await db
-    .delete(wishlistItems)
-    .where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)))
-    .returning({ oracleId: wishlistItems.oracleId });
-  return gone.length > 0;
+  return db.transaction(async (tx) => {
+    // The collection lock first, then the sync lock, the order every writer takes them in (`collected.ts`).
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
+    const gone = await tx
+      .delete(wishlistItems)
+      .where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)))
+      .returning({ oracleId: wishlistItems.oracleId });
+    const synced = await takeSyncedLine(tx, viewerId, oracleId);
+    return gone.length > 0 || synced;
+  });
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * A deck line becomes the player's (call 5): its synced row goes (its deck rows cascade) and a skip keeps the sync from
+ * putting it back. Under the sync lock, taken after the caller's collection lock; the delete moves the player's data
+ * stamp, so a sync pass that computed its set before this write finds itself raced and writes nothing. True when a
+ * synced line was there.
+ */
+async function takeSyncedLine(tx: Tx, viewerId: string, oracleId: string): Promise<boolean> {
+  await tx.execute(wishlistSyncLock(viewerId));
+  const taken = await tx
+    .delete(wishlistSynced)
+    .where(and(eq(wishlistSynced.userId, viewerId), eq(wishlistSynced.oracleId, oracleId)))
+    .returning({ oracleId: wishlistSynced.oracleId });
+  if (taken.length === 0) return false;
+  await tx.insert(wishlistSyncSkips).values({ userId: viewerId, oracleId }).onConflictDoNothing();
+  return true;
 }

@@ -19,7 +19,8 @@ vi.mock("../../db", () => ({
         if (s.includes(`insert into "wishlist_items"`)) h.inserts.push({ q: s, params });
         return { rows: s.includes(" as held") ? [h.card] : [] };
       },
-      delete: () => ({ where: async () => undefined }),
+      // No synced line here: the convert step (`takeSyncedLine`) deletes nothing.
+      delete: () => ({ where: () => Object.assign(Promise.resolve(undefined), { returning: async () => [] }) }),
     }),
   },
 }));
