@@ -91,7 +91,7 @@ export function SparesWantedCallout({ all, yours, trades, wanted, onWanted }: {
             ]}
           />
           <ul data-testid="wanted-key" className="m-0 flex list-none flex-wrap items-center gap-x-[14px] gap-y-[4px] p-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-            <li className="inline-flex items-center gap-[6px] [&>svg]:text-[color:var(--accent)]"><WishGlyph size={12} />{c.keyWish}</li>
+            <li className="inline-flex items-center gap-[6px] [&>svg]:text-[color:var(--accent-text)]"><WishGlyph size={12} />{c.keyWish}</li>
             <li className="inline-flex items-center gap-[6px]"><DeckDot />{c.keyDeck}</li>
           </ul>
         </div>
