@@ -424,6 +424,29 @@ describe("cart on your wishlist", () => {
     expect(screen.getByText(wishlistCopy.page.meta(2))).toBeInTheDocument();
   });
 
+  it("a refused Not now brings the offer back and says so", async () => {
+    m.dismissOffer.mockRejectedValue(new Error("down"));
+    view({ offer: 3 });
+    fireEvent.click(screen.getByRole("button", { name: wishlistCopy.page.offer.dismiss }));
+    expect(await screen.findByText(wishlistCopy.page.offer.dismissFailed)).toBeInTheDocument();
+    expect(offer()).not.toBeNull();
+  });
+
+  it("a synced line whose decks are gone is drawn in Added by you, never dropped", () => {
+    view({
+      decks: [{ id: "d-a", name: "Atraxa" }],
+      tiles: [
+        tile({ oracleId: SOL, name: "Sol Ring", source: "deck", deckIds: [] }),
+        tile({ oracleId: ARCANE, name: "Arcane Signet", source: "deck", deckIds: ["d-gone"] }),
+      ],
+    });
+    const boxes = screen.getAllByTestId("wishlist-box");
+    expect(boxes).toHaveLength(1);
+    expect(within(boxes[0]).getByRole("heading").textContent).toContain(wishlistCopy.page.groups.you);
+    expect(within(boxes[0]).getByText("Sol Ring")).toBeInTheDocument();
+    expect(within(boxes[0]).getByText("Arcane Signet")).toBeInTheDocument();
+  });
+
   it("with the sync off, draws the one grid", () => {
     view({ tiles: [tile({ source: "deck", deckIds: ["d-a"] })] });
     expect(screen.queryAllByTestId("wishlist-box")).toHaveLength(0);

@@ -17,7 +17,8 @@ export type WishlistGroup = { key: string; title: string; deck: { id: string; na
 /**
  * The split (call 3). A line the hand side wants sits in `Added by you` only; a synced line sits in the box of every
  * deck that needs it. `Added by you` comes first, then the decks in the order given (by name). A box with no card is
- * not drawn.
+ * not drawn. A synced line whose decks are all gone (a deck deleted before the next pass takes its line) sits in `Added
+ * by you` rather than vanishing, so every card the meta line counts is drawn.
  */
 export function groupTiles(
   tiles: readonly { oracleId: string; source?: "hand" | "deck"; deckIds?: readonly string[] }[],
@@ -25,12 +26,14 @@ export function groupTiles(
 ): WishlistGroup[] {
   const hand: string[] = [];
   const byDeck = new Map<string, string[]>();
+  const known = new Set(decks.map((d) => d.id));
   for (const t of tiles) {
-    if (t.source !== "deck") {
+    const ids = t.source === "deck" ? (t.deckIds ?? []).filter((id) => known.has(id)) : [];
+    if (ids.length === 0) {
       hand.push(t.oracleId);
       continue;
     }
-    for (const id of t.deckIds ?? []) {
+    for (const id of ids) {
       const list = byDeck.get(id);
       if (list) list.push(t.oracleId);
       else byDeck.set(id, [t.oracleId]);
@@ -49,7 +52,7 @@ export function groupTiles(
  * The offer (W1): the bookmark, the count and what Add them does, the ghost Add them, and the ✕ (`Not now`). Either
  * answer is for good, so the strip leaves at the press; a failed Add them brings it back with the failure toast.
  */
-export function CartOffer({ cards, onAdded, onFailure }: { cards: number; onAdded: () => void; onFailure: () => void }) {
+export function CartOffer({ cards, onAdded, onFailure }: { cards: number; onAdded: () => void; onFailure: (what: "add" | "dismiss") => void }) {
   const [gone, setGone] = useState(false);
   const [pending, start] = useTransition();
   if (gone) return null;
@@ -61,14 +64,18 @@ export function CartOffer({ cards, onAdded, onFailure }: { cards: number; onAdde
         setGone(true);
         onAdded();
       } catch {
-        onFailure();
+        onFailure("add");
       }
     });
   }
 
+  // The strip leaves at the press; a refused write brings it back under the failure toast, never silently.
   function dismiss() {
     setGone(true);
-    void dismissWishlistOfferAction().catch(() => {});
+    dismissWishlistOfferAction().catch(() => {
+      setGone(false);
+      onFailure("dismiss");
+    });
   }
 
   return (

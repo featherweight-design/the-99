@@ -68,6 +68,7 @@ export const wishlistCopy = {
       add: "Add them",
       dismiss: "Not now", // the ✕, aria-label
       failed: "Couldn’t add them. Try again.",
+      dismissFailed: "Couldn’t save that. Try again.", // toast, role alert: a refused Not now brings the offer back
     },
     // Call 3: the tab split by source while the switch is on. The band draws its count beside the title.
     groups: {

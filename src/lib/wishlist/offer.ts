@@ -12,6 +12,7 @@ import { decks, userPrefs, wishlistSyncSkips } from "../../db/schema";
 import { loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import { captureServerError } from "../sentry/capture";
 import { setWishlistSync } from "./sync";
+import { loadWishlistDeckNames } from "./sync-settings";
 
 /** The offer's count, pure: distinct cards any deck still needs, skipped cards left out. */
 export function offerCount(needs: readonly DeckBuyRow[], skipped: ReadonlySet<string>): number {
@@ -19,25 +20,27 @@ export function offerCount(needs: readonly DeckBuyRow[], skipped: ReadonlySet<st
 }
 
 /**
- * The count to offer, or 0 for no offer: the switch on, the offer answered, or no deck needing a card. The Shopping
- * read runs only for a reader the offer could still reach. The offer is the tab's extra, never the tab: a failed read
- * is reported and draws no offer.
+ * The tab's sync extras, from one `user_prefs` read: the deck names its boxes title themselves with while the sync is
+ * on (call 3), or the offer's count while it is off (0 for no offer: answered, or no deck needing a card). The Shopping
+ * read runs only for a reader the offer could still reach. These are the tab's extras, never the tab: a failed read is
+ * reported and draws the one grid with no offer.
  */
-export async function loadWishlistOffer(userId: string): Promise<number> {
-  const [pref] = await db
-    .select({ on: userPrefs.wishlistSync, dismissedAt: userPrefs.wishlistOfferDismissedAt })
-    .from(userPrefs)
-    .where(eq(userPrefs.userId, userId));
-  if (pref?.on === true || pref?.dismissedAt) return 0;
+export async function loadWishlistTabExtras(userId: string): Promise<{ decks: { id: string; name: string }[] | null; offer: number }> {
   try {
+    const [pref] = await db
+      .select({ on: userPrefs.wishlistSync, dismissedAt: userPrefs.wishlistOfferDismissedAt })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, userId));
+    if (pref?.on === true) return { decks: await loadWishlistDeckNames(userId), offer: 0 };
+    if (pref?.dismissedAt) return { decks: null, offer: 0 };
     const [needs, skipRows] = await Promise.all([
       loadDeckBuyRows(userId),
       db.select({ oracleId: wishlistSyncSkips.oracleId }).from(wishlistSyncSkips).where(eq(wishlistSyncSkips.userId, userId)),
     ]);
-    return offerCount(needs, new Set(skipRows.map((r) => r.oracleId)));
+    return { decks: null, offer: offerCount(needs, new Set(skipRows.map((r) => r.oracleId))) };
   } catch (error) {
-    captureServerError("wishlist.offer-count-read", error);
-    return 0;
+    captureServerError("wishlist.tab-extras-read", error);
+    return { decks: null, offer: 0 };
   }
 }
 

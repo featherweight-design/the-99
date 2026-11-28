@@ -62,7 +62,7 @@ export function WishlistView({
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const noticeKey = (n: WishlistViewNotice) => `${n.oracleId}|${n.collectedAt}`;
   const shownNotices = notices.filter((n) => !dismissed.has(noticeKey(n)));
-  const [toast, setToast] = useState<"add" | "set" | "offer" | null>(null);
+  const [toast, setToast] = useState<"add" | "set" | "offer" | "offerDismiss" | null>(null);
   const toastRef = useRef<HTMLDivElement>(null);
   // Hover and focus hold the toast's window separately, as the other alert toasts do. The frame stays mounted while a
   // second failure replaces the first, so its holds stay true, and it only leaves once neither holds it.
@@ -88,7 +88,7 @@ export function WishlistView({
   const onWant = useCallback(() => router.refresh(), [router]);
 
   const onFailure = useCallback(
-    (kind: "add" | "set" | "offer") => {
+    (kind: "add" | "set" | "offer" | "offerDismiss") => {
       // A new failure gets the whole window, whatever the last one spent.
       restart();
       setToast(kind);
@@ -152,7 +152,7 @@ export function WishlistView({
             </div>
           )}
 
-          {offer > 0 && <CartOffer cards={offer} onAdded={onWant} onFailure={() => onFailure("offer")} />}
+          {offer > 0 && <CartOffer cards={offer} onAdded={onWant} onFailure={(what) => onFailure(what === "add" ? "offer" : "offerDismiss")} />}
 
           {tiles.length > 0 ? (
             <>
@@ -207,7 +207,7 @@ export function WishlistView({
             frameRef={toastRef}
             role="alert"
             onHold={(kind, on) => (kind === "hover" ? setToastHover : setToastFocus)(on)}
-            title={toast === "add" ? copy.details.failedAdd : toast === "offer" ? copy.page.offer.failed : copy.details.failedSet}
+            title={toast === "add" ? copy.details.failedAdd : toast === "offer" ? copy.page.offer.failed : toast === "offerDismiss" ? copy.page.offer.dismissFailed : copy.details.failedSet}
           />
         )}
       </div>
