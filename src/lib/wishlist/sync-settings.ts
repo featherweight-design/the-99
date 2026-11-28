@@ -3,8 +3,9 @@
  * and the one write behind them. The switch itself is `setWishlistSync` (`sync.ts`). A deck left out is
  * `decks.off_wishlist`; the picker's tick and the ⋯ row write the same column, so each mirrors the other.
  *
- * Neither write schedules a pass itself: both run from a Server Action, and every action schedules one after its
- * response (`sync-trigger.ts`). The column carries the `decks` stamp trigger, so the pass finds the player due.
+ * Neither write runs a pass itself: their action runs one before it returns (`syncWishlistNow`, so the next visit to
+ * Wishlist reads the deck's lines already gone or back, #3441). The column carries the `decks` stamp trigger, so the
+ * pass finds the player due.
  */
 import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../../db";

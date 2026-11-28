@@ -138,3 +138,46 @@ describe("reconcileWishlistSyncs", () => {
     vi.doUnmock("../sentry/capture");
   });
 });
+
+describe("syncWishlistNow", () => {
+  it("runs the pass in the request, and a failure reaches Sentry without failing the action (#3441)", async () => {
+    vi.resetModules();
+    const execute = vi.fn(async () => {
+      throw new Error("db down");
+    });
+    const captureServerError = vi.fn();
+    vi.doMock("../../db", () => ({ db: { execute } }));
+    vi.doMock("../sentry/capture", () => ({ captureServerError }));
+    const mod = await import("./sync");
+    await expect(mod.syncWishlistNow("u1")).resolves.toBeUndefined();
+    expect(execute).toHaveBeenCalled();
+    expect(captureServerError.mock.calls.map((c) => c[0])).toEqual(["cart-sync-failed"]);
+    vi.doUnmock("../../db");
+    vi.doUnmock("../sentry/capture");
+  });
+});
+
+describe("setWishlistSync", () => {
+  it("turned on, runs the first pass before it returns, not after the response (#3441)", async () => {
+    vi.resetModules();
+    const after = vi.fn();
+    const chain = { values: () => chain, onConflictDoUpdate: async () => undefined };
+    const tx = { execute: vi.fn(async () => ({ rows: [] })), insert: () => chain };
+    // The pass's first read is the only `db.execute`: it fails, so the pass reports and the switch still resolves.
+    const execute = vi.fn(async () => {
+      throw new Error("db down");
+    });
+    const captureServerError = vi.fn();
+    vi.doMock("next/server", () => ({ after }));
+    vi.doMock("../../db", () => ({ db: { execute, transaction: async (cb: (t: typeof tx) => unknown) => cb(tx) } }));
+    vi.doMock("../sentry/capture", () => ({ captureServerError }));
+    const mod = await import("./sync");
+    await expect(mod.setWishlistSync("u1", true)).resolves.toBeUndefined();
+    expect(execute).toHaveBeenCalled();
+    expect(after).not.toHaveBeenCalled();
+    expect(captureServerError.mock.calls.map((c) => c[0])).toEqual(["cart-sync-failed"]);
+    vi.doUnmock("next/server");
+    vi.doUnmock("../../db");
+    vi.doUnmock("../sentry/capture");
+  });
+});

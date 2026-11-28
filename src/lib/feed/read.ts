@@ -288,7 +288,14 @@ export async function loadFeed(userId: string, env: NodeJS.ProcessEnv, now = new
  * feed is off. A stored zone Postgres refuses is reported and the count runs again in UTC, so the badge still draws.
  */
 export async function unseenCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  const count = (zone: string | SQL) => countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env), zone), q);
+  return countRolled(userId, (zone) => countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env), zone), q));
+}
+
+/**
+ * A badge count folded by friend and reader-day: in the reader's zone read inside the statement (`rollZoneSql`), and
+ * again in UTC when Postgres refuses the stored zone (reported), so the badge still draws.
+ */
+async function countRolled(userId: string, count: (zone: string | SQL) => Promise<number>): Promise<number> {
   try {
     return await count(rollZoneSql(userId));
   } catch (error) {
@@ -304,13 +311,14 @@ const pgCode = (error: unknown): unknown =>
   (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
 
 /**
- * The Friends badge's SEEN half: unseen trade matches (by `friends_seen_at`, the grant re-joined; 0 while the kind is
- * unavailable) and answers to the reader's spare requests not yet seen (`unseenAnswersCount`). Both clear on a `/friends`
+ * The Friends badge's SEEN half: unseen trade matches (by `friends_seen_at`, the grant re-joined, a friend's matches on
+ * one reader-day counted once; 0 while the kind is unavailable) and answers to the reader's spare requests not yet seen (`unseenAnswersCount`). Both clear on a `/friends`
  * visit; an answer also clears alone when it is opened over Home (`markAnswerSeen`). The asks waiting on the reader's own answer are the other half (`waitingAsksCount`), cleared by answering.
  */
 export async function unseenFriendsCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
   const [matches, answers] = await Promise.all([
-    countUnder(unseenCountQuery(userId, tradeMatchOnly(env), now, "friends_seen_at"), q),
+    // Folded as Waiting on you draws them (`loadTradeMatchRows`): a friend's matches on one reader-day count once (#3441).
+    countRolled(userId, (zone) => countUnder(unseenCountQuery(userId, tradeMatchOnly(env), now, "friends_seen_at", false, zone), q)),
     unseenAnswersCount(userId, env, now, q),
   ]);
   return matches + answers;

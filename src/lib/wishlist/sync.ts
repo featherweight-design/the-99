@@ -260,8 +260,8 @@ export async function syncWishlistIfDue(userId: string, opts: { force?: boolean 
 /**
  * Turns the sync on or off (Settings › Wishlist; its action lands with the Settings box). Off removes every synced
  * line and the ledger, quietly (Hugh, 2026-11-27, H2): lines added by hand stay, and so do the skips and each deck's
- * Keep off, so switching back on puts back what Shopping lists without the cards the player took off. On schedules the
- * first pass, which marks every line quiet. Writes the preference only when it changes (its stamp trigger).
+ * Keep off, so switching back on puts back what Shopping lists without the cards the player took off. On runs the
+ * first pass before it returns (`syncWishlistNow`), which marks every line quiet. Writes the preference only when it changes (its stamp trigger).
  */
 export async function setWishlistSync(userId: string, on: boolean): Promise<void> {
   await db.transaction(async (tx) => {
@@ -276,7 +276,7 @@ export async function setWishlistSync(userId: string, on: boolean): Promise<void
       await tx.delete(wishlistSyncState).where(eq(wishlistSyncState.userId, userId));
     }
   });
-  if (on) await syncWishlistLater(userId);
+  if (on) await syncWishlistNow(userId);
 }
 
 /** The Sentry tag for a failed pass: the site only, never who (`captureServerError` sends the tag and SQLSTATE alone). */
@@ -292,6 +292,23 @@ export function syncWishlistLater(userId: string): Promise<void> {
       throw error;
     }
   });
+}
+
+/**
+ * A pass inside the request, for an action whose whole effect is the synced set (the switch, the Wishlist call-out,
+ * a deck's Keep off): the page it refreshes, or the next visit to Wishlist, must read the lines this pass writes, and a
+ * pass after the response loses that race (#3441). Non-fatal: a failure reaches Sentry and the action still succeeds;
+ * the pass `requireUserId` schedules after every action, and the hourly reconcile, retry it.
+ */
+export async function syncWishlistNow(userId: string): Promise<void> {
+  try {
+    // A write that landed while the pass computed leaves it "raced" with nothing written: one more pass picks it up,
+    // so the refresh still reads the lines. A second race is left to that write's own pass and the hourly reconcile.
+    if ((await syncWishlistIfDue(userId)) === "raced") await syncWishlistIfDue(userId);
+  } catch (error) {
+    // not a fallback: nothing is drawn from this. The write the player asked for is committed; only its lines lag.
+    captureServerError(SYNC_FAILED_TAG, error);
+  }
 }
 
 /** The most players one cron run reconciles; the rest wait for the next hour. */

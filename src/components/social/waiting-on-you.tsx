@@ -29,6 +29,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { KICKER_AGE } from "../feed/kicker-age";
+import { ROLLED_FAN } from "../feed/rolled-fan";
 import { BAND, PANEL } from "./section-panel";
 import { BandText } from "../decks/deck-box";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
@@ -166,7 +167,8 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
               onAnswer={(a, from) => void press(item.row as SpareRequestRow, a, index, from)}
               onDismiss={(from) => dismissed.dismiss(dismissKey(item.row as SpareRequestRow), from)} />
           ) : (
-            <TradeRow key={item.row.key} row={item.row} now={now} onDismiss={(from) => dismissed.dismiss(item.row.key, from)} />
+            <TradeRow key={item.row.key} row={item.row} now={now}
+              onDismiss={(from) => dismissed.dismiss(item.row.key, from, true, (item.row as TradeMatchRow).rollup?.keys)} />
           ),
         )}
       </ul>
@@ -184,16 +186,25 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
 /** What the ✕ names: an ask by its request id (its Home item goes with it), a trade match by its feed key. */
 const dismissKey = (row: WaitingRow): string => (row.kind === "spare-request" ? `ask:${row.ask.id}` : row.key);
 
-/** The card at card shape, 46x64, with the friend's face on its corner. */
-function Picture({ imageUri, friend, className = "" }: {
-  imageUri: string | null; friend: { displayName: ThirdPartyName; commander: { artCropUri: string | null } | null }; className?: string;
+/**
+ * The card at card shape, 46x64, with the friend's face on its corner. A rolled trade match fans up to two more of its
+ * cards behind the first, as Home's rolled row does (`ROLLED_FAN`, board N1); a card with no image is passed over.
+ */
+function Picture({ imageUri, friend, fan = [], className = "" }: {
+  imageUri: string | null; friend: { displayName: ThirdPartyName; commander: { artCropUri: string | null } | null };
+  fan?: readonly { oracleId: string; imageUri: string | null }[]; className?: string;
 }) {
   return (
     <span aria-hidden className={`relative h-[64px] w-[46px] ${className}`}>
+      {fan.filter((b) => b.imageUri).slice(0, 2).map((b, i) => (
+        <FadingImg key={b.oracleId} src={b.imageUri!} alt="" data-waiting-rolled-card
+          className={`absolute block h-[60px] w-[43px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)] bg-[color:var(--surface-raised)] ${ROLLED_FAN[i]}`} />
+      )).reverse()}
+      {/* Positioned, so the first card sits over the fan drawn before it. */}
       {imageUri ? (
-        <FadingImg src={imageUri} alt="" className="block h-[64px] w-[46px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
+        <FadingImg src={imageUri} alt="" className="relative block h-[64px] w-[46px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
       ) : (
-        <span className="block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
+        <span className="relative block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
       )}
       {/* The holder's face is an art_crop and takes the top trim (`ART_CROP_TRIM`); the card beside it is a card face and keeps its frame. */}
       <span className={`absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)] ${friend.commander?.artCropUri ? ART_CROP_TRIM.box : ""}`}>
@@ -346,29 +357,40 @@ function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answ
   );
 }
 
-/** A trade match: "Colin has a spare Ghalta", the pods, and the link to Colin's Spares tab. */
+/**
+ * A trade match: "Colin has a spare Ghalta", the pods, and the link to Colin's Spares tab. Rolled (#3441), the friend's
+ * day of matches as Home draws it (Cart on your wishlist Q1): "Colin has spares of 3 cards you want", the first cards
+ * named, the fan, the link to the tab with no card named, and a ✕ that dismisses every member.
+ */
 function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; onDismiss: (from: HTMLElement) => void }) {
+  const n = r.rollup?.keys.length ?? 0;
+  const title = r.rollup ? feedCopy.home.title.tradeMatchRolled(r.friend.displayName, n) : w.tradeTitle(r.friend.displayName, r.card.name);
   return (
     <li
       data-testid="waiting-row"
       data-kind="trade-match"
       data-unseen={r.unseen ? "" : undefined}
+      data-rolled={r.rollup ? n : undefined}
       className={ASK_ROW}
     >
-      <Picture imageUri={r.card.imageUri} friend={r.friend} className="row-span-2 self-start md:row-span-1 md:self-center" />
+      <Picture imageUri={r.card.imageUri} friend={r.friend} fan={r.rollup?.cards.slice(1)} className="row-span-2 self-start md:row-span-1 md:self-center" />
       <div className="flex min-w-0 flex-col gap-[3px]">
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           {r.unseen && <Unseen />}
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
           <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(r.createdAt, now)}</small>
         </p>
-        <p className={TITLE}><PersonText text={w.tradeTitle(r.friend.displayName, r.card.name)} /></p>
-        <p className={DETAIL}><PersonText text={w.tradeDetail(r.friend.displayName, r.pods)} /></p>
+        <p className={TITLE}><PersonText text={title} /></p>
+        <p className={DETAIL}>
+          {r.rollup
+            ? feedCopy.home.line.tradeMatchRolled(r.rollup.cards.map((x) => x.name), n)
+            : <PersonText text={w.tradeDetail(r.friend.displayName, r.pods)} />}
+        </p>
       </div>
       {/* The action line, as on What's new: the link, then the ✕ at its end. */}
       <div className={ACTIONS}>
         <WaitingLink row={r} className="flex min-w-0" />
-        <DismissButton title={w.tradeTitle(r.friend.displayName, r.card.name)} onPress={onDismiss} />
+        <DismissButton title={title} onPress={onDismiss} />
       </div>
     </li>
   );
@@ -401,7 +423,9 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
     );
   }
   // The card's modal opens on landing (signature card call 9), or the tab says the spare has gone.
-  const href = `/friends/${encodeURIComponent(row.friend.publicId)}/spares?spare=${encodeURIComponent(row.card.oracleId)}`;
+  // A rolled row names no one card, so it opens the tab itself (Home's rolled press).
+  const tab = `/friends/${encodeURIComponent(row.friend.publicId)}/spares`;
+  const href = row.rollup ? tab : `${tab}?spare=${encodeURIComponent(row.card.oracleId)}`;
   return (
     <span className={className}>
       <Link

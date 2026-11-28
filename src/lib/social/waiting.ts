@@ -19,6 +19,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { availableFeedKinds } from "../feed/flag";
 import { feedQuery, toFeedItem } from "../feed/read";
+import { foldGroups, readerZone, rollGroup, rollZone } from "../feed/rollup";
 import { feedOrder, type FeedKind } from "../feed/kinds";
 import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
@@ -62,8 +63,16 @@ export type TradeMatchRow = {
   friend: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
   /** The pods the friend's share reaches the reader through, in name order. */
   pods: ThirdPartyName[];
-  /** Always true since `SOCIAL_FRIENDS_ENABLED` retired: the link opens the card's spares sheet with Ask. */
+  /**
+   * True on a single match (the link opens the card's spares sheet with Ask); false on a rolled row, whose press goes to
+   * the friend's spares with no card named.
+   */
   askable: boolean;
+  /**
+   * Set when this row stands for the friend's matches on one reader-day (Cart on your wishlist Q1, Home's fold,
+   * `rollTradeMatches`): every member's key (the ✕ dismisses them all) and card, newest first. `card` is the first.
+   */
+  rollup?: { keys: string[]; cards: TradeMatchRow["card"][] };
 };
 
 /** The section's rows, waiting kinds first and newest within; empty while every kind it draws is off for the reader. */
@@ -82,7 +91,10 @@ export async function loadWaitingOnYou(viewerId: string, env: NodeJS.ProcessEnv,
   return [...friends, ...[...requests, ...offers.map(offerRow), ...matches].sort(feedOrder)];
 }
 
-/** The trade matches, from the feed's read with `friends_seen_at` as the cursor. */
+/**
+ * The trade matches, from the feed's read with `friends_seen_at` as the cursor, each friend's matches on one reader-day
+ * folded into one row as Home folds them (`foldTradeMatchRows`, #3441).
+ */
 async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now: Date): Promise<TradeMatchRow[]> {
   const kinds = availableFeedKinds(env).filter((k) => k === "trade-match");
   const query = feedQuery(viewerId, kinds, now, "friends_seen_at");
@@ -90,15 +102,15 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
   const items = ((await db.execute(query)).rows as Parameters<typeof toFeedItem>[0][]).map(toFeedItem).sort(feedOrder);
   const matches = items.flatMap((i) => (i.kind === "trade-match" && i.oracleId && i.friend ? [{ ...i, oracleId: i.oracleId, friend: i.friend }] : []));
   if (matches.length === 0) return [];
-  const [grants, info] = await Promise.all([
+  const [grants, info, zone] = await Promise.all([
     spareGrantDetailsQuery(viewerId),
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards)
       .where(inArray(cards.oracleId, [...new Set(matches.map((m) => m.oracleId))])),
+    readerZone(viewerId),
   ]);
-  const askable = true;
   const grantOf = new Map(grants.map((g) => [g.publicId, g]));
   const cardOf = new Map(info.map((c) => [c.oracleId, c]));
-  return matches.flatMap((m) => {
+  return foldTradeMatchRows(matches.flatMap((m) => {
     const grant = grantOf.get(m.friend.publicId);
     const card = cardOf.get(m.oracleId);
     if (!grant || !card) return [];
@@ -110,7 +122,21 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
       card,
       friend: { publicId: grant.publicId, displayName: named(grant.displayName), commander: toCommander(grant) },
       pods: grant.pods.map((pod) => named(pod)),
-      askable,
+      askable: true,
     }];
-  });
+  }), rollZone(zone));
+}
+
+/**
+ * Each friend's matches on one reader-day folded into the first of them in the rows' order (the newest): unseen when
+ * any member is, not askable, `rollup` carrying every member's key and card. A group of one is left as it was. The
+ * twin of `rollTradeMatches`, on the same group (`rollGroup`) and fold (`foldGroups`), so this list, Home and both badges fold alike. Pure.
+ */
+export function foldTradeMatchRows(rows: readonly TradeMatchRow[], zone: string): TradeMatchRow[] {
+  return foldGroups(rows, (r) => rollGroup(r.friend.publicId, r.createdAt, zone), (members) => ({
+    ...members[0],
+    unseen: members.some((m) => m.unseen),
+    askable: false,
+    rollup: { keys: members.map((m) => m.key), cards: members.map((m) => m.card) },
+  }));
 }
