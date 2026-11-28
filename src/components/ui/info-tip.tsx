@@ -82,7 +82,8 @@ export function InfoTip({
         }}
         onFocus={(e) => {
           // Keyboard focus only: a tap focuses a button too, and would then hold it open against the next tap.
-          try { if (e.currentTarget.matches(":focus-visible")) setFocused(true); } catch { /* // silent-catch: expected: refusal: an engine without :focus-visible */ }
+          // silent-catch: expected: refusal: an engine without :focus-visible
+          try { if (e.currentTarget.matches(":focus-visible")) setFocused(true); } catch { /* no :focus-visible */ }
         }}
         onBlur={() => { setPinned(false); setFocused(false); }}
         className={twMerge(
