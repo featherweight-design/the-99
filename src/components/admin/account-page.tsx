@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -83,7 +84,8 @@ function GroupSection({ page }: { page: AccountPage }) {
     let result: MoveResult;
     try {
       result = await moveAccountToGroup(page.id, target || null, confirmed);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.account-move", e);
       // A thrown action is a lost reply, not a refusal: the move may have committed before the reply was
       // lost, so this is never "nothing changed". Refresh to reconcile and say the outcome is unknown, as
       // the group editor does.

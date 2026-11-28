@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -155,7 +156,8 @@ export function AccountInvitesSection({
       setInFlight(false);
       if (result.ok) router.refresh();
       else setFailure(inv.invalid);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.invites-save", e);
       // A lost reply may follow a commit: refresh to reconcile and say the outcome is unknown.
       setInFlight(false);
       setFailure(adminCopy.groups.errors.unknown);
@@ -168,7 +170,8 @@ export function AccountInvitesSection({
     setRevoking(id);
     try {
       await revokeInvite(id);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.invites-revoke", e);
       setRevokeFailure(adminCopy.groups.errors.unknown);
     }
     setRevoking(null);
@@ -290,7 +293,8 @@ export function GroupTopUp({ groupId, members }: { groupId: string; members: rea
         setDraftText("");
         router.refresh();
       } else setFailure(result.reason === "invalid" ? inv.invalid : adminCopy.flag.saveFailed);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.invites-top-up", e);
       setInFlight(false);
       setFailure(adminCopy.groups.errors.unknown);
       router.refresh();

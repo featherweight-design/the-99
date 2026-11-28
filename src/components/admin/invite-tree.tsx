@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -222,7 +223,8 @@ export function InviteTreeView({
     setRevoking(id);
     try {
       await revokeInvite(id);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.invite-tree-revoke", e);
       setFailure(adminCopy.groups.errors.unknown);
     }
     setRevoking(null);

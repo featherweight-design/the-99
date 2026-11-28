@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/flags/actions";
@@ -48,7 +49,8 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     let result: WriteResult;
     try {
       result = p.op === "set" ? await setSwitchOverride(input) : await clearSwitchOverride(input);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.override", e);
       result = { ok: false, error: "failed" };
     }
     setInFlight(null);

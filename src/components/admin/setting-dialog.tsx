@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { setAccountCap, setOrgCap, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
 import { useRouter } from "next/navigation";
@@ -48,7 +49,8 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
             : kind === "org"
               ? await setOrgCap({ amount, note })
               : await setSystemCeiling({ amount, start: String(form.get("start") ?? ""), note });
-      } catch {
+      } catch (e) {
+        captureClientError("admin.setting", e);
         // A rejected action (a dropped connection, an expired session) may have committed before the
         // reply was lost, so this is never "nothing changed": refresh the page under the dialog and
         // say the outcome is unknown, keeping what was typed.

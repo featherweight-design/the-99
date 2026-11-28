@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { grantCredits } from "../../app/admin/payments/actions";
@@ -76,7 +77,8 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
     let result: GiftResult;
     try {
       result = await grantCredits({ accountId: picked.id, units: n, note: note.trim(), actionId });
-    } catch {
+    } catch (e) {
+      captureClientError("admin.gift", e);
       // A rejected action may have committed before its reply was lost: the id is kept, so pressing again is safe.
       setInFlight(false);
       setFailure(f.errors.lost);

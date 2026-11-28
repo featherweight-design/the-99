@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGroup, saveGroup } from "../../app/admin/groups/actions";
@@ -211,7 +212,8 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
     let result: GroupWriteResult;
     try {
       result = groupId ? await saveGroup(groupId, input) : await createGroup(input);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.group-save", e);
       // A rejected action (a dropped connection, an expired session) may have committed before the
       // reply was lost, so this is never "nothing changed": refresh to reconcile and say the outcome
       // is unknown, as the settings dialog does.

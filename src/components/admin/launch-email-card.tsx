@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState } from "react";
 
 import { launchEmailDryRun, sendLaunchEmailBatch, type LaunchEmailActionResult } from "../../app/admin/invites/launch-email-actions";
@@ -45,7 +46,8 @@ export function LaunchEmailCard() {
         const stop = r.stoppedBy === "capped" ? copy.capped : r.stoppedBy === "lookup" ? copy.lookup : null;
         setLine({ text: stop ? `${result} ${stop}` : result, danger: r.stoppedBy === "lookup" });
       }
-    } catch {
+    } catch (e) {
+      captureClientError("admin.launch-email", e);
       setLine({ text: copy.refused.failed, danger: true });
     } finally {
       setPending(false);

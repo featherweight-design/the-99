@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { exportLaunchList } from "../../app/admin/invites/flyer-actions";
 import { flyerAdminCopy } from "../../lib/copy/admin";
@@ -49,7 +50,8 @@ export function useLaunchCsv(): LaunchCsv {
       let result: Awaited<ReturnType<typeof exportLaunchList>>;
       try {
         result = await exportLaunchList();
-      } catch {
+      } catch (e) {
+        captureClientError("admin.flyer-export", e);
         setFailure("lost");
         setPending(false);
         return;
@@ -58,6 +60,7 @@ export function useLaunchCsv(): LaunchCsv {
         if (result.ok) downloadTextFile(result.filename, result.csv, "text/csv;charset=utf-8");
         else setFailure(result.error);
       } catch {
+        // silent-catch: expected: refusal, the browser refused to save a file the server built
         // The browser refused to save a file the server built: the export ran, so no line claims nothing downloaded.
       } finally {
         setPending(false);

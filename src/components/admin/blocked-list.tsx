@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearBlock } from "../../app/admin/payments/actions";
@@ -29,7 +30,8 @@ export function BlockedList({ rows, emptyClassName }: { rows: readonly BlockedRo
     let result: ClearBlockResult;
     try {
       result = await clearBlock(row.userId);
-    } catch {
+    } catch (e) {
+      captureClientError("admin.blocked-clear", e);
       setInFlight(false);
       setFailure(c.clear.lost);
       router.refresh();

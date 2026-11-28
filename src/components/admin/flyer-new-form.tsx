@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useId, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { makeCode } from "../../app/admin/invites/flyer-actions";
@@ -51,7 +52,8 @@ export function FlyerNewForm({ groups, onClose }: { groups: readonly FlyerGroupC
           onClose();
           router.refresh();
         } else setFailed(result.error);
-      } catch {
+      } catch (e) {
+        captureClientError("admin.flyer-new", e);
         // A lost reply may follow a commit: refresh to reconcile, keep what was typed.
         setFailed("failed");
         router.refresh();
