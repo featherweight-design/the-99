@@ -20,6 +20,7 @@ export function useWakeLock(on: boolean) {
         if (stopped) void next.release();
         else lock = next;
       } catch {
+        // silent-catch: expected: refusal: battery saver or a page without focus.
         // Refused (battery saver, a page without focus): the game carries on without it.
       }
     };

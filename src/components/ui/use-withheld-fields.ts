@@ -16,6 +16,7 @@
 //
 // Fields are held per payload, never per parameter: a fresh payload of the same list (a refresh,
 // a navigation back) may have moved them.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useState } from "react";
 import { readSavedFields, writeSavedFields } from "./saved-fields";
 
@@ -265,7 +266,7 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
             void writeSavedFields(saved.list, { token: saved.token, fields: Object.fromEntries(store) });
           }
         })
-        .catch(() => {
+        .catch((e) => {
           // Unasked whatever stopped it, so the rows can be asked for again: an abort included,
           // since a page restored from the back/forward cache starts the loop again unmounted.
           for (const s of batch) asked.delete(s);
@@ -273,6 +274,7 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
           // Only while the window the batch was asked for is still the reader's: a failure never
           // marks a window chosen since, and a window left behind starts clean when it returns.
           if (!current() || wantedKey !== input.wantedKey) return;
+          captureClientError("ui.withheld-fields", e);
           failedAt = wantedKey;
           if (urgent && retries < RETRY_MS.length) {
             const key = failedAt;
@@ -401,6 +403,7 @@ export function useWithheldFields<Row extends object, Item>(
       try {
         if (new URL(url).pathname !== location.pathname) leave();
       } catch {
+        // silent-catch: expected: refusal: a destination the URL parser refuses.
         // A destination the URL parser refuses is not a route this page can reach.
       }
     };

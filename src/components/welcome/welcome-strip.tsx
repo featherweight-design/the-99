@@ -8,6 +8,7 @@
 // link while `teaser`, else `Your free credit comes back each day.`, and no `Where they work`. The date is the reader's own
 // day, drawn after hydration (`useLocalDay`).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { captureToolEvent } from "../../lib/analytics/posthog";
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -95,7 +96,8 @@ export function WelcomeStrip({
     setClosed(true);
     document.getElementById(HOME_HEADING_ID)?.focus();
     // Hidden on the press; a write that fails leaves the strip for the next load.
-    void dismissWelcomeStripAction().catch(() => {
+    void dismissWelcomeStripAction().catch((e) => {
+      captureClientError("welcome.strip-dismiss", e);
       closedHere = false;
     });
   };

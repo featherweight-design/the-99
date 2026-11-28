@@ -4,6 +4,8 @@
 // with `crypto` and the dice are thrown to land on it (`1d20@N`), so the number on screen never depends on the physics.
 // Every failure (the import, no WebGL, reduced motion) leaves the roll to the plain result card with no animation.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
+
 export type DieKind = "d6" | "d20" | "coin";
 
 export const SIDES: Record<DieKind, number> = { d6: 6, d20: 20, coin: 2 };
@@ -35,6 +37,7 @@ function hasWebGL(): boolean {
     const c = document.createElement("canvas");
     return !!(c.getContext("webgl2") ?? c.getContext("webgl"));
   } catch {
+    // silent-catch: expected: refusal: a browser without WebGL answers as unsupported.
     return false;
   }
 }
@@ -74,7 +77,10 @@ function getScene(): Promise<Scene | null> {
       await box.initialize();
       return { el, box } satisfies Scene;
     })
-    .catch(() => null);
+    .catch((e) => {
+      captureClientError("tracker.dice-load", e);
+      return null;
+    });
   return scene;
 }
 
@@ -95,7 +101,8 @@ export async function throwDice(kind: DieKind, results: readonly number[]): Prom
     s.el.style.visibility = "visible";
     await s.box.roll(`${results.length}d${SIDES[kind]}@${results.join(",")}`);
     return true;
-  } catch {
+  } catch (e) {
+    captureClientError("tracker.dice-throw", e);
     hideDice();
     return false;
   }

@@ -11,9 +11,7 @@
 // Known limits: the `.then(ok, onRejected)` form is not scanned; a file without the directive that still runs in the browser (a plain module a client file imports) is
 // not scanned. Server code is out of scope: `captureServerError` covers it.
 //
-// The baseline (scripts/silent-catch-baseline.json) is a RATCHET of the silent sites that existed when the guard
-// landed, per file. A file may not exceed its count, and a count above the real number is stale and fails too, so
-// each sweep PR must shrink it. The sweep ends with an empty baseline and the guard is absolute.
+// The guard is absolute: there is no baseline, so any unreported, unmarked client catch is a finding.
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import ts from "typescript";
@@ -91,25 +89,18 @@ export async function scanSilentCatches(root = "src") {
   return { files, counts, bad };
 }
 
-/** Findings are `{ path, kind, detail }`, kind "marker" | "new" | "grew" | "stale". */
-export function silentCatchFindings({ counts, bad }, baseline) {
+/** Findings are `{ path, kind, detail }`, kind "marker" | "new". */
+export function silentCatchFindings({ counts, bad }) {
   const findings = [];
   for (const { path, line } of bad) {
     findings.push({ path: `${path}:${line}`, kind: "marker", detail: `a silent-catch marker needs "expected: <${REASONS.join(" | ")}>"` });
   }
   for (const [path, n] of Object.entries(counts)) {
-    const allowed = baseline[path] ?? 0;
-    if (n > allowed) {
-      findings.push({
-        path,
-        kind: allowed === 0 ? "new" : "grew",
-        detail: `${n - allowed} client catch(es) that neither report nor rethrow: call captureClientError(tag, err), or mark an expected outcome with // silent-catch: expected: <${REASONS.join(" | ")}>`,
-      });
-    }
-  }
-  for (const [path, allowed] of Object.entries(baseline)) {
-    const n = counts[path] ?? 0;
-    if (n < allowed) findings.push({ path, kind: "stale", detail: `baseline says ${allowed} silent site(s), found ${n}: lower it in scripts/silent-catch-baseline.json` });
+    findings.push({
+      path,
+      kind: "new",
+      detail: `${n} client catch(es) that neither report nor rethrow: call captureClientError(tag, err), or mark an expected outcome with // silent-catch: expected: <${REASONS.join(" | ")}>`,
+    });
   }
   return findings;
 }
