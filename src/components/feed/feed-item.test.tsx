@@ -175,7 +175,7 @@ describe("FeedItemRow", () => {
     // The ✕ draws over the corner, so the text column reserves its width on a phone.
     expect(container.querySelector("[data-feed-text]")?.className).toContain("pr-[34px]");
     fireEvent.click(screen.getByTestId("spare-yes"));
-    await screen.findByText(/sparing/i);
+    await screen.findByText(/You’re giving/);
     expect(actions.answerSpareAction).toHaveBeenCalledWith("req-9", "yes");
     expect(screen.queryByTestId("spare-yes")).toBeNull();
     // The receipt is the row's last word: its ✕ leaves with the Yes and No.

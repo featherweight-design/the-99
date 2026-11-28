@@ -77,6 +77,11 @@ vi.mock("../../lib/social/your-requests", () => ({ loadYourRequests: m.loadYourR
 vi.mock("../../lib/social/request-history", () => ({ hasRequestHistory: vi.fn(async () => false) }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: m.noticeTradeMatches }));
 vi.mock("../../lib/social/trade-ask", () => ({ loadTradeAsk: m.loadTradeAsk }));
+// The Requests box's Trades tab; `trade-reads.test.ts` covers the read.
+vi.mock("../../lib/social/trade-reads", async (orig) => ({
+  ...(await orig<typeof import("../../lib/social/trade-reads")>()),
+  loadTradeRows: async () => ({ rows: [], rest: 0, restWaiting: 0 }),
+}));
 vi.mock("../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
 vi.mock("../../lib/feed/prefs", () => ({ markFriendsSeen: m.markFriendsSeen }));
 vi.mock("next/server", () => ({ after: m.after }));
