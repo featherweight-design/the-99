@@ -98,7 +98,7 @@ describe("SwitchesList", () => {
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
     expect(within(r).getByText("env var is off", { selector: "span.font-mono" })).toBeInTheDocument();
     expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide not set · 1 account, refused · env var is off");
-    expect(within(r).getByText("1 account, refused", { selector: "span.hidden > *, span.hidden", exact: false })).toBeInTheDocument();
+    expect(within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.includes("hidden") && el.textContent === "1 account, refused")).toBeInTheDocument();
   });
 
   it("prints the env stop's own value, so a variable at false reads false, not off", () => {
@@ -127,7 +127,7 @@ describe("SwitchesList", () => {
     const sub = within(r).getAllByText("killed", { selector: "span.font-mono.whitespace-nowrap" }).find((e) => !e.dataset.testid)!;
     expect(sub.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBe(2);
-    expect(within(r).getByText("1 account, refused", { selector: "span.hidden > *, span.hidden", exact: false })).toBeInTheDocument();
+    expect(within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.includes("hidden") && el.textContent === "1 account, refused")).toBeInTheDocument();
     expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide killed · 1 account, refused · killed");
     // A switch that is not killed carries no tag.
     expect(within(rowOf("FEEDBACK_ENABLED")).queryByTestId("switch-killed-tag")).toBeNull();
@@ -187,7 +187,7 @@ describe("SwitchesList", () => {
   it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
     const first = draw({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" })]);
     const r = rowOf("MODEL_CALLS_ENABLED");
-    const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
+    const cell = within(r).getByText((_c, el) => el?.tagName === "SPAN" && el.className.includes("hidden") && el.textContent === "On, refused");
     expect(cell.className).toContain("var(--danger)");
     expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide on, refused · no overrides · env var is off");
     // An app-wide override that is not refused reads plainly.

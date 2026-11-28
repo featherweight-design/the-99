@@ -38,7 +38,7 @@ describe("PaymentsView", () => {
     view();
     const tiles = within(screen.getByTestId("payments-tiles")).getAllByText(/^\$/).map((e) => e.textContent);
     expect(tiles).toEqual(["$20.00", "$1.50", "$18.50", "$0.028"]);
-    expect(screen.getByText("2 payments · 1 unattributed")).toBeInTheDocument();
+    expect(screen.getByTestId("payments-tiles")).toHaveTextContent("2 payments · 1 unattributed");
     expect(screen.getByText("In EUR")).toBeInTheDocument();
     expect(screen.getAllByText("5.00 EUR")).toHaveLength(2); // paid and net; no tax
   });
@@ -65,7 +65,7 @@ describe("PaymentsView", () => {
       blocked: [{ userId: "u_mara", at: new Date("2026-10-15T00:00:00Z") }],
     };
     render(<PaymentsView month={OCT} current={OCT} payments={withDisputes} spendMicro={0} names={{ u_mara: "Mara K." }} accounts={[]} clerk="ok" />);
-    expect(screen.getByText("2 payments · 1 unattributed · $5.40 refunded")).toBeInTheDocument();
+    expect(screen.getByTestId("payments-tiles")).toHaveTextContent("2 payments · 1 unattributed · $5.40 refunded");
     const disputes = within(screen.getByTestId("payments-disputes")).getAllByRole("listitem").map((li) => li.textContent);
     expect(disputes).toEqual([
       "Mara K. disputed a $10.80 paymentOpen · 40 credits taken back · opened Oct 15",
