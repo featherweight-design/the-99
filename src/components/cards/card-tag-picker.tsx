@@ -5,6 +5,7 @@
 // second copy. The text rules (what opens the picker, what a pick writes, which `[[Name]]` count as
 // tags) are `lib/decks/notes-field.ts`, unchanged.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { CopyLines } from "../copy-lines";
@@ -119,7 +120,10 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     if (!open || query.length < REMOTE_MIN_LETTERS) return;
     const mine = ++seq.current;
     const timer = setTimeout(async () => {
-      const hits = await search(query).catch(() => null);
+      const hits = await search(query).catch((e) => {
+        if (mine === seq.current) captureClientError("cards.tag-search", e);
+        return null;
+      });
       if (mine !== seq.current) return;
       if (hits === null) return setAnswer({ query, status: "refused", rows: [] });
       const held = new Set((deckCards ?? []).map((c) => c.oracleId));

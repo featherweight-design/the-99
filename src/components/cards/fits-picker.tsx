@@ -8,6 +8,7 @@
 // again, so the copies line and every row's Add or Add to buy come from the server's own count rather
 // than a claim model restated here. The rows keep the order they opened in, so the deck just added
 // to stays where the reader pressed it, stamped `in the draft`.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -69,7 +70,10 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
   const readList = useCallback(() => {
     const n = ++asked.current;
     return loadFitsAction(card.oracleId)
-      .catch(() => null)
+      .catch((e) => {
+        if (n === asked.current) captureClientError("cards.fits-read", e);
+        return null;
+      })
       .then((r) => {
         const keepRestored = restoring.current && !r;
         restoring.current = false;
@@ -116,7 +120,8 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
       // A failed re-read leaves no count to draw: the old one is spent, and every row's Add or Add to
       // buy would be a claim about it. So the picker fails (`readList`), and Try again reads the count.
       setAdded((a) => [...a, { deckId: deck.id, note }]);
-    } catch {
+    } catch (e) {
+      captureClientError("cards.fits-add", e);
       setRefused(deck.id);
     } finally {
       release();

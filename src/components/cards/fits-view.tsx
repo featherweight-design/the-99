@@ -11,6 +11,7 @@
 //
 // This is the SIGNED-IN half (landing demo split 5k): the reads, the state and the four writes. What it draws is
 // `FitsViewDrawing` (`fits-view-drawing.tsx`), which takes props alone, so the demo can draw the same view.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -148,7 +149,7 @@ export function FitsView({
         if (predatesPress(p)) setPanel(p);
         else adopt(p);
       })
-      .catch(() => {})
+      .catch((e) => { if (live) captureClientError("cards.fits-panel", e); })
       .finally(() => { if (live) setPanelRead(true); });
     return () => { live = false; };
   }, [card.oracleId, adopt]);
@@ -165,7 +166,7 @@ export function FitsView({
   useEffect(() => {
     if (!polling) return;
     const t = setInterval(() => {
-      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending && !predatesPress(p)) settle(p, null); }).catch(() => {});
+      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending && !predatesPress(p)) settle(p, null); }).catch((e) => captureClientError("cards.fits-poll", e));
     }, POLL_MS);
     return () => clearInterval(t);
     // `settle` reads only setters and the card.
@@ -213,13 +214,17 @@ export function FitsView({
       setRunning(null);
       // A refusal costs nothing: the panel is read again so the band says why (a current read, no
       // credit, the owner's share) rather than a failure the reader did not have.
-      const again = await readFitsReadAction(card.oracleId).catch(() => null);
+      const again = await readFitsReadAction(card.oracleId).catch((e) => {
+        if (mounted.current) captureClientError("cards.fits-reread", e);
+        return null;
+      });
       if (again) adopt(again);
       if (res.reason === "tooBig") {
         setMemory((m) => ({ ...m, tooBigFor: candidateKey }));
         setAnnounced(read.announceTooBig);
       } else if (res.reason === "notFound" || res.reason === "noCandidates") setPressFailed(true);
-    } catch {
+    } catch (e) {
+      captureClientError("cards.fits-press", e);
       pressing.current = false;
       readingRef.current(false);
       setMemory((m) => ({ ...m, runFrom: null }));
@@ -257,7 +262,10 @@ export function FitsView({
       await list.add(deck);
       // The deck may be one the stored read names: once it holds the card it is resolved, not changed, so the
       // panel is read again and the note and the row say so now rather than at the next open.
-      const again = await readFitsReadAction(card.oracleId).catch(() => null);
+      const again = await readFitsReadAction(card.oracleId).catch((e) => {
+        if (mounted.current) captureClientError("cards.fits-reread-add", e);
+        return null;
+      });
       // Not over a press of this visit's still in flight: that press settles the band itself.
       if (again && mounted.current && !pressing.current) adopt(again);
     } finally { setMemory((m) => ({ ...m, writing: false })); }
@@ -281,7 +289,8 @@ export function FitsView({
         setAnnounced(read.announceSwapped(name, cutName));
       }
       await list.refresh(true);
-    } catch {
+    } catch (e) {
+      captureClientError("cards.fits-swap", e);
       setRefused({ deckId, kind: act?.kind === "swapped" ? "undo" : "swap" });
     } finally {
       endWrite();
@@ -310,7 +319,8 @@ export function FitsView({
         }
       }
       await list.refresh(true);
-    } catch {
+    } catch (e) {
+      captureClientError("cards.fits-add-deck", e);
       setRefused({ deckId, kind: act?.kind === "added" ? "undo" : "add" });
     } finally {
       endWrite();

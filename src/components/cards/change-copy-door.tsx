@@ -7,6 +7,7 @@
 // deck's draft and waits for its commit (`pickOtherDeck`); one choice spans both groups, so each clears the other.
 // The chooser (z-[70]) sits above the card modal (z-50) at both widths, and focus goes back to this button on close.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useRef, useState, useTransition } from "react";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
@@ -88,7 +89,8 @@ export function ChangeCopyDoor({ oracleId, cardName, owned, onWritten }: {
         // This door makes one Other pick at a time; the oldest stands for any left by an earlier session.
         setPickedId(r.other.pendingDeckIds[0] ?? null);
         setOpen(true);
-      } catch {
+      } catch (e) {
+        captureClientError("cards.copy-door-load", e);
         // Said once in the button's own live region; the door stays where it was.
         setAnnounce(moveCopyCopy.loadFailed);
       }
@@ -131,8 +133,9 @@ export function ChangeCopyDoor({ oracleId, cardName, owned, onWritten }: {
         if (said) setAnnounce(said);
         if (r.card) setView((v) => (v ? { ...v, card: r.card as ContestedCard } : v));
       }
-    }).catch(() => {
+    }).catch((e) => {
       if (mine === writes.current) {
+        captureClientError("cards.copy-door-write", e);
         setPickedId(null);
         setRefusal(moveCopyCopy.refused.couldNot(deck.name, cardName));
       }

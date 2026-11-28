@@ -272,6 +272,7 @@ function keyboardFocus(el: HTMLElement): boolean {
   try {
     return el.matches(":focus-visible");
   } catch {
+    // silent-catch: expected: refusal, an engine without the selector reads as not keyboard focus
     return false;
   }
 }

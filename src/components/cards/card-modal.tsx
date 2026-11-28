@@ -5,6 +5,7 @@
 // - Focus trap (READINESS #5): queries focusable children, wraps Tab/Shift+Tab
 // - Escape closes; focus returns to the previously-focused element on close
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import type { BrowseCard, Finish, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
@@ -554,7 +555,8 @@ export function CardModal({
       else onWantedChange(null);
       onProxyWrite?.();
       onWishlistWrite?.();
-    } catch {
+    } catch (e) {
+      captureClientError("cards.wishlist-printing", e);
       setAnnouncement(wishlistPrintingCopy.failed);
     } finally {
       footWriting.current = false;
@@ -1051,7 +1053,8 @@ export function CardModal({
         wrote = deckPrinting
           ? (await deckPrinting.save?.(written)) ?? false
           : await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
-      } catch {
+      } catch (e) {
+        captureClientError("cards.art-pick", e);
         wrote = false;
       }
       settleWrite(generation, wrote, written);
@@ -1071,7 +1074,8 @@ export function CardModal({
       try {
         await clearCardArtPreference(card.oracleId);
         wrote = true;
-      } catch {
+      } catch (e) {
+        captureClientError("cards.art-clear", e);
         wrote = false;
       }
       settleWrite(generation, wrote, null);

@@ -21,7 +21,7 @@ function keyboardFocused(el: Element | null): boolean {
   try {
     return el.matches(":focus-visible");
   } catch {
-    // An engine without the selector: keep the old, safer rule and hold on any focus.
+    // silent-catch: expected: refusal, an engine without the selector: keep the old, safer rule and hold on any focus.
     return true;
   }
 }

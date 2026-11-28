@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import {
   useState,
   useMemo,
@@ -710,8 +711,10 @@ export function CommandersView({
       .then((matches) => {
         if (live) setHiddenAnswer({ key, matches: matches ?? [] });
       })
-      .catch(() => {
-        if (live) setHiddenAnswer({ key, matches: [] });
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("commanders.hidden-lookup", e);
+        setHiddenAnswer({ key, matches: [] });
       });
     return () => {
       live = false;

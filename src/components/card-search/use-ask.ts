@@ -4,6 +4,7 @@
 // server actions read lazily, so the shell pays no read for a search that is never opened. Offline, or when a read
 // fails, the tools still answer, from their registry landing and without the reader's own figures.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { askStartAction, askToolsAction } from "../../app/ask-actions";
 import type { ToolCardModel } from "../../lib/discovery/showcase";
@@ -33,7 +34,7 @@ export function useAsk({ open, online, query, searching }: { open: boolean; onli
   useEffect(() => {
     if (!open || engine) return;
     let live = true;
-    import("./ask-engine").then((m) => live && setEngine(m)).catch(() => {});
+    import("./ask-engine").then((m) => live && setEngine(m)).catch((e) => captureClientError("ask.engine", e));
     return () => {
       live = false;
     };
@@ -46,7 +47,11 @@ export function useAsk({ open, online, query, searching }: { open: boolean; onli
     askStartAction()
       .then((s) => live && setStart(s))
       // Unread: every starter and every tool stay, as when offline.
-      .catch(() => live && setStartFailed(true));
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("ask.start", e);
+        setStartFailed(true);
+      });
     return () => {
       live = false;
     };
@@ -75,7 +80,11 @@ export function useAsk({ open, online, query, searching }: { open: boolean; onli
     const timer = window.setTimeout(() => {
       askToolsAction(wanted)
         .then((models) => n === seq.current && setRead({ key, models }))
-        .catch(() => n === seq.current && fallback());
+        .catch((e) => {
+          if (n !== seq.current) return;
+          captureClientError("ask.tools", e);
+          fallback();
+        });
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [key, online, engine]);

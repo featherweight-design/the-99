@@ -3,6 +3,7 @@
 // Composes CoverageChip, CoverageRow, CoverageDisclosure from Task 6.
 // One section owns the heading, sub-caption, note, retry, and all four role panels.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import type { RoleBasis } from "../../lib/profile/build";
 import { useState, useTransition, useId, type JSX } from "react";
 import { useDiscardedScroll } from "../ui/scroll-reset";
@@ -515,7 +516,8 @@ export function CoverageSection({
           router.refresh();
         }
         // On null: note stays, button re-enables (transition ends)
-      } catch {
+      } catch (e) {
+        captureClientError("commanders.coverage-retry", e);
         // A rejected action is the same outcome as a null one — no figures.
         // Swallowing it keeps the degraded note and the Retry button on screen;
         // letting it escape the transition would reach an error boundary and

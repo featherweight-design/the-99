@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import type { RoleBasis } from "../../lib/profile/build";
 import {
   useCallback,
@@ -555,9 +556,10 @@ export function DiscoveryView({
       // than hanging it: the states below wait for an answer, and one that never
       // arrives would hold them off the screen forever. `ok: false` is what
       // stops the settling being read as an answer.
-      .catch(() => {
-        if (live)
-          setAnswer({ key: `${discovery.sort}:${settledTrimmed}`, matches: [], ok: false });
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("commanders.discovery-search", e);
+        setAnswer({ key: `${discovery.sort}:${settledTrimmed}`, matches: [], ok: false });
       });
     return () => {
       live = false;
