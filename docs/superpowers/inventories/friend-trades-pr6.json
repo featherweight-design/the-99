@@ -1,0 +1,100 @@
+{
+  "feature": "Friend trades PR 6: the Wanted call-out, the want chips and the trade line",
+  "note": "Needs the PR 5 trade fixture (scripts/seed-trade-sheet-fixture.mts) on a SCRATCH branch off local-dev for the +clerk_test reader; export the RIN/SOL/UMA_PUBLIC_ID lines it prints. Read-only.",
+  "out": "contact-sheets/friend-trades-pr6",
+  "clearAbout": true,
+  "fullPage": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "callout",
+      "label": "Rin's Spares tab: the Wanted call-out (both directions), All / You want, the key, the Spares tab diamond",
+      "view": "src/components/social/spares-wanted-callout.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"wanted-callout\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "callout-you-want",
+      "label": "Rin's Spares tab with You want on: the grid cut to the wanted spares",
+      "view": "src/components/social/spares-wanted-callout.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?wanted=wishlist,deck",
+          "wait": "[data-testid=\"wanted-key\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "callout-held",
+      "label": "Sol's Spares tab: the call-out with no Trade press (held, Q10)",
+      "view": "src/components/social/spares-wanted-callout.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${SOL_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"wanted-callout\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "callout-none",
+      "label": "Uma's Spares tab: the call-out's none row, no diamond",
+      "view": "src/components/social/spares-wanted-callout.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${UMA_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"wanted-callout\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "spares-sheet-line",
+      "label": "A spare's sheet on Rin's tab: the trade line on Rin's row",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"wanted-callout\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"spare-tile-press\"]"
+        },
+        {
+          "wait": "[data-testid=\"friend-spare-trade-line\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "friends-list",
+      "label": "/friends: the want and spare chips, the phone key line",
+      "view": "src/components/social/friends-list.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "a[data-want-chip]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
