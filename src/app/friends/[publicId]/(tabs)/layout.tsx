@@ -14,6 +14,7 @@ import { friendDecks, friendSpareList, friendWishlist } from "../../../../lib/so
 import { tradesWaitingWith } from "../../../../lib/social/trade-reads";
 import { FriendHead } from "../../../../components/social/friend-head";
 import { FriendStrip } from "../../../../components/social/friend-strip";
+import { FriendBackProvider } from "../../../../components/social/friend-back";
 
 export default async function FriendPageLayout({
   children,
@@ -36,6 +37,7 @@ export default async function FriendPageLayout({
   if (!friend) notFound();
   return (
     <div className="w-full px-[14px] pt-[18px] pb-[30px] md:px-[34px] md:pt-[28px] md:pb-[34px]">
+      <FriendBackProvider>
       <FriendHead friend={friend} nowMs={now.getTime()} />
       <FriendStrip
         publicId={friend.publicId}
@@ -47,6 +49,7 @@ export default async function FriendPageLayout({
         }}
       />
       {children}
+      </FriendBackProvider>
     </div>
   );
 }

@@ -10,6 +10,8 @@
 // modal's words. `?spare={oracleId}` opens that card's modal on landing, or, the spare gone, draws the shared toast; the
 // parameter is stripped either way.
 
+import { FriendBackFrom } from "./friend-back";
+import type { FriendBack } from "../../lib/social/trade-back";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { FriendSpare, FriendSpareLine, FriendSpareList } from "../../lib/social/spares";
@@ -57,13 +59,20 @@ export type SparesView = { filters: SpareFilters; sort: SpareSort };
 const NO_NEED: Record<string, number> = {};
 const REST_VIEW: SparesView = { filters: NO_SPARE_FILTERS, sort: "wanted" };
 
-export function FriendSparesTab(props: Parameters<typeof SparesTabBody>[0]) {
+export function FriendSparesTab({ back = null, ...props }: Parameters<typeof SparesTabBody>[0] & {
+  /** The place Open the trade came from, for the friend head's way back (FromDeck D4); checked on the server. */
+  back?: FriendBack | null;
+}) {
   const { asks, spares } = props;
-  if (!asks?.trades) return <SparesTabBody {...props} />;
   return (
-    <TradesOnTab friend={asks.trades.friend} theirSpares={spares?.lines ?? NO_LINES} trades={asks.trades}>
-      <SparesTabBody {...props} />
-    </TradesOnTab>
+    <>
+      <FriendBackFrom back={back} />
+      {asks?.trades ? (
+        <TradesOnTab friend={asks.trades.friend} theirSpares={spares?.lines ?? NO_LINES} trades={asks.trades}>
+          <SparesTabBody {...props} />
+        </TradesOnTab>
+      ) : <SparesTabBody {...props} />}
+    </>
   );
 }
 

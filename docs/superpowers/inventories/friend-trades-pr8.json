@@ -1,0 +1,62 @@
+{
+  "feature": "Friend trades PR 8: trading from a deck or All shopping (FromDeck D2 to D4)",
+  "note": "Needs a SCRATCH branch off local-dev seeded by scripts/seed-trade-sheet-fixture.mts for the +clerk_test reader, plus a deck (SPARES_DECK) holding a card a fixture friend spares that the reader does not own (SPARES_CARD). The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit.",
+  "out": "contact-sheets/friend-trades-pr8",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "deck-spares-trade",
+      "label": "/decks/<id> Shopping: the spares sheet, Trade beside Ask (D2)",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        { "goto": "/decks/${SPARES_DECK}", "wait": "main, [role=main], h1", "settle": 1500 },
+        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 1500 },
+        { "clickRole": "button", "name": "[Ff]riends with a spare of ${SPARES_CARD}", "wait": "[data-testid=friend-spare-trade]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "deck-trade-sheet",
+      "label": "/decks/<id>: Trade opens the trade sheet, back to the spares (D3)",
+      "view": "src/components/social/trade-sheet-host.tsx",
+      "steps": [
+        { "goto": "/decks/${SPARES_DECK}", "wait": "main, [role=main], h1", "settle": 1500 },
+        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 1500 },
+        { "clickRole": "button", "name": "[Ff]riends with a spare of ${SPARES_CARD}", "wait": "[data-testid=friend-spare-trade]", "settle": 1500 },
+        { "click": "[data-testid=friend-spare-trade]" },
+        { "wait": "[data-testid=trade-sheet]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "cart-spares-trade",
+      "label": "/decks/shopping: the spares sheet, Trade beside Ask (D2)",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        { "goto": "/decks/shopping", "wait": "main, [role=main], h1", "settle": 1500 },
+        { "goto": "/decks/shopping", "wait": "[data-testid=spare-glyph]", "settle": 2000 },
+        { "clickRole": "button", "name": "^Friends with a spare of ${SPARES_CARD}", "wait": "[data-testid=friend-spare-trade]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "tab-from-deck",
+      "label": "/friends/<id>/spares?from=deck/<id>: the head names the deck (D4)",
+      "view": "src/components/social/friend-head.tsx",
+      "steps": [
+        { "goto": "/friends/${SPARES_FRIEND}/spares?from=deck/${SPARES_DECK}", "wait": "[data-testid=friend-head-back]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "tab-from-shopping",
+      "label": "/friends/<id>/spares?from=shopping: the head reads All shopping (D4)",
+      "view": "src/components/social/friend-head.tsx",
+      "steps": [
+        { "goto": "/friends/${SPARES_FRIEND}/spares?from=shopping", "wait": "[data-testid=friend-head-back]", "settle": 1500 }
+      ]
+    }
+  ]
+}

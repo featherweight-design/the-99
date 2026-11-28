@@ -33,7 +33,9 @@ import { printedNameOf } from "../../lib/collection/browse";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
 import { useLabelRows, useRoleCounter } from "./label-rows-context";
-import { FriendSparesProvider } from "../social/spare-markers";
+import { FriendSparesProvider, SparesSheetHost } from "../social/spare-markers";
+import { TradeSheetHost } from "../social/trade-sheet-host";
+import { TradeFromList } from "../social/trade-from-list";
 import { commanderAsRow, commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -568,7 +570,13 @@ export function Decklist({
   // nothing again.
   const spareIds = useMemo(() => listShoppingCards.map((c) => c.oracleId), [listShoppingCards]);
   const withSpares = (node: React.ReactNode) => (
-    <FriendSparesProvider oracleIds={spareIds} newestAsOf={newestAsOf} requests deckId={deckId}>{node}</FriendSparesProvider>
+    // Trade beside Ask on the spares sheet (friend trades, Ask D1): the sheet is drawn here, inside the press layer.
+    <TradeSheetHost>
+      <FriendSparesProvider oracleIds={spareIds} newestAsOf={newestAsOf} requests deckId={deckId} hostSheet={false}>
+        {node}
+        <TradeFromList from={{ kind: "deck", deckId }}><SparesSheetHost /></TradeFromList>
+      </FriendSparesProvider>
+    </TradeSheetHost>
   );
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
@@ -595,15 +603,23 @@ export function Decklist({
   const gotItDoor = gotIt ? <GotItDoorRegistration shoppingCards={shoppingCards} newestAsOf={newestAsOf} /> : null;
   // Second commander's box on the commander's card details (#491); draws nothing unless the page offered it.
   const commanderBox = <CommanderBoxRegistration commanderName={commander?.name ?? ""} />;
+  const standInsCard = swapTools?.standIns ?? null;
   const standInsSheet = swapTools ? (
     <>
       {swapTools.standIns ? (
-        <StandInsSheet
-          card={swapTools.standIns}
-          newestAsOf={newestAsOf}
-          onClose={swapTools.closeStandIns}
-          fromCard={swapTools.standInsFromCard}
-        />
+        // Its friends section takes Trade too (FromDeck D2): Trade closes it, and the trade sheet's back reopens it.
+        <TradeFromList from={{ kind: "deck", deckId }} sheet={{
+          oracleId: swapTools.standIns.oracleId,
+          close: swapTools.closeStandIns,
+          reopen: () => { if (standInsCard) swapTools.openStandIns(standInsCard, swapTools.standInsFromCard ? "card" : "row"); },
+        }}>
+          <StandInsSheet
+            card={swapTools.standIns}
+            newestAsOf={newestAsOf}
+            onClose={swapTools.closeStandIns}
+            fromCard={swapTools.standInsFromCard}
+          />
+        </TradeFromList>
       ) : null}
       {/* The card modal's door, for a card a Shopping row opened (swap tools PR 4c). */}
       {/* The list rows alone: a commander's row opens no door to stand-ins (H28). */}

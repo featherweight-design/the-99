@@ -378,6 +378,51 @@ export async function tradesWaitingWith(viewerId: string, now = new Date()): Pro
   return new Set(rows.filter((r) => rowState(factsOf(r), viewerId, now, false).waitsOnYou).map((r) => r.public_id));
 }
 
+/** The friends one spares sheet asks about at most: a card's friends with a spare, never every friend. */
+export const TRADE_PRESS_FRIENDS = 8;
+
+/** What the spares sheet's Trade press draws for one friend (Ask D1): the cap (Q10), the Wants line, `N trades open`. */
+export type TradePressFacts = { held: boolean; wants: readonly string[]; open: number };
+
+/** The live trades (open or accepted) with each of `friendPublicIds`, by the friend's public id. */
+export function tradePressQuery(viewerId: string, friendPublicIds: readonly string[]): SQL {
+  return sql`select ${tradeColumns("ptr")}, pfp.public_id::text as public_id
+    from ${trades} ptr
+    join ${friendLinks} pfl on pfl.user_id = ${viewerId} and pfl.friend_user_id = ${otherParty("ptr", viewerId)}
+    join ${socialProfiles} pfp on pfp.user_id = pfl.friend_user_id
+    where ${isParty("ptr", viewerId)} and ptr.status in ('open', 'accepted')
+      and pfp.public_id in (${sql.join(friendPublicIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
+}
+
+/**
+ * The spares sheet over a deck or All shopping (Ask D1): per friend on the opened card, whether an offer of the
+ * reader's holds the cap, the reader's spares on that friend's wishlist by name, and the live trades with them. Only
+ * current friends come back (`loadOwnSparesFor` and the trades read each join the friendship); anyone else is left out,
+ * and the row draws no Trade.
+ */
+export async function loadTradePresses(viewerId: string, friendPublicIds: readonly unknown[], now = new Date()): Promise<Record<string, TradePressFacts>> {
+  const ids = [...new Set(friendPublicIds.filter(isUuid))].slice(0, TRADE_PRESS_FRIENDS);
+  if (ids.length === 0) return {};
+  const [rows, own, friendIds] = await Promise.all([
+    db.execute<TradeRowCols & { public_id: string }>(tradePressQuery(viewerId, ids)).then((r) => r.rows),
+    db.execute<{ public_id: string }>(ownPublicIdQuery(viewerId)).then((r) => r.rows[0]?.public_id ?? null),
+    Promise.all(ids.map((id) => resolveFriend(viewerId, id))),
+  ]);
+  if (own === null) return {};
+  const lists = await Promise.all(friendIds.map((f) => (f === null ? null : loadFriendSpareList(f, own, true))));
+  const out: Record<string, TradePressFacts> = {};
+  ids.forEach((id, i) => {
+    if (friendIds[i] === null) return;
+    const facts = rows.filter((r) => r.public_id === id).map(factsOf);
+    out[id] = {
+      held: offerHeld(facts, viewerId, now),
+      wants: (lists[i]?.lines ?? []).filter((l) => l.onWishlist).map((l) => l.name),
+      open: facts.filter((f) => { const s = tradeStatus(f, now); return s === "open" || s === "accepted"; }).length,
+    };
+  });
+  return out;
+}
+
 /**
  * The picker's Your spares: the reader's own spares as this friend sees them, the list `goneCards` checks an offer's
  * cards against, so a card the picker draws is one the offer can carry. `onWishlist` is the FRIEND's wishlist here (the

@@ -153,10 +153,16 @@ export const tradeCopy = {
     title: (f: Name) => personText`Trade with ${f}`,
     close: "Close",
     back: "Friends’ spares",
+    backAria: "Back to your friends’ spares",
     sentTitle: (f: Name) => personText`Offer sent to ${f}`,
     sentBody: (f: Name) => personText`${f} has 14 days to answer. It’s on ${f}’s Spares tab and in Friends › Trades.`,
     done: "Done",
     openTrade: "Open the trade ›",
+  },
+  /** The friend head's way back after Open the trade from a deck or All shopping (FromDeck D4): the place it came from. */
+  from: {
+    shopping: "All shopping",
+    back: (place: string) => `‹ ${place}`,
   },
   /** Make it a trade, on the holder's Yes receipt. */
   askBack: "Make it a trade",

@@ -18,12 +18,17 @@ import { Face } from "./face";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FriendMenu } from "./friends-list";
 import { SocialToast, type SocialToastState } from "./social-toast";
+import { useFriendBack } from "./friend-back";
+import { tradeCopy } from "../../lib/copy/trades";
 
 const p = socialCopy.friendPage;
 const f = socialCopy.friends;
 
 export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number }) {
   const router = useRouter();
+  // `‹ Friends`, or the deck or All shopping a trade was opened from (FromDeck D4).
+  const origin = useFriendBack();
+  const backHref = origin?.href ?? "/friends";
   // Days in UTC until hydrated, as the server drew them, and the reader's own after (as `/friends`).
   const timeZone = useHydrated() ? undefined : "UTC";
   const [removing, setRemoving] = useState(false);
@@ -48,9 +53,9 @@ export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number })
   const since = f.since(sinceDay(friend.since, new Date(nowMs), timeZone));
   return (
     <div>
-      <Link href="/friends" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">
-        {p.back}
-        <PendingReporter href="/friends" />
+      <Link href={backHref} data-testid="friend-head-back" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">
+        {origin ? tradeCopy.from.back(origin.label) : p.back}
+        <PendingReporter href={backHref} />
       </Link>
       <div className="mt-[14px] flex items-center gap-[16px]">
         <Face name={friend.displayName} commander={friend.commander} size={64} />

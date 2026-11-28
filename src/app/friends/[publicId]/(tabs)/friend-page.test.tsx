@@ -20,6 +20,7 @@ const m = vi.hoisted(() => ({
   catalogCardName: vi.fn(),
   loadPrices: vi.fn(),
   readerStoreForPage: vi.fn(async (): Promise<string> => "manapool"),
+  resolveTradeBack: vi.fn(async (): Promise<{ href: string; label: string } | null> => null),
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => m.pathname,
@@ -44,6 +45,7 @@ vi.mock("../../../../lib/social/trade-reads", async (orig) => ({
 vi.mock("../../../../lib/social/friend-page-data", async (orig) => ({
   ...(await orig<typeof import("../../../../lib/social/friend-page-data")>()), catalogCardName: m.catalogCardName,
 }));
+vi.mock("../../../../lib/social/trade-back", () => ({ resolveTradeBack: m.resolveTradeBack }));
 vi.mock("../../../../lib/decks/price-query", () => ({ loadPrices: m.loadPrices }));
 vi.mock("../../../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ({})) }));
 vi.mock("../../../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
@@ -68,6 +70,8 @@ import FriendWishlistPage from "./wishlist/page";
 import FriendSparesPage from "./spares/page";
 import FriendDecksMoved from "./decks/page";
 import { FriendHead } from "../../../../components/social/friend-head";
+import { FriendBackFrom, FriendBackProvider } from "../../../../components/social/friend-back";
+import { tradeCopy } from "../../../../lib/copy/trades";
 import { FriendWishlist } from "../../../../components/social/friend-wishlist";
 import { socialCopy } from "../../../../lib/copy/social";
 import { named } from "../../../../lib/person-name/mint";
@@ -255,6 +259,29 @@ describe("a friend's page group", () => {
   });
 });
 
+describe("FriendHead's way back (FromDeck D4)", () => {
+  const head = <FriendHead friend={COLIN} nowMs={Date.parse("2026-10-15T12:00:00Z")} />;
+
+  it("names the place a trade came from while the Spares tab is mounted, and the plain Friends after it leaves", () => {
+    const back = { href: "/decks/11111111-1111-4111-8111-111111111111", label: "Thopter Factory" };
+    const { rerender } = render(<FriendBackProvider>{head}<FriendBackFrom back={back} /></FriendBackProvider>);
+    const link = screen.getByTestId("friend-head-back");
+    expect(link.textContent).toBe(tradeCopy.from.back("Thopter Factory"));
+    expect(link.getAttribute("href")).toBe(back.href);
+    rerender(<FriendBackProvider>{head}</FriendBackProvider>);
+    expect(screen.getByTestId("friend-head-back").textContent).toBe(p.back);
+    expect(screen.getByTestId("friend-head-back").getAttribute("href")).toBe("/friends");
+  });
+
+  it("draws the plain Friends when the tab has no origin, or with no provider at all", () => {
+    const { unmount } = render(<FriendBackProvider>{head}<FriendBackFrom back={null} /></FriendBackProvider>);
+    expect(screen.getByTestId("friend-head-back").getAttribute("href")).toBe("/friends");
+    unmount();
+    render(head);
+    expect(screen.getByTestId("friend-head-back").textContent).toBe(p.back);
+  });
+});
+
 describe("FriendHead and the wishlist tab", () => {
   const draw = (lines = [LINE]) => render(
     <>
@@ -338,6 +365,18 @@ describe("FriendHead and the wishlist tab", () => {
     const page = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ spare: SPARE.oracleId.toUpperCase() }) });
     expect(m.catalogCardName).not.toHaveBeenCalled();
     expect((page as { props: { asks: { spare: string } } }).props.asks.spare).toBe(SPARE.oracleId);
+  });
+
+  it("hands the tab the way back a trade from a deck or All shopping came by, resolved for the reader", async () => {
+    m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
+    m.resolveTradeBack.mockResolvedValueOnce({ href: "/decks/shopping", label: tradeCopy.from.shopping });
+    const page = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ from: "shopping" }) });
+    expect(m.resolveTradeBack).toHaveBeenLastCalledWith("user_viewer", "shopping");
+    expect((page as { props: { back: unknown } }).props.back).toEqual({ href: "/decks/shopping", label: tradeCopy.from.shopping });
+    // A failed read draws the plain way back, never an error page.
+    m.resolveTradeBack.mockRejectedValueOnce(new Error("db"));
+    const plainBack = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ from: "shopping" }) });
+    expect((plainBack as { props: { back: unknown } }).props.back).toBeNull();
   });
 
   it("prices the spare's buy tag at the reader's store", async () => {

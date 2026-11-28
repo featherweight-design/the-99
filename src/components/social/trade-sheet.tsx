@@ -9,7 +9,7 @@ import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ModalChrome } from "../decks/receipt-modal";
+import { ModalChrome, type SheetBack } from "../decks/receipt-modal";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { GhostButton, PrimaryButton, ACTION_SIZE } from "../ui/button";
 import { HydratedImg, useHydrated } from "../ui/hydrated-art";
@@ -52,7 +52,7 @@ const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--
 const CHIP = "inline-flex h-[22px] min-w-0 items-center gap-[3px] rounded-[4px] px-[4px] font-sans text-[10.5px] min-[375px]:text-[11px] font-medium";
 const MUTED = "text-[color:var(--fg-muted)] bg-[color-mix(in_oklab,var(--fg-muted)_12%,transparent)]";
 
-export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offered, prices, onClose, onOpen }: {
+export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offered, prices, onClose, onOpen, back }: {
   friend: OtherSide;
   open: TradeOpen;
   /** Q10: an offer of the reader's to this friend is unanswered, so no new trade may start from this sheet. */
@@ -67,6 +67,8 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
   onClose: () => void;
   /** Open another trade with this friend in place (the receipt's Open the trade, an Offered popover's Open ›). */
   onOpen: (next: TradeOpen) => void;
+  /** The way back to the spares sheet it was opened from (FromDeck D2), drawn until the offer is sent (D4 has none). */
+  back?: SheetBack;
 }) {
   const router = useRouter();
   const toast = useSpareToast();
@@ -195,7 +197,7 @@ export function TradeSheet({ friend, open, held, theirSpares, yourSpares, offere
   const title = <PersonText text={t.sheet.title(name)} />;
 
   return (
-    <ModalChrome title="" titleNode={title} pendingName={undefined} closeLabel={t.sheet.close} closeHeld={busy !== null} onClose={onClose} width={640}
+    <ModalChrome title="" titleNode={title} pendingName={undefined} closeLabel={t.sheet.close} closeHeld={busy !== null} onClose={onClose} width={640} back={sent ? undefined : back}
       eyebrow={t.feed.kicker} stand={composing && !sent} fit={!composing || sent !== null}>
       <div data-testid="trade-sheet" className="flex flex-col px-[14px] pb-[22px] pt-[12px] md:px-[18px] md:pb-[18px]">
         {sent ? (
