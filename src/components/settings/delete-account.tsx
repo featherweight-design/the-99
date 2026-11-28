@@ -130,7 +130,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
         if (!failedOnce.current) setNote(a.notDeleted);
         failedOnce.current = false;
       } else {
-        captureClientError("settings.delete", err);
+        if (!tooMany(err)) captureClientError("settings.delete", err);
         fail(a.failed);
       }
     }

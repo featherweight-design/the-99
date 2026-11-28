@@ -253,7 +253,8 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
       subscription.current = null;
       setDevice((d) => d && { ...d, state: "off-here" });
     } catch (e) {
-      captureClientError("settings.device-off", e);
+      // The browser saying its unsubscribe did not happen is this flow's own throw (above), not a fault to report.
+      if (!(e instanceof Error && e.message === "unsubscribe")) captureClientError("settings.device-off", e);
       sayFailed();
     } finally {
       ops.current++;
