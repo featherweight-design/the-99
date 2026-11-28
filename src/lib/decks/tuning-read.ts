@@ -20,6 +20,7 @@ import { cacheForUser } from "../cache/user-lists";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { loadDeckProfileFromHead, readProfileHead, type ProfileHead } from "../profile/load";
 import { PROFILE_VERSION } from "../profile/version";
+import { readerStoreForPage } from "../stores/preference";
 import type { Bracket, DeckProfile } from "../profile/types";
 import { bracketAfter } from "../tuning/bracket-shift";
 import { tuningFingerprint } from "../tuning/fingerprint";
@@ -37,7 +38,6 @@ import { loadJobRows } from "./job-rows";
 import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
 import type { Store } from "../stores/rows";
-import { readerStoreForPage } from "../stores/preference";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { liveLockedIds } from "./locks";
@@ -72,11 +72,10 @@ export type TuningInputs = {
 };
 
 /**
- * Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. `_env` is unread since the
- * Analysis tab's switch retired (the focus is always read); it stays until the switch's delete PR, which updates the
- * `scripts/` callers that still pass it.
+ * Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. `env` resolves the reader's store
+ * (a capped deck's answer reads prices there, so the store is in the fingerprint).
  */
-export async function tuningInputs(deckId: string, userId: string, _env: NodeJS.ProcessEnv): Promise<TuningInputs | null> {
+export async function tuningInputs(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<TuningInputs | null> {
   // The head and the version it belongs to, in ONE snapshot: read apart, a commit landing between
   // them would pair the list before the commit with the version after it.
   const snapshot = await db.transaction(async (tx) => {
@@ -89,7 +88,7 @@ export async function tuningInputs(deckId: string, userId: string, _env: NodeJS.
   }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
   const { head, readVersion, locked } = snapshot;
-  const [games, [deck], [upload], generation] = await Promise.all([
+  const [games, [deck], [upload], generation, store] = await Promise.all([
     listDeckGames(deckId, userId),
     db.select({
       intent: decks.intent,
@@ -109,6 +108,7 @@ export async function tuningInputs(deckId: string, userId: string, _env: NodeJS.
     // run's shortlist moves with every write. Migration-safe: a preview database without the ledger
     // table gets the timestamp half alone.
     readCollectionGeneration(db, userId),
+    readerStoreForPage(userId, env),
   ]);
   if (!deck) return null;
   const intent = deck.intent;
@@ -128,6 +128,7 @@ export async function tuningInputs(deckId: string, userId: string, _env: NodeJS.
     locks: locked,
     limits,
     focus,
+    store,
   });
   // Every card but the commander locked: a body card is every `deck_cards` row, the commander is not
   // one (membership is `deck_cards`), and an empty body has nothing locked either.
