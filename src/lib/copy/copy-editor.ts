@@ -6,6 +6,14 @@ export const copyEditorCopy = {
   /** The door's count while unsent edits wait in this browser, and its accessible name. */
   doorWaiting: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} waiting`,
   doorLabel: (n: number) => (n === 0 ? "Edit copy" : `Edit copy, ${n} ${n === 1 ? "edit" : "edits"} waiting`),
+  /** The notice after Done with unsent edits. */
+  waiting: {
+    title: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} waiting, not sent`,
+    body: (n: number) => (n === 1 ? "It stays in this browser until you open a pull request or clear it." : "They stay in this browser until you open a pull request or clear them."),
+    review: "Review",
+    send: "Open pull request",
+    close: "Close",
+  },
   bar: {
     title: "Editing copy",
     env: "staging",

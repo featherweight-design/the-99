@@ -3,11 +3,13 @@
 // everyone else gets none of it, not even this file. The overlay itself (rows, outlines, bar) is a lazy chunk loaded
 // the first time the mode turns on.
 import dynamic from "next/dynamic";
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { copyEditorCopy } from "../../lib/copy/copy-editor";
 import { focusDoor } from "./chrome";
 import { OVERLAY_ATTR } from "./scan";
 import { useEditSession } from "./use-edit-session";
+import { WaitingNotice } from "./waiting-notice";
 
 const Overlay = dynamic(() => import("./overlay"), { ssr: false });
 
@@ -29,17 +31,29 @@ const StagingDot = () => <span aria-hidden className="inline-block h-2 w-2 flex-
 export function CopyEditorProvider({ children }: { children: ReactNode }) {
   const [on, setOn] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const session = useEditSession();
+  const { edits, sub, submit, setTrayOpen } = session;
+  const waiting = edits.length;
   const start = useCallback(() => {
     setLoaded(true);
+    setNoticeOpen(false);
     setOn(true);
   }, []);
+  // Done leaves a notice when edits are still unsent, unless a send is already under way (its tray says so).
+  const unsent = waiting > 0 && sub.phase !== "submitting";
   const stop = useCallback(() => {
     setOn(false);
-    // Done gives the focus back to the door.
+    setNoticeOpen(unsent);
+    // Done gives the focus back to the door; the notice takes none.
     focusDoor();
-  }, []);
-  const session = useEditSession();
-  const waiting = session.edits.length;
+  }, [unsent]);
+  // The notice belongs to the page Done was pressed on.
+  const pathname = usePathname();
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- closing on navigation is the point
+    setNoticeOpen(false);
+  }, [pathname]);
   const mode = useMemo(() => ({ on, start, stop, waiting }), [on, start, stop, waiting]);
   return (
     <ModeContext.Provider value={mode}>
@@ -63,6 +77,21 @@ export function CopyEditorProvider({ children }: { children: ReactNode }) {
         </button>
       )}
       {loaded && <Overlay on={on} stop={stop} session={session} />}
+      {noticeOpen && !on && waiting > 0 && (
+        <WaitingNotice
+          count={waiting}
+          onClose={() => setNoticeOpen(false)}
+          onReview={() => {
+            setNoticeOpen(false);
+            setTrayOpen(true);
+          }}
+          onSend={() => {
+            setNoticeOpen(false);
+            setTrayOpen(true);
+            submit();
+          }}
+        />
+      )}
     </ModeContext.Provider>
   );
 }

@@ -7,3 +7,9 @@ export function focusDoor(): void {
     doors.find((d) => d.getClientRects().length > 0)?.focus();
   });
 }
+/** Bottom of the phone header as it is on screen now (it scrolls away and slides back), so the bar and the notice pin under it. */
+export function headerBottom(): number {
+  const header = document.querySelector("header[data-shell-nav]");
+  return header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
+}
+
