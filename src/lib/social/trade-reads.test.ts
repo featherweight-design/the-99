@@ -7,16 +7,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: { execute: vi.fn() } }));
 vi.mock("./spares", () => ({ loadFriendSpares: vi.fn(async () => []), loadFriendSpareList: vi.fn() }));
-vi.mock("./access", () => ({ resolveFriend: vi.fn() }));
+vi.mock("./access", () => ({ resolveFriend: vi.fn(), loadFriend: vi.fn() }));
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn() }));
 
 import { db } from "../../db";
 import { loadPrices } from "../decks/price-query";
 import { isThirdPartyName } from "../person-name/brand";
-import { resolveFriend } from "./access";
+import { loadFriend, resolveFriend } from "./access";
 import { loadFriendSpareList, loadFriendSpares } from "./spares";
 import {
-  loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradeRows, loadTradesWith, offeredToQuery, tradeRowsQuery, tradesWaitingQuery, tradesWaitingWith,
+  loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradeSheet, loadTradeRows, loadTradesWith, offeredToQuery, tradeRowsQuery, tradesWaitingQuery, tradesWaitingWith,
   tradePrices, tradePricesOf, tradeViewCardsQuery, tradeViewQuery,
 } from "./trade-reads";
 import { tradeOpenFloor } from "./trade-rules";
@@ -279,5 +279,23 @@ describe("trade prices", () => {
     vi.mocked(loadPrices).mockResolvedValue(read);
     expect(await tradePrices([A], "manapool", NOW)).toEqual(tradePricesOf(read, [A], "manapool", NOW));
     expect(loadPrices).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("loadTradeSheet", () => {
+  beforeEach(() => {
+    exec.mockReset();
+    vi.mocked(loadFriend).mockReset();
+    vi.mocked(loadFriendSpareList).mockReset();
+  });
+
+  it("reads nothing for a malformed id, and nothing past the friendship for a public id that is not the viewer's friend", async () => {
+    expect(await loadTradeSheet("viewer", "not-a-uuid", "manapool", NOW)).toBeNull();
+    expect(loadFriend).not.toHaveBeenCalled();
+    vi.mocked(loadFriend).mockResolvedValue(null);
+    expect(await loadTradeSheet("viewer", PF, "manapool", NOW)).toBeNull();
+    expect(loadFriend).toHaveBeenCalledWith("viewer", PF);
+    expect(loadFriendSpareList).not.toHaveBeenCalled();
+    expect(exec).not.toHaveBeenCalled();
   });
 });

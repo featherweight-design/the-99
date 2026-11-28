@@ -407,13 +407,15 @@ export type TradeSheetData = {
  */
 export async function loadTradeSheet(viewerId: string, friendPublicId: unknown, store: Store, now = new Date()): Promise<TradeSheetData | null> {
   if (!isUuid(friendPublicId)) return null;
-  const [friend, theirs, yours, withThem] = await Promise.all([
-    loadFriend(viewerId, friendPublicId),
+  // Any signed-in caller can name any public id: the friendship is read first, and nothing else is read without it.
+  // Each read below also joins the grant on the viewer itself; this keeps a stranger's id from costing more than one read.
+  const friend = await loadFriend(viewerId, friendPublicId);
+  if (!friend) return null;
+  const [theirs, yours, withThem] = await Promise.all([
     loadFriendSpareList(viewerId, friendPublicId, true),
     loadOwnSparesFor(viewerId, friendPublicId),
     loadTradesWith(viewerId, friendPublicId, now),
   ]);
-  if (!friend) return null;
   const theirSpares = theirs?.lines ?? [];
   const ownIds = yours.map((l) => l.oracleId);
   const [offered, prices] = await Promise.all([

@@ -19,6 +19,7 @@ const m = vi.hoisted(() => ({
   markTraded: vi.fn(),
   clearTrade: vi.fn(),
   loadTrade: vi.fn(),
+  loadTradeSheet: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
@@ -31,10 +32,10 @@ vi.mock("../../lib/social/trades", () => ({
   proposeTrade: m.proposeTrade, counterTrade: m.counterTrade, reviseTrade: m.reviseTrade, answerTrade: m.answerTrade,
   withdrawTrade: m.withdrawTrade, rescindTrade: m.rescindTrade, markTraded: m.markTraded, clearTrade: m.clearTrade,
 }));
-vi.mock("../../lib/social/trade-reads", () => ({ loadTrade: m.loadTrade }));
+vi.mock("../../lib/social/trade-reads", () => ({ loadTrade: m.loadTrade, loadTradeSheet: m.loadTradeSheet }));
 
 import {
-  answerTradeAction, clearTradeAction, counterTradeAction, markTradedAction, openTradeAction, proposeTradeAction,
+  answerTradeAction, clearTradeAction, counterTradeAction, markTradedAction, openTradeAction, openTradeSheetAction, proposeTradeAction,
   rescindTradeAction, reviseTradeAction, withdrawTradeAction,
 } from "./trade-actions";
 
@@ -153,5 +154,23 @@ describe("openTradeAction", () => {
   it("is null for a malformed id, with no read", async () => {
     expect(await openTradeAction("x")).toBeNull();
     expect(m.loadTrade).not.toHaveBeenCalled();
+  });
+});
+
+describe("openTradeSheetAction", () => {
+  beforeEach(() => {
+    m.requireUserId.mockReset().mockResolvedValue("viewer");
+    m.requestFlags.mockReset().mockResolvedValue({});
+    m.readerStoreForPage.mockReset().mockResolvedValue("manapool");
+    m.loadTradeSheet.mockReset();
+  });
+
+  it("takes the reader from the session, refuses a malformed id before any read, and returns the loader's null for a non-friend", async () => {
+    expect(await openTradeSheetAction("nope")).toBeNull();
+    expect(m.loadTradeSheet).not.toHaveBeenCalled();
+    m.loadTradeSheet.mockResolvedValue(null);
+    expect(await openTradeSheetAction(FRIEND)).toBeNull();
+    expect(m.loadTradeSheet).toHaveBeenCalledWith("viewer", FRIEND, "manapool");
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });
