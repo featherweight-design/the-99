@@ -7,6 +7,8 @@
 import { and, eq, notInArray } from "drizzle-orm";
 import { db } from "../../db";
 import { accountMailboxes } from "../../db/schema";
+import { captureServerError } from "../sentry/capture";
+import { foldMailbox } from "../email/fold";
 import { mailboxHash, verifiedEmails } from "../payments/canonical-email";
 
 type Env = Parameters<typeof mailboxHash>[1];
@@ -23,7 +25,12 @@ export function mailboxEnv(): Env {
  */
 export async function mailboxTaken(email: string, env: Env = mailboxEnv()): Promise<boolean> {
   const hash = mailboxHash(email, env);
-  if (hash === null) return false;
+  if (hash === null) {
+    // A real address that could not be hashed means the key is missing or too short: the gate has switched itself off.
+    // Reported, never silent, and without the address (a fixed message and the tag alone).
+    if (foldMailbox(email) !== null) captureServerError("account-mailboxes:key", new Error("mailbox key missing or too short: the alias gate is off"));
+    return false;
+  }
   const [row] = await db.select({ userId: accountMailboxes.userId }).from(accountMailboxes)
     .where(eq(accountMailboxes.mailboxHash, hash)).limit(1);
   return row !== undefined;
@@ -44,7 +51,9 @@ export function mailboxPlan(data: { email_addresses?: unknown }, env: Env): { ha
 /**
  * Make the account's rows match its verified addresses: insert what is new, delete what it dropped. One transaction, and
  * idempotent, so a redelivery repeats it harmlessly. A hash another account already holds is left to that account
- * (`on conflict do nothing`): two people cannot share a mailbox, and the first to hold it keeps it.
+ * (`on conflict do nothing`, the hash is unique): two people cannot share a mailbox, and the first to hold it keeps it. The
+ * second account gets no row for it, now or on a later sync, while the first holds it; the gate still refuses an alias of
+ * that mailbox because the first account's row answers it.
  *
  * With verified addresses but none hashable (no key), nothing changes: a missing key must not wipe the account's rows.
  * A payload with no verified address at all empties them, as the account no longer answers to any.

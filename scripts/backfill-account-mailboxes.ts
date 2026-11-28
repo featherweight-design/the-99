@@ -1,4 +1,4 @@
-// One-off: give every account that already exists its `account_mailboxes` rows (migration 0279), so the invite and flyer
+// One-off: give every account that already exists its `account_mailboxes` rows (migration 0278), so the invite and flyer
 // hand-overs refuse an alias of an account made before the table existed. The migration cannot read Clerk, so the existing
 // accounts' addresses are read here and only their keyed hashes are written; the webhook keeps the table true afterwards.
 //
