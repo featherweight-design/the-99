@@ -18,6 +18,7 @@ import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
 import { enforceHit } from "../../lib/rate/observe";
 import { isUuid } from "../../lib/social/rules";
+import { TRADE_PRESS_FRIENDS } from "../../lib/social/trade-from";
 import { loadTrade, loadTradePresses, loadTradeSheet, type TradePressFacts, type TradeSheetData, type TradeView } from "../../lib/social/trade-reads";
 import { cleanSides, isRound, isSeenAt } from "../../lib/social/trade-rules";
 import {
@@ -110,7 +111,8 @@ export async function openTradeAction(tradeId: unknown): Promise<TradeView | nul
  */
 export async function tradePressesAction(friendPublicIds: unknown): Promise<Record<string, TradePressFacts>> {
   const userId = await requireUserId();
-  if (!Array.isArray(friendPublicIds)) return {};
+  // The sheet asks in batches of TRADE_PRESS_FRIENDS, so a longer list is not the app's and reads nothing.
+  if (!Array.isArray(friendPublicIds) || friendPublicIds.length > TRADE_PRESS_FRIENDS) return {};
   if ((await enforceHit(userId, "trade-presses")) !== null) return {};
   return loadTradePresses(userId, friendPublicIds);
 }

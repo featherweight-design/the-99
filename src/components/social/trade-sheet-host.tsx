@@ -2,7 +2,8 @@
 // The trade sheet away from a friend's Spares tab (handoff `design_handoff_the99_friend_trades`, MakeTrade A1 to A3 and
 // Lists L1/RH): Friends and Home mount one host, and a press anywhere under it opens the sheet over the page it is on.
 // The friend's spares, prices and cap are read at the press (`openTradeSheetAction`), since neither page reads them for
-// every friend. One sheet at a time; a press while one is being read is ignored, and a failed read draws the toast.
+// every friend. One sheet at a time; a press while one is being read is ignored, and a failed read draws the toast (and
+// reopens the spares sheet it came from, if any).
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { openTradeSheetAction } from "../../app/friends/trade-actions";
@@ -50,10 +51,12 @@ export function TradeSheetHost({ children }: { children: ReactNode }) {
     try {
       const data = await openTradeSheetAction(friendPublicId);
       if (data) setSheet({ friendPublicId, data, open: next, from });
-      else toast.fail();
+      else { toast.fail(); from?.back(); }
     } catch (e) {
       captureClientError("trades.sheet", e);
       toast.fail();
+      // Opened from a spares sheet, which closed for it: a failed read puts the reader back there.
+      from?.back();
     } finally {
       reading.current = false;
       setPending(null);

@@ -192,4 +192,10 @@ describe("tradePressesAction", () => {
     expect(await tradePressesAction([FRIEND])).toEqual({});
     expect(m.loadTradePresses).not.toHaveBeenCalled();
   });
+
+  it("refuses a list longer than one batch before it counts or reads", async () => {
+    expect(await tradePressesAction(Array.from({ length: 9 }, () => FRIEND))).toEqual({});
+    expect(m.enforceHit).not.toHaveBeenCalled();
+    expect(m.loadTradePresses).not.toHaveBeenCalled();
+  });
 });
