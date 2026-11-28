@@ -1,6 +1,7 @@
 // The trade-match roll-up (Cart on your wishlist handoff #3399, README Q1, board `Notices` N1): a friend's matches on one
 // reader-day are one What's new row. The writer keeps one stored item per card and friend (its dedupe key, "told once");
-// the fold is read-time only, so the push resolver and the Friends page's Waiting on you list still see one item per card.
+// the fold is read-time only, so the push resolver still sees one item per card. The Friends page's Waiting on you list
+// folds its rows the same way (`waiting.ts`, #3441), and both badges count the folded rows (`rollCountKey`).
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { judgedZone } from "../push/hold";
@@ -20,10 +21,14 @@ export async function readerZone(userId: string, q: Pick<typeof db, "execute"> =
   return (rows as { time_zone: string | null }[])[0]?.time_zone ?? null;
 }
 
-/** The fold's group for one row: the friend and the instant their reader-day began. Null for a row that never folds. */
+/** The fold's group: the friend and the instant their reader-day began. Shared with Waiting on you's fold (`waiting.ts`). */
+export const rollGroup = (friendPublicId: string, at: Date, zone: string): string =>
+  `${friendPublicId} ${readerDayStart(at, zone).toISOString()}`;
+
+/** The fold's group for one row (`rollGroup`). Null for a row that never folds. */
 function groupOf(v: FeedView, zone: string): string | null {
   if (v.kind !== "trade-match" || !v.friend) return null;
-  return `${v.friend.publicId} ${readerDayStart(new Date(v.at), zone).toISOString()}`;
+  return rollGroup(v.friend.publicId, new Date(v.at), zone);
 }
 
 /**

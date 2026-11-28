@@ -138,3 +138,21 @@ describe("reconcileWishlistSyncs", () => {
     vi.doUnmock("../sentry/capture");
   });
 });
+
+describe("syncWishlistNow", () => {
+  it("runs the pass in the request, and a failure reaches Sentry without failing the action (#3441)", async () => {
+    vi.resetModules();
+    const execute = vi.fn(async () => {
+      throw new Error("db down");
+    });
+    const captureServerError = vi.fn();
+    vi.doMock("../../db", () => ({ db: { execute } }));
+    vi.doMock("../sentry/capture", () => ({ captureServerError }));
+    const mod = await import("./sync");
+    await expect(mod.syncWishlistNow("u1")).resolves.toBeUndefined();
+    expect(execute).toHaveBeenCalled();
+    expect(captureServerError.mock.calls.map((c) => c[0])).toEqual(["cart-sync-failed"]);
+    vi.doUnmock("../../db");
+    vi.doUnmock("../sentry/capture");
+  });
+});

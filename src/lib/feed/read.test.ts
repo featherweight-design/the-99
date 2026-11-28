@@ -235,6 +235,14 @@ describe("the reads", () => {
     expect(ran).toHaveLength(2);
   });
 
+  it("counts a friend's trade matches on one reader-day once on the Friends badge, as Waiting on you folds them (#3441)", async () => {
+    const ran: SQL[] = [];
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 1 }] }; } } as never;
+    await unseenFriendsCount("u", env(), NOW, q);
+    const matches = ran.map((s) => flat(render(s).sql)).find((t) => t.includes("friends_seen_at") && t.includes("'roll:'"));
+    expect(matches).toContain("count(distinct case when f.kind = 'trade-match'");
+  });
+
   it("reads New precon (feed and badge), and never writes its stored choice", async () => {
     const ran: SQL[] = [];
     const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;

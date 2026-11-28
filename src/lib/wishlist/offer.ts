@@ -61,7 +61,8 @@ export function dismissWishlistOfferWrite(userId: string) {
 
 /**
  * Add them: every deck ticked (a deck kept off earlier is put back, only those rows written), the switch on, which
- * schedules the first pass (`setWishlistSync`), and the offer answered.
+ * runs the first pass before it returns (`setWishlistSync`), so the tab's refresh draws the deck boxes (#3441), and
+ * the offer answered.
  */
 export async function acceptWishlistOffer(userId: string): Promise<void> {
   await db.update(decks).set({ offWishlist: false }).where(and(eq(decks.userId, userId), eq(decks.offWishlist, true)));

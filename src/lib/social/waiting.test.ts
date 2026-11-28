@@ -12,6 +12,7 @@ const m = vi.hoisted(() => ({
   asks: vi.fn(),
   friendAsks: vi.fn(),
   offers: vi.fn(),
+  zone: vi.fn(),
 }));
 vi.mock("./spare-requests", () => ({ loadIncomingAsks: m.asks }));
 vi.mock("./spare-offers", async (actual) => ({ ...(await actual<typeof import("./spare-offers")>()), loadIncomingOffers: m.offers }));
@@ -21,6 +22,7 @@ vi.mock("../../db", () => ({
 }));
 vi.mock("./spares", () => ({ spareGrantDetailsQuery: m.grants }));
 vi.mock("../feed/flag", () => ({ availableFeedKinds: m.kinds }));
+vi.mock("../feed/rollup", async (actual) => ({ ...(await actual<typeof import("../feed/rollup")>()), readerZone: m.zone }));
 vi.mock("../feed/read", async (actual) => ({ ...(await actual<typeof import("../feed/read")>()), feedQuery: m.feedQuery }));
 
 import { loadWaitingOnYou } from "./waiting";
@@ -38,6 +40,7 @@ beforeEach(() => {
   m.asks.mockReset().mockResolvedValue([]);
   m.friendAsks.mockReset().mockResolvedValue([]);
   m.offers.mockReset().mockResolvedValue([]);
+  m.zone.mockReset().mockResolvedValue(null);
   m.kinds.mockReset().mockReturnValue(["new-set", "trade-match", "price-drop"]);
   m.feedQuery.mockReset().mockReturnValue("QUERY");
   m.execute.mockReset().mockResolvedValue({ rows: [row("item:1", "ghalta", "pub-colin", 5), row("item:2", "sol", "pub-gone", 2)] });
@@ -137,3 +140,38 @@ describe("an offer made to the reader", () => {
   });
 });
 
+
+describe("a friend's trade matches on one reader-day (#3441)", () => {
+  const sai = { oracleId: "sai", name: "Sai", imageUri: "https://cards/sai.jpg" };
+  beforeEach(() => {
+    // Three of Colin's matches today (UTC), the newest seen, and one from yesterday: today folds, yesterday stands alone.
+    m.execute.mockResolvedValue({ rows: [
+      row("item:1", "ghalta", "pub-colin", 5), row("item:2", "sol", "pub-colin", 3), row("item:3", "sai", "pub-colin", 1, false),
+      row("item:4", "ghalta", "pub-colin", 30),
+    ] });
+    m.where.mockResolvedValue([
+      { oracleId: "ghalta", name: "Ghalta", imageUri: "https://cards/ghalta.jpg" }, { oracleId: "sol", name: "Sol Ring", imageUri: null }, sai,
+    ]);
+  });
+
+  it("folds into one row as Home does: the newest leads, unseen when any member is, every key and card carried", async () => {
+    const rows = await loadWaitingOnYou("user_viewer", ENV, NOW);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      key: "item:3", kind: "trade-match", unseen: true, askable: false, card: sai,
+      rollup: { keys: ["item:3", "item:2", "item:1"], cards: [sai, expect.objectContaining({ oracleId: "sol" }), expect.objectContaining({ oracleId: "ghalta" })] },
+    });
+    expect(rows[1]).toMatchObject({ key: "item:4", askable: true });
+    expect(rows[1]).not.toHaveProperty("rollup");
+  });
+
+  it("judges the day in the reader's zone", async () => {
+    // 11 hours ago is 01:00 UTC on the 22nd, the same UTC day as the 1-hour-ago match, but 18:00 on the 21st in Los
+    // Angeles (UTC-7): there it stands apart.
+    m.execute.mockResolvedValue({ rows: [row("item:1", "ghalta", "pub-colin", 11), row("item:3", "sai", "pub-colin", 1)] });
+    expect((await loadWaitingOnYou("user_viewer", ENV, NOW)).map((r) => r.key)).toEqual(["item:3"]);
+    m.zone.mockResolvedValue("America/Los_Angeles");
+    expect((await loadWaitingOnYou("user_viewer", ENV, NOW)).map((r) => r.key)).toEqual(["item:3", "item:1"]);
+    expect(m.zone).toHaveBeenCalledWith("user_viewer");
+  });
+});
