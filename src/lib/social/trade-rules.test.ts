@@ -85,7 +85,8 @@ describe("the Trades rows", () => {
     expect(rowState(trade({ status: "accepted", proposerMarkedAt: NOW }), P, NOW, false)).toEqual({ state: "youMarked", waitsOnYou: false, byYou: true });
     expect(rowState(trade({ status: "declined", endedByUserId: R }), R, NOW, false)).toEqual({ state: "declined", waitsOnYou: false, byYou: true });
     expect(rowState(trade({ status: "rescinded", endedByUserId: R }), P, NOW, false)).toEqual({ state: "rescinded", waitsOnYou: false, byYou: false });
-    expect(rowState(trade({ createdAt: daysAgo(15) }), R, NOW, false).state).toBe("expired");
+    expect(rowState(trade({ createdAt: daysAgo(15) }), R, NOW, false)).toEqual({ state: "expired", waitsOnYou: false, byYou: true });
+    expect(rowState(trade({ createdAt: daysAgo(15) }), P, NOW, false)).toEqual({ state: "expired", waitsOnYou: false, byYou: false });
   });
 
   it("sorts what waits on you first, in the boards' order, then the rest newest first", () => {
@@ -184,7 +185,11 @@ describe("an offer's sides as sent", () => {
     expect(cleanSides(null)).toBeNull();
     const many = Array.from({ length: TRADE_SIDE_MAX + 1 }, (_, i) => id(i));
     expect(cleanSides({ theirs: many, yours: [id(1)] })).toBeNull();
-    expect(cleanSides({ theirs: many.slice(0, TRADE_SIDE_MAX), yours: [id(1)] })?.theirs).toHaveLength(TRADE_SIDE_MAX);
+    expect(cleanSides({ theirs: many.slice(0, TRADE_SIDE_MAX), yours: [id(TRADE_SIDE_MAX + 5)] })?.theirs).toHaveLength(TRADE_SIDE_MAX);
+  });
+
+  it("refuses a card on both sides: a card for itself", () => {
+    expect(cleanSides({ theirs: [id(1), id(2)], yours: [id(2).toUpperCase()] })).toBeNull();
   });
 });
 

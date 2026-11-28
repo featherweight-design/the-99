@@ -12,6 +12,7 @@ import type { InviteSender } from "./friends";
 import type { FriendDeck as PickerDeck, PickerFriend, PickerPod, PodSeat } from "./games";
 import type { OtherSide } from "./spare-requests";
 import type { SharedPod, SpareFriend } from "./spares";
+import type { OfferedTo, TradeListRow, TradeView } from "./trade-reads";
 
 /** The keys under which a loader names a person, a pod or a friend's deck (a card's or a commander's name is not one). */
 type NameKey =
@@ -64,6 +65,9 @@ export type LoaderTypeChecks = [
   Ok<None<Walk<Omit<FriendDeckPage, "shares">>>>,
   Ok<None<Walk<FriendCell>>>,
   Ok<None<Walk<GameOpponent>>>,
+  Ok<None<Walk<TradeView>>>,
+  Ok<None<Walk<TradeListRow>>>,
+  Ok<None<Walk<OfferedTo>>>,
 ];
 
 describe("loader types", () => {
