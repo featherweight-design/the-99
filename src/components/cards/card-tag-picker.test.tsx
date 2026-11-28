@@ -14,7 +14,7 @@ function place(rect: { top: number; bottom: number; left: number; width: number 
   render(
     <CardTagList
       id="t" listId="l" open query="sol" local={[]} activeIndex={0} remoteStatus="ok" scoped={false} pick={() => {}} anchor={{ current: field }}
-      options={[{ oracleId: "a", name: "Sol Ring", meta: "Artifact", group: "any" }]}
+      options={[{ oracleId: "a", name: "Sol Ring", meta: ["Artifact"], group: "any" }]}
     />,
   );
   return screen.getByRole("listbox");
@@ -45,7 +45,7 @@ describe("CardTagList floating under an anchor", () => {
     render(
       <CardTagList
         id="t" listId="l" open query="sol" local={[]} activeIndex={0} remoteStatus="ok" scoped={false} pick={() => {}} anchor={{ current: field }}
-        options={[{ oracleId: "a", name: "Sol Ring", meta: "Artifact", group: "any" }]}
+        options={[{ oracleId: "a", name: "Sol Ring", meta: ["Artifact"], group: "any" }]}
       />,
     );
     expect(screen.getByRole("listbox").style).toMatchObject({ left: "20px", width: "300px" });
@@ -103,7 +103,7 @@ describe("CardTagList floating under an anchor", () => {
 });
 
 describe("CardTagList's active option", () => {
-  const options = [0, 1, 2].map((i) => ({ oracleId: `c${i}`, name: `Card ${i}`, meta: "Artifact", group: "any" as const }));
+  const options = [0, 1, 2].map((i) => ({ oracleId: `c${i}`, name: `Card ${i}`, meta: ["Artifact"], group: "any" as const }));
   const draw = (activeIndex: number) => (
     <CardTagList id="t" listId="l" open query="car" local={[]} activeIndex={activeIndex} remoteStatus="ok" scoped={false} pick={() => {}} options={options} />
   );

@@ -28,6 +28,7 @@ import { DEFAULT_ON_KINDS, type FeedKind } from "../../lib/feed/kinds";
 import type { NewsSetting } from "../../lib/feed/prefs";
 import { applicationServerKey, devicePayload, deviceState, deviceTimeZone, deviceWord, iosTooOld, type DeviceState } from "../../lib/push/device";
 import { readDeviceFacts } from "../../lib/push/device-browser";
+import { CopyLines } from "../copy-lines";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { Checkbox } from "../ui/checkbox";
@@ -374,7 +375,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
               <span className="flex min-h-[44px] min-w-0 flex-1 flex-col gap-[2px] py-[9px]">
                 <b className={NAME}>{k.name}</b>
                 <span className={LINE}>
-                  {(DEFAULT_ON_KINDS as readonly FeedKind[]).includes(kind) ? `${k.line} ${c.defaultOn}` : k.line}
+                  {(DEFAULT_ON_KINDS as readonly FeedKind[]).includes(kind) ? <CopyLines lines={[k.line, c.defaultOn]} /> : k.line}
                 </span>
               </span>
               <label className={CELL}>

@@ -250,7 +250,7 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
  */
 function NoteSentence({ id, label, className, openLock, items }: { id: string; label: string; className: string; openLock: OpenLock; items: NavItem[] }) {
   const others = nameList(lockedItems(items, openLock).filter((i) => i.label !== label).map((i) => i.label));
-  const sentence = openLock?.hasDecks ? `${lockCopy.note(label, others)} ${lockCopy.withDecks}` : lockCopy.note(label, others);
+  const sentence = lockCopy.note(label, others);
   const rest = sentence.startsWith(label) ? sentence.slice(label.length) : null;
   return (
     <p id={id} className={className}>
@@ -260,6 +260,12 @@ function NoteSentence({ id, label, className, openLock, items }: { id: string; l
         <>
           <span className="text-[color:var(--fg)]">{label}</span>
           {rest}
+        </>
+      )}
+      {openLock?.hasDecks && (
+        <>
+          {" "}
+          <span>{lockCopy.withDecks}</span>
         </>
       )}
     </p>

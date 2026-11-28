@@ -188,7 +188,7 @@ describe("Edit copies, a printing fixed by re-picking", () => {
     expect(await screen.findByText(c.fixIntro(CHOICES.length))).toBeTruthy();
     fireEvent.click(await screen.findByRole("radio", { name: /CMR/i }));
     expect(screen.getByText(c.printingChanged(1))).toBeTruthy();
-    expect(screen.getByText(`${c.was("SLD · #1512")} · ${c.goesWith(1)}`)).toBeTruthy();
+    expect(screen.getByText((_c, el) => el?.tagName === "SPAN" && el.textContent === `${c.was("SLD · #1512")} · ${c.goesWith(1)}` && el.children.length === 2)).toBeTruthy();
     edit.mockResolvedValue({ applied: { id: "e" } });
     await press(save());
     expect(edit).toHaveBeenCalledTimes(1);

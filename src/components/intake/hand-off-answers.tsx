@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useId, type ReactNode } from "react";
 import { CardDetailProvider, CardDetailTrigger } from "../cards/card-detail-provider";
 import { HoverPreviewProvider } from "../decks/hover-preview";
+import { CopyLines } from "../copy-lines";
 import { CardValue } from "./read-as-bar";
 import { helpMeChooseCopy, orList } from "../../lib/copy/help-me-choose";
 import { formatCents } from "../../lib/decks/price";
@@ -64,7 +65,7 @@ export function budgetLine(card: HandOffAnswers["card"], cardUnread = false, own
  * or over the budget, those cards are the whole buy. A placed card to buy with no live price is still
  * a purchase: said, and left out of the total.
  */
-export function budgetLineHit(card: HandOffAnswers["card"], buy: NonNullable<HandOffReach["buy"]>, ownOnly: boolean): string {
+export function budgetLineHit(card: HandOffAnswers["card"], buy: NonNullable<HandOffReach["buy"]>, ownOnly: boolean): ReactNode {
   const placed = [...(card !== null && buysCard(card) ? [card] : []), ...buy.selectedBuys]
     .filter((c, i, all) => all.findIndex((d) => d.oracleId === c.oracleId) === i);
   const priced = placed.filter((c) => c.price.kind === "priced");
@@ -74,7 +75,7 @@ export function budgetLineHit(card: HandOffAnswers["card"], buy: NonNullable<Han
   const line = ownOnly || buy.overBudget
     ? reachCopy.budgetHitOnly(names, dollars(cents))
     : reachCopy.budgetHit(names, dollars(cents));
-  return unpriced.length > 0 ? `${reachCopy.budgetHitUnknown(unpriced.map((c) => c.name))} ${line}` : line;
+  return unpriced.length > 0 ? <CopyLines lines={[reachCopy.budgetHitUnknown(unpriced.map((c) => c.name)), line]} /> : line;
 }
 
 export function HandOffAnswersBlock({
@@ -136,7 +137,7 @@ export function HandOffAnswersBlock({
           </Row>
         )}
         {card && (
-          <Row k={copy.keys.card} line={card.pct === null ? copy.placed : `${copy.placed} ${copy.cardFig(card.pct)}`}>
+          <Row k={copy.keys.card} line={card.pct === null ? copy.placed : <CopyLines lines={[copy.placed, copy.cardFig(card.pct)]} />}>
             <span className="flex min-w-0 items-center gap-[8px]">
               <CardValue card={card} size="row" />
             </span>
@@ -172,7 +173,7 @@ export function HandOffAnswersBlock({
   );
 }
 
-function Row({ k, line, below, children }: { k: string; line: string | null; below?: ReactNode; children: React.ReactNode }) {
+function Row({ k, line, below, children }: { k: string; line: ReactNode; below?: ReactNode; children: React.ReactNode }) {
   return (
     <div data-testid="hand-off-row" className="flex flex-col items-baseline gap-[4px] md:flex-row md:gap-[12px]">
       <span className="flex-none font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-locked)] md:w-[104px]">{k}</span>

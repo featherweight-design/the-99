@@ -7,6 +7,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { CopyLines } from "../copy-lines";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { fieldCount, fieldText, insertOpenTag, taggedCount, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
@@ -16,7 +17,7 @@ import { appScrolling, reveal } from "../../lib/ui/reveal";
 /** A card the surface holds, for the picker's local "In this deck" group. */
 export type DeckCardOption = { oracleId: string; name: string; typeLine: string; imageUri: string | null };
 
-type Option = { oracleId: string; name: string; meta: string; group: "deck" | "any" };
+type Option = { oracleId: string; name: string; meta: readonly string[]; group: "deck" | "any" };
 /** The picker lookup's answer for ONE query; any other query reads as pending, so no effect has to reset it. */
 type Answer = { query: string; status: "ok" | "refused"; rows: Option[] };
 
@@ -111,7 +112,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       .filter((c) => c.name.toLowerCase().includes(q))
       .sort((a, b) => Number(b.name.toLowerCase().startsWith(q)) - Number(a.name.toLowerCase().startsWith(q)) || a.name.localeCompare(b.name))
       .slice(0, GROUP_MAX)
-      .map((c) => ({ oracleId: c.oracleId, name: c.name, meta: c.typeLine, group: "deck" as const }));
+      .map((c) => ({ oracleId: c.oracleId, name: c.name, meta: [c.typeLine], group: "deck" as const }));
   }, [open, query, deckCards]);
 
   useEffect(() => {
@@ -131,7 +132,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
           .map((h) => ({
             oracleId: h.oracleId,
             name: h.name,
-            meta: [h.typeLine, scoped ? deckNotesCopy.picker.notInDeck : null, h.commanderLegal ? null : deckNotesCopy.picker.notLegal].filter(Boolean).join(" · "),
+            meta: [h.typeLine, scoped ? deckNotesCopy.picker.notInDeck : null, h.commanderLegal ? null : deckNotesCopy.picker.notLegal].filter((m): m is string => Boolean(m)),
             group: "any" as const,
           })),
       });
@@ -419,7 +420,7 @@ export function CardTagList({
                 className={`flex min-h-[48px] cursor-pointer flex-col justify-center px-[12px] py-[4px] md:min-h-0 ${i === activeIndex ? "bg-[color:var(--elevated)]" : ""}`}
               >
                 <span className="font-sans text-[13px] text-[color:var(--fg)]">{o.name}</span>
-                <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{o.meta}</span>
+                <span className="font-mono text-[10px] text-[color:var(--fg-faint)]"><CopyLines lines={o.meta} sep=" · " /></span>
               </div>
             </div>
           ))}

@@ -73,8 +73,8 @@ describe("the news section", () => {
   it("draws Friends asking for your spares checked by default, its line saying it starts on", () => {
     render(<NewsSection kinds={[...ALL_BUT_SPARES, { kind: "spare-request", on: true }]} />);
     expect(box("spare-request").checked).toBe(true);
-    expect(screen.getByText(`${C.kinds["spare-request"].line} ${C.defaultOn}`)).toBeTruthy();
-    expect(screen.getByText("A friend asks for a card you have spare. On from the start.")).toBeTruthy();
+    expect(screen.getByText(C.kinds["spare-request"].line)).toBeTruthy();
+    expect(screen.getByText(C.kinds["spare-request"].line).parentElement?.textContent).toBe(`${C.kinds["spare-request"].line} ${C.defaultOn}`);
     expect(screen.getAllByText(new RegExp(C.defaultOn))).toHaveLength(1);
   });
 

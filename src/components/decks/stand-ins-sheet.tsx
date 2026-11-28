@@ -16,6 +16,7 @@ import { Fragment, useCallback, useEffect, useRef, useState, type Ref } from "re
 
 import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { CopyLines } from "../copy-lines";
 import { useStoreInfo } from "../stores/store-provider";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { provenanceForm, type PriceFact } from "../../lib/decks/price";
@@ -701,7 +702,7 @@ export function StandInsSheet({
             ) : null}
           </ReplacingLine>
           {model ? (
-            <p className="m-0 font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{model.job}</p>
+            <p className="m-0 font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}><CopyLines lines={model.job} sep=" · " /></p>
           ) : null}
         </section>
 
@@ -744,7 +745,7 @@ export function StandInsSheet({
           <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>{copy.takenNote(name)}</p>
         ) : null}
         {shown?.lead && !taken ? (
-          <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>{shown.lead}</p>
+          <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}><CopyLines lines={shown.lead} /></p>
         ) : null}
 
         {/* O2: with a friend's spare in hand, the sentence saying nothing cheaper exists is not drawn. */}

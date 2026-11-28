@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { PersonName, PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { CopyLines } from "../copy-lines";
 import { socialCopy } from "../../lib/copy/social";
 import { preconsCopy } from "../../lib/copy/precons";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
@@ -194,7 +195,7 @@ export function FriendDeckView({
           {groups.map(([label, group]) => {
             const o = groupOwned(group);
             const lands = label === "Lands";
-            const note = preconsCopy.group.own(o.owned, o.of) + (lands && basicCopies > 0 ? ` · ${preconsCopy.group.basics(basicCopies)}` : "");
+            const note = <CopyLines lines={[preconsCopy.group.own(o.owned, o.of), lands && basicCopies > 0 ? preconsCopy.group.basics(basicCopies) : null]} sep=" · " />;
             return (
               <DecklistGroup
                 key={label}
