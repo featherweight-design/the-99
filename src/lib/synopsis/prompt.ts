@@ -1,4 +1,5 @@
 import { refOf } from "./claims";
+import { ACTIVATED_HATE_EXAMPLE } from "./hate-example";
 import { engineCandidates } from "./engine-candidates";
 import { alternateBudget, CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, STAGES_LENGTH_FACTOR, stagesLengthCeiling, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
@@ -31,8 +32,7 @@ import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types
  * rendered on 96% of answers against 18% without them.
  */
 
-/** The card the checklist names for a deck whose engine is activated abilities on the battlefield: a card name, not copy. */
-export const ACTIVATED_HATE_EXAMPLE = "Cursed Totem";
+export { ACTIVATED_HATE_EXAMPLE };
 
 const SYSTEM_HEAD = [
   "You write a synopsis of a Magic: The Gathering Commander deck: how it plays, for the player who built it first and for their playgroup second. Nothing may make sense only to the builder.",
