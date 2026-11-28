@@ -6,6 +6,7 @@
 // from a production build on localhost is removed instead.
 //
 // After the `load` event, so registering never competes with the page's own startup downloads.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect } from "react";
 
 export function ServiceWorker() {
@@ -21,7 +22,10 @@ export function ServiceWorker() {
       });
       return;
     }
-    const register = () => void navigator.serviceWorker.register("/sw.js").catch(() => {});
+    const register = () => void navigator.serviceWorker.register("/sw.js").catch((e) => {
+      // A private window or a locked-down WebView refuses registration: that is the browser's answer, not a defect.
+      if ((e as { name?: unknown } | null)?.name !== "SecurityError") captureClientError("shell.sw-register", e);
+    });
     if (document.readyState === "complete") {
       register();
       return;

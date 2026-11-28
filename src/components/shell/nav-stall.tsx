@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useContext, useEffect, useRef } from "react";
 
 import {
@@ -98,6 +99,7 @@ function headerOf(init: RequestInit | undefined, name: string): string | null {
   try {
     return new Headers(init?.headers).get(name);
   } catch {
+    // silent-catch: expected: refusal: a malformed headers init reads as no header.
     return null;
   }
 }
@@ -122,6 +124,7 @@ export function watchFetches(): void {
       }
     }).observe({ type: "resource" });
   } catch {
+    // silent-catch: expected: refusal: an engine without the resource observer.
     // No observer, no `done`: a request whose body arrived reads as `headers`.
   }
   const original = window.fetch;
@@ -143,8 +146,9 @@ export function watchFetches(): void {
           () => {},
         );
       }
-    } catch {
+    } catch (e) {
       // Noting a request never fails it.
+      captureClientError("shell.nav-stall-note", e);
     }
     return pending;
   };
@@ -234,10 +238,13 @@ function send(args: StallArgs, since: number, wasHidden: boolean): void {
   try {
     const body = new Blob([JSON.stringify(report)], { type: "application/json" });
     if (!navigator.sendBeacon?.("/api/nav-stall", body)) {
-      void fetch("/api/nav-stall", { method: "POST", body, keepalive: true }).catch(() => {});
+      void fetch("/api/nav-stall", { method: "POST", body, keepalive: true }).catch(() => {
+        // silent-catch: expected: offline: a best-effort diagnostic post.
+      });
     }
-  } catch {
+  } catch (e) {
     // A diagnostic never throws into the page it is watching.
+    captureClientError("shell.nav-stall-send", e);
   }
 }
 

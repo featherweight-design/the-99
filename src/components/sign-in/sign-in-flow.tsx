@@ -13,6 +13,7 @@
 // the server page's `landing` (the query), or, when that is Home, what a `<SignInButton>` wrote after the hash (`hashReturn`).
 // Google's way lands there too: it rides to `/sso-callback` as `redirect_url`.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useClerk, useSignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -139,7 +140,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     setLine(null);
     try {
       await act();
-    } catch {
+    } catch (e) {
+      if (!codeOf(e)) captureClientError("sign-in.run", e);
       setLine(joinCopy.failed);
     } finally {
       setBusy(false);
@@ -152,7 +154,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     let failed = true;
     try {
       failed = !!(await signIn.finalize({ navigate: toLanding((url) => router.push(url), destination) })).error;
-    } catch {
+    } catch (e) {
+      if (!codeOf(e)) captureClientError("sign-in.finalize", e);
       failed = true;
     }
     if (failed) {
@@ -219,6 +222,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       try {
         error = (await signIn.password({ identifier: address, password })).error;
       } catch (thrown) {
+        if (!codeOf(thrown)) captureClientError("sign-in.password", thrown);
         error = thrown ?? new Error("password");
       }
       await held(since);
@@ -238,8 +242,9 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       const since = Date.now();
       try {
         await send();
-      } catch {
-        // Swallowed: an unknown email must look sent.
+      } catch (e) {
+        // Swallowed: an unknown email must look sent. A Clerk-coded answer is that case; anything else is a real failure.
+        if (!codeOf(e)) captureClientError("sign-in.send-quiet", e);
       }
       await held(since, floor);
       toCode(nextScreen);
@@ -275,7 +280,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       let ok = false;
       try {
         ok = !(await verify()).error;
-      } catch {
+      } catch (e) {
+        if (!codeOf(e)) captureClientError("sign-in.verify-code", e);
         ok = false;
       }
       await held(since);
@@ -323,7 +329,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       // The destination goes both ways: as `redirectUrl` for a sign-in Clerk completes on its own, and on the callback's
       // address for the one `/sso-callback` finishes, which checks it again.
       failed = !!(await signIn.sso({ strategy: "oauth_google", redirectUrl: destination, redirectCallbackUrl: withReturn(SSO_CALLBACK, destination) })).error;
-    } catch {
+    } catch (e) {
+      if (!codeOf(e)) captureClientError("sign-in.google-start", e);
       failed = true;
     }
     // A success is leaving for Google; only a refusal before it comes back here. One that never leaves is the deadline's.
@@ -343,7 +350,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       // Clerk answers a failed reset with `{ error }`, not a throw.
       if ((await signIn.reset()).error) return comeBackFromGoogle();
       setGoogleAfterReset(true);
-    } catch {
+    } catch (e) {
+      if (!codeOf(e)) captureClientError("sign-in.google-reset", e);
       comeBackFromGoogle();
     }
   }

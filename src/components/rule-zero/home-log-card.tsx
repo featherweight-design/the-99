@@ -7,6 +7,7 @@
 // The ✕ hides that game's reminder for the viewer only. It is optimistic and never revalidates Home (the card is read
 // per request, so a refresh already leaves it out); the shared toast carries Undo for as long as it stays.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useRef, useState } from "react";
@@ -175,7 +176,10 @@ export function HomeLogCard({ games, now }: { games: HomeLogGame[]; now: Date })
   // The hide each game last sent: Undo waits on it, so its delete can never overtake the insert it undoes.
   const sent = useRef(new Map<string, Promise<boolean>>());
   const send = (g: HomeLogGame, act: typeof hideLogReminderAction) => {
-    const p = (sent.current.get(keyOf(g)) ?? Promise.resolve(true)).then(() => act(g.tableId, g.gameMs)).catch(() => false);
+    const p = (sent.current.get(keyOf(g)) ?? Promise.resolve(true)).then(() => act(g.tableId, g.gameMs)).catch((e) => {
+      captureClientError("rule-zero.home-log-hide", e);
+      return false;
+    });
     sent.current.set(keyOf(g), p);
     return p;
   };

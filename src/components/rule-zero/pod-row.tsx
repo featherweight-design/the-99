@@ -128,6 +128,7 @@ function browserZone(): string | undefined {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
   } catch {
+    // silent-catch: expected: refusal: an engine without the zone lookup; the server falls back.
     return undefined;
   }
 }

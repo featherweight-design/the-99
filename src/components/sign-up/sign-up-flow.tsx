@@ -17,6 +17,7 @@
 // with `__clerk_ticket`. Otherwise, or once Clerk refuses that `redirect_url`, it is made with none and its link lands on
 // Clerk's hosted sign-up.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useClerk, useSignUp } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import Link from "next/link";
@@ -116,7 +117,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     let failed = true;
     try {
       failed = !!(await signUp.finalize({ navigate: toLanding((url) => router.push(url)) })).error;
-    } catch {
+    } catch (e) {
+      if (codesOf(e).length === 0) captureClientError("sign-up.finalize", e);
       failed = true;
     }
     if (failed) {
@@ -131,7 +133,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       const { error } = await signUp.ticket({ ticket });
       if (!error) return "ok";
       return isTicketRefusal(error) ? "refused" : "failed";
-    } catch {
+    } catch (e) {
+      if (codesOf(e).length === 0) captureClientError("sign-up.ticket", e);
       return "failed";
     }
   }
@@ -227,7 +230,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         if (refusal) setLine(refusal);
         else if (isTicketRefusal(error)) setScreen("refused");
         else setLine(joinCopy.failed);
-      } catch {
+      } catch (e) {
+        if (codesOf(e).length === 0) captureClientError("sign-up.submit", e);
         setLine(joinCopy.failed);
       } finally {
         setBusy(false);
@@ -263,7 +267,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       // challenge Clerk sets on suspicious sign-ups before it leaves for Google.
       try {
         failed = !!(await signUp.sso({ strategy: "oauth_google", redirectCallbackUrl: SSO_CALLBACK_INVITE, redirectUrl: "/" })).error;
-      } catch {
+      } catch (e) {
+        if (codesOf(e).length === 0) captureClientError("sign-up.google", e);
         failed = true;
       }
     }

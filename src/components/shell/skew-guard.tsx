@@ -7,6 +7,7 @@
 // When a tab becomes visible it asks `/api/live` (no database read) which deployment answers. On a mismatch it holds a
 // pending reload and fires it at the first moment that loses nothing: a route change, or a blur with no
 // field holding typed text. Typed text in any field on the page keeps the tab where it is.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
@@ -26,6 +27,7 @@ export function reloadForSkew(): boolean {
   try {
     window.sessionStorage.setItem(SKEW_RELOAD_KEY, String(Date.now()));
   } catch {
+    // silent-catch: expected: refusal: session storage refused, so the loop guard cannot be kept.
     return false;
   }
   window.location.reload();
@@ -88,13 +90,16 @@ export function SkewGuard({ deploymentId }: { deploymentId: string | null }) {
       if (now - lastCheck.current < SKEW_CHECK_GAP_MS) return;
       try {
         const res = await fetch("/api/live", { cache: "no-store" });
+        // A gateway page mid-rollover is not JSON and not a failure to report: no verdict, the next visible tab asks again.
+        if (!res.ok) return;
         const body = (await res.json()) as { deploymentId?: string | null };
         lastCheck.current = now;
         if (deploymentsDiffer(deploymentId, body.deploymentId)) {
           pending.current = true;
           settle("detected");
         }
-      } catch {
+      } catch (e) {
+        captureClientError("shell.skew-live", e);
         // Offline or a failed read: no verdict and no stamp, so the next time the tab is visible it asks again.
       }
     };
