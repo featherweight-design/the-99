@@ -178,6 +178,7 @@ export function WishlistView({
                         id={`wishlist-box-${b.key}`}
                         title={b.title}
                         count={b.tiles.length}
+                        truncate
                         aside={
                           b.deck ? (
                             <Link

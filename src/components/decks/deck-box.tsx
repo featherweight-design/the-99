@@ -72,9 +72,10 @@ export function BandText({ text }: { text: string }) {
 }
 
 /** The band as one flex row: the heading at the start, `aside` beside it at the end. The aside is a sibling of the
- *  heading, never inside it, so a screen reader's heading list reads the title alone. The title truncates rather than
- *  run under the count or the aside (#3440); the full title stays in the heading's text. */
-export function DeckBoxBand({ as: Tag = "h2", id, title, count, aside, bare = false }: {
+ *  heading, never inside it, so a screen reader's heading list reads the title alone. `truncate` ends a title too long
+ *  for its row in an ellipsis rather than run under the count or the aside (a deck's name, #3440); the full title stays
+ *  in the heading's text. Off, the title wraps: a band that carries a sentence keeps all of it. */
+export function DeckBoxBand({ as: Tag = "h2", id, title, count, aside, bare = false, truncate = false }: {
   as?: ElementType;
   id?: string;
   title: ReactNode;
@@ -82,13 +83,14 @@ export function DeckBoxBand({ as: Tag = "h2", id, title, count, aside, bare = fa
   aside?: ReactNode;
   /** No hairline under it: a band that is the whole box (a folded shelf). */
   bare?: boolean;
+  truncate?: boolean;
 }) {
   return (
     <div
       className={`flex ${BAND_HEIGHT} items-center justify-between gap-[12px] py-[8px] pl-[14px] pr-[10px] md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${bare ? "" : BAND_RULE}`}
     >
       <Tag id={id} className="m-0 min-w-0 text-[length:inherit] font-[inherit] leading-[inherit]">
-        <BandTitle title={title} count={count} truncate />
+        <BandTitle title={title} count={count} truncate={truncate} />
       </Tag>
       {aside}
     </div>

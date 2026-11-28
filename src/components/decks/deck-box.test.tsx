@@ -17,8 +17,14 @@ describe("DeckBoxBand", () => {
     expect(heading.contains(screen.getByText("Fixture aside"))).toBe(false);
   });
 
-  it("truncates the title alone, so the count never wraps or leaves the band (#3440)", () => {
-    render(<DeckBoxBand title="Fixture title" count={3} aside={<span>Fixture aside</span>} />);
+  it("wraps its title by default, so a band that carries a sentence keeps all of it", () => {
+    const { container } = render(<DeckBoxBand title="Fixture title" count={3} />);
+    expect(container.querySelector(".truncate")).toBeNull();
+    expect(container.querySelector("[data-band-title]")).toBeNull();
+  });
+
+  it("truncates the title alone when asked, so the count never wraps or leaves the band (#3440)", () => {
+    render(<DeckBoxBand title="Fixture title" count={3} aside={<span>Fixture aside</span>} truncate />);
     const title = screen.getByText("Fixture title");
     expect(title.className).toContain("truncate");
     expect(title.className).toContain("min-w-0");
