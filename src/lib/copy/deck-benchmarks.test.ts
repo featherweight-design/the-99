@@ -11,7 +11,7 @@ const text = (parts: string | readonly string[]) => (typeof parts === "string" ?
 describe("deck benchmarks copy", () => {
   it("names the activated-abilities hate card from the one constant the Overview prompt uses", () => {
     expect(copy.deps.hate.activated).toBe(ACTIVATED_HATE_EXAMPLE);
-    expect(text(copy.deps.figure.activated(2, false))).toContain(ACTIVATED_HATE_EXAMPLE);
+    expect(text(copy.ledger.readings.activated(2))).toContain(ACTIVATED_HATE_EXAMPLE);
   });
 
   it("never puts a plural noun after a count of 1", () => {
