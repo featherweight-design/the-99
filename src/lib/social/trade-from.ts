@@ -8,6 +8,12 @@
  */
 import { isUuid } from "../uuid";
 
+/**
+ * The friends one press-facts read takes at most (`loadTradePresses`), which bounds the query a caller can ask for. A
+ * sheet whose card more friends spare asks in batches of this size (`TradeFromList`).
+ */
+export const TRADE_PRESS_FRIENDS = 8;
+
 export type TradeFrom = { kind: "shopping" } | { kind: "deck"; deckId: string };
 
 /** The origin `raw` names, or null for anything outside the closed set. */

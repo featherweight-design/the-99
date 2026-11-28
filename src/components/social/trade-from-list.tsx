@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { tradePressesAction } from "../../app/friends/trade-actions";
 import { captureClientError } from "../../lib/sentry/capture-client";
-import type { TradeFrom } from "../../lib/social/trade-from";
+import { TRADE_PRESS_FRIENDS, type TradeFrom } from "../../lib/social/trade-from";
 import type { TradePressFacts } from "../../lib/social/trade-reads";
 import { TradePressContext } from "./friend-spares";
 import { usePageSpares } from "./spare-key-item";
@@ -36,13 +36,17 @@ export function TradeFromList({ from, sheet, children }: { from: TradeFrom; shee
     const ids = friendsKey === "" ? [] : friendsKey.split(",").filter((id) => !asked.current.has(id));
     if (ids.length === 0) return;
     for (const id of ids) asked.current.add(id);
-    tradePressesAction(ids)
-      .then((read) => setFacts((f) => ({ ...f, ...read })))
-      .catch((e) => {
-        // A failed read draws the sheet as shipped (Ask only) and lets a later open try again.
-        for (const id of ids) asked.current.delete(id);
-        captureClientError("trades.presses", e);
-      });
+    // One read takes TRADE_PRESS_FRIENDS friends at most, so a card more friends spare is asked in batches.
+    for (let i = 0; i < ids.length; i += TRADE_PRESS_FRIENDS) {
+      const batch = ids.slice(i, i + TRADE_PRESS_FRIENDS);
+      tradePressesAction(batch)
+        .then((read) => setFacts((f) => ({ ...f, ...read })))
+        .catch((e) => {
+          // A failed read draws those rows as shipped (Ask only) and lets a later open try again.
+          for (const id of batch) asked.current.delete(id);
+          captureClientError("trades.presses", e);
+        });
+    }
   }, [friendsKey]);
   if (!spares || !host || !on) return <>{children}</>;
   return (

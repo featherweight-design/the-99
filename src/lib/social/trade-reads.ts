@@ -18,6 +18,7 @@ import { cards, friendLinks, printings, socialProfiles, tradeCards, tradeRounds,
 import { loadPrices, type PriceRead } from "../decks/price-query";
 import { priceOf, priceState, provenanceForm, type ProvenanceForm } from "../cards/price-fact";
 import { named } from "../person-name/mint";
+import { TRADE_PRESS_FRIENDS } from "./trade-from";
 import type { Store } from "../stores/rows";
 import { loadFriend, resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
@@ -378,8 +379,7 @@ export async function tradesWaitingWith(viewerId: string, now = new Date()): Pro
   return new Set(rows.filter((r) => rowState(factsOf(r), viewerId, now, false).waitsOnYou).map((r) => r.public_id));
 }
 
-/** The friends one spares sheet asks about at most: a card's friends with a spare, never every friend. */
-export const TRADE_PRESS_FRIENDS = 8;
+export { TRADE_PRESS_FRIENDS } from "./trade-from";
 
 /** What the spares sheet's Trade press draws for one friend (Ask D1): the cap (Q10), the Wants line, `N trades open`. */
 export type TradePressFacts = { held: boolean; wants: readonly string[]; open: number };
