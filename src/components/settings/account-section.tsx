@@ -12,6 +12,7 @@
 //
 // - Delete account, at the foot: its line and an outline press in `--danger` words that opens the delete (`DeleteAccount`).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { BandText } from "../decks/deck-box";
 import { useEffect, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -81,7 +82,10 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
     if (next === null) return;
     setSaving(true);
     setName(next);
-    const r = await setDisplayNameAction(next).catch(() => null);
+    const r = await setDisplayNameAction(next).catch((e) => {
+      captureClientError("settings.display-name", e);
+      return null;
+    });
     setSaving(false);
     // The server's cleaned form is the name of record.
     if (r?.ok) {

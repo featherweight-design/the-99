@@ -7,6 +7,7 @@
 // The page reads; this holds what a press changed until the server's redraw lands (every write revalidates
 // `/settings`). A write that fails puts the value back and says so in the shared social toast, as `/friends` does.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { BandText } from "../decks/deck-box";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -63,7 +64,8 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
         setMin(confirmedMin.current);
         fail();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("settings.spares-min", e);
       setMin(confirmedMin.current);
       fail();
     } finally {
@@ -91,7 +93,8 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
         back();
         fail();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("settings.spares-release", e);
       back();
       fail();
     }
@@ -201,8 +204,10 @@ function KeepSearch({ keptKey, onFail }: { keptKey: string; onFail: () => void }
       try {
         const r = await searchSpareCardsAction(trimmed);
         if (live) setHits({ for: trimmed, items: r.hits });
-      } catch {
-        if (live) onFail();
+      } catch (e) {
+        if (!live) return;
+        captureClientError("settings.spares-search", e);
+        onFail();
       }
     }, SEARCH_DEBOUNCE_MS);
     return () => {
@@ -220,7 +225,8 @@ function KeepSearch({ keptKey, onFail }: { keptKey: string; onFail: () => void }
         setQuery("");
         setHits(null);
       } else onFail();
-    } catch {
+    } catch (e) {
+      captureClientError("settings.spares-keep", e);
       onFail();
     } finally {
       setKeeping(null);

@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../sentry/capture-client";
 import { unsubscribeDevice } from "../../app/settings/push-actions";
 
 /**
@@ -24,5 +25,5 @@ async function forget(state: { expired: boolean }): Promise<void> {
 export async function forgetThisDevice(): Promise<void> {
   const state = { expired: false };
   const deadline = new Promise<void>((done) => setTimeout(() => { state.expired = true; done(); }, LIMIT_MS));
-  await Promise.race([forget(state).catch(() => undefined), deadline]);
+  await Promise.race([forget(state).catch((e) => captureClientError("push.forget", e)), deadline]);
 }

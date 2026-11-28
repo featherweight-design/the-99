@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { sendProblemReport } from "../../app/feedback-actions";
 import { reportCopy as copy } from "../../lib/copy/report";
@@ -69,7 +70,8 @@ export function useReportDraft({ source, digest, eventId, page }: ReportDraftOpt
       });
       ok = result.ok;
       limited = !result.ok && result.reason === "limited";
-    } catch {
+    } catch (e) {
+      captureClientError("feedback.report", e);
       ok = false;
     }
     busy.current = false;

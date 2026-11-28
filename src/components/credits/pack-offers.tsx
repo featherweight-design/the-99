@@ -4,6 +4,7 @@
 // list is the closed pack registry. The Buy press mints its own uuid per press (`buyPackAction`'s `actionId`) and
 // sends the reader to Stripe's Checkout. Nothing is granted here.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useState, type ReactNode } from "react";
 import { buyPackAction, type CheckoutOutcome } from "../../app/credits/actions";
 import { creditsPageCopy, type PackOffer } from "../../lib/copy/credits-page";
@@ -57,7 +58,8 @@ function PackCard({ offer, onFailure }: { offer: PackOffer; onFailure: (reason: 
       } else {
         onFailure(out.reason);
       }
-    } catch {
+    } catch (e) {
+      captureClientError("credits.pack", e);
       onFailure("failed");
     } finally {
       // Stay busy while the browser leaves for Checkout; every other outcome gives the press back.

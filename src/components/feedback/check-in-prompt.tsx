@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useState } from "react";
 import { checkInDue } from "../../app/check-in-actions";
 import { captureSurveyShown } from "../../lib/analytics/posthog";
@@ -22,7 +23,7 @@ export function CheckInPrompt() {
         .then((due) => {
           if (live && due) setOpen(true);
         })
-        .catch(() => {});
+        .catch((e) => captureClientError("feedback.check-in-due", e));
     }, CHECK_IN_DELAY_MS);
     return () => {
       live = false;

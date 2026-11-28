@@ -19,6 +19,7 @@
 // After the delete: `clerk.signOut({ redirectUrl: "/?deleted=1" })`, never a plain load, so the server reads no stale
 // token, GhostSession never fires and the param survives (clarification 7). The landing says "Your account is deleted."
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useRef, useState, type RefObject } from "react";
 import { useClerk, useReverification, useUser } from "@clerk/nextjs";
 import { isClerkAPIResponseError, isReverificationCancelledError } from "@clerk/nextjs/errors";
@@ -99,7 +100,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     if (user) clearRecent(user.id);
     // The sign-out evidence keeps the session's end from reading as a ghost (GhostSession, #2926).
     noteSignOutPressed();
-    await forgetThisDevice().catch(() => {});
+    await forgetThisDevice().catch((e) => captureClientError("settings.delete-forget", e));
   }
 
   const del = useReverification(deleteAccountAction, {
@@ -128,7 +129,10 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
         // A cancel this flow made itself (`fail`) has already said why; only the reader's ‹ says "Nothing was deleted."
         if (!failedOnce.current) setNote(a.notDeleted);
         failedOnce.current = false;
-      } else fail(a.failed);
+      } else {
+        if (!tooMany(err)) captureClientError("settings.delete", err);
+        fail(a.failed);
+      }
     }
   }
 
@@ -159,7 +163,10 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     // The session is already gone on Clerk's side; should Clerk's sign-out itself throw, a load of the landing is the way out
     // (READINESS clarification 7). Its token can outlive the session by about a minute, so that load is the fallback only.
     void clearSavedFields();
-    clerk.signOut({ redirectUrl: DELETED_HREF }).catch(() => window.location.replace(DELETED_HREF));
+    clerk.signOut({ redirectUrl: DELETED_HREF }).catch((e) => {
+      captureClientError("settings.delete-sign-out", e);
+      window.location.replace(DELETED_HREF);
+    });
   }
 
   async function openVerify() {
@@ -186,6 +193,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
       await sendCode(to.id);
     } catch (err) {
       if (pending.current !== asked) return;
+      if (!tooMany(err)) captureClientError("settings.delete-verify-start", err);
       // No step to show: back to D1 with the line, the word kept.
       fail(tooMany(err) ? a.tooMany : a.failed);
     }
@@ -197,6 +205,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     try {
       await clerk.session?.prepareFirstFactorVerification({ strategy: "email_code", emailAddressId });
     } catch (err) {
+      if (!tooMany(err)) captureClientError("settings.delete-send-code", err);
       setD2Line(tooMany(err) ? a.tooMany : a.failed);
     }
   }
@@ -230,6 +239,8 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
       setChecking(false);
       if (tooMany(err)) return setD2Line(a.tooMany);
       const codes = codesOf(err);
+      // A wrong password or an expired code carries a Clerk code; only a failure with none is unexpected.
+      if (codes.length === 0) captureClientError("settings.delete-verify", err);
       if (kind === "password") setD2Line(codes.some((x) => WRONG_PASSWORD.has(x)) ? a.wrongPassword : a.failed);
       else setD2Line(codes.includes("verification_expired") ? joinCopy.codeExpired : joinCopy.codeWrong);
     }
