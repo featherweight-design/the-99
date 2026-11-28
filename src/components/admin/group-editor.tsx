@@ -22,6 +22,7 @@ import type { ConfirmPreview } from "../../lib/admin/rise-confirm";
 import { adminCopy } from "../../lib/copy/admin";
 import { PAID_DAILY_LIMIT } from "../../lib/model/allowance-rule";
 import { SectionHead } from "./costs-detail";
+import { CopyLines } from "../copy-lines";
 import { ModelConfirm } from "./model-confirm";
 import { SearchField } from "../ui/text-field";
 
@@ -326,7 +327,11 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
         >
           <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
             <span className="text-[14px] font-semibold text-[color:var(--fg)]">{pending.title}</span>
-            {pending.body && <span className="text-pretty text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{pending.body}</span>}
+            {pending.lines.length > 0 && (
+              <span className="text-pretty text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+                <CopyLines lines={pending.lines} />
+              </span>
+            )}
             {failure && (
               <p role="alert" className={ERROR}>
                 {failure}

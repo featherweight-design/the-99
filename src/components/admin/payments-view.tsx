@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { monthParam, shiftMonth, usd, type MonthKey } from "../../lib/admin/costs-rule";
 import { adminCopy } from "../../lib/copy/admin";
+import { CopyLines } from "../copy-lines";
 import { money } from "../../lib/payments/admin-read-rule";
 import type { PaymentsMonth } from "../../lib/payments/admin-read";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -52,11 +53,16 @@ export function PaymentsView({
     {
       label: copy.tiles.gross,
       fig: money(r?.grossCents ?? 0, currency),
-      sub: [
-        copy.tileSub.payments(r?.payments ?? 0),
-        r?.unattributed ? copy.tileSub.unattributed(r.unattributed) : null,
-        r?.refundedCents ? copy.tileSub.refunded(money(r.refundedCents, currency)) : null,
-      ].filter(Boolean).join(" · "),
+      sub: (
+        <CopyLines
+          lines={[
+            copy.tileSub.payments(r?.payments ?? 0),
+            r?.unattributed ? copy.tileSub.unattributed(r.unattributed) : null,
+            r?.refundedCents ? copy.tileSub.refunded(money(r.refundedCents, currency)) : null,
+          ]}
+          sep=" · "
+        />
+      ),
     },
     { label: copy.tiles.tax, fig: money(r?.taxCents ?? 0, currency), sub: copy.tileSub.tax },
     { label: copy.tiles.net, fig: money(r?.netCents ?? 0, currency), sub: copy.tileSub.net },

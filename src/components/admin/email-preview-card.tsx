@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { sendEmailPreviews } from "../../app/admin/invites/email-preview-actions";
 import { emailPreviewAdminCopy as copy } from "../../lib/copy/admin";
+import { CopyLines } from "../copy-lines";
 import { lineFor } from "../../lib/admin/email-preview-line";
 import { SteadyLabel } from "../ui/steady-label";
 
@@ -18,7 +19,7 @@ const LINE = "m-0 px-[14px] pb-[12px] text-[12.5px] leading-[1.5] md:px-[16px]";
 
 export function EmailPreviewCard() {
   const [pending, setPending] = useState(false);
-  const [line, setLine] = useState<{ text: string; danger: boolean } | null>(null);
+  const [line, setLine] = useState<{ lines: string[]; danger: boolean } | null>(null);
 
   async function send() {
     setPending(true);
@@ -26,7 +27,7 @@ export function EmailPreviewCard() {
       setLine(lineFor(await sendEmailPreviews()));
     } catch (e) {
       captureClientError("admin.email-preview", e);
-      setLine({ text: copy.refused.failed, danger: true });
+      setLine({ lines: [copy.refused.failed], danger: true });
     } finally {
       setPending(false);
     }
@@ -47,7 +48,7 @@ export function EmailPreviewCard() {
       </div>
       {line && (
         <p role={line.danger ? "alert" : "status"} data-testid="email-preview-line" className={`${LINE} ${line.danger ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}`}>
-          {line.text}
+          <CopyLines lines={line.lines} />
         </p>
       )}
     </div>

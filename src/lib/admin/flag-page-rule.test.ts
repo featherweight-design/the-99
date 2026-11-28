@@ -144,7 +144,7 @@ describe("switchPage", () => {
     expect(rung(p, "fallback")).toMatchObject({ value: "off", decides: adminCopy.flag.fallbackIdle, deciding: false });
     expect(p.groups[0]).toMatchObject({ refused: true, note: "early access", meta: adminCopy.flag.refusedMeta });
     expect(p.accounts[0]).toMatchObject({ refused: true, meta: adminCopy.flag.refusedMeta });
-    expect(p.app).toMatchObject({ value: "Killed", current: "killed", set: true, refused: false, stopped: false, note: adminCopy.flag.appKilledNote });
+    expect(p.app).toMatchObject({ value: "Killed", current: "killed", set: true, refused: false, stopped: false, note: [adminCopy.flag.appKilledNote] });
     expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
   });
@@ -182,7 +182,7 @@ describe("switchPage", () => {
     expect(rung(p, "app")).toMatchObject({ decides: "refused", deciding: false });
     expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: adminCopy.flag.fallbackIdle });
     expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: adminCopy.flag.refusedMeta });
-    expect(p.app).toMatchObject({ refused: true, stopped: true, note: "Refused while the env var is off." });
+    expect(p.app).toMatchObject({ refused: true, stopped: true, note: ["Refused while the env var is off."] });
     expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
   });
@@ -194,14 +194,14 @@ describe("switchPage", () => {
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "app", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=off", deciding: true });
     expect(rung(p, "app")).toMatchObject({ value: "Killed", decides: adminCopy.flag.decides(0), deciding: false });
-    expect(p.app).toMatchObject({ value: "Killed", current: "killed", refused: false, stopped: true, note: adminCopy.flag.appKilledNote });
+    expect(p.app).toMatchObject({ value: "Killed", current: "killed", refused: false, stopped: true, note: [adminCopy.flag.appKilledNote] });
   });
 
   it("prints the env stop's own value: false stops it as off does", () => {
     const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "false" });
     expect(p.banner).toMatchObject({ kind: "kill", title: "Off: the env var is false." });
     expect(p.banner?.body).toBe("MODEL_CALLS_ENABLED=false refuses every override. Redeploy to change it. Clear still works.");
-    expect(p.app.note).toBe("Refused while the env var is false.");
+    expect(p.app.note).toEqual(["Refused while the env var is false."]);
     expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=false", tone: "danger", decides: "decides for all 3" });
   });
 
@@ -228,7 +228,7 @@ describe("switchPage", () => {
     expect(p.rungs.map((r) => r.key)).toEqual(["app", "fallback"]);
     expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: "decides for 3", deciding: true });
     expect(p.accounts[0].meta).toContain(adminCopy.flag.ignoredMeta);
-    expect(p.app.note).toBe("");
+    expect(p.app.note).toEqual([]);
     expect(p.result.text).toBe("On for all 3 accounts");
   });
 
@@ -238,14 +238,14 @@ describe("switchPage", () => {
       current: null,
       set: false,
       meta: adminCopy.flag.appNotSet,
-      note: "Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone.",
+      note: ["Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone."],
       refused: false,
       stopped: false,
       who: "All 3 accounts.",
     });
     expect(rung(page("FEEDBACK_ENABLED", {}), "fallback")).toMatchObject({ value: "off", decides: "decides for 3", deciding: true });
     const set = page("FEEDBACK_ENABLED", {}, [ov({ name: "FEEDBACK_ENABLED", value: "off", note: "Held back", updatedBy: "u2" })]);
-    expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, Oct 11 · 14:02", note: "Note: “Held back” Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone." });
+    expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, Oct 11 · 14:02", note: ["Note: “Held back”", "Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone."] });
   });
 
   it("writes history in the copy file's shapes, naming the viewer as You and a gone group by its id", () => {

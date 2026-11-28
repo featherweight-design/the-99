@@ -81,7 +81,7 @@ export type SwitchPage = {
    * `stopped`: the env stop, which no app-wide value lifts, so the segment holds On, Off and Killed. `who`: the kill
    * confirm's Who fact, naming who is held on now.
    */
-  app: { value: string; current: RowValue | null; set: boolean; meta: string; note: string; refused: boolean; stopped: boolean; who: string };
+  app: { value: string; current: RowValue | null; set: boolean; meta: string; note: string[]; refused: boolean; stopped: boolean; who: string };
   groups: OverrideItem[];
   accounts: OverrideItem[];
   history: HistoryItem[];
@@ -264,7 +264,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
       note: [
         appRow?.note ? copy.note(appRow.note) : "",
         rowKilled ? copy.appKilledNote : stopped ? copy.appRefused(env[name] ?? "") : plumbing ? "" : copy.appNotSetNote(fallback),
-      ].filter(Boolean).join(" "),
+      ].filter(Boolean),
       // A killed row is not refused under the env stop, as the list has it (`appRefused`).
       refused: stopped && appRow !== null && !rowKilled,
       stopped,
