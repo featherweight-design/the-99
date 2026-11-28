@@ -84,7 +84,7 @@ export function CopyEditorDoor() {
     >
       <Pencil size={20} />
       {mode.waiting > 0 && (
-        <span aria-hidden className="absolute -right-[1px] -top-[1px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--accent)] px-1 text-[11px] font-semibold text-[color:var(--bg)] ring-2 ring-[color:var(--bg)]">
+        <span aria-hidden className="absolute -right-[4px] -top-[4px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--accent)] px-1 text-[11px] font-semibold text-[color:var(--bg)] ring-2 ring-[color:var(--bg)]">
           {mode.waiting}
         </span>
       )}
