@@ -22,7 +22,10 @@ export function ServiceWorker() {
       });
       return;
     }
-    const register = () => void navigator.serviceWorker.register("/sw.js").catch((e) => captureClientError("shell.sw-register", e));
+    const register = () => void navigator.serviceWorker.register("/sw.js").catch((e) => {
+      // A private window or a locked-down WebView refuses registration: that is the browser's answer, not a defect.
+      if ((e as { name?: unknown } | null)?.name !== "SecurityError") captureClientError("shell.sw-register", e);
+    });
     if (document.readyState === "complete") {
       register();
       return;

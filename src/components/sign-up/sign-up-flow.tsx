@@ -118,7 +118,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     try {
       failed = !!(await signUp.finalize({ navigate: toLanding((url) => router.push(url)) })).error;
     } catch (e) {
-      captureClientError("sign-up.finalize", e);
+      if (codesOf(e).length === 0) captureClientError("sign-up.finalize", e);
       failed = true;
     }
     if (failed) {
@@ -134,7 +134,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       if (!error) return "ok";
       return isTicketRefusal(error) ? "refused" : "failed";
     } catch (e) {
-      captureClientError("sign-up.ticket", e);
+      if (codesOf(e).length === 0) captureClientError("sign-up.ticket", e);
       return "failed";
     }
   }
@@ -231,7 +231,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         else if (isTicketRefusal(error)) setScreen("refused");
         else setLine(joinCopy.failed);
       } catch (e) {
-        captureClientError("sign-up.submit", e);
+        if (codesOf(e).length === 0) captureClientError("sign-up.submit", e);
         setLine(joinCopy.failed);
       } finally {
         setBusy(false);
@@ -268,7 +268,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       try {
         failed = !!(await signUp.sso({ strategy: "oauth_google", redirectCallbackUrl: SSO_CALLBACK_INVITE, redirectUrl: "/" })).error;
       } catch (e) {
-        captureClientError("sign-up.google", e);
+        if (codesOf(e).length === 0) captureClientError("sign-up.google", e);
         failed = true;
       }
     }

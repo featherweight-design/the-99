@@ -164,12 +164,16 @@ export function TableLive({
     }
   }
   async function closeOnce(): Promise<boolean> {
+    let refused = false;
     try {
       const out = await closeTableAction(tableId);
-      if (!out.ok) throw new Error("refused");
+      if (!out.ok) {
+        refused = true;
+        throw new Error("refused");
+      }
     } catch (e) {
       // The refusal below is this function's own throw: only a real failure reports.
-      if (!(e instanceof Error && e.message === "refused")) captureClientError("rule-zero.table-close", e);
+      if (!refused) captureClientError("rule-zero.table-close", e);
       setToast({ id: ++toastId.current, text: closeCopy.failed, retry: { label: closeCopy.retry, run: () => void closeNow() } });
       return false;
     }

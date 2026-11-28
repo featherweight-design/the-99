@@ -155,7 +155,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     try {
       failed = !!(await signIn.finalize({ navigate: toLanding((url) => router.push(url), destination) })).error;
     } catch (e) {
-      captureClientError("sign-in.finalize", e);
+      if (!codeOf(e)) captureClientError("sign-in.finalize", e);
       failed = true;
     }
     if (failed) {
@@ -330,7 +330,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       // address for the one `/sso-callback` finishes, which checks it again.
       failed = !!(await signIn.sso({ strategy: "oauth_google", redirectUrl: destination, redirectCallbackUrl: withReturn(SSO_CALLBACK, destination) })).error;
     } catch (e) {
-      captureClientError("sign-in.google-start", e);
+      if (!codeOf(e)) captureClientError("sign-in.google-start", e);
       failed = true;
     }
     // A success is leaving for Google; only a refusal before it comes back here. One that never leaves is the deadline's.
@@ -351,7 +351,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
       if ((await signIn.reset()).error) return comeBackFromGoogle();
       setGoogleAfterReset(true);
     } catch (e) {
-      captureClientError("sign-in.google-reset", e);
+      if (!codeOf(e)) captureClientError("sign-in.google-reset", e);
       comeBackFromGoogle();
     }
   }
