@@ -77,6 +77,8 @@ import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
+import { readWishlistSync } from "../../../lib/wishlist/sync-pref";
+import { captureServerError } from "../../../lib/sentry/capture";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillGame, logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { gameLandingId } from "../../../lib/games/landing";
@@ -286,6 +288,12 @@ async function DeckBuilderBody({
   // The reader's own friend deck rules, for the header menu's Hidden from friends (friend decks README 4). A failed
   // read costs the menu that row and the header its mark, nothing else.
   const friendPrefsRead = early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null));
+  // Settings › Wishlist's switch, for the header menu's Keep off my wishlist (cart on your wishlist, M1). A failed read
+  // costs the menu that row, nothing else, and is reported.
+  const wishlistOnRead = early(perf.timed("wishlistSync", () => readWishlistSync(userId)).catch((error) => {
+    captureServerError("deck-page.wishlist-sync-read", error);
+    return false;
+  }));
   // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the
   // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
   const strategyRead = early(perf.timed("strategy", () => loadDeckStrategy(userId, id)).catch(() => null));
@@ -673,6 +681,7 @@ async function DeckBuilderBody({
   const folders = await foldersRead;
   const friendPrefs = await friendPrefsRead;
   const strategy = await strategyRead;
+  const wishlistKeep = (await wishlistOnRead) && thisDeck ? { kept: thisDeck.offWishlist === true } : undefined;
   const friendHide = friendPrefs && thisDeck ? { hidden: thisDeck.hiddenFromFriends === true, prefs: friendPrefs } : undefined;
   const shelf = folders && thisDeck
     ? {
@@ -695,6 +704,7 @@ async function DeckBuilderBody({
       flipDecks={allDecks.map((d) => ({ id: d.id, name: d.name, createdAt: d.createdAt.getTime(), lastPlayedAt: d.lastPlayedAt?.getTime() ?? null, sortPosition: d.sortPosition ?? null }))}
       flipFacts={Object.fromEntries(allDecks.map((d) => [d.id, openFactsOf(d)]))}
       friendHide={friendHide}
+      wishlistKeep={wishlistKeep}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}
       // Derived here and passed as a form, never as a clock. provenanceForm

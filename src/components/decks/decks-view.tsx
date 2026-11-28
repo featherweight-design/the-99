@@ -134,6 +134,8 @@ export type DecksViewProps = {
   precons?: { summary: PreconSummary | null } | null;
   /** The reader's own friend deck rules with `SOCIAL_FRIENDS_ENABLED` on for them, else null: the tiles' Hidden from friends. */
   friendPrefs?: FriendDeckPrefs | null;
+  /** Settings › Wishlist's switch is on: each tile's ⋯ menu carries Keep off my wishlist (cart on your wishlist, M1). */
+  wishlistOn?: boolean;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;
   /** Copies owned, not distinct names — the second half of `buildableFrom`. */
@@ -229,6 +231,7 @@ export function DecksView({
   shopping,
   precons = null,
   friendPrefs = null,
+  wishlistOn = false,
   buildable,
   cards,
   now: nowIso,
@@ -1492,6 +1495,7 @@ export function DecksView({
                     }}
                     keepsFocus={state.shelf === ALL_DECKS}
                     friendPrefs={friendPrefs}
+                    wishlistOn={wishlistOn}
                     onAmong={lineup ? () => { setAmongDeck(deck.id); onView("stats"); } : undefined}
                     closeAfterCreate={
                       createFiled?.deckId === deck.id

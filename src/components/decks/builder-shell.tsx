@@ -211,6 +211,8 @@ interface BuilderShellProps {
   flipFacts?: Record<string, OpenFacts>;
   /** Hidden from friends (`SOCIAL_FRIENDS_ENABLED` for the reader): the header menu's row and mark. Absent while off. */
   friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
+  /** Keep off my wishlist (cart on your wishlist, M1): the header menu's row. Absent while Settings' switch is off. */
+  wishlistKeep?: { kept: boolean };
   /** "Kept for this deck"'s Set picker (H35, PR 2) — every set that printed a commander. */
   printedInSets?: readonly PrintedInSet[];
   suggestions: DeckSuggestionWithFacts[];
@@ -365,6 +367,7 @@ export function BuilderShell({
   flipDecks,
   flipFacts,
   friendHide,
+  wishlistKeep,
   printedInSets = [],
   suggestions,
   degraded,
@@ -1727,6 +1730,7 @@ export function BuilderShell({
               deck={deck}
               shelf={shelf}
               friendHide={friendHide}
+              wishlistKeep={wishlistKeep}
               flip={flipDecks ? { decks: flipDecks, search: deckViewSearch("", deckViewOf(view, filter, deckPanel[0]), view), facts: flipFacts } : undefined}
               counts={counts}
               onExport={openExport}

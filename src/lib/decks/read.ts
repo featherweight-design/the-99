@@ -890,6 +890,8 @@ export type DeckListItem = {
   folderId: string | null;
   /** The owner hid this deck from friends (`decks.hidden_from_friends`). Optional so a fixture may omit it: absent is false. */
   hiddenFromFriends?: boolean;
+  /** The owner left this deck out of the wishlist sync (`decks.off_wishlist`). Optional as above: absent is false. */
+  offWishlist?: boolean;
   folderName: string | null;
   built: number;
   ownedCount: number;
@@ -1267,6 +1269,7 @@ export async function listDecksWithStats(
       folderId: deckFolders.id,
       folderName: deckFolders.name,
       hiddenFromFriends: decks.hiddenFromFriends,
+      offWishlist: decks.offWishlist,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
@@ -1463,6 +1466,7 @@ export async function listDecksWithStats(
       partnerColorIdentity: row.partnerColorIdentity,
       folderId: row.folderId,
       hiddenFromFriends: row.hiddenFromFriends,
+      offWishlist: row.offWishlist,
       folderName: row.folderName,
       built: row.built,
       ownedCount: row.ownedCount,

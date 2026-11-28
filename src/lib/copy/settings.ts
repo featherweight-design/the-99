@@ -1,6 +1,8 @@
 // Settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3). Strings passed
 // /copy-review. The Notifications section's strings arrive with PR 4.
 
+import type { FilterPanelCopy } from "./collection";
+
 export const settingsCopy = {
   title: "Settings",
   sub: "Saved as you change them",
@@ -42,4 +44,48 @@ export const settingsCopy = {
     foot: "To keep one deck to yourself, tick Hidden from friends in its ⋯ menu.",
     failed: "We couldn’t save that. Try again.", // toast, role alert
   },
+  // Cart on your wishlist (call 1): after Spares. The switch, the From row's deck picker (`wishlistDecksPanelCopy`) and the foot.
+  wishlist: {
+    head: "Wishlist",
+    explain: "Friends see your wishlist, and their spares are matched against it.",
+    sync: {
+      name: "Keep my shopping on my wishlist",
+      line: "Cards in Shopping for all decks go on your wishlist and follow your decks. Each leaves once you have it.",
+    },
+    from: "From",
+    foot: "A new deck joins by itself. You can also leave a deck out from its ⋯ menu. Cards you add yourself never change here.",
+    failed: "We couldn’t save that. Try again.", // toast, role alert
+  },
 } as const;
+
+const decksWord = (n: number) => (n === 1 ? "1 deck" : `${n} decks`);
+const cardsWord = (n: number) => (n === 1 ? "1 card" : `${n} cards`);
+
+/** Settings › Wishlist's From row: the shipped `FilterPanel` over the reader's decks, each ticked deck on the wishlist. */
+export const wishlistDecksPanelCopy: FilterPanelCopy = {
+  triggerLabel: "Decks",
+  triggerCount: decksWord,
+  triggerAriaCollapsed: "Choose the decks your shopping comes from",
+  triggerAriaWithSelection: (n: number) => `Shopping from ${decksWord(n)}, choose decks`,
+  panelAriaLabel: "Decks your shopping comes from",
+  sheetTitle: "Shopping from",
+  searchPlaceholder: "Search your decks",
+  searchAriaLabel: "Search your decks",
+  clearSearch: "Clear search",
+  groupDefault: "Your decks",
+  groupSelected: (n: number) => `On your wishlist · ${n}`,
+  groupMatches: (n: number) => `Matches · ${n}`,
+  optionAria: (name: string, count: number) => (count === 0 ? `${name}, nothing to buy` : `${name}, ${cardsWord(count)} to buy`),
+  optionAriaUnavailable: (name: string) => `${name}, nothing to buy`,
+  footerTotal: decksWord,
+  footerSelected: (n: number, total: number) => `${n} of ${decksWord(total)}`,
+  clear: "Clear",
+  done: "Done",
+  closeLabel: "Close",
+  emptyTitle: "No deck matches",
+  emptyBody: (query: string) => ({ before: "No deck is called ", query, after: "." }),
+  announceMatches: (n: number, query: string) => `${n === 1 ? "1 deck matches" : `${n} decks match`} ${query}`,
+  announceAdded: (name: string) => `${name} added`,
+  announceRemoved: (name: string) => `${name} left out`,
+  announceCleared: () => "Every deck left out",
+};

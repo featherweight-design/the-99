@@ -47,6 +47,7 @@ interface BuilderSpineProps {
   shelf?: DeckShelf;
   /** Hidden from friends' row and mark, passed to both widths. See `SpineBandProps`. */
   friendHide?: SpineBandProps["friendHide"];
+  wishlistKeep?: SpineBandProps["wishlistKeep"];
   /** The player's decks and the builder's live view as a query, for the flip strip. Absent: no strip. */
   flip?: { decks: FlipDeck[]; search: string; /** Each deck's header facts by id, for the skeleton a flip draws (`open-entry`); kept apart so `FlipDeck` stays the sort's fields. */ facts?: Record<string, OpenFacts> };
 }
@@ -63,6 +64,7 @@ export function BuilderSpine({
   onOpenNotices,
   shelf,
   friendHide,
+  wishlistKeep,
   flip,
 }: BuilderSpineProps) {
   // One state for both widths: one listener, one prefetch. A list of one deck has nothing to flip to.
@@ -83,6 +85,7 @@ export function BuilderSpine({
         onOpenNotices={onOpenNotices}
         move={move}
         friendHide={friendHide}
+        wishlistKeep={wishlistKeep}
       />
       {/* A row of its own under the band, not inside it: the band's corner buttons are anchored to its bottom edge. */}
       {flipStrip && (
@@ -102,6 +105,7 @@ export function BuilderSpine({
         onOpenNotices={onOpenNotices}
         move={move}
         friendHide={friendHide}
+        wishlistKeep={wishlistKeep}
         flipStrip={flipStrip}
       />
     </>

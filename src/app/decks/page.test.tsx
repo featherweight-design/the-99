@@ -14,6 +14,7 @@ vi.mock("../../lib/cache/page-cache", () => ({
 }));
 vi.mock("../../lib/decks/read", () => ({ listDecksWithStats: async () => [] }));
 vi.mock("../../lib/decks/folders", () => ({ listFolders: async () => [] }));
+vi.mock("../../lib/wishlist/sync-pref", () => ({ readWishlistSync: async () => false }));
 const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})) }));
 vi.mock("../../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: rollup.load }));
 const keys = vi.hoisted(() => ({ seen: [] as string[][] }));

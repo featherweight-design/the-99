@@ -1,6 +1,6 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
-// account menu. Notifications comes first, then Spares, then Your decks (friend decks README 4b), then Account (account
-// settings handoff call 1). Account's name is the reader's profile name, made on first use as /friends makes it
+// account menu. Notifications comes first, then Spares, then Wishlist (cart on your wishlist, call 1), then Your
+// decks (friend decks README 4b), then Account (account settings handoff call 1). Account's name is the reader's profile name, made on first use as /friends makes it
 // (`ensureSenderProfile`, READINESS clarification 3); its email and sign-in methods are Clerk's. Clerk's read is a Backend
 // round trip, so Account streams in behind its own Suspense boundary and the rest of the page never waits on it.
 //
@@ -27,6 +27,9 @@ import { SettingsView } from "../../components/settings/settings-view";
 import { SparesSection } from "../../components/settings/spares-section";
 import { NewsSection } from "../../components/settings/news-section";
 import { FriendDecksSection } from "../../components/settings/friend-decks-section";
+import { WishlistSection } from "../../components/settings/wishlist-section";
+import { loadWishlistSyncSettings } from "../../lib/wishlist/sync-settings";
+import { captureServerError } from "../../lib/sentry/capture";
 import { StoreSection } from "../../components/settings/store-section";
 import { storePreferenceEnabled } from "../../lib/stores/flag";
 
@@ -40,10 +43,16 @@ export default async function SettingsPage() {
   const config = pushAvailable(env) ? pushConfig(env) : null;
   // Store (store choice handoff, call 1): first, and only while the reader's switch is on; off, the page is as shipped.
   const storeOn = storePreferenceEnabled(env);
-  const [news, pushOn, spares, deckPrefs, store] = await Promise.all([
+  const [news, pushOn, spares, wishlist, deckPrefs, store] = await Promise.all([
     loadNewsSettings(userId, env),
     config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
     loadSpares(userId, env),
+    // Wishlist (cart on your wishlist, call 1): the switch and every deck; the counts only while it is on. A failed
+    // read is reported and costs the page that section, nothing else.
+    loadWishlistSyncSettings(userId).catch((error) => {
+      captureServerError("settings.wishlist-read", error);
+      return null;
+    }),
     loadFriendDeckPrefs(userId),
     // Strict: a failed read draws no section rather than Mana Pool checked over a store the reader chose.
     storeOn
@@ -59,6 +68,7 @@ export default async function SettingsPage() {
       {store ? <StoreSection store={store} /> : null}
       <NewsSection kinds={news} push={push} />
       <SparesSection {...spares} />
+      {wishlist ? <WishlistSection settings={wishlist} /> : null}
       <FriendDecksSection prefs={deckPrefs} />
       <Suspense fallback={null}>
         <AccountSlot userId={userId} />

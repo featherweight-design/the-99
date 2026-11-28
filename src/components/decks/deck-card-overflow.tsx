@@ -15,6 +15,8 @@ import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { setDeckHiddenFromFriendsAction } from "../../app/decks/hide-actions";
 import { socialCopy } from "../../lib/copy/social";
+import { setDecksOffWishlistAction } from "../../app/settings/wishlist-actions";
+import { wishlistCopy } from "../../lib/copy/wishlist";
 import type { StatusPill } from "../../lib/decks/status";
 import { SETTINGS_TARGET_HASH, hiddenWhy, settingsHideDeck, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -61,6 +63,11 @@ interface DeckCardOverflowProps {
   onAmong?: () => void;
   /** Hidden from friends (`SOCIAL_FRIENDS_ENABLED` for the reader): absent while the switch is off, and the row with it. */
   friends?: DeckFriendsHide;
+  /**
+   * Keep off my wishlist (cart on your wishlist, M1): the deck's `off_wishlist`, present only while the reader's
+   * Settings › Wishlist switch is on, and the row with it. The same column as Settings' deck picker tick.
+   */
+  wishlist?: { kept: boolean };
 }
 
 /** What the Hidden from friends row needs: the deck's own flag, its status and the owner's two Settings rules, and what the why-it-is-hidden block says. */
@@ -187,6 +194,7 @@ export function DeckCardOverflow({
   move,
   onAmong,
   friends,
+  wishlist,
 }: DeckCardOverflowProps) {
   const header = placement === "header";
   const closeAfterCreate = move?.closeAfterCreate ?? null;
@@ -333,7 +341,7 @@ export function DeckCardOverflow({
     setExporting(null);
   }
 
-  // Hidden from friends' refusal. The menu has closed by then, so the toast is the page's, in a portal like the dialog.
+  // Hidden from friends' and Keep off my wishlist's refusal. The menu has closed by then, so the toast is the page's, in a portal like the dialog.
   const [hideToast, setHideToast] = useState<SocialToastState | null>(null);
   const hideToastSeq = useRef(0);
   // The owner's Settings rules already hide this deck: the row draws ticked and locked, and its press opens Settings.
@@ -353,6 +361,22 @@ export function DeckCardOverflow({
       if (!r.ok) fail();
     } catch (e) {
       captureClientError("deck.hide-friends", e);
+      fail();
+    }
+  }
+
+  async function handleKeepOff(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy || !wishlist) return;
+    // As Hidden from friends: ticks, saves and closes, with no confirm. The tick follows the redraw.
+    handleClose();
+    const fail = () => setHideToast({ id: ++hideToastSeq.current, text: wishlistCopy.deckMenu.failed });
+    try {
+      const r = await setDecksOffWishlistAction([deckId], !wishlist.kept);
+      if (!r.ok) fail();
+    } catch (error) {
+      captureClientError("deck-menu.keep-off-wishlist", error);
       fail();
     }
   }
@@ -538,6 +562,26 @@ export function DeckCardOverflow({
                     </span>
                   </button>
                 )
+              ) : null}
+              {/* Keep off my wishlist (cart on your wishlist, M1), under Hidden from friends: the same checkbox row. */}
+              {wishlist ? (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={wishlist.kept}
+                  data-keep-off-wishlist={wishlist.kept ? "on" : "off"}
+                  onClick={handleKeepOff}
+                  disabled={busy}
+                  className={`${ITEM} first:border-t-0 gap-[10px] cursor-pointer bg-transparent text-[color:var(--fg)]`}
+                >
+                  <span className="min-w-0">{wishlistCopy.deckMenu.keepOff}</span>
+                  <span
+                    aria-hidden
+                    className={`${HIDE_BOX} ${wishlist.kept ? "border-[color:var(--accent)] bg-[color:var(--accent)]" : "border-[color:var(--border-dashed)] bg-transparent"}`}
+                  >
+                    {wishlist.kept ? "✓" : null}
+                  </span>
+                </button>
               ) : null}
               <button
                 ref={deleteRow}

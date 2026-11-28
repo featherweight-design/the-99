@@ -253,6 +253,8 @@ interface DeckCardProps {
    * and then the tile draws neither the glyph nor the menu's Hidden from friends row.
    */
   friendPrefs?: FriendDeckPrefs | null;
+  /** Settings › Wishlist's switch is on: the ⋯ menu carries Keep off my wishlist, ticked from the deck's `offWishlist`. */
+  wishlistOn?: boolean;
 }
 
 /**
@@ -297,7 +299,7 @@ const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[
 const YIELD_HIDDEN = { faced: "@min-[330px]:@max-[360px]:hidden", marks: "hidden @min-[330px]:@max-[360px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, eager = false, deferArt = false, claimPrefetch, onAmong, friendPrefs = null,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, eager = false, deferArt = false, claimPrefetch, onAmong, friendPrefs = null, wishlistOn = false,
 }: DeckCardProps) {
   const zone = useZone();
   const detail = detailFor(deck, shopping, now, zone);
@@ -446,6 +448,7 @@ export function DeckCard({
                 }
               : undefined
           }
+          wishlist={wishlistOn ? { kept: deck.offWishlist === true } : undefined}
         />
       </DeckTileArt>
 

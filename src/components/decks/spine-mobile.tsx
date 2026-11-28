@@ -74,6 +74,7 @@ export function SpineMobile({
   onOpenNotices,
   move,
   friendHide,
+  wishlistKeep,
   flipStrip,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
@@ -694,6 +695,7 @@ export function SpineMobile({
             placement="header"
             move={move}
             friends={friendHide ? { hidden: friendHide.hidden, statusPill: status, prefs: friendHide.prefs, built, size: bodySize, canCommit: Boolean(offerFirstCommit) } : undefined}
+            wishlist={wishlistKeep}
           />
         </div>
       )}
