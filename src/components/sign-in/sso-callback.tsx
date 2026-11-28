@@ -128,8 +128,8 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
         await resolveProtect.call(clerk, fromInvite ? "signUp" : "signIn");
       } catch (e) {
         if (ended.current) return;
-        captureClientError("sign-in.sso-protect", e);
-        Sentry.captureException(new Error("sso-callback-protect-failed"), { tags: { site: "sso-callback-protect-failed" } });
+        // One event under the existing tag, now with the error class and frames.
+        captureClientError("sso-callback-protect-failed", e);
         return refuse(null);
       }
       if (ended.current) return;
