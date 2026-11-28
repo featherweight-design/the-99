@@ -113,7 +113,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     pipe.current = attempt;
     // A failed load is tried again on the next frame, with a holder of its own.
     attempt.catch((e) => {
-      captureClientError("scan.model-load", e);
+      // A load the scanner's close cut short is not a failure to report.
+      if (alive.current) captureClientError("scan.model-load", e);
       held.close();
       if (sessions.current === held) {
         gpuLoad.current?.abort.abort();
@@ -128,7 +129,7 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   useEffect(() => {
     alive.current = true;
     // Started as the scanner opens; a failure here is retried by the first frame's read, which reports it.
-    ensure().catch((e) => captureClientError("scan.model-load", e));
+    ensure().catch((e) => alive.current && captureClientError("scan.model-load", e));
     return () => {
       alive.current = false;
       outline?.clear();

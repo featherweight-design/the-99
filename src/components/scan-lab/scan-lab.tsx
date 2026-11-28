@@ -43,10 +43,10 @@ async function loadIndex(base: string): Promise<ScanIndex> {
 // The camera loop's own clock; read from handlers, never while rendering.
 const clock = () => performance.now();
 
-/** A spike row to the lab's own route; a row that does not save is dropped, never retried. */
 // Closing the holder mid-read throws this on purpose: leaving the page is not a failure to report.
 const leftThePage = (e: unknown) => e instanceof Error && e.message === "left the page";
 
+/** A spike row to the lab's own route; a row that does not save is dropped, never retried. */
 function postSpike(row: SpikeRow): Promise<boolean> {
   return fetch("/api/scan-lab/spike", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(row), keepalive: true,
@@ -352,7 +352,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
             // A WASM pair with no WebGPU pair to compare against is let go at once.
             if (wasmPair) for (const s of [wasmPair.detector, wasmPair.embedder]) void s.release().catch(() => {}); // silent-catch: expected: abort, a best-effort release on teardown
             // Leaving the page mid-load is not a WebGPU failure: nothing is recorded.
-            if (e instanceof Error && e.message === "left the page") throw e;
+            if (leftThePage(e)) throw e;
             error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
           }
         }
