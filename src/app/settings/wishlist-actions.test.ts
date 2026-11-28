@@ -23,11 +23,12 @@ beforeEach(() => {
 });
 
 describe("setWishlistSyncAction", () => {
-  it("writes a boolean and refreshes Settings and the deck pages", async () => {
+  it("writes a boolean and refreshes Settings, the deck pages and Wishlist", async () => {
     expect(await setWishlistSyncAction(true)).toEqual({ ok: true });
     expect(m.sync).toHaveBeenCalledWith("u1", true);
     expect(m.revalidatePath).toHaveBeenCalledWith("/settings");
     expect(m.revalidatePath).toHaveBeenCalledWith("/decks", "layout");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/collection/wishlist");
   });
 
   it("refuses anything but a boolean, writing nothing", async () => {
