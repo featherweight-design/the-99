@@ -12,10 +12,14 @@ const after = vi.hoisted(() => vi.fn());
 const captureSession = vi.hoisted(() => vi.fn());
 const trackFunnel = vi.hoisted(() => vi.fn());
 const warn = vi.hoisted(() => vi.fn());
+const syncMailboxes = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
 vi.mock("../../../lib/sentry/capture", () => ({ captureServerError: vi.fn(), captureServerWarning: warn }));
 vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlagsStrict: switchEnv }));
+vi.mock("../../../lib/account/mailboxes", async (orig) => ({
+  ...(await orig<typeof import("../../../lib/account/mailboxes")>()), syncAccountMailboxes: syncMailboxes,
+}));
 vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
 vi.mock("../../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../../lib/invites/spend")>()),
@@ -31,6 +35,7 @@ vi.mock("../../../lib/analytics/session-events", async (orig) => ({
 
 import { POST } from "./route";
 import { SWITCH_NAMES } from "../../../lib/flags/registry";
+import { mailboxHash } from "../../../lib/payments/canonical-email";
 
 const req = () => new NextRequest("https://the99.test/api/clerk-webhook", { method: "POST", body: "{}" });
 const report = { social: { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 2 }, rows: { decks: 3 }, stamp: 1 };
@@ -42,6 +47,7 @@ beforeEach(() => {
   warn.mockReset();
   vi.unstubAllEnvs();
   purge.mockReset();
+  syncMailboxes.mockReset().mockResolvedValue(undefined);
   purge.mockResolvedValue(report);
   record.mockReset().mockResolvedValue(undefined);
   spend.mockReset().mockResolvedValue({ spent: true });
@@ -146,6 +152,71 @@ describe("POST /api/clerk-webhook", () => {
     } finally {
       logged.mockRestore();
     }
+  });
+
+  describe("the account's mailboxes (the gate against an alias redeeming as a second person)", () => {
+    const KEY = "k".repeat(40);
+    const env = { SENTRY_USER_HASH_KEY: KEY };
+    const addr = (id: string, email: string, status = "verified") => ({ id, email_address: email, verification: { status } });
+    const payload = (type: string, ...emails: ReturnType<typeof addr>[]) =>
+      ({ type, data: { id: "user_m", email_addresses: emails, primary_email_address_id: emails[0]?.id } });
+    const hashes = () => [...syncMailboxes.mock.calls[0][1].hashes].sort();
+
+    beforeEach(() => vi.stubEnv("SENTRY_USER_HASH_KEY", KEY));
+
+    it("user.created records a row for every verified address, not only the primary, before the welcome grant", async () => {
+      verify.mockResolvedValue(payload("user.created", addr("a", "one@example.com"), addr("b", "Two+x@example.com"), addr("c", "three@example.com", "unverified")));
+      expect((await POST(req())).status).toBe(200);
+      expect(syncMailboxes).toHaveBeenCalledWith("user_m", expect.anything());
+      expect(hashes()).toEqual([mailboxHash("one@example.com", env)!, mailboxHash("two@example.com", env)!].sort());
+      expect(syncMailboxes.mock.invocationCallOrder[0]).toBeLessThan(grant.mock.invocationCallOrder[0]);
+    });
+
+    it("user.updated syncs the account's rows to its verified addresses, and nothing else", async () => {
+      verify.mockResolvedValue(payload("user.updated", addr("a", "ab@gmail.com")));
+      const res = await POST(req());
+      expect(res.status).toBe(200);
+      expect(hashes()).toEqual([mailboxHash("a.b@gmail.com", env)!]);
+      expect(grant).not.toHaveBeenCalled();
+      expect(spend).not.toHaveBeenCalled();
+      expect(purge).not.toHaveBeenCalled();
+    });
+
+    it("user.updated with every address dropped still syncs, so the rows go", async () => {
+      verify.mockResolvedValue({ type: "user.updated", data: { id: "user_m", email_addresses: [] } });
+      expect((await POST(req())).status).toBe(200);
+      expect(syncMailboxes.mock.calls[0][1]).toEqual({ hashes: [], unhashed: 0 });
+    });
+
+    it("user.updated with no email list touches nothing: a payload that lacks them must not wipe the rows", async () => {
+      verify.mockResolvedValue({ type: "user.updated", data: { id: "user_m" } });
+      expect((await POST(req())).status).toBe(200);
+      expect(syncMailboxes).not.toHaveBeenCalled();
+    });
+
+    it("refuses a user.updated with no id", async () => {
+      verify.mockResolvedValue({ type: "user.updated", data: { email_addresses: [] } });
+      expect((await POST(req())).status).toBe(400);
+      expect(syncMailboxes).not.toHaveBeenCalled();
+    });
+
+    it("answers 500 for a retry when the write fails, on user.updated and before any grant on user.created", async () => {
+      syncMailboxes.mockRejectedValue(new Error("db down"));
+      verify.mockResolvedValueOnce(payload("user.updated", addr("a", "one@example.com")));
+      expect((await POST(req())).status).toBe(500);
+      verify.mockResolvedValueOnce(payload("user.created", addr("a", "one@example.com")));
+      expect((await POST(req())).status).toBe(500);
+      expect(grant).not.toHaveBeenCalled();
+    });
+
+    it("warns, and still syncs what it can, when no key is usable", async () => {
+      vi.stubEnv("SENTRY_USER_HASH_KEY", "short");
+      vi.stubEnv("ANON_KEY_SALT", "");
+      verify.mockResolvedValue(payload("user.updated", addr("a", "one@example.com")));
+      expect((await POST(req())).status).toBe(200);
+      expect(warn).toHaveBeenCalledWith("clerk-webhook:mailbox-key", expect.any(String));
+      expect(syncMailboxes.mock.calls[0][1]).toEqual({ hashes: [], unhashed: 1 });
+    });
   });
 
   describe("user.created (an invited sign-up, invites plan R8)", () => {

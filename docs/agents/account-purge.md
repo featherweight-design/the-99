@@ -53,6 +53,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   no account column, so the purge cannot reach it and the coverage test does not list it. It is what stops a deleted
   account signing up again on the same mailbox for a second welcome lot (`payments.md`). The privacy page says so.
 
+  **`account_mailboxes` goes with the account** (`PURGE_ORDER`): one keyed hash of each verified address's mailbox per
+  row, so a deleted account frees its mailboxes for a new sign-up. Contrast `welcome_email_claims`, which stays.
+
   **Stripe first, database second** (payments PR R, scope §6.3). `purgeAccount` step 0, before the transaction, is
   `deleteStripeCustomerFor` (`src/lib/payments/delete-customer.ts`): no `stripe_customers` row means no Stripe call and
   no key needed; a row means the Customer is retrieved, checked to carry `metadata.app = the-99` and this account's

@@ -9,6 +9,7 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims, flyerCodes } from "../../db/schema";
+import { mailboxTaken } from "../account/mailboxes";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
 import { codeEmailParts } from "../email/code-mail";
 import { mailRefusal } from "../invites/mail-limits";
@@ -293,7 +294,7 @@ export async function handOverFlyer(codeRaw: string, presented: string | null, d
       // released claim): a failure keeps the claim as it is.
       if (row.clerkInvitationId !== null && !(await clerk.revoke(row.clerkInvitationId))) return { ok: false, reason: "failed" };
       if (!(await clerk.revokeFor(email, row.id))) return { ok: false, reason: "failed" };
-      if (await clerk.hasAccount(email)) {
+      if ((await clerk.hasAccount(email)) || (await mailboxTaken(email))) {
         await tx.update(flyerClaims).set({ state: "released", email: null, clerkInvitationId: null, resolvedAt: now })
           .where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven")));
         return { ok: false, reason: "account" };

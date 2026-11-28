@@ -10,6 +10,7 @@
 import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
+import { mailboxTaken } from "../account/mailboxes";
 import { clerkInvites, type ClerkInvites } from "./clerk";
 import { codeEmailParts } from "../email/code-mail";
 import { mailRefusal } from "./mail-limits";
@@ -307,7 +308,8 @@ export async function handOver(
 
   let hasAccount: boolean;
   try {
-    hasAccount = await clerk.hasAccount(decision.email);
+    // The literal address, then the mailbox it reaches: an alias of an existing account is that account's, not a new person.
+    hasAccount = (await clerk.hasAccount(decision.email)) || (await mailboxTaken(decision.email));
   } catch {
     return { ok: false, reason: "failed" };
   }

@@ -56,6 +56,7 @@
     "check:db-pool": "node scripts/check-db-pool.mjs",
     "db:backfill:added-at": "tsx scripts/backfill-added-at.ts",
     "db:backfill:welcome-claims": "tsx scripts/backfill-welcome-claims.ts",
+    "db:backfill:account-mailboxes": "tsx scripts/backfill-account-mailboxes.ts",
     "db:build:index": "tsx scripts/build-commander-index.ts",
     "db:stamp:catalog": "tsx scripts/stamp-catalog.ts",
     "db:build:prose": "tsx scripts/generate-commander-prose.ts",
