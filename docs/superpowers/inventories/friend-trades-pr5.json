@@ -1,0 +1,447 @@
+{
+  "feature": "Friend trades PR 5: the Trades box, the trade sheet in every state and the spares sheet's Trade press",
+  "note": "Needs a SCRATCH branch off local-dev seeded by scripts/seed-trade-sheet-fixture.mts for the +clerk_test reader; export the RIN/SOL/TAM/UMA_PUBLIC_ID and TRADE_* lines it prints. The two sent rows write a trade each (Tam at phone, Rin at desktop), so reseed before a second run.",
+  "out": "contact-sheets/friend-trades-pr5",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "tab-trades",
+      "label": "Rin's Spares tab: Trades with Rin (offer, accepted, marks, traded, declined), the how line",
+      "view": "src/components/social/trades-head.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "tab-held",
+      "label": "Sol's Spares tab: held by the cap (Q10)",
+      "view": "src/components/social/trades-head.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${SOL_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-cap\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "spares-sheet-trade",
+      "label": "A spare's sheet on Rin's tab: the Trade press on Rin's row",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"spare-tile-press\"]"
+        },
+        {
+          "wait": "[data-testid=\"friend-spare-trade\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "spares-sheet-held",
+      "label": "A spare's sheet on Sol's tab: Offer waiting on Sol's row",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${SOL_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-cap\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"spare-tile-press\"]"
+        },
+        {
+          "wait": "[data-testid=\"friend-spare-trade-held\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "trade-press",
+      "label": "The Trade press: the spares sheet closes, the trade sheet opens on that card",
+      "view": "src/components/social/trade-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"spare-tile-press\"]"
+        },
+        {
+          "click": "[data-testid=\"friend-spare-trade\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "sheet-theirs",
+      "label": "Rin's offer (Yes, No, Counter)",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_THEIRS}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-counter-draft",
+      "label": "Your counter, pressed from Rin's offer",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_THEIRS}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trade-counter\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "sheet-their-counter",
+      "label": "Sol's counter, with the was figures and the change marks",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${SOL_PUBLIC_ID}/spares?trade=${TRADE_THEIR_COUNTER}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-yours",
+      "label": "Your offer to Sol (Withdraw)",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${SOL_PUBLIC_ID}/spares?trade=${TRADE_YOURS}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-look",
+      "label": "Needs a look: Tam's card is gone",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${TAM_PUBLIC_ID}/spares?trade=${TRADE_LOOK}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-look-yours",
+      "label": "Needs a look: your card is gone",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${UMA_PUBLIC_ID}/spares?trade=${TRADE_LOOK_YOURS}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-revise",
+      "label": "Revise: Counter on your own offer that needs a look",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${UMA_PUBLIC_ID}/spares?trade=${TRADE_LOOK_YOURS}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trade-counter\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "sheet-accepted",
+      "label": "Accepted (Mark traded, Rescind)",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_ACCEPTED}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-you-marked",
+      "label": "You marked it traded",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_YOU_MARKED}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-them-marked",
+      "label": "Rin marked it traded",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_THEM_MARKED}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-traded",
+      "label": "Traded",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_TRADED}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-ended",
+      "label": "Ended: Rin declined (the ended band, Propose a new trade)",
+      "view": "src/components/social/trade-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares?trade=${TRADE_DECLINED}",
+          "wait": "[data-testid=\"trade-sheet\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "draft",
+      "label": "Propose a trade to Rin: the picker on Rin's spares",
+      "view": "src/components/social/trade-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trades-propose\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "picker-yours",
+      "label": "The picker on your spares: Wants chips first, the Offered chip",
+      "view": "src/components/social/trade-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trades-propose\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-testid=\"trade-pick-you\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-chip-wants\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "picker-offered-pop",
+      "label": "The Offered popover (Q9): also in your offer to Sol",
+      "view": "src/components/social/trade-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trades-propose\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-testid=\"trade-pick-you\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-chip-offered\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-chip-offered\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-offered-pop\"]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "draft-picked",
+      "label": "A card each side picked: In the trade, Send offer live",
+      "view": "src/components/social/trade-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trades-propose\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-testid=\"trade-pick-press\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-pick-you\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-pick-press\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-send\"]:enabled",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "sent-phone",
+      "label": "Sent (writes a trade to Tam; phone only, so the desktop row writes its own)",
+      "view": "src/components/social/trade-tab.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/friends/${TAM_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trades-propose\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-testid=\"trade-pick-press\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-pick-you\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-pick-press\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-send\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-sent\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "sent-desktop",
+      "label": "Sent (writes a trade to Rin; desktop only, the last row)",
+      "view": "src/components/social/trade-tab.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/friends/${RIN_PUBLIC_ID}/spares",
+          "wait": "[data-testid=\"trades-head\"]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid=\"trades-propose\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-picker\"]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-testid=\"trade-pick-press\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-pick-you\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-pick-press\"]"
+        },
+        {
+          "click": "[data-testid=\"trade-send\"]"
+        },
+        {
+          "wait": "[data-testid=\"trade-sent\"]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}

@@ -275,7 +275,13 @@ export function TradeBox(props: TradeBoxProps) {
       );
       break;
     case "ended":
-      foot = <p className={`${LINE} py-[8px]`}>{t.row.nothingElse}</p>;
+      // No ended band on the boards: the traded foot's shape, its line Nothing else changes.
+      foot = (
+        <div className={PRESS_ROW}>
+          <p className={`${LINE} py-[8px]`}>{t.row.nothingElse}</p>
+          {props.onNewTrade ? <button type="button" data-testid="trade-new" onClick={props.onNewTrade} className={`${LINK} text-[color:var(--accent-text)] md:ml-auto`}>{t.newTrade}</button> : null}
+        </div>
+      );
       break;
   }
   const anyPriced = [...liveThem, ...liveYou].some((c) => prices.cents[c.oracleId] != null);

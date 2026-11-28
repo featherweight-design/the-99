@@ -6,7 +6,7 @@
 // the sheet reloads the trade (`openTradeAction`) and the page refreshes; a refusal draws the shared toast and leaves
 // the sheet as it was, reloading it when the trade moved underneath.
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ModalChrome } from "../decks/receipt-modal";
 import { SegmentedSwitch } from "../ui/segmented-switch";
@@ -340,6 +340,17 @@ function OfferedChip({ offered, open, solo, friend, onToggle, onClose, onOpen }:
   const chip = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLDivElement>(null);
   const names = offered.map((o) => o.friend.displayName);
+  // The board anchors the popover to the chip's side (left alone, right beside Wants); on a tile at the sheet's edge that
+  // side runs out of the sheet and is clipped, so it takes the other side when it would not fit.
+  const [side, setSide] = useState<"left" | "right">(solo ? "left" : "right");
+  useLayoutEffect(() => {
+    if (!open || !pop.current) return;
+    const sheet = pop.current.parentElement?.closest('[role="dialog"]')?.getBoundingClientRect();
+    const box = pop.current.getBoundingClientRect();
+    if (!sheet) return;
+    if (box.left < sheet.left) setSide("left");
+    else if (box.right > sheet.right) setSide("right");
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     pop.current?.querySelector<HTMLElement>("a,button")?.focus();
@@ -370,7 +381,7 @@ function OfferedChip({ offered, open, solo, friend, onToggle, onClose, onOpen }:
       </button>
       {open ? (
         <div ref={pop} role="dialog" aria-label={t.offeredPop.title} data-testid="trade-offered-pop"
-          className={`absolute top-[28px] z-10 flex w-[232px] flex-col gap-[2px] rounded-[10px] bg-[color:var(--surface-raised)] p-[10px] shadow-[0_10px_28px_rgba(0,0,0,.5)] [border:1px_solid_var(--border-strong)] ${solo ? "left-0" : "right-0"}`}>
+          className={`absolute top-[28px] z-10 flex w-[232px] flex-col gap-[2px] rounded-[10px] bg-[color:var(--surface-raised)] p-[10px] shadow-[0_10px_28px_rgba(0,0,0,.5)] [border:1px_solid_var(--border-strong)] ${side === "left" ? "left-0" : "right-0"}`}>
           <p className="m-0 pb-[4px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{t.offeredPop.title}</p>
           {offered.map((o) => (
             <div key={o.tradeId} className="flex items-center gap-[8px] py-[5px] [border-top:1px_solid_var(--border)] first-of-type:[border-top:0]">
