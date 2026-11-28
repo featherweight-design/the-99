@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../../lib/sentry/capture-client";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { CAMERA_CONSTRAINTS, torchOf, type Torch } from "../../../lib/scan/camera";
@@ -190,7 +191,7 @@ export function useCardScan(
         stream = s;
         videoEl.srcObject = s;
         // `play` answers a promise in browsers and nothing in some test DOMs.
-        void Promise.resolve(videoEl.play?.()).catch(() => {});
+        void Promise.resolve(videoEl.play?.()).catch(() => {}); // silent-catch: expected: refusal, the browser refused autoplay
         setTorch({ handle: torchOf(s.getVideoTracks()[0] ?? null), on: false });
       },
       () => !gone && setBlocked(true),
@@ -207,9 +208,9 @@ export function useCardScan(
     if (!videoEl?.srcObject) return;
     try {
       if (held) videoEl.pause();
-      else void Promise.resolve(videoEl.play?.()).catch(() => {});
+      else void Promise.resolve(videoEl.play?.()).catch(() => {}); // silent-catch: expected: refusal, the browser refused autoplay
     } catch {
-      // a test DOM with no media playback
+      // silent-catch: expected: refusal, a test DOM with no media playback
     }
   }, [held, videoEl]);
 
@@ -251,8 +252,9 @@ export function useCardScan(
         let r: FrameRead;
         try {
           r = await depsRef.current.readFrame(videoEl);
-        } catch {
+        } catch (e) {
           if (stop) break;
+          captureClientError("scan.frame-read", e);
           // The models would not load or a read threw: nothing on screen is being read, so no answer stands, and
           // the player is told once rather than left holding a card up. It keeps trying, further apart.
           failures++;
@@ -423,7 +425,10 @@ export function useCardScan(
       const load = depsRef.current.loadChoices;
       read = Promise.resolve()
         .then(() => (load ? load(g.oracleId) : []))
-        .catch(() => [] as PrintingChoice[])
+        .catch((e) => {
+          captureClientError("scan.choices", e);
+          return [] as PrintingChoice[];
+        })
         .then((choices) => {
           // A read that failed (or found none) is not kept, so the next time the card is chosen it is read again.
           if (choices.length === 0 && choicesCache.current.get(g.oracleId) === read) choicesCache.current.delete(g.oracleId);
@@ -611,6 +616,7 @@ function safeLocalStorage(): Storage | null {
   try {
     return typeof window === "undefined" ? null : window.localStorage;
   } catch {
+    // silent-catch: expected: refusal, the browser blocked storage
     return null;
   }
 }

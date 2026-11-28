@@ -35,6 +35,7 @@
 
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { GhostButton } from "../ui/button";
@@ -155,7 +156,7 @@ export function CollectionPlaceHead({
       })
       // A failed read leaves the header exactly as it was — the same fallback `DeltaStrip`
       // takes on a failed focus-time check — rather than an unhandled rejection.
-      .catch(() => {});
+      .catch((e) => captureClientError("collection.head-route", e));
   }, [pathname]);
   useEffect(() => {
     const onFocus = () => {
@@ -164,7 +165,7 @@ export function CollectionPlaceHead({
         .then((next) => {
           if (ticket === latest.current) setLive(next);
         })
-        .catch(() => {});
+        .catch((e) => captureClientError("collection.head-focus", e));
     };
     window.addEventListener("focus", onFocus);
     // An Edit copies save settles in the card modal's host, which this head cannot see.
@@ -192,7 +193,7 @@ export function CollectionPlaceHead({
       .then((next) => {
         if (ticket === latest.current) setLive(next);
       })
-      .catch(() => {});
+      .catch((e) => captureClientError("collection.head-reread", e));
   };
   const hasCollection = stats.totalCards > 0;
   // The group's layout mounts this only on the three routes `placeFromPathname` answers for

@@ -9,6 +9,7 @@
 //
 // Adding never lowers a count, so there is no deck check and no `Checking decks` phase (B7).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -242,8 +243,9 @@ function AddMode({
           setSearchFailed(false);
           setActive(0);
         })
-        .catch(() => {
+        .catch((e) => {
           if (mine !== ticket.current) return;
+          captureClientError("collection.add-search", e);
           setResults([]);
           setSearched(trimmed);
           setSearchFailed(true);
@@ -324,7 +326,8 @@ function AddMode({
     let choices: PrintingChoice[] = [];
     try {
       choices = await loadPrintingChoices(card.oracleId);
-    } catch {
+    } catch (e) {
+      captureClientError("collection.printings-add", e);
       choices = [];
     }
     setLoadingCard(null);
@@ -380,7 +383,8 @@ function AddMode({
       setScanPending((n) => n + 1);
       try {
         choices = await loadPrintingChoices(guess.oracleId);
-      } catch {
+      } catch (e) {
+        captureClientError("collection.printings-scan", e);
         choices = [];
       } finally {
         setScanPending((n) => n - 1);
@@ -415,7 +419,8 @@ function AddMode({
       let choices: PrintingChoice[] = [];
       try {
         choices = await loadPrintingChoices(guess.oracleId);
-      } catch {
+      } catch (e) {
+        captureClientError("collection.printings-scan-fast", e);
         choices = [];
       }
       try {
@@ -443,7 +448,8 @@ function AddMode({
     let choices: PrintingChoice[] = [];
     try {
       choices = await loadPrintingChoices(oracleId);
-    } catch {
+    } catch (e) {
+      captureClientError("collection.printings-swap", e);
       choices = [];
     } finally {
       setSwapping(false);
@@ -530,7 +536,8 @@ function AddMode({
         onSaved?.(s.copies);
         return;
       }
-    } catch {
+    } catch (e) {
+      captureClientError("collection.add-save", e);
       // Falls through to the failed state: the list stays, and the same id is retried.
     }
     setPhase("failed");

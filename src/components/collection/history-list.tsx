@@ -6,6 +6,7 @@
 // through `Show older changes`. Each entry that is not already reverted, and that recorded a row, has its
 // own Revert control, which opens the revert confirmation.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { loadCollectionHistory, loadCollectionHistoryEntry, loadHistoryLiveFor } from "../../app/collection/history-actions";
@@ -511,12 +512,17 @@ export function HistoryList({
     const ids = [...new Set([...singles, ...multis])].filter((id) => !asked.current.has(id)).slice(0, HISTORY_LIVE_MAX);
     if (ids.length === 0) return;
     ids.forEach((id) => asked.current.add(id));
-    loadHistoryLiveFor(ids).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => { ids.forEach((id) => asked.current.delete(id)); });
+    loadHistoryLiveFor(ids).then((r) => setLive((m) => ({ ...m, ...r }))).catch((e) => {
+      captureClientError("history.live", e);
+      ids.forEach((id) => asked.current.delete(id));
+    });
   }, [entries]);
 
   // After a move: that card, re-read, so its line draws where the copy is now.
   function reread(oracleId: string) {
-    loadHistoryLiveFor([oracleId]).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => undefined);
+    loadHistoryLiveFor([oracleId]).then((r) => setLive((m) => ({ ...m, ...r }))).catch((e) => {
+      captureClientError("history.reread", e);
+    });
   }
 
   async function fetchDetail(id: string) {
@@ -525,7 +531,8 @@ export function HistoryList({
       const d = await loadCollectionHistoryEntry(id);
       if (d?.live) setLive((m) => ({ ...m, ...d.live }));
       setDetails((m) => new Map(m).set(id, d ?? "failed"));
-    } catch {
+    } catch (e) {
+      captureClientError("history.detail", e);
       setDetails((m) => new Map(m).set(id, "failed"));
     }
   }
@@ -560,7 +567,8 @@ export function HistoryList({
       setEntries((e) => [...e, ...page.entries]);
       setNext(page.nextBefore);
       setPager("idle");
-    } catch {
+    } catch (e) {
+      captureClientError("history.older", e);
       setPager("failed");
     }
   }

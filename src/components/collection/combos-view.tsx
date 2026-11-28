@@ -5,6 +5,7 @@
 // wants it, Add to wishlist). One request fetches both sides (`useCollectionCombos`), so both toggle counts are known
 // when the list draws; the Collection's filters narrow the pairs in `browser.tsx`. The route is `private, no-store`
 // and the list payload carries only the chip's count.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useState } from "react";
 import { addToWishlistAction } from "../../app/collection/wishlist/actions";
 import { comboOpenOpts, useCardDetail } from "../cards/card-detail-context";
@@ -48,7 +49,10 @@ export function useCollectionCombos(open: boolean, version: unknown): { load: Co
     fetch("/api/collection-combos", { credentials: "same-origin", signal: controller.signal })
       .then((r) => (r.ok ? (r.json() as Promise<CollectionCombosWire | null>) : null))
       .then((wire) => land(wire ? { kind: "ready", sides: expandSides(wire) } : { kind: "failed" }))
-      .catch(() => land({ kind: "failed" }));
+      .catch((e) => {
+        if (live) captureClientError("collection.combos", e);
+        land({ kind: "failed" });
+      });
     return () => {
       live = false;
       controller.abort();

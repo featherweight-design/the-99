@@ -5,6 +5,7 @@
 // The tiles are the server's, with what this visit's writes changed laid over them, so a card added from the search
 // shows at once; every settled write also asks the router for the page again, and the fresh list then agrees.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { wishlistCopy } from "../../lib/copy/wishlist";
@@ -81,7 +82,7 @@ export function WishlistView({
   function dismissStrip() {
     const drawn = shownNotices;
     setDismissed((prev) => new Set([...prev, ...drawn.map(noticeKey)]));
-    void dismissCollectedAction(drawn.map((n) => ({ oracleId: n.oracleId, collectedAt: n.collectedAt }))).catch(() => {});
+    void dismissCollectedAction(drawn.map((n) => ({ oracleId: n.oracleId, collectedAt: n.collectedAt }))).catch((e) => captureClientError("wishlist.dismiss", e));
   }
 
   const names = shownNotices.map((n) => n.name);

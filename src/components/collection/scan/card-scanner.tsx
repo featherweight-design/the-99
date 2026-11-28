@@ -229,6 +229,6 @@ async function sendTiming(timer: ScanTimer, reviewAt: { current: number | null }
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(row), keepalive: true,
     });
   } catch {
-    // a timing row is never worth a retry
+    // silent-catch: expected: offline, a timing row is never worth a retry
   }
 }
