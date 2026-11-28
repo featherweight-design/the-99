@@ -18,7 +18,7 @@ import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
 import { Face } from "./face";
-import { SpareChip } from "./spare-key-item";
+import { SpareChip, WantChip } from "./spare-key-item";
 import { BAND, PANEL } from "./section-panel";
 import { BandText } from "../decks/deck-box";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -39,6 +39,7 @@ export function FriendsList({
   linkable = false,
   emptyBody,
   sparable,
+  wanted,
 }: {
   friends: Friend[];
   now: Date;
@@ -57,6 +58,8 @@ export function FriendsList({
   linkable?: boolean;
   /** Per friend (`public_id`), how many of their wanted cards the reader can spare (You have it); absent or 0 draws no chip. */
   sparable?: Readonly<Record<string, number>>;
+  /** Friend trades: per friend, how many of their spares the reader wants (on the wishlist, or a deck needs it). */
+  wanted?: Readonly<Record<string, number>>;
 }) {
   // A removal takes its row, its ⋯ and the confirm with it, so the dialog's own return lands on nothing: when
   // the list shrinks and focus is left on the page itself, it goes to the Friends heading. Effects run after the
@@ -88,10 +91,18 @@ export function FriendsList({
               onRemove={() => onRemove(friend)}
               linkable={linkable}
               sparable={sparable?.[friend.publicId] ?? 0}
+              wanted={wanted?.[friend.publicId] ?? 0}
             />
           ))}
         </ul>
       )}
+      {/* At phone width the chips draw their figure alone, so the panel names the two once. */}
+      {linkable && friends.some((x) => (sparable?.[x.publicId] ?? 0) > 0 || (wanted?.[x.publicId] ?? 0) > 0) ? (
+        <p data-testid="friends-chip-key" className="m-0 flex flex-wrap items-center gap-x-[14px] gap-y-[4px] px-[14px] py-[10px] font-mono text-[10.5px] text-[color:var(--fg-muted)] [border-top:1px_solid_var(--border)] md:hidden">
+          <span className="inline-flex items-center gap-[6px]"><WantChip>{""}</WantChip>{f.keyWant}</span>
+          <span className="inline-flex items-center gap-[6px]"><SpareChip gap={4}>{""}</SpareChip>{f.keySpare}</span>
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -104,6 +115,7 @@ function FriendRow({
   onRemove,
   linkable,
   sparable,
+  wanted = 0,
 }: {
   friend: Friend;
   since: string;
@@ -112,6 +124,7 @@ function FriendRow({
   onRemove: () => void;
   linkable: boolean;
   sparable: number;
+  wanted?: number;
 }) {
   return (
     <li className="relative flex h-[60px] items-center gap-[12px] pl-[14px] pr-[4px] [border-bottom:1px_solid_var(--border)] md:pl-[16px]" data-friend-row="">
@@ -138,16 +151,32 @@ function FriendRow({
       <span className={`flex-none font-mono text-[10.5px] md:text-[11px] ${linkable ? "hidden md:inline" : ""} ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
         {f.since(since)}
       </span>
+      {/* Friend trades: the two directions side by side. Bookmark (accent) = their spares you want, which opens their
+          Spares tab filtered to Wanted; two people (fact) = your spares they want (You have it), which opens their wishlist.
+          Desktop names each; a phone keeps the figure, and the panel's key names them once. */}
+      {linkable && wanted > 0 ? (
+        <Link
+          href={`/friends/${friend.publicId}/spares?wanted=wishlist,deck`}
+          data-want-chip=""
+          {...personAttrs(
+            { "aria-label": f.wantChipAria(friend.displayName, wanted) },
+            "relative z-10 inline-flex h-[44px] flex-none items-center rounded-[8px] px-[2px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
+          )}
+        >
+          <WantChip>{wanted}<span className="hidden md:inline">{f.wantChipWord}</span></WantChip>
+          <PendingReporter href={`/friends/${friend.publicId}/spares?wanted=wishlist,deck`} />
+        </Link>
+      ) : null}
       {linkable && sparable > 0 ? (
         <Link
           href={`/friends/${friend.publicId}/wishlist`}
           data-spare-chip=""
           {...personAttrs(
             { "aria-label": f.spareChipAria(friend.displayName, sparable) },
-            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[4px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
+            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[2px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
           )}
         >
-          <SpareChip gap={4}>{sparable}</SpareChip>
+          <SpareChip gap={4}>{sparable}<span className="hidden md:inline">{f.spareChipWord}</span></SpareChip>
           <PendingReporter href={`/friends/${friend.publicId}/wishlist`} />
         </Link>
       ) : null}

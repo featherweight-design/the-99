@@ -29,6 +29,9 @@ import { rowAsk } from "./friend-spares";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { SparesChassis } from "./spares-chassis";
 import { TradePressBridge, TradesOnTab, type TabTrades } from "./trades-on-tab";
+import { DeckDot, SparesWantedCallout } from "./spares-wanted-callout";
+import { WishGlyph } from "./spare-key-item";
+import { tradeCopy } from "../../lib/copy/trades";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 
@@ -112,7 +115,11 @@ function SparesTabBody({ name, spares, asks, deckNeed = NO_NEED, initial = REST_
       onClearAll={() => update({ ...view, filters: NO_SPARE_FILTERS })}
     />
   ) : null;
-  if (asks) return <AskTab spares={spares} all={all} lines={visible} frame={frame} none={none} asks={asks} onWishlistWrite={onWishlistWrite} />;
+  const callout = asks?.trades ? (
+    <SparesWantedCallout all={all} yours={asks.trades.yours} trades={asks.trades} wanted={view.filters.wanted}
+      onWanted={(wanted) => update({ ...view, filters: { ...view.filters, wanted } })} />
+  ) : null;
+  if (asks) return <AskTab spares={spares} all={all} lines={visible} callout={callout} frame={frame} none={none} asks={asks} onWishlistWrite={onWishlistWrite} />;
   return (
     <>
       {frame}
@@ -174,12 +181,14 @@ const TILE_BOX = "relative block w-full cursor-pointer overflow-hidden p-0 [aspe
 const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--accent)]";
 const RING_ON_FOCUS = "focus:outline-solid focus:outline-2 focus:outline-offset-[3px] focus:outline-[color:var(--accent)]";
 
-function AskTab({ spares, all, lines, frame, none, asks, onWishlistWrite }: {
+function AskTab({ spares, all, lines, callout, frame, none, asks, onWishlistWrite }: {
   spares: FriendSpareList; asks: FriendSparesAsks; onWishlistWrite: () => void;
   /** Every spare the friend offers: the provider reads all of them and `?spare=` finds any, whatever the filters leave. */
   all: readonly SpareBrowseLine[];
   /** The spares the filters and the order leave. */
   lines: readonly SpareBrowseLine[];
+  /** Friend trades' Wanted call-out and switch, above the chassis; null without trades. */
+  callout: ReactNode;
   frame: ReactNode;
   none: ReactNode;
 }) {
@@ -195,14 +204,17 @@ function AskTab({ spares, all, lines, frame, none, asks, onWishlistWrite }: {
   const tiles = useRef(new Map<string, HTMLButtonElement>());
   return (
     <>
+      {callout}
       {frame}
       <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-        <PersonText text={p.spares.line(spares.pods)} />{p.spares.pressToAsk}
+        <PersonText text={p.spares.line(spares.pods)} />{asks.trades ? p.spares.pressToAskOrTrade : p.spares.pressToAsk}
       </p>
       {none}
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
-          <TradePressBridge friend={friend.publicId} held={asks.trades?.held ?? false}>
+          <TradePressBridge friend={friend.publicId} held={asks.trades?.held ?? false}
+            wants={asks.trades?.yours.filter((l) => l.onWishlist).map((l) => l.name) ?? []}
+            open={asks.trades?.rows.filter((r) => r.status === "open" || r.status === "accepted").length ?? 0}>
             <SparesSheetHost first={friend.publicId} kickerFor={kickerFor} fallback={fallback} />
           </TradePressBridge>
           {/* Four columns until xl: at md's narrow end six leave a tile too narrow for its one-line Requested caption. */}
@@ -256,27 +268,40 @@ function AskTile({ line, price, eager, friend, tileRef }: {
       >
         <TileArt line={line} eager={eager} />
       </button>
-      <span className="flex flex-col gap-[3px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">
-        <span data-testid="spare-count" className="flex items-center gap-[5px] whitespace-nowrap">
-          <span>{count}</span>
-          {state ? (
-            <>
-              <span aria-hidden>·</span>
-              {ask === "requested" ? (
-                <span data-testid="spare-ask" data-ask="requested" className="inline-flex items-center gap-[6px] text-[color:var(--accent-text)]">
-                  <i aria-hidden className="size-[7px] rounded-full bg-[color:var(--accent)]" />
-                  {state}
-                </span>
-              ) : (
-                <span data-testid="spare-ask" data-ask="accepted" className="text-[color:var(--success)]">✓ {state}</span>
-              )}
-            </>
-          ) : null}
-        </span>
-        {line.onWishlist && <WishlistMark />}
-        {line.deckNeed > 0 && <DeckNeedMark need={line.deckNeed} />}
+      {/* Two chips at most, aria-hidden (the press's label says it): the count or this friend's ask, then why you want it. */}
+      <span aria-hidden className="flex min-w-0 gap-[4px]">
+        {ask === "requested" ? (
+          <TileChip tone="accent" testId="spare-ask" ask="requested" glyph={<i className="size-[6px] shrink-0 rounded-full bg-current" />} label={p.spares.chipAsked} />
+        ) : ask === "accepted" ? (
+          <TileChip tone="success" testId="spare-ask" ask="accepted" glyph={<span className="shrink-0 text-[11px]">✓</span>} label={p.spares.chipYours} />
+        ) : (
+          <TileChip tone="muted" testId="spare-count" label={count} />
+        )}
+        {line.onWishlist ? (
+          <TileChip tone="accent" testId="spare-on-wishlist" glyph={<><WishGlyph size={11} />{line.deckNeed > 0 && <DeckDot />}</>} label={tradeCopy.chipWishlist} />
+        ) : line.deckNeed > 0 ? (
+          <TileChip tone="muted" testId="spare-deck-need" glyph={<DeckDot />} label={tradeCopy.chipDeck} />
+        ) : null}
       </span>
     </li>
+  );
+}
+
+const CHIP_TONE = {
+  muted: "text-[color:var(--fg-muted)] bg-[color-mix(in_oklab,var(--fg-muted)_12%,transparent)]",
+  accent: "text-[color:var(--accent-text)] bg-[color-mix(in_oklab,var(--accent)_14%,transparent)]",
+  success: "text-[color:var(--success)] bg-[color-mix(in_oklab,var(--success)_14%,transparent)]",
+} as const;
+
+/** A tile's chip: one fills the tile's width, two share it. The label truncates rather than wrapping. */
+function TileChip({ tone, testId, ask, glyph, label }: {
+  tone: keyof typeof CHIP_TONE; testId: string; ask?: "requested" | "accepted"; glyph?: ReactNode; label: string;
+}) {
+  return (
+    <span data-testid={testId} data-ask={ask} className={`inline-flex h-[22px] min-w-0 flex-1 basis-0 items-center gap-[4px] whitespace-nowrap rounded-[4px] px-[6px] font-sans text-[11.5px] font-medium tabular-nums ${CHIP_TONE[tone]}`}>
+      {glyph}
+      <span className="min-w-0 truncate">{label}</span>
+    </span>
   );
 }
 
@@ -312,17 +337,6 @@ function NoSpares({ name, query, filtered, onKeepSearch, onClearAll }: {
       primary={query && filtered ? <PrimaryButton type="button" onClick={onKeepSearch} className={ZERO_PRIMARY}>{c.keepSearch}</PrimaryButton> : undefined}
       secondary={<GhostButton type="button" onClick={onClearAll} className={ZERO_SECONDARY}>{c.clear}</GhostButton>}
     />
-  );
-}
-
-function WishlistMark() {
-  return (
-    <span data-testid="spare-on-wishlist" className="inline-flex items-center gap-[4px] text-[color:var(--accent-text)]">
-      <svg aria-hidden width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-        <path d="M6.5 3.5h11v17l-5.5-4-5.5 4z" />
-      </svg>
-      {p.spares.onWishlist}
-    </span>
   );
 }
 

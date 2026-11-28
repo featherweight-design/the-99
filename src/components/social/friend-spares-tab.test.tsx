@@ -13,11 +13,18 @@ import { FriendSparesTab, type FriendSparesAsks } from "./friend-spares-tab";
 import { SparesSheet } from "./spare-markers";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
+import { tradeCopy } from "../../lib/copy/trades";
+import type { TabTrades } from "./trades-on-tab";
+import type { TradeListRow } from "../../lib/social/trade-reads";
 
 const m = vi.hoisted(() => ({ mirrorUrl: vi.fn(), refresh: vi.fn(), ask: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: m.mirrorUrl }));
 vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: m.ask, askInsteadAction: vi.fn() }));
+vi.mock("../../app/friends/trade-actions", () => ({
+  proposeTradeAction: vi.fn(), counterTradeAction: vi.fn(), reviseTradeAction: vi.fn(), answerTradeAction: vi.fn(),
+  withdrawTradeAction: vi.fn(), rescindTradeAction: vi.fn(), markTradedAction: vi.fn(), clearTradeAction: vi.fn(), openTradeAction: vi.fn(),
+}));
 
 const p = socialCopy.friendPage.spares;
 const GHALTA = "00000000-0000-4000-8000-0000000000c1";
@@ -151,13 +158,13 @@ describe("the tab, spare requests on", () => {
     expect(dialog.queryByText(/\$\d/)).toBeNull();
   });
 
-  it("carries THIS friend's ask on the count line: Requested, ✓ Accepted, and nothing for another friend's ask", async () => {
+  it("puts THIS friend's ask in the count chip's place: Asked, ✓ Agreed, and the count for another friend's ask", async () => {
     asks = [ask(GHALTA, COLIN.publicId, "open"), ask(SAI, COLIN.publicId, "yes")];
     await mount(ON());
-    const [ghalta, sai] = screen.getAllByTestId("spare-count");
-    expect(ghalta.textContent).toBe(`${p.count(1)}·${spareCopy.request.requested}`);
-    expect(within(ghalta).getByTestId("spare-ask").getAttribute("data-ask")).toBe("requested");
-    expect(sai.textContent).toBe(`${p.count(2)}·✓ ${spareCopy.request.accepted}`);
+    expect(screen.queryByTestId("spare-count")).toBeNull();
+    const [ghalta, sai] = screen.getAllByTestId("spare-ask");
+    expect([ghalta.dataset.ask, ghalta.textContent]).toEqual(["requested", p.chipAsked]);
+    expect([sai.dataset.ask, sai.textContent]).toEqual(["accepted", `✓${p.chipYours}`]);
     expect(sai.className).toMatch(/whitespace-nowrap/);
     cleanup();
     asks = [ask(GHALTA, "p-ana", "open")];
@@ -242,5 +249,73 @@ describe("SparesSheet's kicker and first", () => {
     cleanup();
     d = await sheet({ kicker: null });
     expect(d.queryByText(spareCopy.replacing)).toBeNull();
+  });
+});
+
+// Friend trades, PR 6 (boards Spares S0/S4, Ask S1).
+const LATH = "00000000-0000-4000-8000-0000000000d1";
+const yours = (onWishlist: boolean) => ({ oracleId: LATH, name: "Lathliss", imageUri: null, typeLine: "Creature", colorIdentity: ["R"], spare: 1, onWishlist });
+const tradeRow = (status: TradeListRow["status"]) => ({
+  id: `t-${status}`, friend: { ...COLIN, displayName: named("Colin") }, status, theirs: ["Fixture Card"], yours: ["Lathliss"],
+  row: { state: status === "accepted" ? "accepted" : status === "open" ? "offered" : status, waitsOnYou: false, byYou: true },
+  theirImage: null, yourImage: null, goneName: null, daysLeft: 10, createdAt: AS_OF, at: AS_OF,
+}) as unknown as TradeListRow;
+const TRADES = (extra: Partial<TabTrades> = {}): TabTrades => ({
+  friend: { ...COLIN, displayName: named("Colin") }, rows: [], held: false, yours: [yours(true)], offered: {}, prices: {} as TabTrades["prices"],
+  landing: null, now: AS_OF, ...extra,
+});
+
+describe("the Wanted call-out", () => {
+  it("draws both directions, the switch and its key, and the Trade press on the they-want row", async () => {
+    await mount(ON({ trades: TRADES() }));
+    const callout = within(screen.getByTestId("wanted-callout"));
+    expect(callout.getByText(plain(tradeCopy.callout.youWantTitle(named("Colin"), 1)))).toBeTruthy();
+    expect(callout.getByText(plain(tradeCopy.callout.theyWantTitle(named("Colin"), 1)))).toBeTruthy();
+    expect(callout.getByRole("button", { name: tradeCopy.sheet.press })).toBeTruthy();
+    expect(callout.getByRole("radiogroup", { name: tradeCopy.callout.filterAria })).toBeTruthy();
+    expect(screen.getByTestId("wanted-key").textContent).toContain(tradeCopy.callout.keyWish);
+    expect(document.body.textContent).toContain(p.pressToAskOrTrade);
+  });
+
+  it("You want writes both wanted reasons to the address", async () => {
+    await mount(ON({ trades: TRADES() }));
+    await act(async () => { fireEvent.click(screen.getByRole("radio", { name: new RegExp(`^${tradeCopy.callout.filterWant}`) })); });
+    const url = new URL(String(m.mirrorUrl.mock.calls.at(-1)?.[0]));
+    expect(url.searchParams.get("wanted")).toBe("wishlist,deck");
+  });
+
+  it("drops the Trade press while a trade is live or an offer is held", async () => {
+    await mount(ON({ trades: TRADES({ rows: [tradeRow("accepted")] }) }));
+    expect(within(screen.getByTestId("wanted-callout")).queryByRole("button", { name: tradeCopy.sheet.press })).toBeNull();
+    cleanup();
+    await mount(ON({ trades: TRADES({ held: true }) }));
+    expect(within(screen.getByTestId("wanted-callout")).queryByRole("button", { name: tradeCopy.sheet.press })).toBeNull();
+  });
+
+  it("draws the none row when neither side wants a spare, with no switch", async () => {
+    const none: FriendSpareList = { ...SPARES, lines: SPARES.lines.map((l) => ({ ...l, onWishlist: false })) };
+    await act(async () => { render(<FriendSparesTab name="Colin" spares={none} asks={ON({ trades: TRADES({ yours: [yours(false)] }) })} />); });
+    const callout = within(screen.getByTestId("wanted-callout"));
+    expect(callout.getByText(tradeCopy.callout.noneTitle)).toBeTruthy();
+    expect(callout.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByTestId("wanted-key")).toBeNull();
+  });
+});
+
+describe("the spares sheet's trade line (S1)", () => {
+  it("names the reader's spares on the page friend's wishlist and the live trades, on the page friend's row only", async () => {
+    await mount(ON({ trades: TRADES({ rows: [tradeRow("open"), tradeRow("declined")] }) }));
+    await act(async () => { fireEvent.click(screen.getAllByTestId("spare-tile-press")[0]); });
+    const dialog = within(screen.getByRole("dialog"));
+    const lines = dialog.getAllByTestId("friend-spare-trade-line");
+    expect(lines).toHaveLength(1);
+    expect(lines[0].closest("li")?.getAttribute("data-friend")).toBe(COLIN.publicId);
+    expect(lines[0].textContent).toBe(`${tradeCopy.wantsShort("Lathliss")}· ${tradeCopy.openCount(1)}`);
+  });
+
+  it("draws no line with nothing wanted and no live trade", async () => {
+    await mount(ON({ trades: TRADES({ yours: [yours(false)] }) }));
+    await act(async () => { fireEvent.click(screen.getAllByTestId("spare-tile-press")[0]); });
+    expect(within(screen.getByRole("dialog")).queryByTestId("friend-spare-trade-line")).toBeNull();
   });
 });

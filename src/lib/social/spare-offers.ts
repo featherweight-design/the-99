@@ -11,7 +11,8 @@
  */
 import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { handSide, ownerSyncedSide, unionLines } from "../wishlist/lines";
+import { handSide, ownerLinesQuery, ownerSyncedSide, unionLines } from "../wishlist/lines";
+import { loadDeckNeed } from "../decks/deck-need";
 import { cards, feedDismissals, friendLinks, socialProfiles, spareRequests } from "../../db/schema";
 import { named } from "../person-name/mint";
 import { resolveFriend } from "./access";
@@ -22,7 +23,7 @@ import {
   type IncomingAsk, type OtherSide,
 } from "./spare-requests";
 import { recordFeedItem } from "./feed-write";
-import { loadOwnOffered, loadOwnSpareSplit } from "./spares";
+import { loadFriendSpares, loadOwnOffered, loadOwnSpareSplit } from "./spares";
 import { loadFriendsWantedPairs, loadFriendWantedGap } from "./wishlist";
 import { MAX_SPARES_BATCH } from "./client-rules";
 
@@ -226,6 +227,29 @@ export async function loadSparableCounts(viewerId: string): Promise<Map<string, 
   for (let i = 0; i < oracles.length; i += MAX_SPARES_BATCH) batches.push(oracles.slice(i, i + MAX_SPARES_BATCH));
   for (const got of await Promise.all(batches.map((b) => loadOwnOffered(viewerId, b)))) for (const id of got.keys()) spare.add(id);
   for (const p of pairs) if (spare.has(p.oracleId)) out.set(p.publicId, (out.get(p.publicId) ?? 0) + 1);
+  return out;
+}
+
+/**
+ * Per friend, how many of their offered spares the viewer wants (friend trades: the `/friends` you want chip), the
+ * sparable count's other direction. The viewer's own wanted cards are their still-wanted wishlist lines plus the cards
+ * their decks still need; each friend's offer goes through `loadFriendSpares` (the grant read, that friend's own rule).
+ * Keyed by public id; a friend with none is absent.
+ */
+export async function loadWantedCounts(viewerId: string): Promise<Map<string, number>> {
+  const [{ rows }, need] = await Promise.all([
+    db.execute<{ oracle_id: string }>(ownerLinesQuery(viewerId)),
+    loadDeckNeed(viewerId),
+  ]);
+  const wanted = [...new Set([...rows.map((r) => r.oracle_id), ...Object.keys(need)])];
+  const out = new Map<string, number>();
+  if (wanted.length === 0) return out;
+  const batches: string[][] = [];
+  for (let i = 0; i < wanted.length; i += MAX_SPARES_BATCH) batches.push(wanted.slice(i, i + MAX_SPARES_BATCH));
+  // Each card is one line per friend in a batch, and the batches never share a card, so a plain count is distinct cards.
+  for (const got of await Promise.all(batches.map((b) => loadFriendSpares(viewerId, b)))) {
+    for (const s of got) out.set(s.friend.publicId, (out.get(s.friend.publicId) ?? 0) + 1);
+  }
   return out;
 }
 

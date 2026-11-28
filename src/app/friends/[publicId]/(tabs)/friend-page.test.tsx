@@ -39,6 +39,7 @@ vi.mock("../../../../lib/social/trade-reads", async (orig) => ({
   loadOwnSparesFor: async () => [],
   loadOfferedTo: async () => ({}),
   loadTrade: async () => null,
+  tradesWaitingWith: async () => new Set<string>(),
 }));
 vi.mock("../../../../lib/social/friend-page-data", async (orig) => ({
   ...(await orig<typeof import("../../../../lib/social/friend-page-data")>()), catalogCardName: m.catalogCardName,

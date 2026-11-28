@@ -25,6 +25,9 @@ export type PlaceTab = {
   label: string;
   /** A figure drawn small after the label (a friend page's Spares, Wishlist and Decks). Absent draws none. */
   count?: number;
+  /** Something on this tab waits on the reader (a friend's Spares while a trade waits on them): a small accent diamond
+   *  after the count, read aloud as this phrase. Absent draws none. */
+  waits?: string;
 };
 
 /** Collection's and Commanders' strip: flush under the place head, padded to the page's gutter. */
@@ -100,6 +103,12 @@ export function PlaceStrip({
                 {/* Pinned to en-US as the count lines are: a friend's figure can pass a thousand. */}
                 {tab.count.toLocaleString("en-US")}
               </em>
+            )}
+            {tab.waits !== undefined && (
+              <span data-testid={`${testIdPrefix}-${tab.place}-waits`} className="ml-[6px] inline-flex items-center">
+                <i aria-hidden className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
+                <span className="sr-only">, {tab.waits}</span>
+              </span>
             )}
             <PendingReporter href={tab.href} />
           </Link>

@@ -14,8 +14,8 @@ vi.mock("next/link", () => ({
 
 const f = socialCopy.friends;
 const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin"), since: new Date("2026-10-02T12:00:00Z"), commander: null };
-const draw = (linkable?: boolean, sparable?: Record<string, number>) => render(
-  <FriendsList friends={[COLIN]} now={new Date("2026-10-15T12:00:00Z")} timeZone="UTC" fresh={null} removing={null} onRemove={vi.fn()} linkable={linkable} sparable={sparable} />,
+const draw = (linkable?: boolean, sparable?: Record<string, number>, wanted?: Record<string, number>) => render(
+  <FriendsList friends={[COLIN]} now={new Date("2026-10-15T12:00:00Z")} timeZone="UTC" fresh={null} removing={null} onRemove={vi.fn()} linkable={linkable} sparable={sparable} wanted={wanted} />,
 );
 afterEach(cleanup);
 
@@ -40,7 +40,9 @@ describe("FriendsList rows", () => {
     draw(true, { [COLIN.publicId]: 3 });
     const chip = screen.getByRole("link", { name: plain(f.spareChipAria(named("Colin"), 3)) });
     expect(chip.getAttribute("href")).toBe(`/friends/${COLIN.publicId}/wishlist`);
-    expect(chip.textContent).toBe("3");
+    // The word is drawn from md; a phone keeps the figure and the panel's key names it.
+    expect(chip.textContent).toBe(`3${f.spareChipWord}`);
+    expect(within(chip).getByText(f.spareChipWord.trim(), { exact: false }).className).toContain("hidden md:inline");
     expect(chip.className).toContain("ph-no-capture");
     // The chip draws the shared spare glyph (the Wishlist key's), not a gift box of its own.
     expect(chip.querySelector("svg")).not.toBeNull();
@@ -52,6 +54,32 @@ describe("FriendsList rows", () => {
     cleanup();
     draw(true);
     expect(document.querySelector("[data-spare-chip]")).toBeNull();
+  });
+
+  it("draws a you-want chip linking to the friend's Spares filtered to You want, only when there is a count", () => {
+    draw(true, undefined, { [COLIN.publicId]: 2 });
+    const chip = screen.getByRole("link", { name: plain(f.wantChipAria(named("Colin"), 2)) });
+    expect(chip.getAttribute("href")).toBe(`/friends/${COLIN.publicId}/spares?wanted=wishlist,deck`);
+    expect(chip.textContent).toBe(`2${f.wantChipWord}`);
+    expect(chip.className).toContain("ph-no-capture");
+    expect(document.querySelector("[data-spare-chip]")).toBeNull();
+    cleanup();
+    draw(true, undefined, { [COLIN.publicId]: 0 });
+    expect(document.querySelector("[data-want-chip]")).toBeNull();
+  });
+
+  it("names both chips once in a phone-only key, drawn only while a row has a chip", () => {
+    draw(true, { [COLIN.publicId]: 1 });
+    const key = screen.getByTestId("friends-chip-key");
+    expect(key.className).toContain("md:hidden");
+    expect(key.textContent).toContain(f.keyWant);
+    expect(key.textContent).toContain(f.keySpare);
+    cleanup();
+    draw(true);
+    expect(screen.queryByTestId("friends-chip-key")).toBeNull();
+    cleanup();
+    draw(false, { [COLIN.publicId]: 1 }, { [COLIN.publicId]: 1 });
+    expect(screen.queryByTestId("friends-chip-key")).toBeNull();
   });
 
   it("raises an open … menu above the rows after it", async () => {

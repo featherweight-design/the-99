@@ -150,3 +150,21 @@ export function SpareKeyItem({ className, among, reading = false }: {
   );
 }
 
+/** The wishlist bookmark: the Spares tab's Wanted row, its key and Wishlist chip, and the Friends list's you want chip. */
+export function WishGlyph({ size }: { size: number }) {
+  return (
+    <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" className="shrink-0">
+      <path d="M6.5 3.5h11v17l-5.5-4-5.5 4z" />
+    </svg>
+  );
+}
+
+/** Friend trades: SpareChip's twin for the other direction, a friend's spares the reader wants, in accent on an accent tint. */
+export function WantChip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex h-[22px] flex-none items-center gap-[4px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--accent-text)] bg-[color-mix(in_oklab,var(--accent)_14%,transparent)]">
+      <WishGlyph size={11} />
+      {children}
+    </span>
+  );
+}

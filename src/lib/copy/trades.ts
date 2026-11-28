@@ -122,6 +122,10 @@ export const tradeCopy = {
   proposeAnother: "Propose another trade",
   capLine: "Resolve your open trade before proposing another.",
   capShort: "Offer waiting",
+  /** A friend page's Spares tab, read after its count while a trade with that friend waits on the reader (the accent diamond). */
+  tabWaits: "a trade waits on you",
+  /** The spares sheet's page-friend row: the reader's spares on that friend's wishlist. `cards` is a `cardList`. */
+  wantsShort: (cards: string) => `Wants your ${cards}`,
   /** The Spares tab's call-out and filter (R4c). */
   callout: {
     eyebrow: "Wanted",

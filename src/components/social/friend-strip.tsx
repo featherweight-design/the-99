@@ -5,6 +5,7 @@
 
 import { usePathname } from "next/navigation";
 import { socialCopy } from "../../lib/copy/social";
+import { tradeCopy } from "../../lib/copy/trades";
 import { PlaceStrip, type PlaceTab } from "../place/place-strip";
 
 const p = socialCopy.friendPage;
@@ -26,17 +27,21 @@ const FRIEND_STRIP_FRAME = "mt-[18px] -mx-[14px] pl-[6px] pr-[4px] md:mx-0 md:mt
 export function FriendStrip({
   publicId,
   counts,
+  tradeWaits = false,
 }: {
   publicId: string;
   /** Each drawn tab's figure; a tab with no entry is not drawn. Decks is first, the page's default (Hugh, 2026-10-30). */
   counts: Partial<Record<FriendTab, number>>;
+  /** A trade with this friend waits on the reader: Spares wears the accent diamond, and is drawn even with no spares. */
+  tradeWaits?: boolean;
 }) {
   const current = friendTabFromPathname(usePathname(), publicId) ?? "decks";
   const base = `/friends/${publicId}`;
   const all: (PlaceTab & { place: FriendTab })[] = [
     { place: "decks", href: base, label: p.tabs.decks, count: counts.decks },
     { place: "wishlist", href: `${base}/wishlist`, label: p.tabs.wishlist, count: counts.wishlist },
-    { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares },
+    { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares ?? (tradeWaits ? 0 : undefined),
+      waits: tradeWaits ? tradeCopy.tabWaits : undefined },
   ];
   const tabs = all.filter((t) => t.count !== undefined || t.place === current);
   return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} fill />;
