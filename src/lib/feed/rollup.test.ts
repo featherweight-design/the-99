@@ -118,23 +118,31 @@ describe("the badges (orchestrator ruling: fold What's new and Home's badge, nev
     expect(friends).not.toContain("'roll:'");
   });
 
-  it("the key the badge counts and the row the list folds agree, a day of four matches and one set", () => {
-    // The list: four matches from Colin on one day fold to one row, beside a set; the badge's SQL key, evaluated the
-    // same way in JS here, gives the same number of distinct keys as the list has unseen rows.
-    const zone = "UTC";
+  it("the key the badge counts and the row the list folds agree across a New York evening that spans two UTC dates", () => {
+    // Colin's four matches fall on one New York evening (two of them after UTC midnight), Max's on the next New York
+    // day, beside a set. The badge's key is `(created_at at time zone $zone)::date`: the wall date in the zone, which
+    // en-CA formats as YYYY-MM-DD, the form Postgres's date::text takes. Its distinct count must equal the list's rows.
+    const zone = "America/New_York";
     const views = [
-      match("a", "2026-10-22T11:00:00Z", colin, card("c1", "Sai")),
-      match("b", "2026-10-22T10:00:00Z", colin, card("c2", "Ghalta")),
-      match("c", "2026-10-22T09:00:00Z", colin, card("c3", "Miku")),
-      match("d", "2026-10-22T08:00:00Z", colin, card("c4", "Zada")),
+      match("e", "2026-10-23T05:00:00Z", max, card("c5", "Edgar")),
+      match("a", "2026-10-23T02:00:00Z", colin, card("c1", "Sai")),
+      match("b", "2026-10-23T00:30:00Z", colin, card("c2", "Ghalta")),
+      match("c", "2026-10-22T23:00:00Z", colin, card("c3", "Miku")),
+      match("d", "2026-10-22T20:00:00Z", colin, card("c4", "Zada")),
       view({ key: "set:a", kind: "new-set", at: "2026-10-22T07:00:00Z" }),
     ];
     const rows = rollTradeMatches(views, zone);
-    const keyOf = (v: FeedView) => (v.kind === "trade-match" && v.friend ? `roll:${v.friend.publicId}:${v.at.slice(0, 10)}` : v.key);
+    const wallDate = (at: string) => new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(at));
+    const keyOf = (v: FeedView) => (v.kind === "trade-match" && v.friend ? `roll:${v.friend.publicId}:${wallDate(v.at)}` : v.key);
+    expect(rows.map((v) => v.key)).toEqual(["e", "a", "set:a"]);
     expect(new Set(views.filter((v) => v.unseen).map(keyOf)).size).toBe(rows.filter((v) => v.unseen).length);
-    expect(rows).toHaveLength(2);
-    // The Friends badge counts each of the four, the list Waiting on you draws.
-    expect(views.filter((v) => v.kind === "trade-match" && v.unseen)).toHaveLength(4);
-    expect(flat(render(rollCountKey(zone)).sql)).toContain("'roll:' || f.friend_public_id");
+    // A UTC-date key would split Colin's evening in two: the zone is what makes them agree.
+    expect(new Set(views.map((v) => (v.kind === "trade-match" && v.friend ? `${v.friend.publicId}:${v.at.slice(0, 10)}` : v.key))).size).toBe(4);
+    // The SQL buckets on exactly that wall date, in the bound zone.
+    const { sql: q, params } = render(rollCountKey(zone));
+    expect(flat(q)).toMatch(/'roll:' \|\| f\.friend_public_id \|\| ':' \|\| \(\(f\.created_at at time zone \$1\)::date\)::text/);
+    expect(params).toEqual([zone]);
+    // The Friends badge counts each of the four, as Waiting on you draws them.
+    expect(views.filter((v) => v.kind === "trade-match" && v.friend?.publicId === "p1" && v.unseen)).toHaveLength(4);
   });
 });
