@@ -22,8 +22,24 @@ export function DeckBox({ children, className = "", ...rest }: { children: React
   );
 }
 
-/** The diamond, the title, and the mono count when the box has one. */
-export function BandTitle({ title, count }: { title: ReactNode; count?: ReactNode }) {
+/** The diamond, the title, and the mono count when the box has one. `truncate` keeps it to one line that ends the
+ *  title in an ellipsis, with the diamond and the count always whole: a band whose title shares its row with an aside
+ *  (a long deck name beside "Open deck", #3440). */
+export function BandTitle({ title, count, truncate = false }: { title: ReactNode; count?: ReactNode; truncate?: boolean }) {
+  if (truncate) {
+    return (
+      <span data-band-title="truncate" className="flex min-w-0 items-baseline">
+        <span aria-hidden className="mr-[8px] flex-none text-[color:var(--accent-text)]">◆</span>
+        <span className="min-w-0 truncate">{title}</span>
+        {count != null ? (
+          <span className="flex-none whitespace-pre">
+            {" "}
+            <span className="ml-[6px] font-mono text-[11px] font-medium tracking-[.08em] text-[color:var(--accent-text)]">{count}</span>
+          </span>
+        ) : null}
+      </span>
+    );
+  }
   return (
     <span className="min-w-0">
       <span aria-hidden className="mr-[8px] text-[color:var(--accent-text)]">◆</span>
@@ -56,7 +72,8 @@ export function BandText({ text }: { text: string }) {
 }
 
 /** The band as one flex row: the heading at the start, `aside` beside it at the end. The aside is a sibling of the
- *  heading, never inside it, so a screen reader's heading list reads the title alone. */
+ *  heading, never inside it, so a screen reader's heading list reads the title alone. The title truncates rather than
+ *  run under the count or the aside (#3440); the full title stays in the heading's text. */
 export function DeckBoxBand({ as: Tag = "h2", id, title, count, aside, bare = false }: {
   as?: ElementType;
   id?: string;
@@ -71,7 +88,7 @@ export function DeckBoxBand({ as: Tag = "h2", id, title, count, aside, bare = fa
       className={`flex ${BAND_HEIGHT} items-center justify-between gap-[12px] py-[8px] pl-[14px] pr-[10px] md:pl-[16px] md:pr-[14px] ${BAND_GROUND} ${bare ? "" : BAND_RULE}`}
     >
       <Tag id={id} className="m-0 min-w-0 text-[length:inherit] font-[inherit] leading-[inherit]">
-        <BandTitle title={title} count={count} />
+        <BandTitle title={title} count={count} truncate />
       </Tag>
       {aside}
     </div>
