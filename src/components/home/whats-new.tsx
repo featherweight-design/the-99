@@ -13,6 +13,7 @@
 // through Settings' own action, and from then on the switches live in Settings alone.
 // The lead story is not in this list (`splitLead`); the head's count is every unseen item, the badge's own figure.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { displaceLead, useHeldLead } from "./held-lead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -160,7 +161,8 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         .then((r) => {
           if (!r.ok) throw new Error(r.reason);
         })
-        .catch(() => {
+        .catch((e) => {
+          if (!(e instanceof Error && e.message === "off")) captureClientError("home.clear-undo", e);
           refocusClear.current = false;
           bring(keys, true, lead);
           fail(c.clearAll.undoFailed);
@@ -171,7 +173,8 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         if (!r.ok) throw new Error(r.reason);
         setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo(r.cleared) } });
       })
-      .catch(() => {
+      .catch((e) => {
+        if (!(e instanceof Error && e.message === "off")) captureClientError("home.clear-all", e);
         bring(keys, false, lead);
         fail(c.clearAll.failed);
       });
@@ -423,7 +426,8 @@ function KindBoxes({ offer }: { offer: FeedKind[] }) {
         setFailed(true);
         router.refresh();
       }
-    } catch {
+    } catch (e) {
+      captureClientError("home.offer-save", e);
       setFailed(true);
     } finally {
       setBusy(false);
@@ -504,7 +508,8 @@ function Offer({ offer, rule, onClosed }: { offer: FeedKind[]; rule: boolean; on
       // Closed, or the feed went off for this reader meanwhile: either way the page's next render decides.
       await closeFeedOfferAction();
       router.refresh();
-    } catch {
+    } catch (e) {
+      captureClientError("home.offer-close", e);
       setClosed(false);
       onClosed(false);
       setFailed(true);

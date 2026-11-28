@@ -1,5 +1,6 @@
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCardSearch } from "../card-search/card-search";
 import { useHelpOn } from "../help/help-root";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
@@ -29,13 +30,14 @@ function stampInstalled(): void {
     if (window.sessionStorage.getItem(INSTALLED_STAMP_KEY)) return;
     window.sessionStorage.setItem(INSTALLED_STAMP_KEY, "1");
   } catch {
-    // Storage blocked: stamp anyway. The write is a no-op once the stamp is set.
+    // silent-catch: expected: refusal, storage blocked: stamp anyway. The write is a no-op once the stamp is set.
   }
-  markInstalledAction().catch(() => {
+  markInstalledAction().catch((e) => {
+    captureClientError("pwa.installed-stamp", e);
     try {
       window.sessionStorage.removeItem(INSTALLED_STAMP_KEY);
     } catch {
-      // Nothing to undo.
+      // silent-catch: expected: refusal, nothing to undo.
     }
   });
 }
@@ -99,7 +101,7 @@ export function InstallSlot({ installed }: { installed: boolean }) {
       await held.prompt();
       await held.userChoice;
     } catch {
-      // The browser refused the prompt; the slot just goes.
+      // silent-catch: expected: refusal, the browser refused the prompt; the slot just goes.
     } finally {
       setHeld(null);
     }

@@ -4,6 +4,7 @@
 // up, and the phone's own view (`v=history`). A row is a link to the results page for that run.
 // Stored reads only: nothing here calls a model.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { ArtLayer } from "../ui/art-layer";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -73,7 +74,8 @@ export function ChooseHistory({
       setRows(page.rows);
       setCursor(page.nextCursor);
       setMore("idle");
-    } catch {
+    } catch (e) {
+      captureClientError("intake.history-first", e);
       setRows(null);
     } finally {
       setLoading(false);
@@ -91,25 +93,26 @@ export function ChooseHistory({
       });
       setCursor(page.nextCursor);
       setMore("idle");
-    } catch {
+    } catch (e) {
+      captureClientError("intake.history-more", e);
       setMore("failed");
     }
   }
 
   // Back from a run: focus returns to the row that opened it (the instance that is drawn).
   useEffect(() => {
+    let id: string | null = null;
     try {
-      const id = sessionStorage.getItem(LAST_OPENED);
-      if (!id) return;
-      if (root.current?.offsetParent === null) return;
-      sessionStorage.removeItem(LAST_OPENED);
-      // A run opened from a later page is not in the first page the list mounts with: focus lands on the heading.
-      const target = root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)
-        ?? root.current?.querySelector<HTMLElement>(`[id="${CSS.escape(headingId)}"]`);
-      target?.focus();
+      id = sessionStorage.getItem(LAST_OPENED);
+      if (id && root.current?.offsetParent !== null) sessionStorage.removeItem(LAST_OPENED);
     } catch {
-      // Storage can be unavailable (a private window); focus then starts where the page puts it.
+      // silent-catch: expected: refusal, storage can be unavailable (a private window); focus then starts where the page puts it.
     }
+    if (!id || root.current?.offsetParent === null) return;
+    // A run opened from a later page is not in the first page the list mounts with: focus lands on the heading.
+    const target = root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)
+      ?? root.current?.querySelector<HTMLElement>(`[id="${CSS.escape(headingId)}"]`);
+    target?.focus();
   }, [headingId]);
 
   // A run in flight settles in place: re-read the first page while one is `reading`. One read at a time
@@ -126,8 +129,9 @@ export function ChooseHistory({
       try {
         const page = await chooseHistoryPage(null);
         if (!cancelled) setRows((prev) => mergeFirstPage(prev ?? [], page.rows));
-      } catch {
+      } catch (e) {
         // The next tick asks again; a failed poll leaves the rows as they are.
+        if (!cancelled) captureClientError("intake.history-poll", e);
       } finally {
         inFlight = false;
       }
@@ -240,7 +244,7 @@ function RunRow({ row, column, zoned }: { row: ChooseHistoryRow; column: boolean
       prefetch={false}
       aria-label={label}
       data-history-run={row.id}
-      onClick={() => { try { sessionStorage.setItem(LAST_OPENED, row.id); } catch { /* storage unavailable */ } }}
+      onClick={() => { try { sessionStorage.setItem(LAST_OPENED, row.id); } catch { /* silent-catch: expected: refusal, storage unavailable */ } }}
       data-state={row.state}
       className={`flex flex-col rounded-[9px] border border-solid bg-[color:var(--surface)] no-underline hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--border-strong)] ${
         reading ? "border-[color:var(--accent)]" : "border-[color:var(--border)]"

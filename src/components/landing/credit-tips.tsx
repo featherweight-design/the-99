@@ -40,7 +40,7 @@ const EDGE = 16;
 function restingOffset(el: Element): number {
   const t = getComputedStyle(el).transform;
   if (!t || t === "none" || typeof DOMMatrixReadOnly === "undefined") return 0;
-  try { return new DOMMatrixReadOnly(t).m42; } catch { return 0; }
+  try { return new DOMMatrixReadOnly(t).m42; } catch { /* silent-catch: expected: refusal, an unparsable transform */ return 0; }
 }
 
 /**
@@ -145,7 +145,7 @@ export function CreditTips({ suggestedTwo, tools = c.tools, upgradeUnits = 0 }: 
                         opening.current = { id: tool.id, button, top: button.getBoundingClientRect().top };
                         setOpen((o) => (o?.pinned ? o : { id: tool.id, pinned: false }));
                       }
-                    } catch { /* no :focus-visible */ }
+                    } catch { /* silent-catch: expected: refusal, no :focus-visible */ }
                   }}
                   // A pinned tip survives a blur: a press inside the tip blurs the button, and a pin closes by a second press, Escape or a press outside.
                   onBlur={() => setOpen((o) => (o?.id === tool.id && !o.pinned ? null : o))}

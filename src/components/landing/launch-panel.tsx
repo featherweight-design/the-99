@@ -10,6 +10,7 @@
 // (the action returns the same `ok`), so the page never says whether an address is listed. A refusal of the field is the
 // shipped line; a transport failure keeps the field as typed.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { createContext, useContext, useId, useState, type FormEvent, type ReactNode } from "react";
 import { landingCopy } from "../../lib/copy/landing";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
@@ -64,7 +65,8 @@ export function LaunchPanel() {
       const r = await action(email);
       if (r.ok) setListed(email.trim().toLowerCase());
       else setLine(REFUSAL[r.reason]);
-    } catch {
+    } catch (e) {
+      captureClientError("landing.launch", e);
       setLine(c.failed);
     } finally {
       setBusy(false);

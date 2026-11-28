@@ -2,6 +2,7 @@
 // The signed-in results list: `ChooseResultsView` (the drawing, shared with the landing demo) wired to this reader's
 // state: the rows' ownership counts and *Show 12 more* (server actions), the model read's phase, and the card detail.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { moreRows, trialFillRows } from "../../app/decks/new/choose/results-actions";
@@ -100,7 +101,8 @@ export function ChooseResults({
         count(fresh.map((r) => r.oracleId));
         setHasMore(next.hasMore);
         setFailed(false);
-      } catch {
+      } catch (e) {
+        captureClientError("intake.results-more", e);
         setFailed(true);
       }
     });

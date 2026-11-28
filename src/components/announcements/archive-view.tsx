@@ -9,6 +9,7 @@
 // rule, `useDiscoveryCache`'s way). A kind not yet held, a month jump and Show older read through the server action. Every
 // response is filed under the key it was asked for, whatever the reader pressed since, so the newest press decides what is
 // drawn and a late response only fills its own key.
+import { captureClientError } from "../../lib/sentry/capture-client";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 
@@ -153,7 +154,8 @@ export function ArchiveView({ kind: servedKind, anchor: servedAnchor, page, coun
     let got: ArchivePage | null = null;
     try {
       got = await loadArchivePageAction(kind, after);
-    } catch {
+    } catch (e) {
+      captureClientError("announcements.archive-load", e);
       got = null;
     }
     flying.current.delete(key);
