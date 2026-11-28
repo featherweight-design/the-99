@@ -400,7 +400,9 @@ export function Demo({ art, publicPages, upgrade }: { art: readonly DemoArtCard[
           // Nothing landed (a file with none): nothing to build on, and the next step would read none too.
           if (!landed || !live || saveData || stepIndex + 1 >= total) return;
           whenIdle(() => {
-            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, canon(stepIndex + 1))).catch((e) => captureClientError("landing.demo-next-steps", e));
+            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, canon(stepIndex + 1))).catch((e) => {
+              if (mounted.current) captureClientError("landing.demo-next-steps", e);
+            });
           });
         })
         .catch((e) => {

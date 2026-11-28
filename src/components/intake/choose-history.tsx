@@ -101,18 +101,18 @@ export function ChooseHistory({
 
   // Back from a run: focus returns to the row that opened it (the instance that is drawn).
   useEffect(() => {
+    let id: string | null = null;
     try {
-      const id = sessionStorage.getItem(LAST_OPENED);
-      if (!id) return;
-      if (root.current?.offsetParent === null) return;
-      sessionStorage.removeItem(LAST_OPENED);
-      // A run opened from a later page is not in the first page the list mounts with: focus lands on the heading.
-      const target = root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)
-        ?? root.current?.querySelector<HTMLElement>(`[id="${CSS.escape(headingId)}"]`);
-      target?.focus();
+      id = sessionStorage.getItem(LAST_OPENED);
+      if (id && root.current?.offsetParent !== null) sessionStorage.removeItem(LAST_OPENED);
     } catch {
       // silent-catch: expected: refusal, storage can be unavailable (a private window); focus then starts where the page puts it.
     }
+    if (!id || root.current?.offsetParent === null) return;
+    // A run opened from a later page is not in the first page the list mounts with: focus lands on the heading.
+    const target = root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)
+      ?? root.current?.querySelector<HTMLElement>(`[id="${CSS.escape(headingId)}"]`);
+    target?.focus();
   }, [headingId]);
 
   // A run in flight settles in place: re-read the first page while one is `reading`. One read at a time
