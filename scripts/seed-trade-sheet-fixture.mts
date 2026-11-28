@@ -8,17 +8,20 @@
 //   Uma  the reader's offer whose own card the reader no longer has (lookYours).
 // SCRATCH BRANCH ONLY: it names its target and refuses anything else. A rerun purges the previous run's friends first.
 // Rin also wants two of the reader's spares (Wants), and the reader wants one of Rin's. It prints each friend's public id and each trade's id, for the inventory.
+// PR 7: Rin, Sol and Tam ask the reader for eight more spares between them, open, so Waiting on you, Home's lead and What's new
+// each hold an ask to answer Yes (the receipt Make it a trade sits on) at both widths without a reseed between them.
 // The target is named outright: `.env` wins over an inherited DATABASE_URL (scripts/lib/env.mjs), so the scratch
-// branch's URL comes in as SHEET_FIXTURE_DATABASE_URL and replaces it before the database module loads.
+// branch's URL comes in as SHEET_FIXTURE_DATABASE_URL and replaces it before the database module loads. Without it the
+// worktree's own DATABASE_URL is used; either way the branch the database reports must be SHEET_FIXTURE_BRANCH.
 //   SHEET_FIXTURE_DATABASE_URL=postgres://... SHEET_FIXTURE_BRANCH=br-... SHEET_FIXTURE_USER=user_... \
 //     pnpm tsx scripts/seed-trade-sheet-fixture.mts
 import { randomUUID } from "node:crypto";
 import "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
-const target = process.env.SHEET_FIXTURE_DATABASE_URL;
+const target = process.env.SHEET_FIXTURE_DATABASE_URL ?? process.env.DATABASE_URL;
 const named = process.env.SHEET_FIXTURE_BRANCH;
 const viewer = process.env.SHEET_FIXTURE_USER;
-if (!target || !named || !viewer) throw new Error("set SHEET_FIXTURE_DATABASE_URL, SHEET_FIXTURE_BRANCH and SHEET_FIXTURE_USER");
+if (!target || !named || !viewer) throw new Error("set SHEET_FIXTURE_BRANCH and SHEET_FIXTURE_USER (and SHEET_FIXTURE_DATABASE_URL, or a DATABASE_URL)");
 process.env.DATABASE_URL = target;
 const { db } = await import("../src/db");
 const { sql } = await import("drizzle-orm");
@@ -32,6 +35,7 @@ const { setCommander } = await import("../src/lib/social/commander");
 const trades = await import("../src/lib/social/trades");
 const { applyCollectionChange } = await import("../src/lib/collection/write");
 const { purgeAccount } = await import("../src/lib/account/purge");
+const { askForSpare } = await import("../src/lib/social/spare-requests");
 
 const { rows: old } = await db.execute<{ user_id: string }>(sql`select user_id from social_profiles where user_id like 'sheet-fixture-%'`);
 for (const o of old) await purgeAccount(o.user_id);
@@ -94,7 +98,7 @@ const tam = await mk("Tam", R.slice(11, 14), null);
 const uma = await mk("Uma", R.slice(14, 16), faces[2]?.oracle_id ?? null);
 // The reader's cards as a friend sees them: only those spare (a deck can hold the rest).
 const Y = (await loadFriendSpares(rin.id, yourCards.map((r) => r.oracle_id))).filter((s) => s.friend.publicId === me.publicId && s.spare > 0).map((s) => s.oracleId);
-if (Y.length < 12) throw new Error(`only ${Y.length} of the reader's cards are spare`);
+if (Y.length < 20) throw new Error(`only ${Y.length} of the reader's cards are spare`);
 
 const head = async (u: string, tradeId: string) => {
   const { rows } = await db.execute<{ round: number; offered_at: Date }>(sql`
@@ -150,5 +154,15 @@ await pause();
 const umaOffer = must("propose to Uma", await trades.proposeTrade(viewer, uma.publicId, { theirs: [R[14]], yours: [Y[11]] }));
 await db.execute(sql`delete from collection_items where user_id = ${viewer} and oracle_id = ${Y[11]}`);
 out("TRADE_LOOK_YOURS", umaOffer.id);
+await pause();
+
+// PR 7: eight open asks for the reader's spares, newest last and Tam's (the lead takes the newest;
+// Sol is held, so the phone's Send goes to Tam).
+for (const [i, f] of [rin, sol, rin, sol, tam, rin, sol, tam].entries()) {
+  const asked = await askForSpare(f.id, me.publicId, Y[12 + i], {} as NodeJS.ProcessEnv);
+  if (!asked.ok) throw new Error(`ask refused: ${JSON.stringify(asked)}`);
+  out(`ASK_${i}`, Y[12 + i]);
+  await pause();
+}
 console.log("seeded the trade sheet fixture");
 process.exit(0);

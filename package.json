@@ -70,6 +70,7 @@
     "probe:spares-wishlist": "node scripts/probe-spares-wishlist.mjs",
     "probe:friend-trades-sheet": "node scripts/probe-friend-trades-sheet.mjs",
     "probe:friend-trades-wanted": "node scripts/probe-friend-trades-wanted.mjs",
+    "probe:friend-trades-p7": "node scripts/probe-friend-trades-p7.mjs",
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
     "probe:log-reminder": "node scripts/probe-log-reminder.mjs",
     "probe:home-section-heads": "node scripts/probe-home-section-heads.mjs",
