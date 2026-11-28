@@ -12,6 +12,7 @@ import { requestFlags } from "../../../../../lib/flags/request";
 import { readerStoreForPage } from "../../../../../lib/stores/preference";
 import { loadDeckNeed } from "../../../../../lib/decks/deck-need";
 import { parseSpareParams } from "../../../../../lib/social/spare-browse";
+import { loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradesWith, tradePricesOf } from "../../../../../lib/social/trade-reads";
 import { FriendSparesTab } from "../../../../../components/social/friend-spares-tab";
 
 // Spare requests (signature card calls 8 and 9): a tile opens the card's modal with Ask, and `?spare={oracleId}` opens it
@@ -27,10 +28,14 @@ export default async function FriendSparesPage({
   const userId = await requireUserId();
   const { publicId } = await params;
   // The reader's store prices the modal's buy tag, as its link goes there.
-  const [friend, spares, store] = await Promise.all([
+  // Friend trades (no switch: Hugh's ruling): the trades with this friend and the reader's own spares as they see them.
+  const now = new Date();
+  const [friend, spares, store, withThem, yours] = await Promise.all([
     loadFriend(userId, publicId),
     friendSpareList(userId, publicId, true),
     requestFlags(userId).then((env) => readerStoreForPage(userId, env)),
+    loadTradesWith(userId, publicId, now),
+    loadOwnSparesFor(userId, publicId),
   ]);
   if (!friend) notFound();
   const query = (await searchParams) ?? {};
@@ -44,11 +49,25 @@ export default async function FriendSparesPage({
   // The modal's buy tag prices the card as Shopping does (`loadPrices`: one printing per card, cheapest live first).
   // A failed read degrades to the bare tag, never the page.
   // `deckNeed` (the decks of the reader's that still need each card) is one more read beside them; it fails soft to {}.
-  const [goneName, priced, deckNeed] = await Promise.all([
+  // The trade sheet: `?trade=<id>` opens a trade with THIS friend on landing; the picker prices both sides and marks the
+  // reader's spares already in another offer (Q9).
+  // One price read serves both: the modal's tags (the friend's spares) and the trade sheet's (both sides' spares).
+  const theirIds = spares?.lines.map((l) => l.oracleId) ?? [];
+  const ownIds = yours.map((l) => l.oracleId);
+  const tradeIds = [...new Set([...theirIds, ...ownIds])];
+  const tradeId = isUuid(query.trade) ? query.trade.toLowerCase() : null;
+  const [goneName, read, deckNeed, offeredTo, landing] = await Promise.all([
     spare !== null && !offered ? catalogCardName(spare) : null,
-    loadPrices(spares?.lines.map((l) => l.oracleId) ?? [], [], [], store).catch(() => ({ prices: new Map(), newestAsOf: null })),
+    loadPrices(tradeIds, [], [], store).catch(() => null),
     spares && spares.lines.length > 0 ? loadDeckNeed(userId) : {},
+    loadOfferedTo(userId, ownIds, now),
+    tradeId ? loadTrade(userId, tradeId, store, now, friend.publicId) : null,
   ]);
+  const theirSet = new Set(theirIds);
+  const priced = read
+    ? { prices: new Map([...read.prices].filter(([id]) => theirSet.has(id))), newestAsOf: read.newestAsOf }
+    : { prices: new Map(), newestAsOf: null };
+  const tradeCents = read ? tradePricesOf(read, tradeIds, store, now) : { store, cents: {}, dated: null };
   return (
     <FriendSparesTab
       deckNeed={deckNeed}
@@ -61,6 +80,16 @@ export default async function FriendSparesPage({
         goneName,
         prices: Object.fromEntries(priced.prices),
         newestAsOf: priced.newestAsOf,
+        trades: {
+          friend: { publicId: friend.publicId, displayName: friend.displayName, commander: friend.commander },
+          rows: withThem.rows,
+          held: withThem.held,
+          yours,
+          offered: offeredTo,
+          prices: tradeCents,
+          landing,
+          now,
+        },
       }}
     />
   );

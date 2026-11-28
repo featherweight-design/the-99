@@ -6,16 +6,18 @@ import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: { execute: vi.fn() } }));
-vi.mock("./spares", () => ({ loadFriendSpares: vi.fn(async () => []) }));
+vi.mock("./spares", () => ({ loadFriendSpares: vi.fn(async () => []), loadFriendSpareList: vi.fn() }));
+vi.mock("./access", () => ({ resolveFriend: vi.fn() }));
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn() }));
 
 import { db } from "../../db";
 import { loadPrices } from "../decks/price-query";
 import { isThirdPartyName } from "../person-name/brand";
-import { loadFriendSpares } from "./spares";
+import { resolveFriend } from "./access";
+import { loadFriendSpareList, loadFriendSpares } from "./spares";
 import {
-  loadOfferedTo, loadTrade, loadTradeRows, loadTradesWith, offeredToQuery, tradeRowsQuery, tradesWaitingQuery, tradesWaitingWith,
-  tradeViewCardsQuery, tradeViewQuery,
+  loadOfferedTo, loadOwnSparesFor, loadTrade, loadTradeRows, loadTradesWith, offeredToQuery, tradeRowsQuery, tradesWaitingQuery, tradesWaitingWith,
+  tradePrices, tradePricesOf, tradeViewCardsQuery, tradeViewQuery,
 } from "./trade-reads";
 import { tradeOpenFloor } from "./trade-rules";
 
@@ -54,7 +56,7 @@ beforeEach(() => {
   // Every card still spare by default: the viewer ("v") sees the friend's, the friend ("f") sees the viewer's.
   vi.mocked(loadFriendSpares).mockImplementation(async (receiver, ids) =>
     ids.map((id) => ({ oracleId: id, spare: 1, friend: { publicId: receiver === "v" ? PF : PV } })) as never);
-  vi.mocked(loadPrices).mockResolvedValue({ prices: new Map() } as never);
+  vi.mocked(loadPrices).mockResolvedValue({ prices: new Map(), newestAsOf: null } as never);
 });
 
 describe("the statements", () => {
@@ -63,6 +65,8 @@ describe("the statements", () => {
     expectScoped(q, "vtr", "vfl");
     expect(q).toContain(`to_char(date_trunc('milliseconds', vrd.offered_at) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as offered_at`);
     expect(q).toContain("join \"trade_rounds\" vrd on vrd.trade_id = vtr.id and vrd.round = vtr.round");
+    expect(q).toContain("left join \"trade_rounds\" vpr on vpr.trade_id = vtr.id and vpr.round = vtr.round - 1");
+    expect(q).toContain("vpr.offered_at as previous_at");
     expect(q).toContain("join \"social_profiles\" vfp on vfp.user_id = vfl.friend_user_id");
     expect(q).toContain("vfp.public_id::text as public_id");
     expect(q).toContain("where vtr.id = $");
@@ -112,6 +116,12 @@ describe("loadTrade", () => {
     expect(exec).not.toHaveBeenCalled();
   });
 
+  it("is null for a trade with another friend than the page's, before the cards are read", async () => {
+    exec.mockResolvedValueOnce(rows([head()]));
+    expect(await loadTrade("v", T, "manapool", NOW, PV)).toBeNull();
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+
   it("is null for a trade the viewer cannot reach", async () => {
     exec.mockResolvedValueOnce(rows([]));
     expect(await loadTrade("v", T, "manapool", NOW)).toBeNull();
@@ -119,7 +129,7 @@ describe("loadTrade", () => {
   });
 
   it("hands back the round's offered_at as seenAt, the sides from the viewer's seat, and what they may press", async () => {
-    exec.mockResolvedValueOnce(rows([head({ round: 2, recipient_user_id: "v", proposer_user_id: "f" })]));
+    exec.mockResolvedValueOnce(rows([head({ round: 2, recipient_user_id: "v", proposer_user_id: "f", previous_at: "2026-11-24T10:00:00Z" })]));
     exec.mockResolvedValueOnce(rows([
       { round: 1, side: "proposer", oracle_id: A, name: "Arcane Signet", image_uri: null },
       { round: 1, side: "recipient", oracle_id: C, name: "Cultivate", image_uri: null },
@@ -128,6 +138,8 @@ describe("loadTrade", () => {
     ]));
     const view = await loadTrade("v", T, "manapool", NOW);
     expect(view?.offeredAt).toBe(SEEN);
+    expect(view?.previousAt?.toISOString()).toBe("2026-11-24T10:00:00.000Z");
+    expect(view?.tradedAt).toBeNull();
     // Round 2 is the recipient's (the viewer's) own counter.
     expect(view?.state).toBe("yours");
     expect(view?.cards.yours).toEqual([{ oracleId: B, name: "Brainstorm", imageUri: "b.jpg" }]);
@@ -163,7 +175,7 @@ describe("loadTrade", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const view = await loadTrade("v", T, "manapool", NOW);
     expect(view?.state).toBe("ended");
-    expect(view?.prices).toEqual({});
+    expect(view?.prices).toEqual({ store: "manapool", cents: {}, dated: null });
     expect(loadFriendSpares).not.toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -229,5 +241,43 @@ describe("tradesWaitingWith", () => {
       { ...listRow({ proposer_user_id: "v", recipient_user_id: "f" }), public_id: PV },
     ]));
     expect(await tradesWaitingWith("v", NOW)).toEqual(new Set([PF]));
+  });
+});
+
+describe("loadOwnSparesFor", () => {
+  it("reads nothing for someone who is not a friend", async () => {
+    vi.mocked(resolveFriend).mockResolvedValue(null);
+    expect(await loadOwnSparesFor("v", PF)).toEqual([]);
+    expect(exec).not.toHaveBeenCalled();
+    expect(loadFriendSpareList).not.toHaveBeenCalled();
+  });
+
+  it("reads the reader's spares as the friend sees them, with the friend's wishlist", async () => {
+    vi.mocked(resolveFriend).mockResolvedValue("f");
+    exec.mockResolvedValueOnce(rows([{ public_id: PV }]));
+    vi.mocked(loadFriendSpareList).mockResolvedValue({ lines: [{ oracleId: A }] } as never);
+    expect(await loadOwnSparesFor("v", PF)).toEqual([{ oracleId: A }]);
+    expect(loadFriendSpareList).toHaveBeenCalledWith("f", PV, true);
+  });
+});
+
+describe("trade prices", () => {
+  const asOf = new Date("2026-11-27T06:00:00Z");
+  const read = {
+    prices: new Map([[A, { cents: 150, foilCents: null, etchedCents: null, asOf }]]),
+    newestAsOf: asOf,
+  } as never;
+
+  it("draws each id's figure from one read, null where the read has none, and the read's date", () => {
+    const out = tradePricesOf(read, [A, B], "manapool", NOW);
+    expect(out.store).toBe("manapool");
+    expect(out.cents).toEqual({ [A]: 150, [B]: null });
+    expect(out.dated).toEqual(expect.objectContaining({ behind: false }));
+  });
+
+  it("reads prices once for the ids and maps them the same way", async () => {
+    vi.mocked(loadPrices).mockResolvedValue(read);
+    expect(await tradePrices([A], "manapool", NOW)).toEqual(tradePricesOf(read, [A], "manapool", NOW));
+    expect(loadPrices).toHaveBeenCalledTimes(1);
   });
 });

@@ -67,6 +67,7 @@
     "probe:type-search": "node scripts/probe-type-search.mjs",
     "probe:spares-search": "node scripts/probe-spares-search.mjs",
     "probe:spares-wishlist": "node scripts/probe-spares-wishlist.mjs",
+    "probe:friend-trades-sheet": "node scripts/probe-friend-trades-sheet.mjs",
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
     "probe:log-reminder": "node scripts/probe-log-reminder.mjs",
     "probe:home-section-heads": "node scripts/probe-home-section-heads.mjs",

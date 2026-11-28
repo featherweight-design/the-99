@@ -81,3 +81,8 @@ export function monthDay(d: Date, timeZone?: string): string {
 export function clockTime(d: Date, timeZone?: string): string {
   return fmt({ hour: "numeric", minute: "2-digit" }, timeZone).format(d).replace(/\s?([AP])M$/, (_, m: string) => ` ${m.toLowerCase()}m`);
 }
+
+/** `Nov 24`: a trade's day (the offer a counter replaces, the day it was traded), in the draw's zone as `sinceDay`. */
+export function tradeDay(at: Date, timeZone?: string): string {
+  return fmt({ month: "short", day: "numeric" }, timeZone).format(at);
+}

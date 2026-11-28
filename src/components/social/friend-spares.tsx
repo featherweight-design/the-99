@@ -14,6 +14,7 @@ import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import { spareCopy } from "../../lib/copy/social";
+import { tradeCopy } from "../../lib/copy/trades";
 import { PersonName, PersonText, compareNames, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { printedFaceName } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -43,6 +44,14 @@ export type RequestsCtx = {
 
 /** Provided by `FriendSparesProvider` beside its own context; null outside it or with the switch off. */
 export const SpareRequestsContext = createContext<RequestsCtx | null>(null);
+
+/**
+ * Friend trades on the spares sheet (handoff `design_handoff_the99_friend_trades`, Ask S1): the page friend's row gains a
+ * quiet Trade beside Ask, or `Offer waiting` while an offer of the reader's to them is unanswered (Q10), and the how
+ * line sits under the rows. Provided by a friend's Spares tab; null everywhere else, which draws the sheet as shipped.
+ */
+export type TradePress = { friend: string; held: boolean; onTrade: (oracleId: string, from: HTMLElement) => void };
+export const TradePressContext = createContext<TradePress | null>(null);
 
 // The key's glyphs and marks live in `spare-key-item.tsx` (split 5i); re-exported so existing imports keep working.
 export { MarkedSpareGlyph, SpareGlyph, cardMark, type SpareMark } from "./spare-key-item";
@@ -202,6 +211,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
   const canBuy = deckGotIt !== null || cartGotIt !== null;
   const line = stateLine(rows, canBuy);
   const cardName = printedFaceName(card);
+  const trade = useContext(TradePressContext);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const seq = useRef(0);
@@ -267,12 +277,24 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
                     : <PersonText text={spareCopy.request.pods(s.friend.pods)} />}
               </span>
             </span>
+            {trade && trade.friend === s.friend.publicId ? (
+              trade.held ? (
+                <span data-testid="friend-spare-trade-held" className={`${STATUS} text-[color:var(--fg-body)]`}>{tradeCopy.capShort}</span>
+              ) : (
+                <button type="button" data-testid="friend-spare-trade" aria-haspopup="dialog"
+                  {...personAttrs({ "aria-label": tradeCopy.sheet.pressAria(s.friend.displayName, cardName) }, `${ASK_PRESS} ${ASK_SIZE.sheet} ${ASK_ALT_INK}`)}
+                  disabled={busy !== null} onClick={(e) => trade.onTrade(card.oracleId, e.currentTarget)}>
+                  {tradeCopy.sheet.press}
+                </button>
+              )
+            ) : null}
             <RowEnd ask={ask} friend={s.friend.displayName} card={cardName} busy={busy === s.friend.publicId} locked={busy !== null}
               onAsk={() => void press(s, ask.kind === "askInstead" ? ask.fromRequestId : undefined)} />
           </li>
         ))}
       </ul>
       {line ? <p data-testid="friend-spares-line" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]"><PersonText text={line} /></p> : null}
+      {trade ? <p data-testid="friend-spares-how" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{tradeCopy.sheet.how}</p> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>
   );

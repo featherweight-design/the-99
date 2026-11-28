@@ -83,6 +83,10 @@ export const tradeCopy = {
   markTraded: "Mark traded",
   clear: "Clear",
   newTrade: "Propose a new trade",
+  /** Yes and No's accessible names on a trade: they answer the whole offer, not one card. */
+  yesAria: (f: Name) => personText`Yes, accept ${f}’s offer`,
+  noAria: (f: Name) => personText`No, decline ${f}’s offer`,
+  counterAria: (f: Name) => personText`Counter ${f}’s offer`,
   /** The foot's lines. */
   answerBy: (f: Name, n: number) => personText`${f} has ${n === 1 ? "1 day" : `${n} days`} to answer.`,
   askBackFoot: (f: Name, card: string) => personText`${f} has 14 days to answer. Your yes on ${card} stands either way.`,
@@ -99,7 +103,7 @@ export const tradeCopy = {
   lookLine: (card: string, f: Name) => personText`${card} is no longer available from ${f}, so Yes waits until the trade changes.`,
   lookLineYours: (card: string) => `${card} is no longer available on your side. Counter without it, or withdraw.`,
   /** The picker. */
-  pick: { theirs: (f: Name) => personText`${f}’s spares`, yours: "Your spares" },
+  pick: { aria: "Spares to trade", theirs: (f: Name) => personText`${f}’s spares`, yours: "Your spares" },
   wantsListed: (f: Name, n: number) => personText`${n === 1 ? "One is" : `${n} are`} on ${f}’s wishlist, listed first.`,
   key: { wants: "wants it", offered: "already offered" },
   /** A picker tile's toggle: one press in, the same press out (aria-pressed). */
@@ -143,6 +147,7 @@ export const tradeCopy = {
     open: "Trade open",
     openAria: (f: Name) => personText`Open your trade with ${f}`,
     title: (f: Name) => personText`Trade with ${f}`,
+    close: "Close",
     back: "Friends’ spares",
     sentTitle: (f: Name) => personText`Offer sent to ${f}`,
     sentBody: (f: Name) => personText`${f} has 14 days to answer. It’s on ${f}’s Spares tab and in Friends › Trades.`,
