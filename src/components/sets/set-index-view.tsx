@@ -7,6 +7,7 @@
 // not match mid-refresh). That last one renders its own tag and NEVER a percentage. A set
 // with no base run is not that state: it completes against every printing (`sectionsOf`).
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -244,10 +245,11 @@ export function SetIndexView({
           cache.current.set(key, rows);
           startTransition(() => { setResults(rows); setPending(false); });
         })
-        .catch(() => {
+        .catch((e) => {
           // A failed request is not "no such set". Without this the no-match branch spoke
           // for a database that was simply unreachable, and the rejection went unhandled.
           if (ticket !== latest.current) return;
+          captureClientError("sets.index-search", e);
           startTransition(() => { setResults([]); setFailed(true); setPending(false); });
         });
     }, 150);

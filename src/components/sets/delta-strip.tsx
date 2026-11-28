@@ -15,6 +15,7 @@
 // its finish, leaves a count identical while the art and the foil mark on screen are
 // stale. The strip says how many cards moved, and renders whenever anything did.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ownedFingerprintForSet } from "../../app/collection/(list)/sets/actions";
@@ -69,7 +70,9 @@ export function DeltaStrip({
           if (cancelled || ticket !== latest.current) return;
           setChanged(now === fingerprint ? null : now);
         })
-        .catch(() => {
+        .catch((e) => {
+          if (cancelled || ticket !== latest.current) return;
+          captureClientError("sets.delta-check", e);
           // A failed check leaves the page exactly as it was, which is the honest default.
         });
     };

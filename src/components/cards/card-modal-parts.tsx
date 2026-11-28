@@ -560,7 +560,7 @@ export function CardZoomLayer({
           // release or cancel is then ignored and leaves the card tilted with no gesture behind it.
           if (zoomPressRef.current) return;
           zoomPressRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, tilting: false };
-          try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* already released */ }
+          try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* silent-catch: expected: refusal, already released */ }
         }}
         onPointerMove={(e) => {
           if (tiltsOnHover(e.pointerType)) { tiltHover(e); return; }

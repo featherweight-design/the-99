@@ -8,6 +8,7 @@
 // and the strip comes first, as Collection's does.
 "use client";
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PlaceStrip, type PlaceTab } from "../place/place-strip";
@@ -68,7 +69,9 @@ export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts 
       .then((next) => {
         if (ticket === latest.current) setCounts(next);
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (ticket === latest.current) captureClientError("commanders.counts-mount", e);
+      });
   }, [pathname]);
   // On window focus, and when a row on the list below has just been hidden or brought back.
   useEffect(() => {
@@ -78,7 +81,9 @@ export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts 
         .then((next) => {
           if (ticket === latest.current) setCounts(next);
         })
-        .catch(() => {});
+        .catch((e) => {
+          if (ticket === latest.current) captureClientError("commanders.counts-focus", e);
+        });
     };
     window.addEventListener("focus", onFocus);
     window.addEventListener(COMMANDER_COUNTS_STALE_EVENT, onFocus);

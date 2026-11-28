@@ -8,6 +8,7 @@
 // into load as one chunk on the reader's first intent (`SearchLayer`), so a page nobody searches from ships neither
 // card details nor the copy those states reuse. Until it lands the field types and the bar runs.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
@@ -184,7 +185,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     loadingLayer.current = true;
     loadLayer()
       .then((m) => setLayer(() => m.SearchLayer))
-      .catch(() => {
+      .catch((e) => {
+        captureClientError("search.layer-load", e);
         loadingLayer.current = false;
       });
   }, []);
@@ -263,7 +265,11 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     cardSignalsAction(recents.map((r) => r.oracleId))
       .then((s) => live && setRecentSignals(s))
       // A failure is its own state (S6 with Try again), never a list of cards drawn as not owned.
-      .catch(() => live && setRecentsFailed(true));
+      .catch((e) => {
+        if (!live) return;
+        captureClientError("search.recents", e);
+        setRecentsFailed(true);
+      });
     return () => {
       live = false;
     };
@@ -276,7 +282,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     let live = true;
     cardSignalsAction(recents.map((r) => r.oracleId))
       .then((s) => live && setRecentSignals(s))
-      .catch(() => {});
+      .catch((e) => {
+        if (live) captureClientError("search.recents-refresh", e);
+      });
     return () => {
       live = false;
     };
@@ -303,8 +311,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
           setActive(-1);
           setPhase("results");
         })
-        .catch(() => {
+        .catch((e) => {
           if (n !== seq.current) return;
+          captureClientError("search.query", e);
           setPhase("failed");
           // S6 is drawn with the keyboard down, Try again in reach.
           lowerKeyboard(inputRef.current);

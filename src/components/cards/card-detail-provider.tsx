@@ -22,6 +22,7 @@
 // the rule that avoids it is: wait on the prefetch for a bounded time, and if it has not
 // answered, send the action and show ONLY the action's answer.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { landOnDeckTokens } from "../decks/deck-tokens-landing";
 import {
   lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
@@ -137,6 +138,7 @@ export function warmCardModal(): Promise<unknown> {
  */
 function warmItalic() {
   if (typeof document === "undefined" || !document.fonts) return;
+  // silent-catch: expected: offline, a font face that does not load only costs the warm-up
   document.fonts.load("italic 400 1em plexSans").catch(() => {});
 }
 
@@ -784,8 +786,9 @@ export function CardDetailProvider({
           if (!standing) setFailed(true);
           giveUp();
         }
-      } catch {
+      } catch (e) {
         if (latest.current !== request) return;
+        captureClientError("cards.detail-read", e);
         // Same reasoning: a failed re-ask leaves what is on screen alone.
         if (!standing) setFailed(true);
         giveUp();

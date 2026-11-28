@@ -123,7 +123,7 @@ export function LabelLanding({
       try {
         id = decodeURIComponent(window.location.hash.slice(1));
       } catch {
-        // A malformed fragment names no section.
+        // silent-catch: expected: refusal, a malformed fragment names no section.
       }
     }
     // Cancelled on cleanup, so a Back during the eased scroll never scrolls the page left for.

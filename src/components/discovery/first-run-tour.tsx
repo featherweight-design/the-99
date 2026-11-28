@@ -10,6 +10,7 @@
 //
 // The scrim is one SVG mask, not a box shadow (plan decision 5): a hole per lit control. Every step lights one.
 
+import { captureClientError } from "../../lib/sentry/capture-client";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@clerk/nextjs";
@@ -50,6 +51,7 @@ function spentHere(account: string | null | undefined): boolean {
   try {
     return sessionStorage.getItem(spentKey(account)) === "1";
   } catch {
+    // silent-catch: expected: refusal, blocked storage reads as not spent
     return false;
   }
 }
@@ -58,7 +60,7 @@ function markSpentHere(account: string | null | undefined) {
   try {
     sessionStorage.setItem(spentKey(account), "1");
   } catch {
-    // not a fallback: without storage a restored Home can show the tour once more, as before this guard.
+    // silent-catch: expected: refusal, not a fallback: without storage a restored Home can show the tour once more, as before this guard.
   }
 }
 
@@ -143,7 +145,7 @@ export function FirstRunTour({
         if (again) {
           claimed.current = true;
           markSpentHere(account);
-          void spendTourAction().catch(() => {});
+          void spendTourAction().catch((e) => captureClientError("discovery.tour-spend", e));
           void withVisitLock(() => takeVisit());
           setPhase("running");
           return;
