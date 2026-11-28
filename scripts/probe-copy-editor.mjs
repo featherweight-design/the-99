@@ -1114,7 +1114,9 @@ async function runDone(browser) {
     await page.locator(TRAY).waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
     check(`${L} 9: Review opens the tray with the mode off`, (await page.locator(TRAY).count()) === 1 && (await barOf(page).count()) === 0 && (await page.locator(NOTICE).count()) === 0);
     await shot("tray-off");
-    check(`${L} 9: the tray names both edits`, (await page.locator(`${TRAY} li`).count()) === 2);
+    // The row Edit button draws only once the rows have loaded, so this pins "rows load when the tray opens, mode off".
+    await page.locator(TRAY).getByRole("button", { name: "Edit", exact: true }).first().waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+    check(`${L} 9: the tray names both edits and loads their rows`, (await page.locator(`${TRAY} li`).count()) === 2 && (await page.locator(TRAY).getByRole("button", { name: "Edit", exact: true }).count()) === 2);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
     check(`${L} 9: Esc closes the tray`, (await page.locator(TRAY).count()) === 0);
