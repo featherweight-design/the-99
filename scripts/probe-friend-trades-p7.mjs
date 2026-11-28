@@ -166,7 +166,8 @@ async function run(page, touch, tag) {
   // The Requests box's Trades tab, its foot, a row.
   await visit(page, `${BASE}/friends`);
   await shown(page, T("requests-box"), 60_000);
-  await press(page, touch, page.locator(T("requests-tab-trades")));
+  // `:visible`: while the page streams, Next holds the box's next draw in a hidden div beside the drawn one.
+  await press(page, touch, page.locator(`${T("requests-tab-trades")}:visible`));
   const rows = await shown(page, `${T("requests-trades")} ${T("trade-row")}`);
   const n = await count(page, `${T("requests-trades")} ${T("trade-row")}`);
   report(`${tag}: the Trades tab shows trade rows`, rows && n > 0 && n <= 5, `${n} rows`);
@@ -178,7 +179,7 @@ async function run(page, touch, tag) {
   await page.waitForURL((u) => u.pathname === "/friends/requests", { timeout: 30_000 }).catch(() => {});
   if (process.env.P7_DEBUG && path(page) !== "/friends/requests") await page.screenshot({ path: `${process.env.P7_DEBUG}/rh-${tag}.png` });
   report(`${tag}: the box's Request history link lands on /friends/requests`, path(page) === "/friends/requests", path(page));
-  await press(page, touch, page.locator(T("rh-tab-trades")));
+  await press(page, touch, page.locator(`${T("rh-tab-trades")}:visible`));
   const rh = await shown(page, `${T("rh-trades")} ${T("trade-row")}`);
   report(`${tag}: Request history's Trades segment shows trade rows`, rh, `rows ${await count(page, `${T("rh-trades")} ${T("trade-row")}`)}`);
   await opensInPlace(page, touch, tag, "a Request history Trades row", page.locator(`${T("rh-trades")} ${T("trade-row-open")}`).first());
