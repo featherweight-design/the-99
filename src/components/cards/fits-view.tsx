@@ -166,10 +166,7 @@ export function FitsView({
   useEffect(() => {
     if (!polling) return;
     const t = setInterval(() => {
-      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending && !predatesPress(p)) settle(p, null); }).catch((e) => {
-        // A dropped connection is the poll's next tick to retry, not a fault.
-        if (!(e instanceof TypeError)) captureClientError("cards.fits-poll", e);
-      });
+      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending && !predatesPress(p)) settle(p, null); }).catch((e) => captureClientError("cards.fits-poll", e));
     }, POLL_MS);
     return () => clearInterval(t);
     // `settle` reads only setters and the card.
@@ -218,7 +215,7 @@ export function FitsView({
       // A refusal costs nothing: the panel is read again so the band says why (a current read, no
       // credit, the owner's share) rather than a failure the reader did not have.
       const again = await readFitsReadAction(card.oracleId).catch((e) => {
-        captureClientError("cards.fits-reread", e);
+        if (mounted.current) captureClientError("cards.fits-reread", e);
         return null;
       });
       if (again) adopt(again);
@@ -266,7 +263,7 @@ export function FitsView({
       // The deck may be one the stored read names: once it holds the card it is resolved, not changed, so the
       // panel is read again and the note and the row say so now rather than at the next open.
       const again = await readFitsReadAction(card.oracleId).catch((e) => {
-        captureClientError("cards.fits-reread-add", e);
+        if (mounted.current) captureClientError("cards.fits-reread-add", e);
         return null;
       });
       // Not over a press of this visit's still in flight: that press settles the band itself.

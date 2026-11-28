@@ -138,8 +138,7 @@ export function warmCardModal(): Promise<unknown> {
  */
 function warmItalic() {
   if (typeof document === "undefined" || !document.fonts) return;
-  // silent-catch: expected: offline, a font face that does not load only costs the warm-up
-  document.fonts.load("italic 400 1em plexSans").catch(() => {});
+  document.fonts.load("italic 400 1em plexSans").catch((e) => captureClientError("cards.font-warm", e));
 }
 
 /**
